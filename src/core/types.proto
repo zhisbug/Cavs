@@ -1,0 +1,10 @@
+syntax = "proto3";
+package cavs;
+
+enum DataType {
+    DT_INVALIDD = 0;
+
+    DT_FLOAT    = 1;
+    DT_DOUBLE   = 2;
+    DT_INT32    = 3;
+}

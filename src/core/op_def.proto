@@ -1,0 +1,28 @@
+syntax = "proto3";
+package cavs;
+
+message OpDef {
+    repeated string input = 1;
+    repeated string output = 2;
+    string name = 3;
+    message AttrDef {
+        string name = 1;
+        AttrType type = 2;
+    }
+    message AttrType {
+        oneof type {
+            bytes s = 1;
+            /*repeated bytes rs = 2;*/
+            int64 i = 3;
+            /*repeated int64 ri = 4;*/
+            float f = 5;
+            /*repeated float rf = 6;*/
+            bool b = 7;
+            /*repeated bool rb = 8;*/
+        }
+    }
+    repeated AttrDef attr = 4;
+    enum DeviceType { CPU = 0; GPU = 1; }
+    DeviceType device = 5; 
+}
+
