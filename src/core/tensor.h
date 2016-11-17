@@ -10,16 +10,42 @@ namespace cavs {
 
 class Tensor{
  public:
-  Tensor();
-  Tensor(DataType type, const std::vector<int>& shape_);
-  Tensor(DataType type, std::initializer_list<int> shape_);
-  Tensor(Allocator *a, DataType type, const std::vector<int>& shape_);
+  //Tensor();
+  //Tensor(DataType type, const std::vector<int>& shape_);
+  //Tensor(DataType type, std::initializer_list<int> shape_);
+  //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);
+  Tensor(Allocator *a, DataType type, const TensorShape& shape);
+
  private:
-  std::vector<int> shape_;
-  DataType data_type;
-  void *data_;
+  TensorBufferBase* buf_;
+  TensorShape shape_;
+  //std::vector<int> shape_;
+  //DataType data_type;
+  //void *data_;
 };
 
+class TensorBufferBase {
+ public:
+  TenosorBufferBase(Allocator* alloc) : alloc_(alloc) {}
+  virtual void* data() const = 0;
+  virtual size_t size() const = 0;
+
+ protected:
+  Allocator* const alloc_;
+};
+
+
+class TensorShape {
+ public:
+  TensorShape(vector<int>&& shape);
+  void set_dim(int d, int size);
+  void add_dim(int size);
+  int num_elements() { return num_elements_; }
+  int dims() { return shape_.size(); }
+ private:
+  vector<int> shape_;
+  int num_elements_;
+};
 }
 #endif
 
