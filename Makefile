@@ -4,10 +4,12 @@ PROTOCC=protoc
 #PROTOFLAGS=--cpp_out=./
 NVCC=/usr/local/cuda/bin/nvcc#--verbose
 NVFLAGS=$(CXXFLAGS) -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52
-LDFLAGS=-L/usr/local/cuda/lib64 -lcudart  -lcublas -lgflags -lglog -L/usr/local/lib -lprotobuf
+LDFLAGS=-lgflags -lglog -L/usr/local/lib -lprotobuf -L/usr/local/cuda/lib64 -lcudart  -lcublas 
 
-SRC=$(filter-out %_test.cc, $(wildcard src/*/*.cc ))
-SRC_OBJS = $(patsubst src/%.cc, build/%.o, $(SRC))
+C_SRC=$(filter-out %_test.cc, $(wildcard src/*/*.cc ))
+C_OBJS = $(patsubst src/%.cc, build/%.o, $(C_SRC))
+CU_SRC=$(filter-out %_test.cu, $(wildcard src/*/*.cu ))
+CU_OBJS = $(patsubst src/%.cu, build/%.cuo, $(CU_SRC))
 TEST_SRC=$(wildcard src/*/*_test.cc )
 DEPS= $(SRCS:.cc=.d)
 PROTO = $(wildcard src/*/*.proto)
@@ -24,7 +26,7 @@ all: $(PROTO_SRCS) $(LIB) $(TEST_BIN)
 
 .PRECIOUS: $(PROTO_SRCS) $(PROTO_HEADERS)
 
-$(LIB): $(SRC_OBJS) $(PROTO_OBJS) 
+$(LIB): $(C_OBJS) $(CU_OBJS) $(PROTO_OBJS) 
 	mkdir -p $(@D)
 	ar crv $@ $^
 build/%.d: src/%.cc 
@@ -39,6 +41,9 @@ build/%.pb.cc: src/%.proto
 build/%.o: src/%.cc 
 	mkdir -p $(@D)
 	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(@D)
+build/%.cuo: src/%.cu 
+	mkdir -p $(@D)
+	$(NVCC) $(NVFLAGS) -c $< -o $@ -I$(@D)
 build/test/% : build/%.o $(LIB)
 	mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^

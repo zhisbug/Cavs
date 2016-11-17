@@ -5,4 +5,6 @@
         TypeName(const TypeName&) = delete;        \
         void operator=(const TypeName&) = delete
 
+#define FORCE_INLINE inline __attribute__((always_inline))
+
 #endif

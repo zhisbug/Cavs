@@ -2,9 +2,9 @@ syntax = "proto3";
 package cavs;
 
 message OpDef {
-    repeated string input = 1;
-    repeated string output = 2;
-    string name = 3;
+    string name = 1;
+    repeated string input = 2;
+    repeated string output = 3;
     message AttrDef {
         string name = 1;
         AttrType type = 2;
