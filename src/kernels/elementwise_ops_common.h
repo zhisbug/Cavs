@@ -6,7 +6,7 @@
 template <typename Functor>
 class UnaryOp : public Op {
  public:
-  explicit UnaryOp(const OpDef& def) : Op(def) {}
+  explicit UnaryOp(const OpDef& def, Session* s) : Op(def, s) {}
   void Compute() override {
     const Tensor& inp = Input(0);
     Tensor* out = Output(0);
@@ -17,7 +17,7 @@ class UnaryOp : public Op {
 template <typename Functor>
 class BinaryOp : public Op {
  public:
-  explicit UnaryOp(const OpDef& def) : Op(def) {}
+  explicit UnaryOp(const OpDef& def, Session *s) : Op(def, s) {}
   void Compute() override {
     const Tensor& inp0 = Input(0);
     const Tensor& inp1 = Input(0);

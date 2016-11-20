@@ -7,13 +7,14 @@ using std::string;
 
 class Op {
  public:
-  explicit Op(const OpDef& def); 
-  explicit Op(const vector<OpDef>& def); //for JIT
-  virtual void Compute(OpContext*) = 0;
-};
-
-class OpContext {
-
+  explicit Op(const OpDef& def, Session *s); 
+  explicit Op(const vector<OpDef>& def, Session *s); //for JIT
+  virtual void Compute() = 0;
+  inline const Tensor& Input(int idx) { return inputs_.at(idx); }
+  inline Tensor* Outnput(int idx) { return outputs_.at(idx); }
+ private:
+  vector<const Tensor*> inputs_;
+  vector<Tensor*> outputs_;
 };
 
 #define REGISTER_OP_BUILDER(key, constructor)           \

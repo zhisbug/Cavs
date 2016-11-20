@@ -20,9 +20,11 @@
 template <typename T>
 class TensorBuffer : public TensorBufferBase {
  public:
-  TensorBuffer(Allocator* alloc);
+  TensorBuffer(Allocator* alloc) 
+      : TensorBufferBase(alloc), data(NULL), elem_(0) {}
   void* data() const override { return data_; }
-  size_t size() const override { return elem_*sizeof(T); }
+  //size_t size() const override { return elem_*sizeof(T); }
+  size_t count() const override { return elem_; }
 
  private:
   T* data_;
@@ -31,9 +33,16 @@ class TensorBuffer : public TensorBufferBase {
   DISALLOW_COPY_AND_ASSIGN(TensorBuffer);
 };
 
-Tensor::Tensor(Allocator *a, DataType type, const TensorShape& shape)
-    : shape_(shape) {
-  CASES(buf_ = new TensorBuffer<T>(shape_.num_elements()))
+Tensor::Tensor(Allocator *a, DataType type, const TensorShape& shape) {
+  CHECK(RealAllocate(a, type, shape));
+}
+
+bool Tensor::RealAllocate(Allocator *a, DataType type, const TensorShape& shape){
+  if (buf_)
+    return false;
+  shape_ = shape;
+  CASES(buf_ = new TensorBuffer<T>(a, shape_.num_elements()))
+    return true;
 }
 
 TensorShape::TensorShape(vector<int>&& shape)
