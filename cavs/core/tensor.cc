@@ -1,7 +1,11 @@
-#include "tensor.h"
+#include "cavs/core/tensor.h"
+#include "cavs/core/logging.h"
+#include "cavs/core/types.h"
+
+namespace cavs {
 
 #define CASE(TYPE, STMTS)                             \
-  case DataTypeToEnum<TYPE>::value                    \
+  case DataTypeToEnum<TYPE>::value: {                 \
     typedef TYPE T;                                   \
     STMTS;                                            \
     break;                                            \
@@ -13,15 +17,17 @@
     CASE(double, STMTS)                               \
     CASE(int, STMTS)                                  \
     default:                                          \
-      LOG(FATAL) << "Unsupported type:" << TYPE_ENUM  \
+      LOG(FATAL) << "Unsupported type:" << TYPE_ENUM; \
       break;                                          \
   }
 
 template <typename T>
 class TensorBuffer : public TensorBufferBase {
  public:
-  TensorBuffer(Allocator* alloc) 
-      : TensorBufferBase(alloc), data(NULL), elem_(0) {}
+  TensorBuffer(Allocator* alloc, size_t elem) 
+      : TensorBufferBase(alloc), elem_(elem) {
+    data_ = alloc->Allocate<T>(elem_) ;   
+  }
   void* data() const override { return data_; }
   //size_t size() const override { return elem_*sizeof(T); }
   size_t count() const override { return elem_; }
@@ -41,15 +47,23 @@ bool Tensor::RealAllocate(Allocator *a, DataType type, const TensorShape& shape)
   if (buf_)
     return false;
   shape_ = shape;
-  CASES(buf_ = new TensorBuffer<T>(a, shape_.num_elements()))
-    return true;
+  CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
+  return true;
 }
 
-TensorShape::TensorShape(vector<int>&& shape)
-    : shape_(std::move(shape)) {
-  num_elements_ = 1;    
-  for (int i = 0; i < dims(); i++) {
-    num_elements_ *= shape_[i]; 
+TensorShape::TensorShape(vector<int>& shape)
+    : shape_(shape) {
+  n_elements_ = 1;    
+  for (const int dim : shape_) {
+    n_elements_ *= dim; 
+  }
+}
+
+TensorShape::TensorShape(std::initializer_list<int> shape) 
+    : shape_(shape) {
+  n_elements_ = 1;    
+  for (const int dim : shape_) {
+    n_elements_ *= dim; 
   }
 }
 
@@ -61,3 +75,5 @@ void TensorShape::set_dim(int d, int size) {
 void TensorShape::add_dim(int size) {
   shape_[dims()] = size;
 }
+
+} //namespace cavs

@@ -1,4 +1,4 @@
-#include "elementwise_ops.h"
+#include "cavs/kernels/elementwise_ops.h"
 
 template <typename OP, typename T, typename R = T> 
 __global__ void UnaryKernel(R* out, const T* inp, int n) {

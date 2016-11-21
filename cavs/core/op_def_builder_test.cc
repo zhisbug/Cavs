@@ -1,7 +1,5 @@
-#include "op_def_builder.h"
-
-#include <glog/logging.h>
-#include <gflags/gflags.h>
+#include "cavs/core/op_def_builder.h"
+#include "cavs/core/logging.h"
 
 using namespace cavs;
 

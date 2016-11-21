@@ -1,7 +1,7 @@
-#ifndef ELEMENTWISE_OPS_H_
-#define ELEMENTWISE_OPS_H_
+#ifndef CAVS_KERNEL_ELEMENTWISE_OPS_H_
+#define CAVS_KERNEL_ELEMENTWISE_OPS_H_
 
-#include "elementwise_ops_common.h"
+#include "cavs/kernels/elementwise_ops_common.h"
 
 namespace Functor {
 

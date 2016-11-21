@@ -1,4 +1,4 @@
-#include "op_def_builder.h"
+#include "cavs/core/op_def_builder.h"
 
 namespace cavs {
 

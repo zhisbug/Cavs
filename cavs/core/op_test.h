@@ -1,10 +1,10 @@
-#ifndef OP_TEST_H_
-#define OP_TEST_H_
+#ifndef CAVS_CORE_OP_TEST_H_
+#define CAVS_CORE_OP_TEST_H_
+
+#include "cavs/core/allocator.h"
+#include "cavs/core/types.h"
 
 #include <string>
-
-#include "allocator.h"
-#include "types.h"
 
 namespace cavs{
 

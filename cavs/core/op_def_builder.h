@@ -1,14 +1,15 @@
-#ifndef OP_DEF_BUILDER_H_
-#define OP_DEF_BUILDER_H_
+#ifndef CAVS_CORE_OP_DEF_BUILDER_H_
+#define CAVS_CORE_OP_DEF_BUILDER_H_
 
-#include "op_def.pb.h"
-#include "graph_def.pb.h"
-#include "macros.h"
+#include "cavs/core/op_def.pb.h"
+#include "cavs/core/graph_def.pb.h"
+#include "cavs/core/macros.h"
 
 #include <string>
 
-namespace cavs{
 using std::string;
+
+namespace cavs{
 
 class OpDefBuilder {
  public:

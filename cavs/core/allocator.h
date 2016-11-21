@@ -1,8 +1,11 @@
-#ifndef ALLOCATOR_H_
-#define ALLOCATOR_H_
+#ifndef CAVS_CORE_ALLOCATOR_H_
+#define CAVS_CORE_ALLOCATOR_H_
 
 #include <string>
-#include <map>
+#include <unordered_map>
+
+using std::string;
+using std::unordered_map;
 
 namespace cavs {
 
@@ -10,7 +13,7 @@ class Allocator {
  public:
   virtual string Name() = 0;
   virtual void* AllocateRaw(size_t nbytes) = 0;
-  virtual bool DeallocateRaw(void* buf) = 0;
+  virtual void DeallocateRaw(void* buf) = 0;
 
   template <typename T>
   T* Allocate(size_t n_elements) {
@@ -18,17 +21,18 @@ class Allocator {
     return reinterpret_cast<T*>(p);
   }
   template <typename T>
-  bool Deallocate(T* buf) {
+  void Deallocate(T* buf) {
     if (buf) {
         DeallocateRaw(buf);
     }
-    return true;
   }
 };
 
 class TrackingAllocator : public Allocator {
  public:
   explicit TrackingAllocator(Allocator* allocator);
+  void* AllocateRaw(size_t nbytes) override;
+  void DeallocateRaw(void* buf) override;
   string Name() override { return allocator_->Name(); }
   size_t Capacity() { return capacity_; }
  private:

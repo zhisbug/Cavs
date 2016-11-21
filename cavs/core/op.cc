@@ -1,17 +1,21 @@
-#include "op.h"
+#include "cavs/core/op.h"
+#include "cavs/core/logging.h"
 
-Op::Op(const OpDef* def, Session* s) {
+namespace cavs {
+
+Op::Op(const OpDef& def, Session* s) {
     for (const string& input : def.input()) {
-        Tensor* t = s->GetTensor(input); 
+        const Tensor* t = s->GetTensor(input); 
         CHECK(t);
         inputs_.push_back(t);
     }
 
-    for (const string& output : def.outptu()) {
-        Tensor* t = s->GetTensor(output);
-        if (!t)
-            t = new Tensor();
-        outputs_.push_back(t);
+    for (const string& output : def.output()) {
+        Tensor* t = const_cast<Tensor*>(s->GetTensor(output));
+        if (t)
+            outputs_.push_back(t);
+        else
+            outputs_.push_back(new Tensor());
     }
 }
 
@@ -32,3 +36,5 @@ void OpRegister::InitInternal(const string& name,
 }
 
 }
+
+} //namespace cavs

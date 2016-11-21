@@ -1,5 +1,5 @@
-#ifndef MACROS_GPU_H_
-#define MACROS_GPU_H_
+#ifndef CAVS_CORE_MACROS_GPU_H_
+#define CAVS_CORE_MACROS_GPU_H_
 
 #include "macros.h"
 

@@ -1,24 +1,24 @@
 CXX=g++
-CXXFLAGS=-O2 -std=c++11 -I/usr/local/cuda/include
+CXXFLAGS=-O2 -std=c++11 -I. -Ibuild/ -I/usr/local/cuda/include
 PROTOCC=protoc
-#PROTOFLAGS=--cpp_out=./
+PROTOFLAGS=--cpp_out=build/ -I. 
 NVCC=/usr/local/cuda/bin/nvcc#--verbose
-NVFLAGS=$(CXXFLAGS) -gencode arch=compute_35,code=sm_35 -gencode arch=compute_37,code=sm_37 -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52
+NVFLAGS=$(CXXFLAGS) -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52
 LDFLAGS=-lgflags -lglog -L/usr/local/lib -lprotobuf -L/usr/local/cuda/lib64 -lcudart  -lcublas 
 
-C_SRC=$(filter-out %_test.cc, $(wildcard src/*/*.cc ))
-C_OBJS = $(patsubst src/%.cc, build/%.o, $(C_SRC))
-CU_SRC=$(filter-out %_test.cu, $(wildcard src/*/*.cu ))
-CU_OBJS = $(patsubst src/%.cu, build/%.cuo, $(CU_SRC))
-TEST_SRC=$(wildcard src/*/*_test.cc )
-DEPS= $(SRCS:.cc=.d)
-PROTO = $(wildcard src/*/*.proto)
-PROTO_HEADERS = $(patsubst src/%.proto, build/%.pb.h, $(PROTO))
-PROTO_SRCS = $(patsubst src/%.proto, build/%.pb.cc, $(PROTO))
-PROTO_OBJS = $(patsubst src/%.proto, build/%.pb.o, $(PROTO))
+C_SRC=$(filter-out %_test.cc, $(wildcard cavs/*/*.cc ))
+C_OBJS = $(patsubst cavs/%.cc, build/cavs/%.o, $(C_SRC))
+CU_SRC=$(filter-out %_test.cu, $(wildcard cavs/*/*.cu ))
+CU_OBJS = $(patsubst cavs/%.cu, build/cavs/%.cuo, $(CU_SRC))
+TEST_SRC=$(wildcard cavs/*/*_test.cc )
+#DEPS= $(SRCS:.cc=.d)
+PROTO = $(wildcard cavs/*/*.proto)
+PROTO_HEADERS = $(patsubst cavs/%.proto, build/cavs/%.pb.h, $(PROTO))
+PROTO_SRCS = $(patsubst cavs/%.proto, build/cavs/%.pb.cc, $(PROTO))
+PROTO_OBJS = $(patsubst cavs/%.proto, build/cavs/%.pb.o, $(PROTO))
 
 LIB=lib/libcavs.a
-TEST_BIN=$(patsubst src/%.cc, build/test/%, $(TEST_SRC))
+TEST_BIN=$(patsubst cavs/%.cc, build/test/%, $(TEST_SRC))
 
 .PHONY: clean
 
@@ -29,21 +29,21 @@ all: $(PROTO_SRCS) $(LIB) $(TEST_BIN)
 $(LIB): $(C_OBJS) $(CU_OBJS) $(PROTO_OBJS) 
 	mkdir -p $(@D)
 	ar crv $@ $^
-build/%.d: src/%.cc 
+#build/cavs/%.d: cavs/%.cc 
+	#mkdir -p $(@D)
+	#$(CXX) $(CXXFLAGS) -MM -MT build/$*.o $< >build/$*.d
+build/cavs/%.pb.o: cavs/%.pb.cc
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -MM -MT build/$*.o $< >build/$*.d
-build/%.pb.o: src/%.pb.cc
+	$(CXX) $(CXXFLAGS) -c $< -o $@ 
+build/cavs/%.pb.cc: cavs/%.proto
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(@D)
-build/%.pb.cc: src/%.proto
+	$(PROTOCC) $(PROTOFLAGS) $<
+build/cavs/%.o: cavs/%.cc 
 	mkdir -p $(@D)
-	$(PROTOCC) --proto_path=src/core --cpp_out=build/core $<
-build/%.o: src/%.cc 
+	$(CXX) $(CXXFLAGS) -c $< -o $@ 
+build/cavs/%.cuo: cavs/%.cu 
 	mkdir -p $(@D)
-	$(CXX) $(CXXFLAGS) -c $< -o $@ -I$(@D)
-build/%.cuo: src/%.cu 
-	mkdir -p $(@D)
-	$(NVCC) $(NVFLAGS) -c $< -o $@ -I$(@D)
+	$(NVCC) $(NVFLAGS) -c $< -o $@ 
 build/test/% : build/%.o $(LIB)
 	mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^

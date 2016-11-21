@@ -1,7 +1,7 @@
 syntax = "proto3";
 package cavs;
 
-import "op_def.proto";
+import "cavs/core/op_def.proto";
 message GraphDef {
     repeated OpDef op = 1;
 }

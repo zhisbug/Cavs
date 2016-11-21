@@ -1,8 +1,6 @@
-#include "elementwise_ops_common.h"
-#include "elementwise_ops.h"
-
-#include <glog/logging.h>
-#include <gflags/gflags.h>
+#include "cavs/kernels/elementwise_ops_common.h"
+#include "cavs/kernels/elementwise_ops.h"
+#include "cavs/core/logging.h"
 
 using namespace cavs;
 

@@ -1,4 +1,5 @@
-#include "allocator.h"
+#include "cavs/core/allocator.h"
+#include "cavs/core/logging.h"
 
 namespace cavs {
 
@@ -10,9 +11,8 @@ class CPUAllocator : public Allocator {
   void* AllocateRaw(size_t nbytes) {
     return malloc(nbytes); 
   }
-  bool DeallocateRaw(void* buf) {
+  void DeallocateRaw(void* buf) {
     free(buf);
-    return true;
   }
 };
 
@@ -27,16 +27,16 @@ TrackingAllocator::TrackingAllocator(Allocator* allocator)
     : allocator_(allocator), capacity_(0) {}
 
 void* TrackingAllocator::AllocateRaw(size_t nbytes) {
-  capacity_ += n_elements*sizeof(T);
-  trace_[p] = n_elements*sizeof(T);
-  return allocator_->AllocateRaw(nbytes);
+  void* ptr = allocator_->AllocateRaw(nbytes);
+  capacity_ += nbytes;
+  trace_[ptr] = nbytes;
+  return ptr;
 }
 
-bool TrackingAllocator::DeallocateRaw(void *buf) {
-  CHECK(trace_.find((void*)buf) != trace_.end());
-  capacity_ -= trace_[(void*)buf];
-  trace_.erase((void*)buf);
-  return true;
+void TrackingAllocator::DeallocateRaw(void *buf) {
+  CHECK(trace_.find(buf) != trace_.end());
+  capacity_ -= trace_[buf];
+  trace_.erase(buf);
 }
 
 }

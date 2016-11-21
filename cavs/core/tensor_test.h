@@ -1,5 +1,7 @@
-#ifndef TENSOR_TEST_H_
-#define TENSOR_TEST_H_
+#ifndef CAVS_TENSOR_TEST_H_
+#define CAVS_TENSOR_TEST_H_
+
+#include "cavs/core/tensor.h"
 
 namespace test {
 
