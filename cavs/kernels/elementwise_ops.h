@@ -3,36 +3,37 @@
 
 #include "cavs/kernels/elementwise_ops_common.h"
 
-namespace Functor {
+namespace cavs {
 
-template <typename op, typename T, typename R = T>
+template <typename op, typename T>
 struct UnaryFunctor {
-  virtual void operator () (R* out, const T *inp, int n) = 0;
+  virtual void operator () (T* out, const T *inp, int n) = 0;
 };
 
-template <typename op, typename T, typename R = T>
+template <typename op, typename T>
 struct BinaryFunctor {
-  virtual void operator () (R* out, const T *inp0, const T *inp1, int n) = 0;
+  virtual void operator () (T* out, const T *inp0, const T *inp1, int n) = 0;
 };
 
-}
 
 namespace Math {
 
-template <typename T, typename R = T>
+template <typename T>
 struct Abs {
-  FORCE_INLINE R operator () (T inp) {
+  FORCE_INLINE __DEVICE__ static T Run(T inp) {
     return abs(inp);
   }
 };
 
-template <typename T, typename R = T>
+template <typename T>
 struct Add {
-  FORCE_INLINE R operator () (T inp0, T inp1) {
+  FORCE_INLINE __DEVICE__ static T Run(T inp0, T inp1) {
     return (inp0 + inp1);
   }
 };
 
 }
+
+} //namespace cavs
 
 #endif

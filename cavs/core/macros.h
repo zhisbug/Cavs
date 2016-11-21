@@ -7,4 +7,10 @@
 
 #define FORCE_INLINE inline __attribute__((always_inline))
 
+#ifdef __NVCC__
+    #define __DEVICE__ __device__
+#else
+    #define __DEVICE__ 
+#endif
+
 #endif

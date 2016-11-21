@@ -53,9 +53,11 @@ class Tensor {
   Tensor(Allocator *a, DataType type, const TensorShape& shape);
   bool RealAllocate(Allocator *a, DataType type, const TensorShape& shape);
   template <typename T>
-    T* data() const { return reinterpret_cast<T*>(buf_->data()); }
-  size_t count() { return buf_->count(); }
-  string name() { return name_; }
+    T* mutable_data() { return reinterpret_cast<T*>(buf_->data()); }
+  template <typename T>
+    const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
+  size_t count() const { return buf_->count(); }
+  string name() const { return name_; }
 
  private:
   TensorBufferBase* buf_;

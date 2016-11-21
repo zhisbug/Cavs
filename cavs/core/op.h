@@ -13,27 +13,31 @@ class Op {
   //explicit Op(const vector<OpDef>& def, Session *s); //for JIT
   virtual void Compute() = 0;
   inline const Tensor* Input(int idx) const { return inputs_.at(idx); }
-  inline Tensor* Outnput(int idx) { return outputs_.at(idx); }
+  inline Tensor* Output(int idx) { return outputs_.at(idx); }
  private:
   vector<const Tensor*> inputs_;
   vector<Tensor*> outputs_;
 };
 
-#define REGISTER_OP_BUILDER(key, constructor)           \
-    static OpRegister register__body__##name##(         \
-        op_factory::key.LowerToString(),                \
-            [](OpDef& def) -> Op* {                     \
-                    return new constructor(def);        \
-                });
+#define REGISTER_OP_BUILDER(key, ...)                       \
+    REGISTER_OP_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
+#define REGISTER_OP_BUILDER_UNIQ(ctr, key, ...)             \
+    REGISTER_OP_BUILDER_CONCAT(ctr, key, __VA_ARGS__)
+#define REGISTER_OP_BUILDER_CONCAT(ctr, key, ...)           \
+    static op_factory::OpRegister register_body_##ctr##_op( \
+        op_factory::key.LowerToString(),                    \
+            [](const OpDef& def, Session* s) -> Op* {       \
+                    return new __VA_ARGS__(def, s);         \
+                })
 
 namespace op_factory {
 
 class Key {
  public:
   Key(string name) : op_name_(name), dev_(""), label_("") {}
-  Key& Device(string dev) { dev_ = dev; }
-  Key& Label(string label) { label_ = label; }
-  string LowerToString() { return op_name_+":"+dev_+":"+label_; }
+  Key& Device(string dev) { dev_ = dev; return *this; }
+  Key& Label(string label) { label_ = label; return *this; }
+  string LowerToString() const { return op_name_+":"+dev_+":"+label_; }
  private:
   string op_name_;
   string dev_;
@@ -42,7 +46,7 @@ class Key {
 
 class OpRegister {
  public:
-  typedef Op* (*Factory)(OpDef& def);
+  typedef Op* (*Factory)(const OpDef& def, Session* s);
 
   OpRegister(const string& name, Factory factory) {
     InitInternal(name, factory); 
