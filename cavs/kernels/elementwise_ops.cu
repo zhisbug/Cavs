@@ -38,15 +38,8 @@ struct CUDABinaryFunctor {
 #define CudaBinaryOpInstance(math, dtype)   \
     BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype> 
 
-/*REGISTER_OP_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(Math::Abs, float));*/
-/*REGISTER_OP_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(Math::Add, float));*/
 /*REGISTER_OP_BUILDER(Key("Add").Device("GPU"), UnaryOp<CUDAUnaryFunctor<Math::Abs<float>, float>, float>);*/
 REGISTER_OP_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(Math::Abs, float));
 REGISTER_OP_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(Math::Add, float));
 
-/*const OpDef def;*/
-/*Session s;*/
-/*UnaryOp<CUDAUnaryFunctor<Math::Abs<float>, float>, float>* test */
-    /*= new UnaryOp<CUDAUnaryFunctor<Math::Abs<float>, float>, float>(def, &s);*/
-
-}
+} //namespace cavs

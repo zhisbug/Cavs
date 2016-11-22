@@ -5,6 +5,7 @@ message OpDef {
     string name = 1;
     repeated string input = 2;
     repeated string output = 3;
+    string label = 4;
     message AttrDef {
         string name = 1;
         AttrType type = 2;
@@ -21,8 +22,8 @@ message OpDef {
             /*repeated bool rb = 8;*/
         }
     }
-    repeated AttrDef attr = 4;
+    repeated AttrDef attr = 5;
     enum DeviceType { CPU = 0; GPU = 1; }
-    DeviceType device = 5; 
+    DeviceType device = 6; 
 }
 

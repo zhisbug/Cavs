@@ -29,4 +29,8 @@ void OpDefBuilder::AddToGraphDef(GraphDef* graph_def) {
     *op_def = op_def_;
 }
 
+void OpDefBuilder::Finalize(OpDef* op_def) {
+    *op_def = op_def_;
+}
+
 } //namespace cavs

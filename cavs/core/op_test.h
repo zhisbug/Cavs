@@ -3,6 +3,11 @@
 
 #include "cavs/core/allocator.h"
 #include "cavs/core/types.h"
+#include "cavs/core/logging.h"
+#include "cavs/core/tensor.h"
+#include "cavs/core/session.h"
+#include "cavs/core/op.h"
+#include "cavs/core/tensor_test.h"
 
 #include <string>
 
@@ -12,40 +17,41 @@ namespace test{
 
 class OpTestBase {
  public:
-  OpTestBase() : device_type_("GPU"), alloc_(gpu_allocator()), op_(NULL) {}
-  void SetOpDef(const OpDef& op_def) { op_def_.CopyFrom(op_def); }
-  bool InitOp() {
-    op_ = CreateOp(op_def_, tensor_map); 
-    return (op_ == NULL)? false : true;
-  }
-
+  OpTestBase(const OpDef& def);
   template <typename T>
-  void AddInputFromVector(const string input_name;
-                          const TensorShape& shape, 
-                          const vector<T>& data) {
-    Tensor* input = new Tensor(input_name, alloc_, DataTypeToEnum<T>.value, shape); 
-    sess->InsertTensor(input_name, input);
-    FillValues(input, data);
+  void AddTensorFromVector(const string& name,
+                           const TensorShape shape, 
+                           const vector<T> vals) {
+    Tensor* input = new Tensor(name, alloc_, DataTypeToEnum<T>::value, shape); 
+    sess_->InsertTensor(input);
+    FillValues<T>(input, vals);
+  }
+  template <typename T>
+  void FetchTensor(const string& name,
+                   vector<T>& data) {
+    FetchValues<T>(data, sess_->GetTensor(name));
   }
 
   bool RunTest () {
-      op_->compute();
-  }
-
-  template <typename T>
-  void FetchOutput(const string input_name;
-                   const TensorShape& shape, 
-                   const vector<T>& data) {
-    FetchValues(data, input);
+      CHECK(op_ = CreateOp(op_def_, sess_)); 
+      op_->Compute();
   }
 
  private:
-  Session *sess;
+  Session* sess_;
   Op* op_;
   OpDef op_def_;
-  string device_type_;
   Allocator* alloc_;
 };
+
+OpTestBase::OpTestBase(const OpDef& def) : op_(NULL){
+  op_def_.CopyFrom(def); 
+  if (op_def_.device() == OpDef::GPU)
+    alloc_ = gpu_allocator();
+  else
+    alloc_ = cpu_allocator();
+  sess_ = new Session();
+}
 
 } //namespace test
 

@@ -50,10 +50,10 @@ class Tensor {
   //Tensor(DataType type, const std::vector<int>& shape_);
   //Tensor(DataType type, std::initializer_list<int> shape_);
   //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);
-  Tensor(Allocator *a, DataType type, const TensorShape& shape);
+  Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
   bool RealAllocate(Allocator *a, DataType type, const TensorShape& shape);
   template <typename T>
-    T* mutable_data() { return reinterpret_cast<T*>(buf_->data()); }
+    T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
   size_t count() const { return buf_->count(); }

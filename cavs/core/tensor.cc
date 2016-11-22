@@ -39,7 +39,8 @@ class TensorBuffer : public TensorBufferBase {
   DISALLOW_COPY_AND_ASSIGN(TensorBuffer);
 };
 
-Tensor::Tensor(Allocator *a, DataType type, const TensorShape& shape) {
+Tensor::Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape) 
+    : name_(name) {
   CHECK(RealAllocate(a, type, shape));
 }
 

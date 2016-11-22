@@ -19,13 +19,22 @@ Op::Op(const OpDef& def, Session* s) {
     }
 }
 
-typedef std::unordered_multimap<string, 
+typedef std::unordered_map<string, 
     op_factory::OpRegister::Factory> OpRegistry;
 
 static OpRegistry* GlobalOpRegistry() {
     static OpRegistry* global_op_registry = new OpRegistry;
     return global_op_registry;
 }
+
+Op* CreateOp(const OpDef& def, Session *s) {
+    const string key = op_factory::Key(def).LowerToString();
+    if (GlobalOpRegistry()->count(key) == 0)
+        return NULL;
+    else
+        return (GlobalOpRegistry()->at(key))(def, s);
+}
+
 
 namespace op_factory {
 

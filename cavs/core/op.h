@@ -10,7 +10,6 @@ namespace cavs {
 class Op {
  public:
   explicit Op(const OpDef& def, Session *s); 
-  //explicit Op(const vector<OpDef>& def, Session *s); //for JIT
   virtual void Compute() = 0;
   inline const Tensor* Input(int idx) const { return inputs_.at(idx); }
   inline Tensor* Output(int idx) { return outputs_.at(idx); }
@@ -18,6 +17,8 @@ class Op {
   vector<const Tensor*> inputs_;
   vector<Tensor*> outputs_;
 };
+
+Op* CreateOp(const OpDef& def, Session *s);
 
 #define REGISTER_OP_BUILDER(key, ...)                       \
     REGISTER_OP_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
@@ -34,7 +35,14 @@ namespace op_factory {
 
 class Key {
  public:
-  Key(string name) : op_name_(name), dev_(""), label_("") {}
+  Key(const string& name) : op_name_(name), dev_(""), label_("") {}
+  Key(const OpDef& def) 
+      : op_name_(def.name()), label_(def.label()) {
+          if (def.device() == OpDef::GPU)
+              dev_ = "GPU";
+          else
+              dev_ = "CPU";
+    }
   Key& Device(string dev) { dev_ = dev; return *this; }
   Key& Label(string label) { label_ = label; return *this; }
   string LowerToString() const { return op_name_+":"+dev_+":"+label_; }

@@ -44,7 +44,7 @@ build/cavs/%.o: cavs/%.cc
 build/cavs/%.cuo: cavs/%.cu 
 	mkdir -p $(@D)
 	$(NVCC) $(NVFLAGS) -c $< -o $@ 
-build/test/% : build/%.o $(LIB)
+build/test/% : build/cavs/%.o $(LIB)
 	mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $^
 

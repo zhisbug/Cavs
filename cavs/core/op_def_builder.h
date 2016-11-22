@@ -18,11 +18,13 @@ class OpDefBuilder {
   OpDefBuilder& Output(string value);
   OpDefBuilder& Device(string dev);
   OpDefBuilder& Attr(string key, string value);
-  string Key();
-  const OpDef* op_def() const { return &op_def_; }
+  const OpDef* Finalize() const { return &op_def_; }
   void AddToGraphDef(GraphDef* graph_def);
+  void Finalize(OpDef* op_def); 
+  int *aa() {return &aa_;}
 
  private:
+  int aa_;
   OpDef op_def_;
   DISALLOW_COPY_AND_ASSIGN(OpDefBuilder);
 };
