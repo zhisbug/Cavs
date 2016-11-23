@@ -21,10 +21,8 @@ class OpDefBuilder {
   const OpDef* Finalize() const { return &op_def_; }
   void AddToGraphDef(GraphDef* graph_def);
   void Finalize(OpDef* op_def); 
-  int *aa() {return &aa_;}
 
  private:
-  int aa_;
   OpDef op_def_;
   DISALLOW_COPY_AND_ASSIGN(OpDefBuilder);
 };

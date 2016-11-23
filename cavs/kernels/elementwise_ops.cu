@@ -42,4 +42,15 @@ struct CUDABinaryFunctor {
 REGISTER_OP_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(Math::Abs, float));
 REGISTER_OP_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(Math::Add, float));
 
+/*string namemm = "mmm";*/
+/*static op_factory::OpRegister rrr(namemm, */
+        /*[](const  OpDef& def, Session* s) -> Op*{*/
+            /*return new CudaBinaryOpInstance(Math::Add, float)(def, s);*/
+         /*});*/
+string namemm = "mmm";
+static op_factory::OpRegister rrr1(namemm, 
+        [](const  OpDef& def, Session* s) -> Op*{
+            return new testxsz(def, s);
+         });
+
 } //namespace cavs

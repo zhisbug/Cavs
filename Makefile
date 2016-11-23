@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-O2 -std=c++11 -I. -Ibuild/ -I/usr/local/cuda/include
+CXXFLAGS=-O0 -std=c++11 -I. -Ibuild/ -I/usr/local/cuda/include
 PROTOCC=protoc
 PROTOFLAGS=--cpp_out=build/ -I. 
 NVCC=/usr/local/cuda/bin/nvcc#--verbose
@@ -44,9 +44,10 @@ build/cavs/%.o: cavs/%.cc
 build/cavs/%.cuo: cavs/%.cu 
 	mkdir -p $(@D)
 	$(NVCC) $(NVFLAGS) -c $< -o $@ 
-build/test/% : build/cavs/%.o $(LIB)
+build/test/% : build/cavs/%.o 
 	mkdir -p $(@D)
-	$(CXX) $(LDFLAGS) -o $@ $^
-
+	$(CXX) $(LDFLAGS) -o $@ $< -Wl,--whole-archive $(LIB) -Wl,--no-whole-archive
 clean:
 	rm -rf build/ lib/
+
+#/usr/local/cuda/bin/nvcc -ccbin c++ -std=c++11 -gencode arch=compute_30,code=sm_30 -gencode arch=compute_35,code=sm_35 -gencode arch=compute_50,code=sm_50 -O2 -Xcompiler "-fPIC -ffast-math -pthread -Wall -Wextra -Wno-sign-compare -ffunction-sections -fdata-sections -O2" -I/home/deeplearning/caffe2/gen -I/home/deeplearning/caffe2/gen/third_party -I/home/deeplearning/caffe2/gen/third_party/include -I/usr/include/openmpi-x86_64 -I/usr/local/cuda/include -DNDEBUG -DGTEST_USE_OWN_TR1_TUPLE=1 -DEIGEN_NO_DEBUG -DPIC -DCAFFE2_BUILD_STRING=\\"971eee9,with_local_changes\\" -DCAFFE2_USE_EIGEN_FOR_BLAS -DCAFFE2_USE_GOOGLE_GLOG -DCAFFE2_FORCE_FALLBACK_CUDA_MPI -c caffe2/utils/math_gpu.cu -o /home/deeplearning/caffe2/gen/caffe2/utils/math_gpu.cuo

@@ -40,7 +40,7 @@ class TensorBuffer : public TensorBufferBase {
 };
 
 Tensor::Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape) 
-    : name_(name) {
+    : name_(name), buf_(NULL) {
   CHECK(RealAllocate(a, type, shape));
 }
 

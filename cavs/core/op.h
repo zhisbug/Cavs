@@ -4,7 +4,7 @@
 #include "cavs/core/op_def.pb.h"
 #include "cavs/core/tensor.h"
 #include "cavs/core/session.h"
-
+#include "cavs/core/logging.h"
 namespace cavs {
 
 class Op {
@@ -16,6 +16,12 @@ class Op {
  private:
   vector<const Tensor*> inputs_;
   vector<Tensor*> outputs_;
+};
+
+class testxsz : public Op {
+ public:
+  explicit testxsz(const OpDef& def, Session *s) : Op(def, s) {}
+  void Compute() override {}
 };
 
 Op* CreateOp(const OpDef& def, Session *s);
@@ -32,6 +38,7 @@ Op* CreateOp(const OpDef& def, Session *s);
                 })
 
 namespace op_factory {
+
 
 class Key {
  public:
