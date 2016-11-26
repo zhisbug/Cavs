@@ -3,13 +3,18 @@
 
 #include "cavs/core/op.h"
 #include "cavs/core/op_def.pb.h"
+#include "cavs/core/allocator.h"
 
 namespace cavs {
 
 template <typename FUNCTOR, typename T>//device, mathop, dtype
 class UnaryOp : public Op {
  public:
-  explicit UnaryOp(const OpDef& def, Session* s) : Op(def, s) {}
+  explicit UnaryOp(const OpDef& def, Session* s) : Op(def, s) {
+    const Tensor* inp = Input(0);
+    Tensor* out = Output(0);
+    out->Reshape(GetAllocator(def), def.out_type(), inp->shape());
+  }
   void Compute() override {
     const Tensor* inp = Input(0);
     Tensor* out = Output(0);

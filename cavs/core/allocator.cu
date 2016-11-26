@@ -23,5 +23,6 @@ Allocator* gpu_allocator() {
   static GPUAllocator gpu_alloc;
   return &gpu_alloc;
 }
+REGISTER_STATIC_ALLOCATOR("GPU", gpu_allocator());
 
 }

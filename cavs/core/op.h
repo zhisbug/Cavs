@@ -18,12 +18,6 @@ class Op {
   vector<Tensor*> outputs_;
 };
 
-class testxsz : public Op {
- public:
-  explicit testxsz(const OpDef& def, Session *s) : Op(def, s) {}
-  void Compute() override {}
-};
-
 Op* CreateOp(const OpDef& def, Session *s);
 
 #define REGISTER_OP_BUILDER(key, ...)                       \
@@ -39,13 +33,12 @@ Op* CreateOp(const OpDef& def, Session *s);
 
 namespace op_factory {
 
-
 class Key {
  public:
   Key(const string& name) : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
-          if (def.device() == OpDef::GPU)
+          if (def.device() == GPU)
               dev_ = "GPU";
           else
               dev_ = "CPU";

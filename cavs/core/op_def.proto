@@ -1,11 +1,15 @@
 syntax = "proto3";
 package cavs;
 
+import "cavs/core/device.proto";
+import "cavs/core/types.proto";
 message OpDef {
     string name = 1;
     repeated string input = 2;
     repeated string output = 3;
-    string label = 4;
+    DeviceType device = 4; 
+    DataType out_type = 5;
+    string label = 6;
     message AttrDef {
         string name = 1;
         AttrType type = 2;
@@ -22,8 +26,6 @@ message OpDef {
             /*repeated bool rb = 8;*/
         }
     }
-    repeated AttrDef attr = 5;
-    enum DeviceType { CPU = 0; GPU = 1; }
-    DeviceType device = 6; 
+    repeated AttrDef attr = 7;
 }
 

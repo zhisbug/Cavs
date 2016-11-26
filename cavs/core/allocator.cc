@@ -16,12 +16,11 @@ class CPUAllocator : public Allocator {
   }
 };
 
-
 Allocator* cpu_allocator() {
   static CPUAllocator cpu_alloc;
   return &cpu_alloc;
 }
-
+REGISTER_STATIC_ALLOCATOR("CPU", cpu_allocator());
 
 TrackingAllocator::TrackingAllocator(Allocator* allocator)
     : allocator_(allocator), capacity_(0) {}
@@ -39,4 +38,31 @@ void TrackingAllocator::DeallocateRaw(void *buf) {
   trace_.erase(buf);
 }
 
+typedef std::unordered_map<string, Allocator*> AllocatorRegistry;
+static AllocatorRegistry* GlobalAllocatorRegistry() {
+    static AllocatorRegistry* global_allocator_registry = new AllocatorRegistry();
+    return global_allocator_registry;
 }
+
+Allocator* GetAllocator(const OpDef& def) {
+    DeviceType dev = def.device();
+    string dev_name;
+    if (dev == GPU)
+        dev_name = "GPU";
+    else
+        dev_name = "CPU";
+    if (GlobalAllocatorRegistry()->count(dev_name) == 0)
+        return NULL;
+    else
+        return GlobalAllocatorRegistry()->at(dev_name);
+}
+
+namespace allocator_factory {
+
+void AllocatorRegister::InitInternal(const string& name, Allocator* alloc) {
+    GlobalAllocatorRegistry()->insert(std::make_pair(name, alloc));
+}
+
+} //namespace allocator_factory
+
+} //namespace cavs

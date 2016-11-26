@@ -1,6 +1,9 @@
 #ifndef CAVS_CORE_ALLOCATOR_H_
 #define CAVS_CORE_ALLOCATOR_H_
 
+#include "cavs/core/device.pb.h"
+#include "cavs/core/op_def.pb.h"
+
 #include <string>
 #include <unordered_map>
 
@@ -41,9 +44,28 @@ class TrackingAllocator : public Allocator {
   unordered_map<void*, size_t> trace_;
 };
 
-Allocator* cpu_allocator();
-Allocator* gpu_allocator();
-//Allocator* gpu_pool_allocator();
+Allocator* GetAllocator(const OpDef& def);
+
+#define REGISTER_STATIC_ALLOCATOR(key, alloc)                  \
+    REGISTER_STATIC_ALLOCATOR_UNIQ(__COUNTER__, key, alloc)
+#define REGISTER_STATIC_ALLOCATOR_UNIQ(ctr, key, alloc)        \
+    REGISTER_STATIC_ALLOCATOR_CONCAT(ctr, key, alloc)
+#define REGISTER_STATIC_ALLOCATOR_CONCAT(ctr, key, alloc)      \
+    static allocator_factory::AllocatorRegister                \
+        allocator_##ctr##_op(key, alloc)                       
+
+namespace allocator_factory {
+
+class AllocatorRegister {
+ public:
+  AllocatorRegister(const string& name, Allocator* alloc) {
+    InitInternal(name, alloc); 
+  }
+ private:
+  void InitInternal(const string& name, Allocator* alloc); 
+};
+
+} //namespace op_factory
 
 } //namepsace cavs
 

@@ -28,6 +28,7 @@ class TensorBuffer : public TensorBufferBase {
       : TensorBufferBase(alloc), elem_(elem) {
     data_ = alloc->Allocate<T>(elem_) ;   
   }
+  ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   void* data() const override { return data_; }
   //size_t size() const override { return elem_*sizeof(T); }
   size_t count() const override { return elem_; }
@@ -39,18 +40,25 @@ class TensorBuffer : public TensorBufferBase {
   DISALLOW_COPY_AND_ASSIGN(TensorBuffer);
 };
 
-Tensor::Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape) 
-    : name_(name), buf_(NULL) {
-  CHECK(RealAllocate(a, type, shape));
+Tensor::Tensor(const string& name, Allocator *a, 
+        DataType type, const TensorShape& shape) 
+    : name_(name), buf_(nullptr), shape_(shape) {
+  //CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
+    Reshape(a, type, shape);
 }
 
-bool Tensor::RealAllocate(Allocator *a, DataType type, const TensorShape& shape){
-  if (buf_)
-    return false;
-  shape_ = shape;
-  CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
-  return true;
+void Tensor::Reshape(Allocator *a, 
+        DataType type, const TensorShape& shape) {
+    CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
+
+//bool Tensor::RealAllocate(Allocator *a, DataType type, const TensorShape& shape){
+  //if (buf_)
+    //return false;
+  //shape_ = shape;
+  //CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
+  //return true;
+//}
 
 TensorShape::TensorShape(vector<int>& shape)
     : shape_(shape) {

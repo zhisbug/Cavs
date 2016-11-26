@@ -29,9 +29,6 @@ static OpRegistry* GlobalOpRegistry() {
 
 Op* CreateOp(const OpDef& def, Session *s) {
     const string key = op_factory::Key(def).LowerToString();
-    for (auto & x : *GlobalOpRegistry())
-        LOG(INFO) << x.first;
-    LOG(INFO) << GlobalOpRegistry()->size();
     if (GlobalOpRegistry()->count(key) == 0)
         return NULL;
     else

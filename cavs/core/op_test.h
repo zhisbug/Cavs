@@ -46,10 +46,7 @@ class OpTestBase {
 
 OpTestBase::OpTestBase(const OpDef& def) : op_(NULL){
   op_def_.CopyFrom(def); 
-  if (op_def_.device() == OpDef::GPU)
-    alloc_ = gpu_allocator();
-  else
-    alloc_ = cpu_allocator();
+  alloc_ = GetAllocator(op_def_);
   sess_ = new Session();
 }
 

@@ -18,9 +18,9 @@ OpDefBuilder& OpDefBuilder::Output(string output) {
 
 OpDefBuilder& OpDefBuilder::Device(string dev) {
     if (dev == "GPU")
-        op_def_.set_device(cavs::OpDef::GPU);
+        op_def_.set_device(GPU);
     else 
-        op_def_.set_device(cavs::OpDef::CPU);
+        op_def_.set_device(CPU);
     return *this;
 }
 

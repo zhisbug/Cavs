@@ -7,6 +7,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 
 using std::vector;
 using std::string;
@@ -16,6 +17,7 @@ namespace cavs {
 class TensorBufferBase {
  public:
   TensorBufferBase(Allocator* alloc) : alloc_(alloc) {}
+  virtual ~TensorBufferBase() {}
   virtual void* data() const = 0;
   //virtual size_t size() const = 0;
   virtual size_t count() const = 0;
@@ -51,21 +53,19 @@ class Tensor {
   //Tensor(DataType type, std::initializer_list<int> shape_);
   //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);
   Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
-  bool RealAllocate(Allocator *a, DataType type, const TensorShape& shape);
+  void Reshape(Allocator *a, DataType type, const TensorShape& shape);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
   size_t count() const { return buf_->count(); }
   string name() const { return name_; }
+  const TensorShape& shape() const { return shape_; }
 
  private:
-  TensorBufferBase* buf_;
+  std::unique_ptr<TensorBufferBase> buf_;
   TensorShape shape_;
   string name_;
-  //std::vector<int> shape_;
-  //DataType data_type;
-  //void *data_;
 };
 
 } //namespace cavs

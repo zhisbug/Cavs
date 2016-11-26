@@ -1,0 +1,7 @@
+syntax = "proto3";
+package cavs;
+
+enum DeviceType {
+    CPU = 0;
+    GPU = 1; 
+}
