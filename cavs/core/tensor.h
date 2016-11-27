@@ -48,7 +48,7 @@ FORCE_INLINE void TensorShape::operator = (const TensorShape& b) {
 
 class Tensor {
  public:
-  Tensor() {}
+  Tensor(const string& name): name_(name) {}
   //Tensor(DataType type, const std::vector<int>& shape_);
   //Tensor(DataType type, std::initializer_list<int> shape_);
   //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);

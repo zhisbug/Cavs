@@ -6,7 +6,7 @@ namespace cavs {
 Op::Op(const OpDef& def, Session* s) {
     for (const string& input : def.input()) {
         const Tensor* t = s->GetTensor(input); 
-        CHECK(t);
+        CHECK_NOTNULL(t);
         inputs_.push_back(t);
     }
 
@@ -14,8 +14,11 @@ Op::Op(const OpDef& def, Session* s) {
         Tensor* t = const_cast<Tensor*>(s->GetTensor(output));
         if (t)
             outputs_.push_back(t);
-        else
-            outputs_.push_back(new Tensor());
+        else{
+            t = new Tensor(output);
+            outputs_.push_back(t);
+            s->InsertTensor(t);
+        }
     }
 }
 

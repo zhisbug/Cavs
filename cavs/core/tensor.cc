@@ -49,6 +49,7 @@ Tensor::Tensor(const string& name, Allocator *a,
 
 void Tensor::Reshape(Allocator *a, 
         DataType type, const TensorShape& shape) {
+    shape_ = shape;
     CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 

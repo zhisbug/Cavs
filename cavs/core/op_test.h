@@ -33,7 +33,7 @@ class OpTestBase {
   }
 
   bool RunTest () {
-      CHECK(op_ = CreateOp(op_def_, sess_)); 
+      CHECK_NOTNULL(op_ = CreateOp(op_def_, sess_)); 
       op_->Compute();
   }
 

@@ -12,6 +12,7 @@ namespace test {
 
 template <typename T>
 void FillValues(Tensor* tensor, const vector<T>& vals) {
+  CHECK_NOTNULL(tensor);
   T* buf = tensor->mutable_data<T>();
   CHECK(tensor->count() == vals.size());
   checkCudaError(cudaMemcpy(buf, vals.data(), vals.size()*sizeof(T), cudaMemcpyHostToDevice));
@@ -19,7 +20,9 @@ void FillValues(Tensor* tensor, const vector<T>& vals) {
 
 template <typename T>
 void FetchValues(vector<T>& vals, const Tensor* tensor) {
+  CHECK_NOTNULL(tensor);
   const T* buf = tensor->data<T>();
+  CHECK_NOTNULL(buf);
   vals.resize(tensor->count());
   checkCudaError(cudaMemcpy(vals.data(), buf, vals.size()*sizeof(T), cudaMemcpyDeviceToHost));
 }

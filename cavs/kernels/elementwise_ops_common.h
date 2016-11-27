@@ -26,7 +26,11 @@ class UnaryOp : public Op {
 template <typename FUNCTOR, typename T>
 class BinaryOp : public Op {
  public:
-  explicit BinaryOp(const OpDef& def, Session *s) : Op(def, s) {}
+  explicit BinaryOp(const OpDef& def, Session *s) : Op(def, s) {
+    const Tensor* inp = Input(0);
+    Tensor* out = Output(0);
+    out->Reshape(GetAllocator(def), def.out_type(), inp->shape());
+  }
   void Compute() override {
     const Tensor* inp0 = Input(0);
     const Tensor* inp1 = Input(1);
