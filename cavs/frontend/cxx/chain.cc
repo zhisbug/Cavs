@@ -1,10 +1,8 @@
 #include "cavs/frontend/cxx/chain.h"
 
-const OpChainDef& Chain::Finalize() {
-  op_chain_def_.reset(new OpChainDef);
-  for (const sym* sym : syms_) {
-    OpDef* op_def = op_chain_def->add_op();
-    *op_def = sym.Finalize();
+void Chain::Finalize(cavs::OpChainDef* op_chain_def) const {
+  for (auto* sym : syms_) {
+    cavs::OpDef* op_def = op_chain_def->add_op();
+    sym->Finalize(op_def);
   }
-  return *op_chain_def_;
 }

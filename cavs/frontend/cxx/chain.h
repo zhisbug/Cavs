@@ -4,14 +4,19 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/core/op_chain_def.pb.h"
 
+#include <vector>
+#include <memory>
+using std::vector;
+using std::unique_ptr;
+
+class Sym;
 class Chain {
  public:
   void push_back(const Sym* s) { syms_.push_back(s); }
-  const OpChainDef& Finalize();
+  void Finalize(cavs::OpChainDef* op_chain_def) const;
 
  private:
-  vector<Sym*> syms_;
-  unique_ptr<OpChainDef> op_chain_def_;
+  vector<const Sym*> syms_;
 };
 
 #endif

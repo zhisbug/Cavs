@@ -4,28 +4,31 @@ package cavs;
 import "cavs/core/device.proto";
 import "cavs/core/types.proto";
 message OpDef {
+  string name = 1;
+  repeated string input = 2;
+  repeated string output = 3;
+  DeviceType device = 4; 
+  DataType out_type = 5;
+  string label = 6;
+  message AttrDef {
     string name = 1;
-    repeated string input = 2;
-    repeated string output = 3;
-    DeviceType device = 4; 
-    DataType out_type = 5;
-    string label = 6;
-    message AttrDef {
-        string name = 1;
-        repeated AttrType attr = 2;
+    AttrType value = 2;
+  }
+  message AttrType {
+    message ListValue {
+      repeated bytes s = 1;
+      repeated int64 i = 2;
+      repeated float f = 3;
+      repeated bool b = 4;
     }
-    message AttrType {
-        oneof type {
-            bytes s = 1;
-            /*repeated bytes rs = 2;*/
-            int64 i = 3;
-            /*repeated int64 ri = 4;*/
-            float f = 5;
-            /*repeated float rf = 6;*/
-            bool b = 7;
-            /*repeated bool rb = 8;*/
-        }
+    oneof type {
+      bytes s = 1;
+      int64 i = 2;
+      float f = 3;
+      bool b = 4;
+      ListValue list = 5;
     }
-    repeated AttrDef attr = 7;
+  }
+  repeated AttrDef attr = 7;
 }
 
