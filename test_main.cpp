@@ -5,7 +5,7 @@
 DEFINE_bool(gpu, true, "whether to use GPU");
 DEFINE_int32(lib, 0, "0: atlas, 1:eigen, 2:MKL");
 DEFINE_int32(mb, 100, "mini_batch size");
-DEFINE_int32(M, 100, "mini_batch size");
+DEFINE_int32(M, 99, "mini_batch size");
 DEFINE_int32(N, 100, "mini_batch size");
 DEFINE_int32(K, 100, "mini_batch size");
 
@@ -53,7 +53,6 @@ int main(int argc, char *argv[]){
             B.cpu_buf()[i*FLAGS_N+j] = 1.f;
         }
     }
-
     if (FLAGS_gpu) {
         A.sync2d(); B.sync2d();
         cublasWrapper(false, false, FLAGS_M, FLAGS_N, FLAGS_K,

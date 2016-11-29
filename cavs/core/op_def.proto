@@ -12,7 +12,7 @@ message OpDef {
     string label = 6;
     message AttrDef {
         string name = 1;
-        AttrType type = 2;
+        repeated AttrType attr = 2;
     }
     message AttrType {
         oneof type {

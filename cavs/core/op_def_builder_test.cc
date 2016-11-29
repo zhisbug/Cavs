@@ -4,11 +4,11 @@
 using namespace cavs;
 
 int main() {
-    GraphDef graph_def;
+    OpChainDef op_chain_def;
     OpDefBuilder("Add").Input("A").Input("B").Output("C").Device("GPU")
-        .AddToGraphDef(&graph_def);
+        .AddToOpChainDef(&op_chain_def);
     OpDefBuilder("Add").Input("A").Input("B").Output("C").Device("GPU")
-        .AddToGraphDef(&graph_def);
-    LOG(INFO) << "\n" << graph_def.DebugString();
+        .AddToOpChainDef(&op_chain_def);
+    LOG(INFO) << "\n" << op_chain_def.DebugString();
     return 0;
 }

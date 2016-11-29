@@ -2,7 +2,7 @@
 #define CAVS_CORE_OP_DEF_BUILDER_H_
 
 #include "cavs/core/op_def.pb.h"
-#include "cavs/core/graph_def.pb.h"
+#include "cavs/core/op_chain_def.pb.h"
 #include "cavs/core/macros.h"
 
 #include <string>
@@ -19,7 +19,7 @@ class OpDefBuilder {
   OpDefBuilder& Device(string dev);
   OpDefBuilder& Attr(string key, string value);
   const OpDef* Finalize() const { return &op_def_; }
-  void AddToGraphDef(GraphDef* graph_def);
+  void AddToOpChainDef(OpChainDef* op_chain_def);
   void Finalize(OpDef* op_def); 
 
  private:

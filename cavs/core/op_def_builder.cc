@@ -24,8 +24,8 @@ OpDefBuilder& OpDefBuilder::Device(string dev) {
     return *this;
 }
 
-void OpDefBuilder::AddToGraphDef(GraphDef* graph_def) {
-    OpDef* op_def = graph_def->add_op();
+void OpDefBuilder::AddToOpChainDef(OpChainDef* op_chain_def) {
+    OpDef* op_def = op_chain_def->add_op();
     *op_def = op_def_;
 }
 
