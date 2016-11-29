@@ -1,4 +1,4 @@
-#include "cavs/core/session.h"
+#include "cavs/midend/session.h"
 
 namespace cavs {
 

@@ -1,7 +1,7 @@
-#ifndef CAVS_CORE_SESSION_H_
-#define CAVS_CORE_SESSION_H_
+#ifndef CAVS_MIDEND_SESSION_H_
+#define CAVS_MIDEND_SESSION_H_
 
-#include "cavs/core/tensor.h"
+#include "cavs/midend/tensor.h"
 
 namespace cavs {
 

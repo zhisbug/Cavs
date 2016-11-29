@@ -1,5 +1,5 @@
-#include "cavs/core/allocator.h"
-#include "cavs/core/logging.h"
+#include "cavs/midend/allocator.h"
+#include "cavs/util/logging.h"
 
 namespace cavs {
 

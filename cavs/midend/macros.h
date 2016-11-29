@@ -1,5 +1,5 @@
-#ifndef CAVS_CORE_MACROS_H_
-#define CAVS_CORE_MACROS_H_
+#ifndef CAVS_MIDEND_MACROS_H_
+#define CAVS_MIDEND_MACROS_H_
 
 #define DISALLOW_COPY_AND_ASSIGN(TypeName)         \
         TypeName(const TypeName&) = delete;        \

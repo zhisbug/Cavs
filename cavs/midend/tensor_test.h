@@ -1,8 +1,8 @@
-#ifndef CAVS_TENSOR_TEST_H_
-#define CAVS_TENSOR_TEST_H_
+#ifndef CAVS_MIDEND_TENSOR_TEST_H_
+#define CAVS_MIDEND_TENSOR_TEST_H_
 
-#include "cavs/core/tensor.h"
-#include "cavs/core/macros_gpu.h"
+#include "cavs/midend/tensor.h"
+#include "cavs/midend/macros_gpu.h"
 
 namespace cavs {
 

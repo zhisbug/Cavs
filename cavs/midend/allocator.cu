@@ -1,5 +1,5 @@
-#include "cavs/core/allocator.h"
-#include "cavs/core/macros_gpu.h"
+#include "cavs/midend/allocator.h"
+#include "cavs/midend/macros_gpu.h"
 
 namespace cavs {
 

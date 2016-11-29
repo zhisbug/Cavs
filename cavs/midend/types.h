@@ -1,7 +1,7 @@
-#ifndef CAVS_CORE_TYPES_H_
-#define CAVS_CORE_TYPES_H_
+#ifndef CAVS_MIDEND_TYPES_H_
+#define CAVS_MIDEND_TYPES_H_
 
-#include "cavs/core/types.pb.h"
+#include "cavs/midend/types.pb.h"
 
 namespace cavs {
 

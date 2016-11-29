@@ -1,8 +1,8 @@
-#ifndef CHAIN_H_
-#define CHAIN_H_
+#ifndef CAVS_FRONTEND_CXX_CHAIN_H_
+#define CAVS_FRONTEND_CXX_CHAIN_H_
 
 #include "cavs/frontend/cxx/sym.h"
-#include "cavs/core/op_chain_def.pb.h"
+#include "cavs/midend/op_chain_def.pb.h"
 
 #include <vector>
 #include <memory>

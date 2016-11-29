@@ -1,5 +1,5 @@
-#include "cavs/core/op.h"
-#include "cavs/core/logging.h"
+#include "cavs/midend/op.h"
+#include "cavs/util/logging.h"
 
 namespace cavs {
 

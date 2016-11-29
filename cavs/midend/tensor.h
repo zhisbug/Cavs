@@ -1,9 +1,9 @@
-#ifndef CAVS_CORE_TENSOR_H_
-#define CAVS_CORE_TENSOR_H_
+#ifndef CAVS_MIDEND_TENSOR_H_
+#define CAVS_MIDEND_TENSOR_H_
 
-#include "cavs/core/types.pb.h"
-#include "cavs/core/macros.h"
-#include "cavs/core/allocator.h"
+#include "cavs/midend/types.pb.h"
+#include "cavs/midend/macros.h"
+#include "cavs/midend/allocator.h"
 
 #include <vector>
 #include <string>

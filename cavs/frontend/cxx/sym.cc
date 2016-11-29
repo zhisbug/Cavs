@@ -1,6 +1,6 @@
 #include "cavs/frontend/cxx/sym.h"
-#include "cavs/core/device.pb.h"
-#include "cavs/core/logging.h"
+#include "cavs/midend/device.pb.h"
+#include "cavs/util/logging.h"
 
 Sym::Sym(string name, Dtype type, Shape shape, string device) 
   : name_(name), type_(type), shape_(shape), device_(device) {

@@ -1,6 +1,6 @@
-#include "cavs/core/tensor.h"
-#include "cavs/core/logging.h"
-#include "cavs/core/types.h"
+#include "cavs/midend/tensor.h"
+#include "cavs/midend/types.h"
+#include "cavs/util/logging.h"
 
 namespace cavs {
 

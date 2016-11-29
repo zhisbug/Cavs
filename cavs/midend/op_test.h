@@ -1,13 +1,13 @@
-#ifndef CAVS_CORE_OP_TEST_H_
-#define CAVS_CORE_OP_TEST_H_
+#ifndef CAVS_MIDEND_OP_TEST_H_
+#define CAVS_MIDEND_OP_TEST_H_
 
-#include "cavs/core/allocator.h"
-#include "cavs/core/types.h"
-#include "cavs/core/logging.h"
-#include "cavs/core/tensor.h"
-#include "cavs/core/session.h"
-#include "cavs/core/op.h"
-#include "cavs/core/tensor_test.h"
+#include "cavs/midend/allocator.h"
+#include "cavs/midend/types.h"
+#include "cavs/midend/tensor.h"
+#include "cavs/midend/session.h"
+#include "cavs/midend/op.h"
+#include "cavs/midend/tensor_test.h"
+#include "cavs/util/logging.h"
 
 #include <string>
 

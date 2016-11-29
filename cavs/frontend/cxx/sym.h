@@ -1,7 +1,7 @@
-#ifndef _SYM_H_
-#define _SYM_H_
+#ifndef CAVS_FRONTEND_CXX_SYM_H_
+#define CAVS_FRONTEND_CXX_SYM_H_
 
-#include "cavs/core/op_def.pb.h"
+#include "cavs/midend/op_def.pb.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/frontend/cxx/chain.h"
 

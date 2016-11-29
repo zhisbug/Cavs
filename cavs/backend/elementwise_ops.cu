@@ -1,5 +1,5 @@
-#include "cavs/core/macros_gpu.h"
-#include "cavs/kernels/elementwise_ops.h"
+#include "cavs/midend/macros_gpu.h"
+#include "cavs/backend/elementwise_ops.h"
 
 namespace cavs {
 

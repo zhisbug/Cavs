@@ -1,9 +1,9 @@
 #ifndef CAVS_KERNEL_ELEMENTWISE_OPS_COMMON_H_
 #define CAVS_KERNEL_ELEMENTWISE_OPS_COMMON_H_
 
-#include "cavs/core/op.h"
-#include "cavs/core/op_def.pb.h"
-#include "cavs/core/allocator.h"
+#include "cavs/midend/op.h"
+#include "cavs/midend/op_def.pb.h"
+#include "cavs/midend/allocator.h"
 
 namespace cavs {
 

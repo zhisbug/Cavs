@@ -1,5 +1,5 @@
-#ifndef C_API_H
-#define C_API_H
+#ifndef CAVS_FRONTEND_C_API_H_
+#define CAVS_FRONTEND_C_API_H_
 
 #ifdef __cplusplus
 extern "C" {

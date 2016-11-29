@@ -1,8 +1,8 @@
-#ifndef CAVS_CORE_ALLOCATOR_H_
-#define CAVS_CORE_ALLOCATOR_H_
+#ifndef CAVS_MIDEND_ALLOCATOR_H_
+#define CAVS_MIDEND_ALLOCATOR_H_
 
-#include "cavs/core/device.pb.h"
-#include "cavs/core/op_def.pb.h"
+#include "cavs/midend/device.pb.h"
+#include "cavs/midend/op_def.pb.h"
 
 #include <string>
 #include <unordered_map>

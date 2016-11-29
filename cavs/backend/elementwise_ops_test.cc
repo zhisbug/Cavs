@@ -1,6 +1,6 @@
-#include "cavs/core/logging.h"
-#include "cavs/core/op_def_builder.h"
-#include "cavs/core/op_test.h"
+#include "cavs/midend/op_def_builder.h"
+#include "cavs/midend/op_test.h"
+#include "cavs/util/logging.h"
 
 using namespace cavs;
 using namespace cavs::test;

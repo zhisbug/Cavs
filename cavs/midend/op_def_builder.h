@@ -1,9 +1,9 @@
-#ifndef CAVS_CORE_OP_DEF_BUILDER_H_
-#define CAVS_CORE_OP_DEF_BUILDER_H_
+#ifndef CAVS_MIDEND_OP_DEF_BUILDER_H_
+#define CAVS_MIDEND_OP_DEF_BUILDER_H_
 
-#include "cavs/core/op_def.pb.h"
-#include "cavs/core/op_chain_def.pb.h"
-#include "cavs/core/macros.h"
+#include "cavs/midend/op_def.pb.h"
+#include "cavs/midend/op_chain_def.pb.h"
+#include "cavs/midend/macros.h"
 
 #include <string>
 

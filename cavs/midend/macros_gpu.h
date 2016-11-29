@@ -1,10 +1,9 @@
-#ifndef CAVS_CORE_MACROS_GPU_H_
-#define CAVS_CORE_MACROS_GPU_H_
+#ifndef CAVS_MIDEND_MACROS_GPU_H_
+#define CAVS_MIDEND_MACROS_GPU_H_
 
 #include "macros.h"
+#include "cavs/util/logging.h"
 
-#include <glog/logging.h>
-#include <gflags/gflags.h>
 #include <cuda_runtime.h>
 #include <cublas_v2.h>
 

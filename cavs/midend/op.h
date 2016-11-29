@@ -1,10 +1,10 @@
 #ifndef CAVS_CORE_OP_H_
 #define CAVS_CORE_OP_H_
 
-#include "cavs/core/op_def.pb.h"
-#include "cavs/core/tensor.h"
-#include "cavs/core/session.h"
-#include "cavs/core/logging.h"
+#include "cavs/midend/op_def.pb.h"
+#include "cavs/midend/tensor.h"
+#include "cavs/midend/session.h"
+
 namespace cavs {
 
 class Op {
