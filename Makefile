@@ -10,7 +10,7 @@ C_SRC=$(filter-out %_test.cc, $(wildcard cavs/*/*.cc cavs/*/*/*.cc))
 C_OBJS = $(patsubst cavs/%.cc, build/cavs/%.o, $(C_SRC))
 CU_SRC=$(filter-out %_test.cu, $(wildcard cavs/*/*.cu ))
 CU_OBJS = $(patsubst cavs/%.cu, build/cavs/%.cuo, $(CU_SRC))
-TEST_SRC=$(wildcard cavs/*/*_test.cc )
+TEST_SRC=$(wildcard cavs/*/*_test.cc cavs/*/*/*_test.cc)
 PROTO = $(wildcard cavs/*/*.proto)
 PROTO_HEADERS = $(patsubst cavs/%.proto, build/cavs/%.pb.h, $(PROTO))
 PROTO_SRCS = $(patsubst cavs/%.proto, build/cavs/%.pb.cc, $(PROTO))
@@ -40,7 +40,7 @@ build/cavs/%.o: cavs/%.cc
 build/cavs/%.cuo: cavs/%.cu 
 	mkdir -p $(@D)
 	$(NVCC) $(NVFLAGS) -c $< -o $@ 
-build/test/% : build/cavs/%.o 
+build/test/% : build/cavs/%.o $(LIB)
 	mkdir -p $(@D)
 	$(CXX) $(LDFLAGS) -o $@ $< -Wl,--whole-archive $(LIB) -Wl,--no-whole-archive
 clean:
