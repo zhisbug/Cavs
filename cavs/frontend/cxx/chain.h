@@ -9,14 +9,15 @@
 using std::vector;
 using std::unique_ptr;
 
-class Sym;
+class SymBody;
 class Chain {
  public:
-  void push_back(const Sym* s) { syms_.push_back(s); }
+  void push_back(const SymBody* s) { syms_.push_back(s); }
   void Finalize(cavs::OpChainDef* op_chain_def) const;
+  static Chain* Default() { static Chain c; return &c; }
 
  private:
-  vector<const Sym*> syms_;
+  vector<const SymBody*> syms_;
 };
 
 #endif
