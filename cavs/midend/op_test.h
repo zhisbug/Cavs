@@ -5,14 +5,20 @@
 #include "cavs/midend/types.h"
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/op.h"
+#include "cavs/midend/session.h"
 #include "cavs/midend/tensor_test.h"
-#include "cavs/midend/session_test.h"
 
 #include <string>
 
 namespace cavs{
 
 namespace test{
+
+class SessionOpTest : public SessionBase {
+ public:
+  SessionOpTest() {}
+  void Run() override {}
+};
 
 class OpTest {
  public:
@@ -42,12 +48,12 @@ class OpTest {
   std::unique_ptr<Op> op_;
   std::unique_ptr<OpContext> context_;
   OpDef op_def_;
-  SessionTest* sess_;
+  SessionOpTest* sess_;
 };
 
 OpTest ::OpTest(const OpDef& def) {
   op_def_.CopyFrom(def); 
-  sess_ = new SessionTest();
+  sess_ = new SessionOpTest();
 }
 
 } //namespace test

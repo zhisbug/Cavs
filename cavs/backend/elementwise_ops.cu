@@ -6,20 +6,20 @@ namespace cavs {
 template <typename OP, typename T> 
 __global__ void UnaryKernel(T* out, const T* inp, size_t n) {
   CUDA_1D_KERNEL_LOOP(i, n) { 
-    out[i] = OP::Run(inp[i]); 
+    out[i] = OP::Compute(inp[i]); 
   } 
 }
 
 template <typename OP, typename T> 
 __global__ void BinaryKernel(T* out, const T* inp0, const T* inp1, size_t n) {
   CUDA_1D_KERNEL_LOOP(i, n) { 
-    out[i] = OP::Run(inp0[i], inp1[i]); 
+    out[i] = OP::Compute(inp0[i], inp1[i]); 
   } 
 }
 
 template <typename OP, typename T>
 struct CUDAUnaryFunctor {
-  static void Run(T* out, const T* inp, size_t n) {
+  static void Compute(T* out, const T* inp, size_t n) {
     UnaryKernel<OP, T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
         out, inp, n);
   }
@@ -27,7 +27,7 @@ struct CUDAUnaryFunctor {
 
 template <typename OP, typename T>
 struct CUDABinaryFunctor {
-  static void Run(T* out, const T* inp0, const T* inp1, size_t n) {
+  static void Compute(T* out, const T* inp0, const T* inp1, size_t n) {
     BinaryKernel<OP, T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
         out, inp0, inp1, n);
   }

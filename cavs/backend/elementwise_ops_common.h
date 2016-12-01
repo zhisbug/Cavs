@@ -7,7 +7,7 @@
 
 namespace cavs {
 
-template <typename FUNCTOR, typename T>//device, mathop, dtype
+template <typename FUNCTOR, typename T>//mathop, dtype
 class UnaryOp : public Op {
  public:
   explicit UnaryOp(const OpDef& def) : Op(def) {
@@ -19,7 +19,7 @@ class UnaryOp : public Op {
     const Tensor* inp = context->Input(0);
     Tensor* out = context->Output(0);
     //test_func(out->mutable_data<T>(), inp->data<T>(), inp->count());
-    FUNCTOR::Run(out->mutable_data<T>(), inp->data<T>(), inp->count());
+    FUNCTOR::Compute(out->mutable_data<T>(), inp->data<T>(), inp->count());
   }
 };
 
@@ -35,7 +35,7 @@ class BinaryOp : public Op {
     const Tensor* inp0 = context->Input(0);
     const Tensor* inp1 = context->Input(1);
     Tensor* out = context->Output(0);
-    FUNCTOR::Run(out->mutable_data<T>(), inp0->data<T>(), inp1->data<T>(),
+    FUNCTOR::Compute(out->mutable_data<T>(), inp0->data<T>(), inp1->data<T>(),
             inp0->count());
   }
  private:

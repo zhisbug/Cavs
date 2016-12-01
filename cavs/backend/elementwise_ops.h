@@ -18,14 +18,14 @@ namespace math {
 
 template <typename T>
 struct Abs {
-  FORCE_INLINE __DEVICE__ static T Run(T inp) {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp) {
     return abs(inp);
   }
 };
 
 template <typename T>
 struct Add {
-  FORCE_INLINE __DEVICE__ static T Run(T inp0, T inp1) {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
     return (inp0 + inp1);
   }
 };
