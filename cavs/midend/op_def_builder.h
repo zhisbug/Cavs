@@ -17,6 +17,7 @@ class OpDefBuilder {
   OpDefBuilder& Input(string input);
   OpDefBuilder& Output(string value);
   OpDefBuilder& Device(string dev);
+  OpDefBuilder& Shape(std::initializer_list<int> shape);
   OpDefBuilder& Attr(string key, string value);
   const OpDef* Finalize() const { return &op_def_; }
   void AddToOpChainDef(OpChainDef* op_chain_def);

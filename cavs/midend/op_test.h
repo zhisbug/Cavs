@@ -14,9 +14,9 @@ namespace cavs{
 
 namespace test{
 
-class OpTestBase {
+class OpTest {
  public:
-  OpTestBase(const OpDef& def);
+  OpTest (const OpDef& def);
   template <typename T>
   void AddTensorFromVector(const string& name,
                            const TensorShape shape, 
@@ -45,7 +45,7 @@ class OpTestBase {
   SessionTest* sess_;
 };
 
-OpTestBase::OpTestBase(const OpDef& def) {
+OpTest ::OpTest(const OpDef& def) {
   op_def_.CopyFrom(def); 
   sess_ = new SessionTest();
 }
