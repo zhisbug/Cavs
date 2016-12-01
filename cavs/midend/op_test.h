@@ -4,10 +4,9 @@
 #include "cavs/midend/allocator.h"
 #include "cavs/midend/types.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/session.h"
 #include "cavs/midend/op.h"
 #include "cavs/midend/tensor_test.h"
-#include "cavs/util/logging.h"
+#include "cavs/midend/session_test.h"
 
 #include <string>
 
@@ -22,7 +21,9 @@ class OpTestBase {
   void AddTensorFromVector(const string& name,
                            const TensorShape shape, 
                            const vector<T> vals) {
-    Tensor* input = new Tensor(name, alloc_, DataTypeToEnum<T>::value, shape); 
+    Tensor* input = 
+        new Tensor(name, GetAllocator(op_def_), 
+                   DataTypeToEnum<T>::value, shape); 
     sess_->InsertTensor(input);
     FillValues<T>(input, vals);
   }
@@ -31,27 +32,26 @@ class OpTestBase {
                    vector<T>& data) {
     FetchValues<T>(data, sess_->GetTensor(name));
   }
-
   bool RunTest () {
-      CHECK_NOTNULL(op_ = CreateOp(op_def_, sess_)); 
-      op_->Compute();
+    op_.reset(CreateOp(op_def_)); 
+    context_.reset(new OpContext(op_def_, sess_));
+    op_->Compute(context_.get());
   }
 
  private:
-  Session* sess_;
-  Op* op_;
+  std::unique_ptr<Op> op_;
+  std::unique_ptr<OpContext> context_;
   OpDef op_def_;
-  Allocator* alloc_;
+  SessionTest* sess_;
 };
 
-OpTestBase::OpTestBase(const OpDef& def) : op_(NULL){
+OpTestBase::OpTestBase(const OpDef& def) {
   op_def_.CopyFrom(def); 
-  alloc_ = GetAllocator(op_def_);
-  sess_ = new Session();
+  sess_ = new SessionTest();
 }
 
 } //namespace test
 
 } //namespace cavs
-#endif
 
+#endif

@@ -29,26 +29,29 @@ class TensorBufferBase {
 class TensorShape {
  public:
   TensorShape() : n_elements_(0) {}
-  TensorShape(vector<int>& shape);
-  TensorShape(std::initializer_list<int> shape);
-  void operator = (const TensorShape& b);
+  typedef OpDef::AttrType::ListValue ListValue;
+  explicit TensorShape(const ListValue& shape);
+  explicit TensorShape(std::initializer_list<int> shape);
+  TensorShape& operator = (const TensorShape& b);
   void set_dim(int d, int size);
   void add_dim(int size);
-  int n_elements() { return n_elements_; }
-  int dims() { return shape_.size(); }
+  int n_elements() const { return n_elements_; }
+  int dims() const { return shape_.size(); }
  private:
+  //TensorShape(vector<int>& shape);
   vector<int> shape_;
   int n_elements_;
 };
 
-FORCE_INLINE void TensorShape::operator = (const TensorShape& b) {
+FORCE_INLINE TensorShape& TensorShape::operator = (const TensorShape& b) {
   n_elements_ = b.n_elements_;
   shape_ = b.shape_;
+  return *this;
 }
 
 class Tensor {
  public:
-  Tensor(const string& name): name_(name) {}
+  Tensor(const string& name) : name_(name) {}
   //Tensor(DataType type, const std::vector<int>& shape_);
   //Tensor(DataType type, std::initializer_list<int> shape_);
   //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);
@@ -65,7 +68,7 @@ class Tensor {
  private:
   std::unique_ptr<TensorBufferBase> buf_;
   TensorShape shape_;
-  string name_;
+  const string name_;
 };
 
 } //namespace cavs

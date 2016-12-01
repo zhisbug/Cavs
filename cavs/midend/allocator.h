@@ -26,7 +26,7 @@ class Allocator {
   template <typename T>
   void Deallocate(T* buf) {
     if (buf) {
-        DeallocateRaw(buf);
+      DeallocateRaw(buf);
     }
   }
 };
@@ -65,7 +65,7 @@ class AllocatorRegister {
   void InitInternal(const string& name, Allocator* alloc); 
 };
 
-} //namespace op_factory
+} //namespace allocator_factory
 
 } //namepsace cavs
 

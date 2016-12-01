@@ -1,5 +1,5 @@
-#ifndef CAVS_CORE_OP_H_
-#define CAVS_CORE_OP_H_
+#ifndef CAVS_MIDEND_OP_H_
+#define CAVS_MIDEND_OP_H_
 
 #include "cavs/midend/op_def.pb.h"
 #include "cavs/midend/tensor.h"
@@ -7,10 +7,10 @@
 
 namespace cavs {
 
-class Op {
+class SessionBase;
+class OpContext {
  public:
-  explicit Op(const OpDef& def, Session *s); 
-  virtual void Compute() = 0;
+  OpContext(const OpDef& op_def, SessionBase* sb);
   inline const Tensor* Input(int idx) const { return inputs_.at(idx); }
   inline Tensor* Output(int idx) { return outputs_.at(idx); }
  private:
@@ -18,7 +18,13 @@ class Op {
   vector<Tensor*> outputs_;
 };
 
-Op* CreateOp(const OpDef& def, Session *s);
+class Op {
+ public:
+  explicit Op(const OpDef& def) {}
+  virtual void Compute(OpContext* context) = 0;
+};
+
+Op* CreateOp(const OpDef& def);
 
 #define REGISTER_OP_BUILDER(key, ...)                       \
     REGISTER_OP_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
@@ -26,26 +32,27 @@ Op* CreateOp(const OpDef& def, Session *s);
     REGISTER_OP_BUILDER_CONCAT(ctr, key, __VA_ARGS__)
 #define REGISTER_OP_BUILDER_CONCAT(ctr, key, ...)           \
     static op_factory::OpRegister register_body_##ctr##_op( \
-        op_factory::key.LowerToString(),                    \
-            [](const OpDef& def, Session* s) -> Op* {       \
-                    return new __VA_ARGS__(def, s);         \
+        op_factory::key.ToString(),                    \
+            [](const OpDef& def) -> Op* {                   \
+                    return new __VA_ARGS__(def);            \
                 })
 
 namespace op_factory {
 
 class Key {
  public:
-  Key(const string& name) : op_name_(name), dev_(""), label_("") {}
+  Key(const string& name) 
+      : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
-          if (def.device() == GPU)
-              dev_ = "GPU";
-          else
-              dev_ = "CPU";
-    }
+    if (def.device() == GPU)
+      dev_ = "GPU";
+    else
+      dev_ = "CPU";
+  }
   Key& Device(string dev) { dev_ = dev; return *this; }
   Key& Label(string label) { label_ = label; return *this; }
-  string LowerToString() const { return op_name_+":"+dev_+":"+label_; }
+  string ToString() const { return op_name_+":"+dev_+":"+label_; }
  private:
   string op_name_;
   string dev_;
@@ -54,7 +61,7 @@ class Key {
 
 class OpRegister {
  public:
-  typedef Op* (*Factory)(const OpDef& def, Session* s);
+  typedef Op* (*Factory)(const OpDef& def);
 
   OpRegister(const string& name, Factory factory) {
     InitInternal(name, factory); 

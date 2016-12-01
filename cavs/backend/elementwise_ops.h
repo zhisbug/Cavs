@@ -5,18 +5,16 @@
 
 namespace cavs {
 
-template <typename op, typename T>
-struct UnaryFunctor {
-  virtual void operator () (T* out, const T *inp, int n) = 0;
-};
+//template <typename op, typename T>
+//struct UnaryFunctor {
+  //virtual void operator () (T* out, const T *inp, int n) = 0;
+//};
 
-template <typename op, typename T>
-struct BinaryFunctor {
-  virtual void operator () (T* out, const T *inp0, const T *inp1, int n) = 0;
-};
-
-
-namespace Math {
+//template <typename op, typename T>
+//struct BinaryFunctor {
+  //virtual void operator () (T* out, const T *inp0, const T *inp1, int n) = 0;
+//};
+namespace math {
 
 template <typename T>
 struct Abs {
@@ -32,7 +30,7 @@ struct Add {
   }
 };
 
-}
+} //namespace math
 
 } //namespace cavs
 

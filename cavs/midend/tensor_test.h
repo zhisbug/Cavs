@@ -9,7 +9,6 @@ namespace cavs {
 namespace test {
 
 //Just implement the GPU routines up to now
-
 template <typename T>
 void FillValues(Tensor* tensor, const vector<T>& vals) {
   CHECK_NOTNULL(tensor);

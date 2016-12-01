@@ -43,36 +43,29 @@ class TensorBuffer : public TensorBufferBase {
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
     : name_(name), buf_(nullptr), shape_(shape) {
-  //CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
-    Reshape(a, type, shape);
+  Reshape(a, type, shape);
 }
 
 void Tensor::Reshape(Allocator *a, 
         DataType type, const TensorShape& shape) {
-    shape_ = shape;
-    CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
+  shape_ = shape;
+  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 
-//bool Tensor::RealAllocate(Allocator *a, DataType type, const TensorShape& shape){
-  //if (buf_)
-    //return false;
-  //shape_ = shape;
-  //CASES(type, buf_ = new TensorBuffer<T>(a, shape_.n_elements()));
-  //return true;
-//}
-
-TensorShape::TensorShape(vector<int>& shape)
-    : shape_(shape) {
+TensorShape::TensorShape(const ListValue& shape) {
+  CHECK(shape.i_size() > 0);
+  shape_.resize(shape.i_size());
   n_elements_ = 1;    
-  for (const int dim : shape_) {
-    n_elements_ *= dim; 
+  for (int idx = 0; idx < shape.i_size(); idx++) {
+    shape_[idx] = shape.i(idx);
+    n_elements_ *= shape.i(idx); 
   }
 }
 
 TensorShape::TensorShape(std::initializer_list<int> shape) 
     : shape_(shape) {
   n_elements_ = 1;    
-  for (const int dim : shape_) {
+  for (const int dim : shape) {
     n_elements_ *= dim; 
   }
 }
