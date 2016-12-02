@@ -38,11 +38,18 @@ void TrackingAllocator::DeallocateRaw(void *buf) {
   trace_.erase(buf);
 }
 
+namespace allocator_factory {
+
 typedef std::unordered_map<string, Allocator*> AllocatorRegistry;
 static AllocatorRegistry* GlobalAllocatorRegistry() {
   static AllocatorRegistry* global_allocator_registry = new AllocatorRegistry();
   return global_allocator_registry;
 }
+void AllocatorRegister::InitInternal(const string& name, Allocator* alloc) {
+  GlobalAllocatorRegistry()->insert(std::make_pair(name, alloc));
+}
+
+} //namespace allocator_factory
 
 Allocator* GetAllocator(const OpDef& def) {
   DeviceType dev = def.device();
@@ -51,18 +58,10 @@ Allocator* GetAllocator(const OpDef& def) {
     dev_name = "GPU";
   else
     dev_name = "CPU";
-  if (GlobalAllocatorRegistry()->count(dev_name) == 0)
+  if (allocator_factory::GlobalAllocatorRegistry()->count(dev_name) == 0)
     return NULL;
   else
-    return GlobalAllocatorRegistry()->at(dev_name);
+    return allocator_factory::GlobalAllocatorRegistry()->at(dev_name);
 }
-
-namespace allocator_factory {
-
-void AllocatorRegister::InitInternal(const string& name, Allocator* alloc) {
-  GlobalAllocatorRegistry()->insert(std::make_pair(name, alloc));
-}
-
-} //namespace allocator_factory
 
 } //namespace cavs

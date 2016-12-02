@@ -1,6 +1,8 @@
 #ifndef CAVS_FRONTEND_C_API_H_
 #define CAVS_FRONTEND_C_API_H_
 
+#include "stddef.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -15,7 +17,7 @@ typedef enum {
 
 typedef struct F_Session F_Session;
 
-extern F_Session* F_NewSession(const string& name);
+extern F_Session* F_NewSession(const char* name, size_t len);
 extern void F_SetOpChainOp(F_Session* s, 
                            const void* proto, size_t len);
 extern void F_Run(F_Session* s);

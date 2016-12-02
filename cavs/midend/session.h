@@ -25,23 +25,27 @@ class SessionBase {
 
 SessionBase* GetSession(const string& name);
 
-#define REGISTER_SESSION_BUILDER(key, sess)                  \
-    REGISTER_SESSION_BUILDER_UNIQ(__COUNTER__, key, sess)
-#define REGISTER_SESSION_BUILDER_UNIQ(ctr, key, sess)       \
-    REGISTER_SESSION_BUILDER_CONCAT(ctr, key, sess)
-#define REGISTER_SESSION_BUILDER_CONCAT(ctr, key, sess)     \
+#define REGISTER_SESSION_BUILDER(key, ...)                 \
+    REGISTER_SESSION_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
+#define REGISTER_SESSION_BUILDER_UNIQ(ctr, key, ...)       \
+    REGISTER_SESSION_BUILDER_CONCAT(ctr, key, __VA_ARGS__)
+#define REGISTER_SESSION_BUILDER_CONCAT(ctr, key, ...)     \
     static session_factory::SessionRegister                \
-        register_body_##ctr##_session(key, sess)
+        register_body_##ctr##_session(key,                 \
+            []() -> SessionBase* {                         \
+                return new __VA_ARGS__();                  \
+              }) 
 
 namespace session_factory {
 
 class SessionRegister {
  public:
-  SessionRegister(const string& name, Session* sess) {
-    InitInternal(name, sess); 
+  typedef SessionBase* (*Factory)();
+  SessionRegister(const string& name, Factory factory) {
+    InitInternal(name, factory); 
   }
  private:
-  void InitInternal(const string& name, Session* sess); 
+  void InitInternal(const string& name, Factory factory); 
 };
 
 } //namespace session_factory

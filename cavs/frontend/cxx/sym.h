@@ -18,7 +18,7 @@ using std::shared_ptr;
 class Chain;
 typedef struct SymBody{
   string op_name_;
-  Dtype type_;
+  F_Dtype type_;
   Shape shape_;
   string output_;
   string device_;
@@ -35,8 +35,8 @@ class Sym {
   void Finalize(cavs::OpDef* op_def) const { body_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(Dtype type, Shape shape, string output = "", string device = "GPU");
-  static Sym Placeholder(Dtype type, Shape shape, string output = "", string device = "GPU");
+  static Sym Variable(F_Dtype type, Shape shape, string output = "", string device = "GPU");
+  static Sym Placeholder(F_Dtype type, Shape shape, string output = "", string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string output = "", string device = "GPU");
   //binary operation
@@ -51,10 +51,10 @@ class Sym {
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
 
  private:
-  Sym(const string& op_name, const Dtype type, const Shape& shape, 
+  Sym(const string& op_name, const F_Dtype type, const Shape& shape, 
       const string& output, const string& device);
   inline string op_name() const { return body_->op_name_; }
-  inline Dtype type() const { return body_->type_; }
+  inline F_Dtype type() const { return body_->type_; }
   inline Shape shape() const { return body_->shape_; }
   inline string output() const { return body_->output_; }
   inline string device() const { return body_->device_; }

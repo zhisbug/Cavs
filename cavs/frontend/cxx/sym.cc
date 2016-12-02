@@ -22,7 +22,7 @@ void SymBody::Finalize(cavs::OpDef* op_def) const {
     attr->mutable_value()->mutable_list()->add_i(dim);
 }
 
-Sym::Sym(const string& op_name, const Dtype type, const Shape& shape, 
+Sym::Sym(const string& op_name, const F_Dtype type, const Shape& shape, 
          const string& output, const string& device) {
   static int id = 0;  
   body_.reset(new SymBody());
@@ -34,11 +34,11 @@ Sym::Sym(const string& op_name, const Dtype type, const Shape& shape,
   body_->chain_->push_back(body_.get());
 }
 
-Sym Sym::Variable(Dtype type, Shape shape, string output, string device) {
+Sym Sym::Variable(F_Dtype type, Shape shape, string output, string device) {
   return Sym("Variable", type, shape, output, device);
 }
 
-Sym Sym::Placeholder(Dtype type, Shape shape, string output, string device) {
+Sym Sym::Placeholder(F_Dtype type, Shape shape, string output, string device) {
   return Sym("Placeholder", type, shape, output, device);
 }
 

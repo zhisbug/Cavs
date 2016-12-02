@@ -31,24 +31,14 @@ OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
   }
 }
 
-typedef std::unordered_map<string, 
-    op_factory::OpRegister::Factory> OpRegistry;
+namespace op_factory {
 
+typedef std::unordered_map<string, 
+                           OpRegister::Factory> OpRegistry;
 static OpRegistry* GlobalOpRegistry() {
     static OpRegistry* global_op_registry = new OpRegistry();
     return global_op_registry;
 }
-
-Op* CreateOp(const OpDef& def) {
-    const string key = op_factory::Key(def).ToString();
-    if (GlobalOpRegistry()->count(key) == 0)
-        return NULL;
-    else
-        return (GlobalOpRegistry()->at(key))(def);
-}
-
-namespace op_factory {
-
 void OpRegister::InitInternal(const string& name,
                                     Factory factory) {
     GlobalOpRegistry()->insert(std::make_pair(
@@ -56,5 +46,14 @@ void OpRegister::InitInternal(const string& name,
 }
 
 } //namespace op_factory
+
+Op* CreateOp(const OpDef& def) {
+    const string key = op_factory::Key(def).ToString();
+    if (op_factory::GlobalOpRegistry()->count(key) == 0)
+        return NULL;
+    else
+        return op_factory::GlobalOpRegistry()->at(key)(def);
+}
+
 
 } //namespace cavs
