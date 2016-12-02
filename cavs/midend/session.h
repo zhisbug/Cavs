@@ -10,7 +10,10 @@ namespace cavs {
 class SessionBase {
  public:
   SessionBase() {}
-  SessionBase(const OpChainDef& def) : op_chain_def_(def) {}
+  //SessionBase(const OpChainDef& def) : op_chain_def_(def) {}
+  virtual void SetOpChainDef(const OpChainDef& def) {
+    op_chain_def_ = def;
+  }
   const Tensor* GetTensor(const string& name) const;
   void InsertTensor(const Tensor* t);
   virtual void Run() = 0;
@@ -20,15 +23,28 @@ class SessionBase {
   OpChainDef op_chain_def_;
 };
 
-class Op;
-class OpContext;
-class SimpleSession : public SessionBase {
+SessionBase* GetSession(const string& name);
+
+#define REGISTER_SESSION_BUILDER(key, sess)                  \
+    REGISTER_SESSION_BUILDER_UNIQ(__COUNTER__, key, sess)
+#define REGISTER_SESSION_BUILDER_UNIQ(ctr, key, sess)       \
+    REGISTER_SESSION_BUILDER_CONCAT(ctr, key, sess)
+#define REGISTER_SESSION_BUILDER_CONCAT(ctr, key, sess)     \
+    static session_factory::SessionRegister                \
+        register_body_##ctr##_session(key, sess)
+
+namespace session_factory {
+
+class SessionRegister {
  public:
-  SimpleSession(const OpChainDef& def);
-  void Run() override;
+  SessionRegister(const string& name, Session* sess) {
+    InitInternal(name, sess); 
+  }
  private:
-  std::vector<std::pair<Op*, OpContext*>> executors_;
+  void InitInternal(const string& name, Session* sess); 
 };
+
+} //namespace session_factory
 
 } //namespace cavs
 

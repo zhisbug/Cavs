@@ -52,7 +52,7 @@ Allocator* GetAllocator(const OpDef& def);
     REGISTER_STATIC_ALLOCATOR_CONCAT(ctr, key, alloc)
 #define REGISTER_STATIC_ALLOCATOR_CONCAT(ctr, key, alloc)      \
     static allocator_factory::AllocatorRegister                \
-        allocator_##ctr##_op(key, alloc)                       
+        register_body_##ctr##_allocator(key, alloc)                       
 
 namespace allocator_factory {
 
