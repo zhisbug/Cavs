@@ -22,7 +22,7 @@ int main() {
       TensorShape(shape), {0.f, 1.f, 2.f, 3.f, 4.f, 5.f});
   add_test.RunTest();
   vector<float> output;
-  add_test.FetchTensor("C", output);
+  add_test.FetchTensor("C", &output);
 
   for (auto& i : output)
     LOG(INFO) << i;

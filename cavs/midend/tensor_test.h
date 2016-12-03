@@ -18,12 +18,11 @@ void FillValues(Tensor* tensor, const vector<T>& vals) {
 }
 
 template <typename T>
-void FetchValues(vector<T>& vals, const Tensor* tensor) {
-  CHECK_NOTNULL(tensor);
-  const T* buf = tensor->data<T>();
+void FetchValues(vector<T>* vals, const Tensor& tensor) {
+  const T* buf = tensor.data<T>();
   CHECK_NOTNULL(buf);
-  vals.resize(tensor->count());
-  checkCudaError(cudaMemcpy(vals.data(), buf, vals.size()*sizeof(T), cudaMemcpyDeviceToHost));
+  vals->resize(tensor.count());
+  checkCudaError(cudaMemcpy(vals->data(), buf, vals->size()*sizeof(T), cudaMemcpyDeviceToHost));
 }
 
 } //namespace test

@@ -6,9 +6,13 @@
 using cavs::SessionBase;
 using cavs::OpChainDef;
 using cavs::GetSession;
+using cavs::Tensor;
 
 struct F_Session {
   SessionBase* session;
+};
+struct F_Tensor {
+  Tensor* tensor;
 };
 
 F_Session* F_NewSession(const char* name, size_t len) {
@@ -24,6 +28,11 @@ void F_SetOpChainOp(F_Session* s,
   s->session->SetOpChainDef(def);
 }
 
-void F_Run(F_Session* s) {
-  s->session->Run();
+void F_Run(F_Session* s, const char** c_output_names,
+           F_Tensor** c_output_tensors, int noutputs) {
+  vector<string> output_names(noutputs);
+  for (int i = 0; i < noutputs; i++)
+    output_names[i] = c_output_names[i];
+  vector<Tensor> output_tensors(noutputs);
+  s->session->Run(output_names, &output_tensors);
 }

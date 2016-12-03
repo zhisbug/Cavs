@@ -1,5 +1,6 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/allocator.h"
+#include "cavs/midend/op.h"
 #include "cavs/util/logging.h"
 
 namespace cavs {
@@ -8,12 +9,12 @@ const Tensor* SessionBase::GetTensor(const string& name) const {
   if (tensor_map_.count(name) == 0)
     return NULL;
   else
-    return tensor_map_.at(name);
+    return &(tensor_map_.at(name));
 }
 
-void SessionBase::InsertTensor(const Tensor* t){
-  CHECK(tensor_map_.count(t->name()) == 0);
-  tensor_map_[t->name()] = t;
+void SessionBase::InsertTensor(const Tensor& t){
+  CHECK(tensor_map_.count(t.name()) == 0);
+  tensor_map_[t.name()] = t;
 }
 
 namespace session_factory {
@@ -42,7 +43,8 @@ class SimpleSession : public SessionBase {
  public:
   SimpleSession() {}
   void SetOpChainDef(const OpChainDef& def) override;
-  void Run() override;
+  void Run(const vector<string>& output_names,
+           vector<Tensor>* output_tensors) override;
  private:
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
@@ -56,7 +58,8 @@ void SimpleSession::SetOpChainDef(const OpChainDef& def) {
   }
 }
 
-void SimpleSession::Run() {
+void SimpleSession::Run(const vector<string>& output_names,
+    vector<Tensor>* output_tensors) {
   for (auto& one_pair: executors_) {
     Op* op = one_pair.first;
     OpContext* context = one_pair.second;

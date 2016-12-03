@@ -17,7 +17,8 @@ namespace test{
 class SessionOpTest : public SessionBase {
  public:
   SessionOpTest() {}
-  void Run() override {}
+  void Run(const vector<string>& output_name, 
+           vector<Tensor>* output_tensors) {}
 };
 
 class OpTest {
@@ -25,18 +26,17 @@ class OpTest {
   OpTest (const OpDef& def);
   template <typename T>
   void AddTensorFromVector(const string& name,
-                           const TensorShape shape, 
-                           const vector<T> vals) {
-    Tensor* input = 
-        new Tensor(name, GetAllocator(op_def_), 
-                   DataTypeToEnum<T>::value, shape); 
+                           const TensorShape& shape, 
+                           const vector<T>& vals) {
+    Tensor input(name, GetAllocator(op_def_), 
+                 DataTypeToEnum<T>::value, shape); 
     sess_->InsertTensor(input);
-    FillValues<T>(input, vals);
+    FillValues<T>(&input, vals);
   }
   template <typename T>
   void FetchTensor(const string& name,
-                   vector<T>& data) {
-    FetchValues<T>(data, sess_->GetTensor(name));
+                   vector<T>* data) {
+    FetchValues<T>(data, *(sess_->GetTensor(name)));
   }
   bool RunTest () {
     op_.reset(CreateOp(op_def_)); 

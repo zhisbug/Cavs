@@ -6,28 +6,25 @@ namespace cavs {
 OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
   for (const string& input : op_def.input()) {
     const Tensor* t = sb->GetTensor(input); 
-    CHECK_NOTNULL(t);
     inputs_.push_back(t);
   }
   for (const string& output : op_def.output()) {
-    Tensor* t = const_cast<Tensor*>(sb->GetTensor(output));
-    if (t)
-      outputs_.push_back(t);
-    else{
+    const Tensor* t = sb->GetTensor(output);
+    if (!t)
       for (const OpDef::AttrDef& attr : op_def.attr()) {
         if (attr.name() == "shape") {
           CHECK(attr.value().has_list());
           TensorShape shape(attr.value().list()); 
           Allocator* alloc = GetAllocator(op_def); 
           CHECK_NOTNULL(alloc);
-          t = new Tensor(output, alloc, op_def.out_type(), shape);
-          outputs_.push_back(t);
-          sb->InsertTensor(t);
+          Tensor out(output, alloc, op_def.out_type(), shape);
+          sb->InsertTensor(out);
           break;
         }
       }
-      CHECK_NOTNULL(t);
-    }
+    t = sb->GetTensor(output);
+    CHECK_NOTNULL(t);
+    outputs_.push_back(const_cast<Tensor*>(t));
   }
 }
 

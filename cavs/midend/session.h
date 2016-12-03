@@ -3,7 +3,6 @@
 
 #include "cavs/midend/op_chain_def.pb.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/op.h"
 
 namespace cavs {
 
@@ -15,11 +14,12 @@ class SessionBase {
     op_chain_def_ = def;
   }
   const Tensor* GetTensor(const string& name) const;
-  void InsertTensor(const Tensor* t);
-  virtual void Run() = 0;
+  void InsertTensor(const Tensor& t);
+  virtual void Run(const vector<string>& output_name, 
+                   vector<Tensor>* output_tensors) = 0;
  protected:
   //Tensor* CreateTensor(const OpDef& op_def);
-  unordered_map<string, const Tensor*> tensor_map_;
+  unordered_map<string, Tensor> tensor_map_;
   OpChainDef op_chain_def_;
 };
 

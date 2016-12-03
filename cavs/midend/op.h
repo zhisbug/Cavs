@@ -7,7 +7,6 @@
 
 namespace cavs {
 
-class SessionBase;
 class OpContext {
  public:
   OpContext(const OpDef& op_def, SessionBase* sb);
