@@ -18,7 +18,7 @@ class SessionOpTest : public SessionBase {
  public:
   SessionOpTest() {}
   void Run(const vector<string>& output_name, 
-           vector<Tensor>* output_tensors) {}
+           vector<const Tensor*>* output_tensors) override {}
 };
 
 class OpTest {

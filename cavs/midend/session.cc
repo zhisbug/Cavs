@@ -44,7 +44,7 @@ class SimpleSession : public SessionBase {
   SimpleSession() {}
   void SetOpChainDef(const OpChainDef& def) override;
   void Run(const vector<string>& output_names,
-           vector<Tensor>* output_tensors) override;
+           vector<const Tensor*>* output_tensors) override;
  private:
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
@@ -59,11 +59,16 @@ void SimpleSession::SetOpChainDef(const OpChainDef& def) {
 }
 
 void SimpleSession::Run(const vector<string>& output_names,
-    vector<Tensor>* output_tensors) {
+    vector<const Tensor*>* output_tensors) {
   for (auto& one_pair: executors_) {
     Op* op = one_pair.first;
     OpContext* context = one_pair.second;
     op->Compute(context);
+  }
+
+  for (int i = 0; i < output_names.size(); i++) {
+    const Tensor* t = (*output_tensors)[i] = GetTensor(output_names[i]);
+    CHECK_NOTNULL(t);
   }
 }
 

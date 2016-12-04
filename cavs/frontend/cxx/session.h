@@ -18,19 +18,21 @@ class Session {
     F_SetOpChainOp(s_, serial_def.c_str(), serial_def.length());
   }
 
-  void Run(std::initializer_list<Sym> res) {
-    const char** output_names = (const char**)malloc(res.size()*sizeof(char*));
-    int i = 0;
-    for (auto sym : res) 
-      output_names[i++] = sym.output().c_str();
-    F_Tensor* output_tensors;
-    F_Run(s_, output_names, &output_tensors, res.size());
-  }
+  //void Run(std::initializer_list<Sym> res) {
+    //const char** output_names = (const char**)malloc(res.size()*sizeof(char*));
+    //int i = 0;
+    //for (auto sym : res) 
+      //output_names[i++] = sym.output().c_str();
+    //F_Tensor* output_tensors;
+    //F_Run(s_, output_names, &output_tensors, res.size());
+  //}
 
-  void Run(Sym res) {
+  Sym& Run(Sym& res) {
     F_Tensor* output_tensor;
-    const char* output_name = res.output().c_str();
+    const char* output_name = res.body_->output_.c_str();
     F_Run(s_, &output_name, &output_tensor, 1);
+    res.body_->raw_data = F_TensorData(output_tensor);
+    return res;
   }
 
  private:

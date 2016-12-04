@@ -26,6 +26,7 @@ typedef struct SymBody{
   Chain* chain_;
   SymBody(); 
   void Finalize(cavs::OpDef* op_def) const;
+  void* raw_data;
 } SymBody;
 
 class Sym {
@@ -33,7 +34,6 @@ class Sym {
   Sym() {}
   Sym& operator =(const Sym& sym);
   void Finalize(cavs::OpDef* op_def) const { body_->Finalize(op_def); }
-  inline string output() const { return body_->output_; }
 
   //non-arguments operation
   static Sym Variable(F_Dtype type, Shape shape, string output = "", string device = "GPU");
@@ -50,6 +50,7 @@ class Sym {
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
+  friend class Session;
 
  private:
   Sym(const string& op_name, const F_Dtype type, const Shape& shape, 
@@ -57,6 +58,7 @@ class Sym {
   inline string op_name() const { return body_->op_name_; }
   inline F_Dtype type() const { return body_->type_; }
   inline Shape shape() const { return body_->shape_; }
+  inline string output() const { return body_->output_; }
   inline string device() const { return body_->device_; }
   void SetInput(const SymBody* sb) { body_->input_.push_back(sb); }
   shared_ptr<SymBody> body_;

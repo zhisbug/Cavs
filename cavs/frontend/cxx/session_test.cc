@@ -10,7 +10,7 @@ int main() {
   Chain::Default()->Finalize(&op_chain_def);
 
   Session sess;
-  sess.Run({C});
+  sess.Run(C);
   return 0;
 }
 

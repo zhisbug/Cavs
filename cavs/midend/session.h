@@ -16,7 +16,7 @@ class SessionBase {
   const Tensor* GetTensor(const string& name) const;
   void InsertTensor(const Tensor& t);
   virtual void Run(const vector<string>& output_name, 
-                   vector<Tensor>* output_tensors) = 0;
+                   vector<const Tensor*>* output_tensors) = 0;
  protected:
   //Tensor* CreateTensor(const OpDef& op_def);
   unordered_map<string, Tensor> tensor_map_;
