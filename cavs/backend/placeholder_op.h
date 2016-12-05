@@ -12,9 +12,13 @@ class PlaceholderOp : public Op {
   explicit PlaceholderOp(const OpDef& def) : Op(def) {}
 
   void Compute(OpContext* context) override {
+    LOG(INFO) << "here";
     const Tensor* inp = context->Input(0);
+    LOG(INFO) << "here";
     Tensor* out = context->Output(0);
+    LOG(INFO) << "here";
     FUNCTOR::Compute(out->mutable_data<T>(), inp->data<T>(), out->count());
+    LOG(INFO) << "here";
   }
 };
 

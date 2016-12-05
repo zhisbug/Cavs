@@ -19,8 +19,11 @@ class OpContext {
 
 class Op {
  public:
-  explicit Op(const OpDef& def) {}
+  explicit Op(const OpDef& def): name_(def.name()) {}
+  FORCE_INLINE const string& name() const { return name_; }
   virtual void Compute(OpContext* context) = 0;
+ private:
+  string name_;
 };
 
 Op* CreateOp(const OpDef& def);

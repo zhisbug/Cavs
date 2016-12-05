@@ -58,10 +58,14 @@ Allocator* GetAllocator(const OpDef& def) {
     dev_name = "GPU";
   else
     dev_name = "CPU";
-  if (allocator_factory::GlobalAllocatorRegistry()->count(dev_name) == 0)
+  return GetAllocator(dev_name);
+}
+
+Allocator* GetAllocator(const string& dev) {
+  if (allocator_factory::GlobalAllocatorRegistry()->count(dev) == 0)
     return NULL;
   else
-    return allocator_factory::GlobalAllocatorRegistry()->at(dev_name);
+    return allocator_factory::GlobalAllocatorRegistry()->at(dev);
 }
 
 } //namespace cavs

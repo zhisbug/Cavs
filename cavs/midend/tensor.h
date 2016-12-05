@@ -20,7 +20,7 @@ class TensorBufferBase {
   TensorBufferBase(Allocator* alloc) : alloc_(alloc) {}
   virtual ~TensorBufferBase() {}
   virtual void* data() const = 0;
-  //virtual size_t size() const = 0;
+  virtual size_t size() const = 0;
   virtual size_t count() const = 0;
 
  protected:
@@ -34,22 +34,25 @@ class TensorShape {
   explicit TensorShape(const ListValue& shape);
   explicit TensorShape(std::initializer_list<int> shape);
   explicit TensorShape(const TensorShape& shape);
+  explicit TensorShape(TensorShape&& shape);
   TensorShape& operator =(const TensorShape& b);
   FORCE_INLINE int n_elements() const { return n_elements_; }
   FORCE_INLINE int dims() const { return shape_.size(); }
   void set_dim(int d, int size);
   void add_dim(int size);
+
  private:
-  //TensorShape(vector<int>& shape);
   vector<int> shape_;
   int n_elements_;
 };
 
+class TensorCApi;
 class Tensor {
  public:
   Tensor() {}
   //Tensor(const string& name) : name_(name) {}
   Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
+  Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
   FORCE_INLINE const string& name() const { return name_; }
   FORCE_INLINE size_t count() const { return buf_->count(); }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
@@ -64,7 +67,9 @@ class Tensor {
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
-  const void* raw_data() const { return buf_->data(); }
+
+  friend class TensorCApi;
+  //const void* raw_data() const { return buf_->data(); }
   //const TensorShape& shape() const { return shape_; }
   //Tensor(DataType type, const std::vector<int>& shape_);
   //Tensor(DataType type, std::initializer_list<int> shape_);
@@ -99,12 +104,16 @@ FORCE_INLINE TensorShape::TensorShape(const TensorShape& shape) {
   *this = shape;
 }
 
+FORCE_INLINE TensorShape::TensorShape(TensorShape&& shape) {
+  n_elements_ = shape.n_elements_;
+  shape_ = std::move(shape.shape_);
+}
+
 FORCE_INLINE TensorShape& TensorShape::operator =(const TensorShape& b) {
   n_elements_ = b.n_elements_;
   shape_ = b.shape_;
   return *this;
 }
-
 
 FORCE_INLINE void TensorShape::set_dim(int d, int size) {
   CHECK(dims() >= d);
@@ -113,6 +122,7 @@ FORCE_INLINE void TensorShape::set_dim(int d, int size) {
 
 FORCE_INLINE void TensorShape::add_dim(int size) {
   shape_[dims()] = size;
+  n_elements_ *= size;
 }
 
 } //namespace cavs

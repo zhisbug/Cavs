@@ -26,11 +26,11 @@ class TensorBuffer : public TensorBufferBase {
  public:
   TensorBuffer(Allocator* alloc, size_t elem) 
       : TensorBufferBase(alloc), elem_(elem) {
-    data_ = alloc->Allocate<T>(elem_) ;   
+    data_ = alloc->Allocate<T>(elem_);   
   }
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   FORCE_INLINE void* data() const override { return data_; }
-  //size_t size() const override { return elem_*sizeof(T); }
+  size_t size() const override { return elem_*sizeof(T); }
   FORCE_INLINE size_t count() const override { return elem_; }
 
  private:
@@ -44,6 +44,13 @@ Tensor::Tensor(const string& name, Allocator *a,
         DataType type, const TensorShape& shape) 
     : name_(name), buf_(nullptr), shape_(nullptr) {
   shape_.reset(new TensorShape(shape));
+  Reshape(a, type, shape);
+}
+
+Tensor::Tensor(const string& name, Allocator *a, 
+        DataType type, TensorShape&& shape) 
+    : name_(name), buf_(nullptr), shape_(nullptr) {
+  shape_.reset(new TensorShape(std::move(shape)));
   Reshape(a, type, shape);
 }
 

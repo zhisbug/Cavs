@@ -6,11 +6,10 @@ int main() {
   Sym B = Sym::Placeholder(F_FLOAT, {2, 3});
   Sym C = A + B;
 
-  cavs::OpChainDef op_chain_def;
-  Chain::Default()->Finalize(&op_chain_def);
-
   Session sess;
-  sess.Run(C);
+  vector<float> A_data = {1, 2, 3, 4, 5, 6};
+  vector<float> B_data = {6, 5, 4, 3, 2, 1};
+  sess.Run(C, {{A, A_data.data()}, {B, B_data.data()}});
   return 0;
 }
 

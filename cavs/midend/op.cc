@@ -17,7 +17,7 @@ OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
           TensorShape shape(attr.value().list()); 
           Allocator* alloc = GetAllocator(op_def); 
           CHECK_NOTNULL(alloc);
-          Tensor out(output, alloc, op_def.out_type(), shape);
+          Tensor out(output, alloc, op_def.out_type(), std::move(shape));
           sb->InsertTensor(out);
           break;
         }

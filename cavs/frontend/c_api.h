@@ -20,10 +20,13 @@ typedef struct F_Tensor F_Tensor;
 
 extern F_Session* F_NewSession(const char* name, size_t len);
 extern void F_SetOpChainOp(F_Session* s, 
-                           const void* proto, size_t len);
-extern void F_Run(F_Session* s, const char** c_output_names,
-                  F_Tensor** c_output_tensors, int noutputs);
+      const void* proto, size_t len);
+extern void F_Run(F_Session* s, 
+      const char** c_output_names, F_Tensor** c_output_tensors, int noutputs);
 extern void* F_TensorData(const F_Tensor* t);
+extern size_t F_TensorSize(const F_Tensor* t);
+extern F_Tensor* F_GetTensorFromSession(
+      F_Session* sess, const char* c_tensor_name, size_t len); 
 
 #ifdef __cplusplus
 } //end extern "C"

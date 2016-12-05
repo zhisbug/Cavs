@@ -15,7 +15,7 @@ class SessionBase {
   }
   const Tensor* GetTensor(const string& name) const;
   void InsertTensor(const Tensor& t);
-  virtual void Run(const vector<string>& output_name, 
+  virtual void Run(const vector<string>& output_names, 
                    vector<const Tensor*>* output_tensors) = 0;
  protected:
   //Tensor* CreateTensor(const OpDef& op_def);

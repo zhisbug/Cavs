@@ -12,7 +12,9 @@ class VariableOp : public Op {
   explicit VariableOp(const OpDef& def) : Op(def) {}
 
   void Compute(OpContext* context) override {
+    LOG(INFO) << "here";
     Tensor* out = context->Output(0);
+    LOG(INFO) << "here";
     FUNCTOR::Compute(out->mutable_data<T>(), out->count());
   }
 };

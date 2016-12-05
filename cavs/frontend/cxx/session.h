@@ -3,9 +3,12 @@
 
 #include "cavs/frontend/c_api.h"
 #include "cavs/frontend/cxx/sym.h"
+#include "cavs/util/logging.h"
 
 #include <string>
 #include <initializer_list>
+#include <unordered_map>
+
 
 class Session {
  public:
@@ -27,16 +30,33 @@ class Session {
     //F_Run(s_, output_names, &output_tensors, res.size());
   //}
 
-  Sym& Run(Sym& res) {
+  typedef std::initializer_list<std::pair<Sym&, void*>> FEED;
+  Sym& Run(Sym& res, FEED feed) {
     F_Tensor* output_tensor;
-    const char* output_name = res.body_->output_.c_str();
+    const char* output_name = res.output().c_str();
+    int i = 0;
+    for (auto& input : feed) {
+      string input_name = input.first.output();
+      void* data = input.second;
+      if (feed_map_.count(input_name) == 0) {
+        feed_map_[input_name] = 
+          F_GetTensorFromSession(s_, input_name.c_str(), input_name.length());
+        F_Tensor* t = feed_map_[input_name];
+        memcpy(F_TensorData(t), data, F_TensorSize(t));
+      }
+    }
+
+    LOG(INFO) << "here";
     F_Run(s_, &output_name, &output_tensor, 1);
+              
+    LOG(INFO) << "here";
     res.body_->raw_data = F_TensorData(output_tensor);
     return res;
   }
 
  private:
   F_Session* s_;
+  std::unordered_map<string, F_Tensor*> feed_map_;
 };
 
 #endif

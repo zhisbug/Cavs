@@ -55,11 +55,11 @@ class Sym {
  private:
   Sym(const string& op_name, const F_Dtype type, const Shape& shape, 
       const string& output, const string& device);
-  inline string op_name() const { return body_->op_name_; }
+  inline string& op_name() const { return body_->op_name_; }
   inline F_Dtype type() const { return body_->type_; }
-  inline Shape shape() const { return body_->shape_; }
-  inline string output() const { return body_->output_; }
-  inline string device() const { return body_->device_; }
+  inline Shape& shape() const { return body_->shape_; }
+  inline string& output() const { return body_->output_; }
+  inline string& device() const { return body_->device_; }
   void SetInput(const SymBody* sb) { body_->input_.push_back(sb); }
   shared_ptr<SymBody> body_;
 };

@@ -45,6 +45,7 @@ class TrackingAllocator : public Allocator {
 };
 
 Allocator* GetAllocator(const OpDef& def);
+Allocator* GetAllocator(const string& device);
 
 #define REGISTER_STATIC_ALLOCATOR(key, alloc)                  \
     REGISTER_STATIC_ALLOCATOR_UNIQ(__COUNTER__, key, alloc)
