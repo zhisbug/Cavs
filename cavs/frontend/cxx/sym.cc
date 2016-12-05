@@ -60,3 +60,16 @@ Sym& Sym::operator= (const Sym& sym) {
   this->body_ = sym.body_; 
   return *this;
 }
+
+void Sym::print() {
+  //hack here
+  int length = 1;
+  CHECK_NOTNULL(body_.get());
+  for (int dim : body_->shape_)
+    length *= dim;
+  if (body_->type_ == F_FLOAT) {
+    for (int i = 0; i < length; i++)
+      LOG(INFO) << (float)((float*)body_->raw_data)[i];
+  }
+}
+

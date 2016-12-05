@@ -4,10 +4,12 @@
 #include "cavs/frontend/c_api.h"
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/util/logging.h"
+#include "cavs/midend/macros_gpu.h"
 
 #include <string>
 #include <initializer_list>
 #include <unordered_map>
+#include <cuda_runtime.h>
 
 
 class Session {
@@ -31,8 +33,8 @@ class Session {
   //}
 
   typedef std::initializer_list<std::pair<Sym&, void*>> FEED;
-  Sym& Run(Sym& res, FEED feed) {
-    F_Tensor* output_tensor;
+  void Run(Sym& res, FEED feed) {
+    F_Tensor** output_tensor = (F_Tensor**)malloc(feed.size()*sizeof(F_Tensor*));
     const char* output_name = res.output().c_str();
     int i = 0;
     for (auto& input : feed) {
@@ -42,16 +44,19 @@ class Session {
         feed_map_[input_name] = 
           F_GetTensorFromSession(s_, input_name.c_str(), input_name.length());
         F_Tensor* t = feed_map_[input_name];
-        memcpy(F_TensorData(t), data, F_TensorSize(t));
+        //currently, we don't support inter device mechnism, 
+        //we hack it here.
+        cudaMemcpy(F_TensorData(t), data, F_TensorSize(t), cudaMemcpyHostToDevice);
       }
     }
-
-    LOG(INFO) << "here";
-    F_Run(s_, &output_name, &output_tensor, 1);
-              
-    LOG(INFO) << "here";
-    res.body_->raw_data = F_TensorData(output_tensor);
-    return res;
+    F_Run(s_, &output_name, output_tensor, 1);
+    CHECK_NOTNULL(output_tensor);
+    if (!(res.body_->raw_data)) {
+      res.body_->raw_data = malloc(F_TensorSize(output_tensor[0]));
+    }
+    checkCudaError(cudaMemcpy(res.body_->raw_data, F_TensorData(output_tensor[0]), 
+               F_TensorSize(output_tensor[0]), cudaMemcpyDeviceToHost));
+    free(output_tensor);
   }
 
  private:

@@ -4,16 +4,19 @@
 #include "cavs/midend/op_def.pb.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/frontend/cxx/chain.h"
+#include "cavs/util/logging.h"
 
 #include <string>
 #include <initializer_list>
 #include <vector>
 #include <memory>
+#include <iostream>
 
 typedef std::initializer_list<int> Shape;
 using std::string;
 using std::vector;
 using std::shared_ptr;
+using std::ostream;
 
 class Chain;
 typedef struct SymBody{
@@ -23,10 +26,10 @@ typedef struct SymBody{
   string output_;
   string device_;
   vector<const SymBody*> input_;
-  Chain* chain_;
+  Chain* chain_ = NULL;
   SymBody(); 
   void Finalize(cavs::OpDef* op_def) const;
-  void* raw_data;
+  void* raw_data = NULL;
 } SymBody;
 
 class Sym {
@@ -50,6 +53,8 @@ class Sym {
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
+  void print();
+        
   friend class Session;
 
  private:

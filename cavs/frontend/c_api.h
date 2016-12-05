@@ -10,9 +10,9 @@ extern "C" {
 //#include "cavs/midend/session.h"
 
 typedef enum {
-  F_FLOAT = 1,
-  F_DOUBLE = 2,
-  F_INT32 = 3,  
+  F_FLOAT = 0,
+  F_DOUBLE = 1,
+  F_INT32 = 2,  
 } F_Dtype;
 
 typedef struct F_Session F_Session;

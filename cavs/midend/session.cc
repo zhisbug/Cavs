@@ -63,14 +63,12 @@ void SimpleSession::Run(const vector<string>& output_names,
   for (auto& one_pair: executors_) {
     Op* op = one_pair.first;
     OpContext* context = one_pair.second;
-    LOG(INFO) << op->name();
     op->Compute(context);
-    LOG(INFO) << "here";
   }
 
   for (int i = 0; i < output_names.size(); i++) {
-    const Tensor* t = (*output_tensors)[i] = GetTensor(output_names[i]);
-    CHECK_NOTNULL(t);
+    (*output_tensors)[i] = GetTensor(output_names[i]);
+    CHECK_NOTNULL((*output_tensors)[i]);
   }
 }
 
