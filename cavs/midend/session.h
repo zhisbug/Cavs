@@ -8,7 +8,6 @@ namespace cavs {
 
 class SessionBase {
  public:
-  //SessionBase() {}
   SessionBase(const OpChainDef& def) : op_chain_def_(def) {}
   //virtual void SetOpChainDef(const OpChainDef& def) {
     //op_chain_def_ = def;
@@ -22,7 +21,7 @@ class SessionBase {
  protected:
   virtual void FeedInput(const vector<string>& input_names,
                    const vector<const Tensor*>& input_tensors) = 0;
-  //Tensor* CreateTensor(const OpDef& op_def);
+  SessionBase() {}
   unordered_map<string, Tensor> tensor_map_;
   OpChainDef op_chain_def_;
 };

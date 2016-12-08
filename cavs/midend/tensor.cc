@@ -30,7 +30,7 @@ class TensorBuffer : public TensorBufferBase {
   }
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   FORCE_INLINE void* data() const override { return data_; }
-  size_t size() const override { return elem_*sizeof(T); }
+  FORCE_INLINE size_t size() const override { return elem_*sizeof(T); }
   FORCE_INLINE size_t count() const override { return elem_; }
 
  private:

@@ -1,6 +1,9 @@
 #ifndef DEVICES_H
 #define DEVICES_H
 
+#include "cavs/midend/types.pb.h"
+#include "cavs/midend/tensor.h"
+
 namespace cavs {
 
 const char* DeviceTypeToString(DeviceType type);
@@ -18,5 +21,7 @@ class GPUContext : public DeviceContext {
   void MemcpyHostToDevice(Tensor* out, const Tensor& inp);
   void MemcpyDeviceToHost(Tensor* out, const Tensor& inp);
 };
+
+} //namespace cavs
 
 #endif

@@ -1,8 +1,9 @@
 #ifndef CAVS_MIDEND_ALLOCATOR_H_
 #define CAVS_MIDEND_ALLOCATOR_H_
 
-#include "cavs/midend/device.pb.h"
+#include "cavs/midend/devices.pb.h"
 #include "cavs/midend/op_def.pb.h"
+#include "cavs/midend/macros.h"
 
 #include <string>
 #include <unordered_map>
@@ -16,7 +17,7 @@ class Allocator {
  public:
   Allocator(const string& name, DeviceType type) :
     name_(name), type_(type) {}
-  FORCE_INLINE string& name() const { return name_; }
+  FORCE_INLINE const string& name() const { return name_; }
   FORCE_INLINE DeviceType type() const { return type_; }
 
   virtual void* AllocateRaw(size_t nbytes) = 0;
@@ -37,15 +38,19 @@ class Allocator {
  private:
   string name_;
   DeviceType type_;
+
+ protected:
+  Allocator() {}
 };
 
 class TrackingAllocator : public Allocator {
  public:
   explicit TrackingAllocator(Allocator* allocator);
+  FORCE_INLINE const string& name() const { return allocator_->name(); }
+  FORCE_INLINE size_t capacity() const { return capacity_; }
   void* AllocateRaw(size_t nbytes) override;
   void DeallocateRaw(void* buf) override;
-  string& name() const override { return allocator_->Name(); }
-  size_t capacity() const { return capacity_; }
+
  private:
   Allocator* allocator_;
   size_t capacity_;

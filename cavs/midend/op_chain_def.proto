@@ -2,6 +2,7 @@ syntax = "proto3";
 package cavs;
 
 import "cavs/midend/op_def.proto";
+
 message OpChainDef {
     repeated OpDef op = 1;
 }

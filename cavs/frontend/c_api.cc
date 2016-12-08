@@ -1,16 +1,21 @@
 #include "c_api.h"
 
-#include "cavs/midend/session.h"
 #include "cavs/midend/op_chain_def.pb.h"
 #include "cavs/midend/types.pb.h"
+#include "cavs/midend/devices.pb.h"
+#include "cavs/midend/session.h"
+#include "cavs/midend/devices.h"
+#include "cavs/midend/tensor.h"
 #include "cavs/util/logging.h"
 
-using cavs::SessionBase;
+using cavs::DataType;
 using cavs::OpChainDef;
+using cavs::SessionBase;
 using cavs::GetSession;
 using cavs::Tensor;
+using cavs::TensorShape;
 using cavs::GetAllocator;
-using cavs::DataType;
+using cavs::DeviceTypeToString;
 
 namespace cavs {
 
@@ -43,15 +48,15 @@ F_Session* F_NewSession(const char* name, size_t name_len,
   return new F_Session{sess};
 }
 
-F_Session* F_NewTensor(const char* name, size_t name_len, 
+F_Tensor* F_NewTensor(const char* name, size_t name_len, 
     const int* shape, int dims, F_Dtype dtype) {
   string name_str(name, name_len);
   TensorShape tshape;
   for (int i = 0; i < dims; i++)
     tshape.add_dim(shape[i]);
   Tensor *t = new Tensor(name_str, 
-      GetAllocator(DeviceTypeToString(CPU)), 
-      cavs::DataType((int)dtype)
+      GetAllocator(DeviceTypeToString(cavs::CPU)),
+      cavs::DataType((int)dtype),
       std::move(tshape));
   return new F_Tensor{t};
 }
@@ -64,13 +69,18 @@ F_Session* F_NewTensor(const char* name, size_t name_len,
 //}
 
 void F_Run(F_Session* s, 
-    const char** c_output_names, F_Tensor** c_output_tensors, int noutputs) {
+    const char** c_output_names, F_Tensor** c_output_tensors, int noutputs, 
+    const char** c_input_names, F_Tensor** c_input_tensors, int ninputs) {
   vector<string> output_names(noutputs);
   vector<const Tensor*> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++)
     output_names[i] = c_output_names[i];
+  vector<string> input_names(ninputs);
+  vector<const Tensor*> input_tensors(ninputs);
+  for (int i = 0; i < ninputs; i++)
+    input_names[i] = c_input_names[i];
 
-  s->session->Run(output_names, &output_tensors);
+  s->session->Run(output_names, &output_tensors, input_names, input_tensors);
   for (int i = 0; i < noutputs; i++) {
     c_output_tensors[i]->tensor = 
         const_cast<Tensor*>(output_tensors[i]);

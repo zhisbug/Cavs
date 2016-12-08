@@ -2,7 +2,7 @@
 #define CAVS_MIDEND_TENSOR_H_
 
 #include "cavs/midend/types.pb.h"
-#include "cavs/midend/device.pb.h"
+#include "cavs/midend/devices.pb.h"
 #include "cavs/midend/macros.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
@@ -55,8 +55,9 @@ class Tensor {
   //Tensor(const string& name) : name_(name) {}
   Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
-  FORCE_INLINE DeviceType device_type() const { return buf_->type(); }
+  FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
   FORCE_INLINE const string& name() const { return name_; }
+  FORCE_INLINE size_t count() const { return buf_->count(); }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
     buf_ = tensor.buf_;
     shape_ = tensor.shape_;
@@ -71,7 +72,6 @@ class Tensor {
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
 
   friend class TensorCApi;
-  //FORCE_INLINE size_t count() const { return buf_->count(); }
 
  private:
   std::shared_ptr<TensorBufferBase> buf_;

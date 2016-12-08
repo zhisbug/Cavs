@@ -34,7 +34,7 @@ class Session {
   typedef std::initializer_list<std::pair<Sym&, void*>> FEED;
   void Run(Sym& res, FEED feed) {
     vector<F_Tensor*> input_tensor;
-    vector<char*> input_name;
+    vector<const char*> input_name;
     for (auto& input : feed) {
       Sym& sym = input.first;
       void* data = input.second;
@@ -54,12 +54,12 @@ class Session {
       input_name.push_back(input.first.output().data());
     }
     vector<F_Tensor*> output_tensor(1);
-    vector<char*> output_name(1);
+    vector<const char*> output_name(1);
     output_name[0] = res.output().c_str();
     if (fetch_map_.count(res.output()) == 0) {
       fetch_map_[res.output()] = 
         F_NewTensor(res.output().c_str(), res.output().length(), 
-                    res.shape().data(), input.shape().size(),
+                    res.shape().data(), res.shape().size(),
                     res.type());
     }
     output_tensor[0] = fetch_map_[res.output()];

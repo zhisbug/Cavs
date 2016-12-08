@@ -1,5 +1,5 @@
 #include "cavs/frontend/cxx/sym.h"
-#include "cavs/midend/device.pb.h"
+#include "cavs/midend/devices.pb.h"
 #include "cavs/util/logging.h"
 
 SymBody::SymBody() : chain_(Chain::Default()) {}

@@ -42,7 +42,7 @@ SessionBase* GetSession(const string& name, const OpChainDef& def) {
 class SimpleSession : public SessionBase {
  public:
   //SimpleSession() {}
-  SimpleSession(const OpChainDef& def) override;
+  SimpleSession(const OpChainDef& def);
   void Run(const vector<string>& output_names, 
            vector<const Tensor*>* output_tensors,
            const vector<string>& input_names,
@@ -53,7 +53,8 @@ class SimpleSession : public SessionBase {
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
 
-SimpleSession::SimpleSession(const OpChainDef& def) {
+SimpleSession::SimpleSession(const OpChainDef& def)
+    : SessionBase(def) {
   for (const OpDef& op_def : op_chain_def_.op()) {
     Op* op = CreateOp(op_def);
     OpContext* context = new OpContext(op_def, this); 
@@ -82,7 +83,7 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     const vector<const Tensor*>& input_tensors) {
   CHECK(input_names.size() == input_tensors.size());
   for (int i = 0; i < input_names.size(); i++) {
-    tensor_map[input_names[i]] = *input_tensors[i];
+    tensor_map_[input_names[i]] = *input_tensors[i];
   }
 }
 

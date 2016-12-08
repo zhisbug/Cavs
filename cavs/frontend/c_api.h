@@ -20,7 +20,7 @@ typedef struct F_Tensor F_Tensor;
 
 extern F_Session* F_NewSession(const char* name, size_t name_len, 
     const void* proto, size_t proto_len);
-extern F_Session* F_NewTensor(const char* name, size_t name_len, 
+extern F_Tensor* F_NewTensor(const char* name, size_t name_len, 
     const int* shape, int dims, F_Dtype dtype);
 //extern void F_SetOpChainOp(F_Session* s, 
       //const void* proto, size_t len);
