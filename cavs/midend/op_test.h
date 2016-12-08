@@ -15,17 +15,6 @@ namespace cavs{
 namespace test{
 
 class SessionOpTest : public SessionBase {
- public:
-  SessionOpTest() {}
-  void Run(const vector<string>& output_name, 
-           vector<const Tensor*>* output_tensors,
-           const vector<string>& input_names,
-           const vector<const Tensor*>& input_tensors) 
-           override {}
- private:
-  void FeedInput(const vector<string>& input_names,
-           const vector<const Tensor*>& input_tensors)
-           override {}
 };
 
 class OpTest {

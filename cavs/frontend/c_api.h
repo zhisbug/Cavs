@@ -26,11 +26,11 @@ extern F_Tensor* F_NewTensor(const char* name, size_t name_len,
       //const void* proto, size_t len);
 extern void F_Run(F_Session* s, 
       const char** c_output_names, F_Tensor** c_output_tensors, int noutputs,
-      const char** c_input_names, F_Tensor** c_input_tensors, int ninputs);
+      const char** c_input_names, F_Tensor* const* c_input_tensors, int ninputs);
 extern void* F_TensorData(const F_Tensor* t);
 extern size_t F_TensorSize(const F_Tensor* t);
-extern F_Tensor* F_GetTensorFromSession(
-      F_Session* sess, const char* c_tensor_name, size_t len); 
+//extern F_Tensor* F_GetTensorFromSession(
+      //F_Session* sess, const char* c_tensor_name, size_t len); 
 
 #ifdef __cplusplus
 } //end extern "C"

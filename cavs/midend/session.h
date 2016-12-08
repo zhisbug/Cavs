@@ -15,12 +15,14 @@ class SessionBase {
   const Tensor* GetTensor(const string& name) const;
   void InsertTensor(const Tensor& t);
   virtual void Run(const vector<string>& output_names, 
-                   vector<const Tensor*>* output_tensors,
+                   vector<Tensor>* output_tensors,
                    const vector<string>& input_names,
-                   const vector<const Tensor*>& input_tensors) = 0;
+                   const vector<Tensor>& input_tensors) {}
  protected:
   virtual void FeedInput(const vector<string>& input_names,
-                   const vector<const Tensor*>& input_tensors) = 0;
+                   const vector<Tensor>& input_tensors) {}
+  virtual void FetchOutput(const vector<string>& output_names,
+                   vector<Tensor>* output_tensors) {}
   SessionBase() {}
   unordered_map<string, Tensor> tensor_map_;
   OpChainDef op_chain_def_;

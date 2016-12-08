@@ -4,6 +4,7 @@
 #include "cavs/midend/types.pb.h"
 #include "cavs/midend/devices.pb.h"
 #include "cavs/midend/macros.h"
+#include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
 
@@ -52,18 +53,18 @@ class TensorCApi;
 class Tensor {
  public:
   Tensor() {}
-  //Tensor(const string& name) : name_(name) {}
   Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
-  FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
-  FORCE_INLINE const string& name() const { return name_; }
-  FORCE_INLINE size_t count() const { return buf_->count(); }
+  Tensor(const Tensor& t) { *this = t; }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
     buf_ = tensor.buf_;
     shape_ = tensor.shape_;
     name_ = tensor.name_;
     return *this;
   }
+  FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
+  FORCE_INLINE const string& name() const { return name_; }
+  FORCE_INLINE size_t count() const { return buf_->count(); }
 
   void Reshape(Allocator *a, DataType type, const TensorShape& shape);
   template <typename T>
@@ -72,6 +73,7 @@ class Tensor {
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
 
   friend class TensorCApi;
+  friend class DeviceContext;
 
  private:
   std::shared_ptr<TensorBufferBase> buf_;

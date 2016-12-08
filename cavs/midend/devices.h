@@ -8,18 +8,11 @@ namespace cavs {
 
 const char* DeviceTypeToString(DeviceType type);
 
+class Tensor;
 class DeviceContext {
-
-};
-
-class CPUContext : public DeviceContext {
-
-};
-
-class GPUContext : public DeviceContext {
  public:
-  void MemcpyHostToDevice(Tensor* out, const Tensor& inp);
-  void MemcpyDeviceToHost(Tensor* out, const Tensor& inp);
+  static void MemcpyHostToDevice(Tensor* out, const Tensor& inp);
+  static void MemcpyDeviceToHost(Tensor* out, const Tensor& inp);
 };
 
 } //namespace cavs

@@ -34,8 +34,9 @@ class TensorCApi {
 struct F_Session {
   SessionBase* session;
 };
+
 struct F_Tensor {
-  Tensor* tensor;
+  Tensor tensor;
 };
 
 //F_Session* F_NewSession(const char* name, size_t len) {
@@ -54,7 +55,7 @@ F_Tensor* F_NewTensor(const char* name, size_t name_len,
   TensorShape tshape;
   for (int i = 0; i < dims; i++)
     tshape.add_dim(shape[i]);
-  Tensor *t = new Tensor(name_str, 
+  Tensor t(name_str, 
       GetAllocator(DeviceTypeToString(cavs::CPU)),
       cavs::DataType((int)dtype),
       std::move(tshape));
@@ -70,38 +71,38 @@ F_Tensor* F_NewTensor(const char* name, size_t name_len,
 
 void F_Run(F_Session* s, 
     const char** c_output_names, F_Tensor** c_output_tensors, int noutputs, 
-    const char** c_input_names, F_Tensor** c_input_tensors, int ninputs) {
+    const char** c_input_names, F_Tensor* const* c_input_tensors, int ninputs) {
   vector<string> output_names(noutputs);
-  vector<const Tensor*> output_tensors(noutputs);
-  for (int i = 0; i < noutputs; i++)
-    output_names[i] = c_output_names[i];
-  vector<string> input_names(ninputs);
-  vector<const Tensor*> input_tensors(ninputs);
-  for (int i = 0; i < ninputs; i++)
-    input_names[i] = c_input_names[i];
-
-  s->session->Run(output_names, &output_tensors, input_names, input_tensors);
+  vector<Tensor> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++) {
-    c_output_tensors[i]->tensor = 
-        const_cast<Tensor*>(output_tensors[i]);
+    output_names[i] = c_output_names[i];
+  }
+  vector<string> input_names(ninputs);
+  vector<Tensor> input_tensors(ninputs);
+  for (int i = 0; i < ninputs; i++) {
+    input_names[i] = c_input_names[i];
+    input_tensors[i] = c_input_tensors[i]->tensor;
+  }
+
+  s->session->Run(output_names, &output_tensors, 
+                  input_names, input_tensors);
+  for (int i = 0; i < noutputs; i++) {
+    c_output_tensors[i] = new F_Tensor{output_tensors[i]};
   }
 }
 
 void* F_TensorData(const F_Tensor* t) { 
-  return const_cast<void*>(cavs::TensorCApi::raw_data(*(t->tensor))); 
+  return const_cast<void*>(cavs::TensorCApi::raw_data(t->tensor)); 
 }
 
 size_t F_TensorSize(const F_Tensor* t) { 
-  return (cavs::TensorCApi::size(*(t->tensor))); 
+  return (cavs::TensorCApi::size(t->tensor)); 
 }
 
-F_Tensor* F_GetTensorFromSession(
-      F_Session* sess, const char* c_tensor_name, size_t len) {
-  string tensor_name(c_tensor_name, len);
-  const Tensor* t = sess->session->GetTensor(tensor_name);
-  CHECK_NOTNULL(t);
-  return new F_Tensor{const_cast<Tensor*>(t)};
-}
-
-//memcpy(TensorCApi::raw_data(*tensor), data, len);
-//return new 
+//F_Tensor* F_GetTensorFromSession(
+      //F_Session* sess, const char* c_tensor_name, size_t len) {
+  //string tensor_name(c_tensor_name, len);
+  //const Tensor* t = sess->session->GetTensor(tensor_name);
+  //CHECK_NOTNULL(t);
+  //return new F_Tensor{const_cast<Tensor*>(t)};
+//}

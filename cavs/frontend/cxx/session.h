@@ -9,7 +9,6 @@
 #include <string>
 #include <initializer_list>
 #include <unordered_map>
-//#include <cuda_runtime.h>
 
 class Session {
  public:
@@ -43,10 +42,6 @@ class Session {
           F_NewTensor(sym.output().c_str(), sym.output().length(), 
                       sym.shape().data(), sym.shape().size(),
                       sym.type());
-        //F_Tensor* t = feed_map_[input_name];
-        ////currently, we don't support inter device mechnism, 
-        ////we hack it here.
-        //cudaMemcpy(F_TensorData(t), data, F_TensorSize(t), cudaMemcpyHostToDevice);
       }
       F_Tensor* ft = feed_map_[sym.output()];
       memcpy(F_TensorData(ft), data, F_TensorSize(ft));
@@ -56,24 +51,18 @@ class Session {
     vector<F_Tensor*> output_tensor(1);
     vector<const char*> output_name(1);
     output_name[0] = res.output().c_str();
-    if (fetch_map_.count(res.output()) == 0) {
-      fetch_map_[res.output()] = 
-        F_NewTensor(res.output().c_str(), res.output().length(), 
-                    res.shape().data(), res.shape().size(),
-                    res.type());
-    }
-    output_tensor[0] = fetch_map_[res.output()];
     F_Run(s_, output_name.data(), output_tensor.data(), 1,
           input_name.data(), input_tensor.data(), input_name.size());
     //checkCudaError(cudaMemcpy(res.body_->raw_data, F_TensorData(output_tensor[0]), 
                //F_TensorSize(output_tensor[0]), cudaMemcpyDeviceToHost));
     res.body_->raw_data = F_TensorData(output_tensor[0]);
+    for (auto* t : output_tensor)
+      free(t);
   }
 
  private:
   F_Session* s_;
   std::unordered_map<string, F_Tensor*> feed_map_;
-  std::unordered_map<string, F_Tensor*> fetch_map_;
 };
 
 #endif

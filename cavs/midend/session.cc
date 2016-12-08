@@ -44,12 +44,14 @@ class SimpleSession : public SessionBase {
   //SimpleSession() {}
   SimpleSession(const OpChainDef& def);
   void Run(const vector<string>& output_names, 
-           vector<const Tensor*>* output_tensors,
+           vector<Tensor>* output_tensors,
            const vector<string>& input_names,
-           const vector<const Tensor*>& input_tensors) override;
+           const vector<Tensor>& input_tensors) override;
  private:
   void FeedInput(const vector<string>& input_names,
-                 const vector<const Tensor*>& input_tensors) override;
+                 const vector<Tensor>& input_tensors) override;
+  void FetchOutput(const vector<string>& output_names,
+                   vector<Tensor>* output_tensors) override;
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
 
@@ -63,27 +65,47 @@ SimpleSession::SimpleSession(const OpChainDef& def)
 }
 
 void SimpleSession::Run(const vector<string>& output_names,
-    vector<const Tensor*>* output_tensors,
+    vector<Tensor>* output_tensors,
     const vector<string>& input_names,
-    const vector<const Tensor*>& input_tensors) {
+    const vector<Tensor>& input_tensors) {
+
   FeedInput(input_names, input_tensors);
+
   for (auto& one_pair : executors_) {
     Op* op = one_pair.first;
     OpContext* context = one_pair.second;
     op->Compute(context);
   }
 
-  for (int i = 0; i < output_names.size(); i++) {
-    (*output_tensors)[i] = GetTensor(output_names[i]);
-    CHECK_NOTNULL((*output_tensors)[i]);
-  }
+  FetchOutput(output_names, output_tensors);
+  //for (int i = 0; i < output_names.size(); i++) {
+    //(*output_tensors)[i] = GetTensor(output_names[i]);
+    //CHECK_NOTNULL((*output_tensors)[i]);
+  //}
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,
-    const vector<const Tensor*>& input_tensors) {
+    const vector<Tensor>& input_tensors) {
   CHECK(input_names.size() == input_tensors.size());
   for (int i = 0; i < input_names.size(); i++) {
-    tensor_map_[input_names[i]] = *input_tensors[i];
+    Tensor* t = &(tensor_map_[input_names[i]]);
+    if (t->device_type() == GPU)
+      DeviceContext::MemcpyHostToDevice(t, input_tensors[i]);
+    else
+      *t = input_tensors[i];
+  }
+}
+
+
+void SimpleSession::FetchOutput(const vector<string>& output_names,
+    vector<Tensor>* output_tensors) {
+  CHECK(output_names.size() == output_tensors->size());
+  for (int i = 0; i < output_names.size(); i++) {
+    const Tensor& t = tensor_map_[output_names[i]];
+    if (t.device_type() == GPU)
+      DeviceContext::MemcpyDeviceToHost(&(*output_tensors)[i], t);
+    else
+      (*output_tensors)[i] = t;
   }
 }
 
