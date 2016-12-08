@@ -2,6 +2,7 @@
 #define CAVS_MIDEND_TENSOR_H_
 
 #include "cavs/midend/types.pb.h"
+#include "cavs/midend/device.pb.h"
 #include "cavs/midend/macros.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
@@ -18,6 +19,7 @@ namespace cavs {
 class TensorBufferBase {
  public:
   TensorBufferBase(Allocator* alloc) : alloc_(alloc) {}
+  FORCE_INLINE DeviceType device_type() const { return alloc_->type(); }
   virtual ~TensorBufferBase() {}
   virtual void* data() const = 0;
   virtual size_t size() const = 0;
@@ -53,8 +55,8 @@ class Tensor {
   //Tensor(const string& name) : name_(name) {}
   Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
+  FORCE_INLINE DeviceType device_type() const { return buf_->type(); }
   FORCE_INLINE const string& name() const { return name_; }
-  FORCE_INLINE size_t count() const { return buf_->count(); }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
     buf_ = tensor.buf_;
     shape_ = tensor.shape_;
@@ -69,11 +71,7 @@ class Tensor {
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
 
   friend class TensorCApi;
-  //const void* raw_data() const { return buf_->data(); }
-  //const TensorShape& shape() const { return shape_; }
-  //Tensor(DataType type, const std::vector<int>& shape_);
-  //Tensor(DataType type, std::initializer_list<int> shape_);
-  //Tensor(Allocator *a, DataType type, std::initializer_list<int> shape);
+  //FORCE_INLINE size_t count() const { return buf_->count(); }
 
  private:
   std::shared_ptr<TensorBufferBase> buf_;

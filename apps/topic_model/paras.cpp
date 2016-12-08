@@ -25,13 +25,13 @@ void load_paras(paras & prs, const char *file_paras) {
 }
 
 void print_paras(paras prs) {
-  cout << "num of topics:" << prs.K << endl;
-  cout << "vocab size:" << prs.V << endl;
-  cout << "num of docs:" << prs.D<< endl;
-  cout << "num of epochs:" << prs.num_epochs << endl;
-  cout << "num of inner_num_iters:"<< prs.inner_num_iters << endl;
-  cout << "learning rate:" << prs.lr << endl;
-  cout << "size of minibatch:" << prs.mb_size << endl;
-  cout << "doc file:" << prs.file_docs << endl;
+  cout << "num of topics:"                  << prs.K << endl;
+  cout << "vocab size:"                     << prs.V << endl;
+  cout << "num of docs:"                    << prs.D<< endl;
+  cout << "num of epochs:"                  << prs.num_epochs << endl;
+  cout << "num of inner_num_iters:"         << prs.inner_num_iters << endl;
+  cout << "learning rate:"                  << prs.lr << endl;
+  cout << "size of minibatch:"              << prs.mb_size << endl;
+  cout << "doc file:"                       << prs.file_docs << endl;
   cout << "num random smps for evaluation:" << prs.num_eval << endl;
 }

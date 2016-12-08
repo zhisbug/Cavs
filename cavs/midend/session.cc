@@ -31,26 +31,29 @@ void SessionRegister::InitInternal(const string& name, Factory factory) {
 
 } //namespace session_factory
 
-SessionBase* GetSession(const string& name) {
+SessionBase* GetSession(const string& name, const OpChainDef& def) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
-    return session_factory::GlobalSessionRegistry()->at(name)();
+    return session_factory::GlobalSessionRegistry()->at(name)(def);
 }
 
 
 class SimpleSession : public SessionBase {
  public:
-  SimpleSession() {}
-  void SetOpChainDef(const OpChainDef& def) override;
+  //SimpleSession() {}
+  SimpleSession(const OpChainDef& def) override;
   void Run(const vector<string>& output_names, 
-           vector<const Tensor*>* output_tensors);
+           vector<const Tensor*>* output_tensors,
+           const vector<string>& input_names,
+           const vector<const Tensor*>& input_tensors) override;
  private:
+  void FeedInput(const vector<string>& input_names,
+                 const vector<const Tensor*>& input_tensors) override;
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
 
-void SimpleSession::SetOpChainDef(const OpChainDef& def) {
-  SessionBase::SetOpChainDef(def);
+SimpleSession::SimpleSession(const OpChainDef& def) {
   for (const OpDef& op_def : op_chain_def_.op()) {
     Op* op = CreateOp(op_def);
     OpContext* context = new OpContext(op_def, this); 
@@ -58,9 +61,12 @@ void SimpleSession::SetOpChainDef(const OpChainDef& def) {
   }
 }
 
-void SimpleSession::Run(const vector<string>& output_names, 
-         vector<const Tensor*>* output_tensors) {
-  for (auto& one_pair: executors_) {
+void SimpleSession::Run(const vector<string>& output_names,
+    vector<const Tensor*>* output_tensors,
+    const vector<string>& input_names,
+    const vector<const Tensor*>& input_tensors) {
+  FeedInput(input_names, input_tensors);
+  for (auto& one_pair : executors_) {
     Op* op = one_pair.first;
     OpContext* context = one_pair.second;
     op->Compute(context);
@@ -69,6 +75,14 @@ void SimpleSession::Run(const vector<string>& output_names,
   for (int i = 0; i < output_names.size(); i++) {
     (*output_tensors)[i] = GetTensor(output_names[i]);
     CHECK_NOTNULL((*output_tensors)[i]);
+  }
+}
+
+void SimpleSession::FeedInput(const vector<string>& input_names,
+    const vector<const Tensor*>& input_tensors) {
+  CHECK(input_names.size() == input_tensors.size());
+  for (int i = 0; i < input_names.size(); i++) {
+    tensor_map[input_names[i]] = *input_tensors[i];
   }
 }
 

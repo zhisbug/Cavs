@@ -18,11 +18,15 @@ typedef enum {
 typedef struct F_Session F_Session;
 typedef struct F_Tensor F_Tensor;
 
-extern F_Session* F_NewSession(const char* name, size_t len);
-extern void F_SetOpChainOp(F_Session* s, 
-      const void* proto, size_t len);
+extern F_Session* F_NewSession(const char* name, size_t name_len, 
+    const void* proto, size_t proto_len);
+extern F_Session* F_NewTensor(const char* name, size_t name_len, 
+    const int* shape, int dims, F_Dtype dtype);
+//extern void F_SetOpChainOp(F_Session* s, 
+      //const void* proto, size_t len);
 extern void F_Run(F_Session* s, 
-      const char** c_output_names, F_Tensor** c_output_tensors, int noutputs);
+      const char** c_output_names, F_Tensor** c_output_tensors, int noutputs,
+      const char** c_input_names, F_Tensor** c_input_tensors, int ninputs);
 extern void* F_TensorData(const F_Tensor* t);
 extern size_t F_TensorSize(const F_Tensor* t);
 extern F_Tensor* F_GetTensorFromSession(

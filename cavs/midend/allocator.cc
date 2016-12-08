@@ -1,13 +1,13 @@
 #include "cavs/midend/allocator.h"
+#include "cavs/midend/devices.h"
 #include "cavs/util/logging.h"
 
 namespace cavs {
 
 class CPUAllocator : public Allocator {
  public:
-  CPUAllocator() : Allocator() {}    
-  string Name() override { return "CPU"; }
-
+  CPUAllocator() 
+      : Allocator(DeviceTypeToString(CPU), CPU) {}    
   void* AllocateRaw(size_t nbytes) {
     return malloc(nbytes); 
   }
@@ -20,7 +20,7 @@ Allocator* cpu_allocator() {
   static CPUAllocator cpu_alloc;
   return &cpu_alloc;
 }
-REGISTER_STATIC_ALLOCATOR("CPU", cpu_allocator());
+REGISTER_STATIC_ALLOCATOR(DeviceTypeToString(CPU), cpu_allocator());
 
 TrackingAllocator::TrackingAllocator(Allocator* allocator)
     : allocator_(allocator), capacity_(0) {}

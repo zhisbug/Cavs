@@ -12,7 +12,7 @@ void vec_vec_add(float* vec1, float * vec2, float coeff, int len);
 void mat_vec_mul(float* vec_out, float * vec_in, float ** mat, int nrows, int ncols);
 void mat_mat_add(float** mat1, float ** mat2, float coeff, int nrows, int ncols);
 
-void smp_mb(int * mb, int mb_size, int range);
+void smp_mb(int* mb, int mb_size, int range);
 void rand_init_smp_vec(float * a, int dim);
 void load_mat(float ** mat, int nrows, int ncols, char * filename);
 float vec_sq(float * vec, int K);

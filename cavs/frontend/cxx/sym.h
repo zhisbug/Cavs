@@ -12,7 +12,7 @@
 #include <memory>
 #include <iostream>
 
-typedef std::initializer_list<int> Shape;
+typedef std::vector<int> Shape;
 using std::string;
 using std::vector;
 using std::shared_ptr;

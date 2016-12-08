@@ -14,7 +14,11 @@ namespace cavs {
 
 class Allocator {
  public:
-  virtual string Name() = 0;
+  Allocator(const string& name, DeviceType type) :
+    name_(name), type_(type) {}
+  FORCE_INLINE string& name() const { return name_; }
+  FORCE_INLINE DeviceType type() const { return type_; }
+
   virtual void* AllocateRaw(size_t nbytes) = 0;
   virtual void DeallocateRaw(void* buf) = 0;
 
@@ -29,6 +33,10 @@ class Allocator {
       DeallocateRaw(buf);
     }
   }
+
+ private:
+  string name_;
+  DeviceType type_;
 };
 
 class TrackingAllocator : public Allocator {
@@ -36,8 +44,8 @@ class TrackingAllocator : public Allocator {
   explicit TrackingAllocator(Allocator* allocator);
   void* AllocateRaw(size_t nbytes) override;
   void DeallocateRaw(void* buf) override;
-  string Name() override { return allocator_->Name(); }
-  size_t Capacity() { return capacity_; }
+  string& name() const override { return allocator_->Name(); }
+  size_t capacity() const { return capacity_; }
  private:
   Allocator* allocator_;
   size_t capacity_;

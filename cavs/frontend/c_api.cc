@@ -33,18 +33,35 @@ struct F_Tensor {
   Tensor* tensor;
 };
 
-F_Session* F_NewSession(const char* name, size_t len) {
-  string name_str(name, len);
-  SessionBase* sess = GetSession(name_str);
+//F_Session* F_NewSession(const char* name, size_t len) {
+F_Session* F_NewSession(const char* name, size_t name_len, 
+    const void* proto, size_t proto_len) {
+  string name_str(name, name_len);
+  OpChainDef def;
+  def.ParseFromArray(proto, proto_len);
+  SessionBase* sess = GetSession(name_str, def);
   return new F_Session{sess};
 }
 
-void F_SetOpChainOp(F_Session* s, 
-                    const void* proto, size_t len) {
-  OpChainDef def;
-  def.ParseFromArray(proto, len);
-  s->session->SetOpChainDef(def);
+F_Session* F_NewTensor(const char* name, size_t name_len, 
+    const int* shape, int dims, F_Dtype dtype) {
+  string name_str(name, name_len);
+  TensorShape tshape;
+  for (int i = 0; i < dims; i++)
+    tshape.add_dim(shape[i]);
+  Tensor *t = new Tensor(name_str, 
+      GetAllocator(DeviceTypeToString(CPU)), 
+      cavs::DataType((int)dtype)
+      std::move(tshape));
+  return new F_Tensor{t};
 }
+
+//void F_SetOpChainOp(F_Session* s, 
+                    //const void* proto, size_t len) {
+  //OpChainDef def;
+  //def.ParseFromArray(proto, len);
+  //s->session->SetOpChainDef(def);
+//}
 
 void F_Run(F_Session* s, 
     const char** c_output_names, F_Tensor** c_output_tensors, int noutputs) {
