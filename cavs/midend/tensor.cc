@@ -42,22 +42,26 @@ class TensorBuffer : public TensorBufferBase {
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
-    : name_(name), buf_(nullptr), shape_(nullptr) {
+    : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
   shape_.reset(new TensorShape(shape));
-  Reshape(a, type, shape);
+  Rebase(a, type, shape);
 }
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, TensorShape&& shape) 
-    : name_(name), buf_(nullptr), shape_(nullptr) {
+    : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
   shape_.reset(new TensorShape(std::move(shape)));
-  Reshape(a, type, shape);
+  Rebase(a, type, shape);
 }
 
-void Tensor::Reshape(Allocator *a, 
+void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
   shape_.reset(new TensorShape(shape));
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
+}
+
+void Tensor::Rebase(Allocator *a, const Tensor& t) {
+  Rebase(a, t.type_, *(t.shape_));
 }
 
 } //namespace cavs

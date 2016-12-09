@@ -57,16 +57,19 @@ class Tensor {
   Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
   Tensor(const Tensor& t) { *this = t; }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
-    buf_ = tensor.buf_;
+    buf_   = tensor.buf_;
     shape_ = tensor.shape_;
-    name_ = tensor.name_;
+    name_  = tensor.name_;
+    type_  = tensor.type_;
     return *this;
   }
   FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
   FORCE_INLINE const string& name() const { return name_; }
+  //for opeators
   FORCE_INLINE size_t count() const { return buf_->count(); }
 
-  void Reshape(Allocator *a, DataType type, const TensorShape& shape);
+  void Rebase(Allocator *a, DataType type, const TensorShape& shape);
+  void Rebase(Allocator *a, const Tensor& t);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
@@ -79,6 +82,7 @@ class Tensor {
   std::shared_ptr<TensorBufferBase> buf_;
   std::shared_ptr<TensorShape> shape_;
   string name_;
+  DataType type_;
 };
 
 FORCE_INLINE TensorShape::TensorShape(const ListValue& shape) {
@@ -117,11 +121,13 @@ FORCE_INLINE TensorShape& TensorShape::operator =(const TensorShape& b) {
 
 FORCE_INLINE void TensorShape::set_dim(int d, int size) {
   CHECK(dims() >= d);
+  n_elements_ = n_elements_/shape_[d]*size;
   shape_[d] = size;
 }
 
 FORCE_INLINE void TensorShape::add_dim(int size) {
-  shape_[dims()] = size;
+  shape_.push_back(size);
+  if (0 == n_elements_) n_elements_ = 1;
   n_elements_ *= size;
 }
 

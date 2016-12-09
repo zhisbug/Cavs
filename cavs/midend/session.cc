@@ -78,10 +78,6 @@ void SimpleSession::Run(const vector<string>& output_names,
   }
 
   FetchOutput(output_names, output_tensors);
-  //for (int i = 0; i < output_names.size(); i++) {
-    //(*output_tensors)[i] = GetTensor(output_names[i]);
-    //CHECK_NOTNULL((*output_tensors)[i]);
-  //}
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,
@@ -96,16 +92,18 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
   }
 }
 
-
 void SimpleSession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
     const Tensor& t = tensor_map_[output_names[i]];
-    if (t.device_type() == GPU)
-      DeviceContext::MemcpyDeviceToHost(&(*output_tensors)[i], t);
-    else
+    if (t.device_type() == GPU) {
+      (*output_tensors)[i].Rebase(GetAllocator(DeviceTypeToString(CPU)),
+          t);
+      DeviceContext::MemcpyDeviceToHost(&((*output_tensors)[i]), t);
+    }else {
       (*output_tensors)[i] = t;
+    }
   }
 }
 

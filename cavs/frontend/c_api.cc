@@ -92,11 +92,11 @@ void F_Run(F_Session* s,
 }
 
 void* F_TensorData(const F_Tensor* t) { 
-  return const_cast<void*>(cavs::TensorCApi::raw_data(t->tensor)); 
+  return cavs::TensorCApi::raw_data(t->tensor); 
 }
 
 size_t F_TensorSize(const F_Tensor* t) { 
-  return (cavs::TensorCApi::size(t->tensor)); 
+  return cavs::TensorCApi::size(t->tensor); 
 }
 
 //F_Tensor* F_GetTensorFromSession(
