@@ -2,7 +2,7 @@
 #include "cavs/midend/types.h"
 #include "cavs/util/logging.h"
 
-namespace cavs {
+namespace midend {
 
 #define CASE(TYPE, STMTS)                             \
   case DataTypeToEnum<TYPE>::value: {                 \
@@ -64,4 +64,4 @@ void Tensor::Rebase(Allocator *a, const Tensor& t) {
   Rebase(a, t.type_, *(t.shape_));
 }
 
-} //namespace cavs
+} //namespace midend

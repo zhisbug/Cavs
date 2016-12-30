@@ -3,10 +3,10 @@
 
 #include "cavs/midend/types.pb.h"
 #include "cavs/midend/devices.pb.h"
-#include "cavs/midend/macros.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/macros.h"
 
 #include <vector>
 #include <string>
@@ -15,8 +15,9 @@
 using std::vector;
 using std::string;
 
-namespace cavs {
+namespace midend {
 
+//data
 class TensorBufferBase {
  public:
   TensorBufferBase(Allocator* alloc) : alloc_(alloc) {}
@@ -30,6 +31,7 @@ class TensorBufferBase {
   Allocator* const alloc_;
 };
 
+//metadata
 class TensorShape {
  public:
   TensorShape() : n_elements_(0) {}
@@ -41,6 +43,7 @@ class TensorShape {
   TensorShape& operator =(const TensorShape& b);
   FORCE_INLINE int n_elements() const { return n_elements_; }
   FORCE_INLINE int dims() const { return shape_.size(); }
+  FORCE_INLINE int dims(int idx) const { return shape_.at(idx); }
   void set_dim(int d, int size);
   void add_dim(int size);
 
@@ -67,6 +70,8 @@ class Tensor {
   FORCE_INLINE const string& name() const { return name_; }
   //for opeators
   FORCE_INLINE size_t count() const { return buf_->count(); }
+  FORCE_INLINE int dims() const { return shape_->dims(); }
+  FORCE_INLINE int dims(int idx) const { return shape_->dims(idx); }
 
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
   void Rebase(Allocator *a, const Tensor& t);
@@ -131,7 +136,7 @@ FORCE_INLINE void TensorShape::add_dim(int size) {
   n_elements_ *= size;
 }
 
-} //namespace cavs
+} //namespace midend 
 
 #endif
 

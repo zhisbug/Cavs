@@ -4,7 +4,7 @@ PROTOCC=protoc
 PROTOFLAGS=--cpp_out=build/ -I. 
 NVCC=/usr/local/cuda/bin/nvcc
 NVFLAGS=$(CXXFLAGS) -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52
-LDFLAGS=-lgflags -lglog -L/usr/local/lib -lprotobuf -L/usr/local/cuda/lib64 -lcudart  -lcublas 
+LDFLAGS=-lgflags -lglog -L/usr/local/lib -lprotobuf -L/usr/local/cuda/lib64 -lcudart  -lcublas -lcudnn
 
 C_SRC=$(filter-out %_test.cc, $(wildcard cavs/*/*.cc cavs/*/*/*.cc))
 C_OBJS = $(patsubst cavs/%.cc, build/cavs/%.o, $(C_SRC))

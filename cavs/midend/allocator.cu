@@ -1,8 +1,8 @@
 #include "cavs/midend/allocator.h"
-#include "cavs/midend/macros_gpu.h"
 #include "cavs/midend/devices.h"
+#include "cavs/util/macros_gpu.h"
 
-namespace cavs {
+namespace midend {
 
 class GPUAllocator : public Allocator {
  public:
@@ -24,4 +24,4 @@ Allocator* gpu_allocator() {
 }
 REGISTER_STATIC_ALLOCATOR("GPU", gpu_allocator());
 
-}
+} //namespace midend

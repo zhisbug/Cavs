@@ -3,7 +3,7 @@
 #include "cavs/midend/op.h"
 #include "cavs/util/logging.h"
 
-namespace cavs {
+namespace midend {
 
 const Tensor* SessionBase::GetTensor(const string& name) const {
   if (tensor_map_.count(name) == 0)
@@ -22,27 +22,30 @@ namespace session_factory {
 typedef std::unordered_map<string, 
                            SessionRegister::Factory> SessionRegistry;
 static SessionRegistry* GlobalSessionRegistry() {
-  static SessionRegistry* global_session_registry = new SessionRegistry();
+  static SessionRegistry* global_session_registry 
+    = new SessionRegistry();
   return global_session_registry;
 }
-void SessionRegister::InitInternal(const string& name, Factory factory) {
+void SessionRegister::InitInternal(
+    const string& name, Factory factory) {
   GlobalSessionRegistry()->insert(std::make_pair(name, factory));
 }
 
 } //namespace session_factory
 
-SessionBase* GetSession(const string& name, const OpChainDef& def) {
+SessionBase* GetSession(const string& name, 
+    const ::frontend::DepGraph* graph) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
-    return session_factory::GlobalSessionRegistry()->at(name)(def);
+    return session_factory::GlobalSessionRegistry()->at(name)(graph);
 }
 
 
 class SimpleSession : public SessionBase {
  public:
   //SimpleSession() {}
-  SimpleSession(const OpChainDef& def);
+  SimpleSession(const ::frontend::DepGraph* graph);
   void Run(const vector<string>& output_names, 
            vector<Tensor>* output_tensors,
            const vector<string>& input_names,
@@ -55,13 +58,13 @@ class SimpleSession : public SessionBase {
   std::vector<std::pair<Op*, OpContext*>> executors_;
 };
 
-SimpleSession::SimpleSession(const OpChainDef& def)
-    : SessionBase(def) {
-  for (const OpDef& op_def : op_chain_def_.op()) {
-    Op* op = CreateOp(op_def);
-    OpContext* context = new OpContext(op_def, this); 
-    executors_.push_back(std::make_pair(op, context));
-  }
+SimpleSession::SimpleSession(const ::frontend::DepGraph* graph)
+    : SessionBase(graph) {
+  //for (const OpDef& op_def : op_chain_def_.op()) {
+    //Op* op = CreateOp(op_def);
+    //OpContext* context = new OpContext(op_def, this); 
+    //executors_.push_back(std::make_pair(op, context));
+  //}
 }
 
 void SimpleSession::Run(const vector<string>& output_names,
@@ -109,4 +112,4 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
 
 REGISTER_SESSION_BUILDER("SimpleSession", SimpleSession);
 
-} //namespace cavs
+} //namespace midend

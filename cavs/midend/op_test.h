@@ -10,7 +10,7 @@
 
 #include <string>
 
-namespace cavs{
+namespace midend {
 
 namespace test{
 
@@ -54,6 +54,6 @@ OpTest ::OpTest(const OpDef& def) {
 
 } //namespace test
 
-} //namespace cavs
+} //namespace midend
 
 #endif

@@ -1,7 +1,8 @@
-#include "cavs/midend/macros_gpu.h"
 #include "cavs/backend/elementwise_ops.h"
+#include "cavs/backend/cuda_common.h"
+#include "cavs/util/macros_gpu.h"
 
-namespace cavs {
+namespace backend {
 
 template <typename OP, typename T> 
 __global__ void UnaryKernel(T* out, const T* inp, size_t n) {
@@ -42,4 +43,4 @@ struct CUDABinaryFunctor {
 REGISTER_OP_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
 REGISTER_OP_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(math::Add, float));
 
-} //namespace cavs
+} //namespace backend

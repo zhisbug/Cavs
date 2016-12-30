@@ -1,6 +1,6 @@
 #include "cavs/midend/op_def_builder.h"
 
-namespace cavs {
+namespace midend {
 
 OpDefBuilder::OpDefBuilder(string op_name) {
   op_def_.set_name(op_name);
@@ -33,13 +33,13 @@ OpDefBuilder& OpDefBuilder::Shape(std::initializer_list<int> shape) {
   return *this;
 }
 
-void OpDefBuilder::AddToOpChainDef(OpChainDef* op_chain_def) {
-  OpDef* op_def = op_chain_def->add_op();
-  *op_def = op_def_;
-}
+//void OpDefBuilder::AddToOpChainDef(OpChainDef* op_chain_def) {
+  //OpDef* op_def = op_chain_def->add_op();
+  //*op_def = op_def_;
+//}
 
 void OpDefBuilder::Finalize(OpDef* op_def) {
   *op_def = op_def_;
 }
 
-} //namespace cavs
+} //namespace midend

@@ -1,15 +1,16 @@
 syntax = "proto3";
-package cavs;
+package midend;
 
 import "cavs/midend/devices.proto";
 import "cavs/midend/types.proto";
+import "cavs/midend/tensor_shape.proto";
 
 message OpDef {
   string name = 1;
   repeated string input = 2;
   repeated string output = 3;
   DeviceType device = 4; 
-  DataType out_type = 5;
+  DataType dtype = 5;
   string label = 6;
   message AttrDef {
     string name = 1;
@@ -28,6 +29,7 @@ message OpDef {
       float f = 3;
       bool b = 4;
       ListValue list = 5;
+      TensorShapeDef shape = 6;
     }
   }
   repeated AttrDef attr = 7;

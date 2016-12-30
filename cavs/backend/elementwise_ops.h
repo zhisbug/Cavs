@@ -1,9 +1,9 @@
-#ifndef CAVS_KERNEL_ELEMENTWISE_OPS_H_
-#define CAVS_KERNEL_ELEMENTWISE_OPS_H_
+#ifndef CAVS_BACKEND_ELEMENTWISE_OPS_H_
+#define CAVS_BACKEND_ELEMENTWISE_OPS_H_
 
 #include "cavs/backend/elementwise_ops_common.h"
 
-namespace cavs {
+namespace backend {
 
 //template <typename op, typename T>
 //struct UnaryFunctor {
@@ -14,6 +14,7 @@ namespace cavs {
 //struct BinaryFunctor {
   //virtual void operator () (T* out, const T *inp0, const T *inp1, int n) = 0;
 //};
+
 namespace math {
 
 template <typename T>
@@ -32,6 +33,6 @@ struct Add {
 
 } //namespace math
 
-} //namespace cavs
+} //namespace backend
 
 #endif

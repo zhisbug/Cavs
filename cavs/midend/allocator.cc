@@ -2,7 +2,7 @@
 #include "cavs/midend/devices.h"
 #include "cavs/util/logging.h"
 
-namespace cavs {
+namespace midend {
 
 class CPUAllocator : public Allocator {
  public:
@@ -68,4 +68,4 @@ Allocator* GetAllocator(const string& dev) {
     return allocator_factory::GlobalAllocatorRegistry()->at(dev);
 }
 
-} //namespace cavs
+} //namespace midend 

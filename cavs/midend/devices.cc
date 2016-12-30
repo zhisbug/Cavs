@@ -1,6 +1,6 @@
 #include "cavs/midend/devices.h"
 
-namespace cavs {
+namespace midend {
 
 const char* DeviceTypeToString(DeviceType type) {
   if (type == GPU)
@@ -9,4 +9,4 @@ const char* DeviceTypeToString(DeviceType type) {
     return "CPU";
 }
 
-}
+} //namespace midend

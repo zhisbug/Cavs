@@ -5,12 +5,12 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/session.h"
 
-namespace cavs {
+namespace midend {
 
 class OpContext {
  public:
   OpContext(const OpDef& op_def, SessionBase* sb);
-  inline const Tensor* Input(int idx) const { return inputs_.at(idx); }
+  inline const Tensor& Input(int idx) { return *(inputs_.at(idx)); }
   inline Tensor* Output(int idx) { return outputs_.at(idx); }
  private:
   vector<const Tensor*> inputs_;
@@ -26,18 +26,21 @@ class Op {
   string name_;
 };
 
-Op* CreateOp(const OpDef& def);
 
 #define REGISTER_OP_BUILDER(key, ...)                       \
     REGISTER_OP_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
 #define REGISTER_OP_BUILDER_UNIQ(ctr, key, ...)             \
     REGISTER_OP_BUILDER_CONCAT(ctr, key, __VA_ARGS__)
 #define REGISTER_OP_BUILDER_CONCAT(ctr, key, ...)           \
-    static op_factory::OpRegister register_body_##ctr##_op( \
-        op_factory::key.ToString(),                    \
-            [](const OpDef& def) -> Op* {                   \
-                    return new __VA_ARGS__(def);            \
-                })
+    static ::midend::op_factory::OpRegister                 \
+      register_body_##ctr##_op(                             \
+        ::midend::op_factory::key.ToString(),               \
+          [](const ::midend::OpDef& def) -> ::midend::Op* { \
+              return new __VA_ARGS__(def);                  \
+            })
+
+
+Op* CreateOp(const OpDef& def);
 
 namespace op_factory {
 
@@ -47,10 +50,11 @@ class Key {
       : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
-    if (def.device() == GPU)
-      dev_ = "GPU";
-    else
-      dev_ = "CPU";
+    //if (def.device() == GPU)
+      //dev_ = "GPU";
+    //else
+      //dev_ = "CPU";
+    dev_ = DeviceTypeToString(def.device());
   }
   Key& Device(string dev) { dev_ = dev; return *this; }
   Key& Label(string label) { label_ = label; return *this; }
@@ -74,6 +78,6 @@ class OpRegister {
 
 } //namespace op_factory
 
-} //namespace cavs
+} //namespace midend
         
 #endif

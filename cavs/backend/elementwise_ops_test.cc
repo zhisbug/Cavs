@@ -2,8 +2,8 @@
 #include "cavs/midend/op_test.h"
 #include "cavs/util/logging.h"
 
-using namespace cavs;
-using namespace cavs::test;
+using namespace midend;
+using namespace midend::test;
 
 class AddOptest : public OpTest {
  public:

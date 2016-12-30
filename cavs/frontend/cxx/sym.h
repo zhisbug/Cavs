@@ -3,7 +3,7 @@
 
 #include "cavs/midend/op_def.pb.h"
 #include "cavs/frontend/c_api.h"
-#include "cavs/frontend/cxx/chain.h"
+//#include "cavs/frontend/cxx/chain.h"
 #include "cavs/util/logging.h"
 
 #include <string>
@@ -19,28 +19,26 @@ using std::shared_ptr;
 using std::ostream;
 
 class Chain;
-typedef struct SymBody{
+typedef struct SymBody {
   string op_name_;
-  F_Dtype type_;
+  C_Dtype type_;
   Shape shape_;
   string output_;
   string device_;
-  vector<const SymBody*> input_;
-  Chain* chain_ = NULL;
-  SymBody(); 
-  void Finalize(cavs::OpDef* op_def) const;
+  vector<string> input_;
+  void Finalize(midend::OpDef* op_def) const;
   void* raw_data = NULL;
 } SymBody;
 
 class Sym {
  public:
-  Sym() {}
+  //Sym() {}
   Sym& operator =(const Sym& sym);
-  void Finalize(cavs::OpDef* op_def) const { body_->Finalize(op_def); }
+  void Finalize(midend::OpDef* op_def) const { body_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(F_Dtype type, Shape shape, string output = "", string device = "GPU");
-  static Sym Placeholder(F_Dtype type, Shape shape, string output = "", string device = "GPU");
+  static Sym Variable(C_Dtype type, Shape shape, string output = "", string device = "GPU");
+  static Sym Placeholder(C_Dtype type, Shape shape, string output = "", string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string output = "", string device = "GPU");
   //binary operation
@@ -58,14 +56,14 @@ class Sym {
   friend class Session;
 
  private:
-  Sym(const string& op_name, const F_Dtype type, const Shape& shape, 
-      const string& output, const string& device);
+  Sym(const string& op_name,
+      const string& output, const vector<string>& inputs, 
+      const C_Dtype type, const string& device, const Shape& shape);
   inline string& op_name() const { return body_->op_name_; }
-  inline F_Dtype type() const { return body_->type_; }
+  inline C_Dtype type() const { return body_->type_; }
   inline Shape& shape() const { return body_->shape_; }
   inline string& output() const { return body_->output_; }
   inline string& device() const { return body_->device_; }
-  void SetInput(const SymBody* sb) { body_->input_.push_back(sb); }
   shared_ptr<SymBody> body_;
 };
 

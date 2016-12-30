@@ -4,7 +4,7 @@
 #include "cavs/midend/types.pb.h"
 #include "cavs/midend/tensor.h"
 
-namespace cavs {
+namespace midend {
 
 const char* DeviceTypeToString(DeviceType type);
 
@@ -15,6 +15,6 @@ class DeviceContext {
   static void MemcpyDeviceToHost(Tensor* out, const Tensor& inp);
 };
 
-} //namespace cavs
+} //namespace midend 
 
 #endif

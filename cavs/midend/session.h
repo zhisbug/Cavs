@@ -1,14 +1,14 @@
 #ifndef CAVS_MIDEND_SESSION_H_
 #define CAVS_MIDEND_SESSION_H_
 
-#include "cavs/midend/op_chain_def.pb.h"
 #include "cavs/midend/tensor.h"
+#include "cavs/frontend/dep_graph.h"
 
-namespace cavs {
+namespace midend {
 
 class SessionBase {
  public:
-  SessionBase(const OpChainDef& def) : op_chain_def_(def) {}
+  SessionBase(const ::frontend::DepGraph* graph) : graph_(graph) {}
   //virtual void SetOpChainDef(const OpChainDef& def) {
     //op_chain_def_ = def;
   //}
@@ -25,10 +25,10 @@ class SessionBase {
                    vector<Tensor>* output_tensors) {}
   SessionBase() {}
   unordered_map<string, Tensor> tensor_map_;
-  OpChainDef op_chain_def_;
+  const ::frontend::DepGraph* graph_;
 };
 
-SessionBase* GetSession(const string& name, const OpChainDef& def);
+SessionBase* GetSession(const string& name, const ::frontend::DepGraph* graph);
 
 #define REGISTER_SESSION_BUILDER(key, ...)                 \
     REGISTER_SESSION_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
@@ -37,15 +37,16 @@ SessionBase* GetSession(const string& name, const OpChainDef& def);
 #define REGISTER_SESSION_BUILDER_CONCAT(ctr, key, ...)     \
     static session_factory::SessionRegister                \
         register_body_##ctr##_session(key,                 \
-            [](const OpChainDef& def) -> SessionBase* {    \
-                return new __VA_ARGS__(def);               \
+            [](const ::frontend::DepGraph* graph)          \
+              -> SessionBase* {                            \
+                return new __VA_ARGS__(graph);             \
               }) 
 
 namespace session_factory {
 
 class SessionRegister {
  public:
-  typedef SessionBase* (*Factory)(const OpChainDef& def);
+  typedef SessionBase* (*Factory)(const ::frontend::DepGraph* graph);
   SessionRegister(const string& name, Factory factory) {
     InitInternal(name, factory); 
   }
@@ -55,6 +56,6 @@ class SessionRegister {
 
 } //namespace session_factory
 
-} //namespace cavs
+} //namespace midend
 
 #endif

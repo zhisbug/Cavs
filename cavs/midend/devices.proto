@@ -1,5 +1,5 @@
 syntax = "proto3";
-package cavs;
+package midend;
 
 enum DeviceType {
     CPU = 0;

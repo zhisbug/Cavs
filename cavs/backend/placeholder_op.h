@@ -4,7 +4,12 @@
 #include "cavs/midend/op.h"
 #include "cavs/midend/tensor.h"
 
-namespace cavs {
+namespace backend {
+
+using ::midend::Op;
+using ::midend::OpContext;
+using ::midend::OpDef;
+using ::midend::Tensor;
 
 template <typename FUNCTOR, typename T>//copyop, dtype
 class PlaceholderOp : public Op {

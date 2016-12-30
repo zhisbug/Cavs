@@ -2,14 +2,13 @@
 #define CAVS_MIDEND_OP_DEF_BUILDER_H_
 
 #include "cavs/midend/op_def.pb.h"
-#include "cavs/midend/op_chain_def.pb.h"
-#include "cavs/midend/macros.h"
+#include "cavs/util/macros.h"
 
 #include <string>
 
 using std::string;
 
-namespace cavs{
+namespace midend {
 
 class OpDefBuilder {
  public:
@@ -20,7 +19,7 @@ class OpDefBuilder {
   OpDefBuilder& Shape(std::initializer_list<int> shape);
   OpDefBuilder& Attr(string key, string value);
   const OpDef* Finalize() const { return &op_def_; }
-  void AddToOpChainDef(OpChainDef* op_chain_def);
+  //void AddToOpChainDef(OpChainDef* op_chain_def);
   void Finalize(OpDef* op_def); 
 
  private:
@@ -28,6 +27,6 @@ class OpDefBuilder {
   DISALLOW_COPY_AND_ASSIGN(OpDefBuilder);
 };
 
-} //namespace cavs
+} //namespace midend
 
 #endif

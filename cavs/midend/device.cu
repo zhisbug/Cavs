@@ -1,7 +1,7 @@
 #include "cavs/midend/devices.h"
-#include "cavs/midend/macros_gpu.h"
+#include "cavs/util/macros_gpu.h"
 
-namespace cavs {
+namespace midend {
 
 void DeviceContext::MemcpyHostToDevice(Tensor* out, const Tensor& inp) {
   checkCudaError(cudaMemcpy(out->buf_->data(), inp.buf_->data(), 
@@ -16,4 +16,4 @@ void DeviceContext::MemcpyDeviceToHost(Tensor* out, const Tensor& inp) {
 
 }
 
-} //namespace cavs
+} //namespace midend 

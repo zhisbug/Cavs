@@ -3,7 +3,7 @@
 
 #include "cavs/midend/types.pb.h"
 
-namespace cavs {
+namespace midend {
 
 template <class T>
 struct DataTypeToEnum {
@@ -20,6 +20,8 @@ MATCH_TYPE_TO_TYPE(float, DT_FLOAT);
 MATCH_TYPE_TO_TYPE(double, DT_DOUBLE);
 MATCH_TYPE_TO_TYPE(int, DT_INT32);
 
-} //namespace cavs
+#undef MATCH_TYPE_TO_TYPE
+
+} //namespace midend
 
 #endif

@@ -3,7 +3,7 @@
 
 #include "cavs/midend/devices.pb.h"
 #include "cavs/midend/op_def.pb.h"
-#include "cavs/midend/macros.h"
+#include "cavs/util/macros.h"
 
 #include <string>
 #include <unordered_map>
@@ -11,7 +11,7 @@
 using std::string;
 using std::unordered_map;
 
-namespace cavs {
+namespace midend {
 
 class Allocator {
  public:
@@ -81,6 +81,6 @@ class AllocatorRegister {
 
 } //namespace allocator_factory
 
-} //namepsace cavs
+} //namepsace midend 
 
 #endif

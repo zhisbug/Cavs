@@ -6,8 +6,8 @@
 using namespace std;
 
 int main() {
-  Sym A = Sym::Placeholder(F_FLOAT, {2, 3}); 
-  Sym B = Sym::Placeholder(F_FLOAT, {2, 3});
+  Sym A = Sym::Placeholder(C_FLOAT, {2, 3}); 
+  Sym B = Sym::Placeholder(C_FLOAT, {2, 3});
   Sym C = A + B;
 
   Session sess;

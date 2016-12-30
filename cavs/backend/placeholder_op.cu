@@ -1,7 +1,7 @@
-#include "cavs/midend/macros_gpu.h"
 #include "cavs/backend/placeholder_op.h"
+#include "cavs/util/macros_gpu.h"
 
-namespace cavs {
+namespace backend {
 
 template <typename T> 
 struct CUDAMemCopy {
@@ -12,5 +12,5 @@ struct CUDAMemCopy {
 
 REGISTER_OP_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOp<CUDAMemCopy<float>, float>);
 
-} //namespace cavs
+} //namespace backend
 

@@ -1,7 +1,7 @@
 #include "cavs/midend/op.h"
 #include "cavs/util/logging.h"
 
-namespace cavs {
+namespace midend {
 
 OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
   for (const string& input : op_def.input()) {
@@ -17,7 +17,7 @@ OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
           TensorShape shape(attr.value().list()); 
           Allocator* alloc = GetAllocator(op_def); 
           CHECK_NOTNULL(alloc);
-          Tensor out(output, alloc, op_def.out_type(), std::move(shape));
+          Tensor out(output, alloc, op_def.dtype(), std::move(shape));
           sb->InsertTensor(out);
           break;
         }
@@ -53,4 +53,4 @@ Op* CreateOp(const OpDef& def) {
 }
 
 
-} //namespace cavs
+} //namespace midend

@@ -7,17 +7,20 @@
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
 #include "cavs/util/logging.h"
+#include "cavs/frontend/dep_graph.h"
+#include "cavs/frontend/node.h"
 
-using cavs::DataType;
-using cavs::OpChainDef;
-using cavs::SessionBase;
-using cavs::GetSession;
-using cavs::Tensor;
-using cavs::TensorShape;
-using cavs::GetAllocator;
-using cavs::DeviceTypeToString;
+using midend::DataType;
+using midend::SessionBase;
+using midend::GetSession;
+using midend::Tensor;
+using midend::TensorShape;
+using midend::GetAllocator;
+using midend::DeviceTypeToString;
+using frontend::DepGraph;
+using frontend::Node;
 
-namespace cavs {
+namespace midend {
 
 class TensorCApi {
  public:
@@ -31,47 +34,54 @@ class TensorCApi {
 
 }
 
-struct F_Session {
+struct C_Session {
   SessionBase* session;
 };
 
-struct F_Tensor {
+struct C_DepGraph {
+  DepGraph* graph;
+};
+
+struct C_Tensor {
   Tensor tensor;
 };
 
-//F_Session* F_NewSession(const char* name, size_t len) {
-F_Session* F_NewSession(const char* name, size_t name_len, 
-    const void* proto, size_t proto_len) {
+
+C_Session* C_NewSessionWithDG(const char* name, size_t name_len, 
+    C_DepGraph* C_graph) {
   string name_str(name, name_len);
-  OpChainDef def;
-  def.ParseFromArray(proto, proto_len);
-  SessionBase* sess = GetSession(name_str, def);
-  return new F_Session{sess};
+  SessionBase* sess = GetSession(name_str, C_graph->graph);
+  return new C_Session{sess};
 }
 
-F_Tensor* F_NewTensor(const char* name, size_t name_len, 
-    const int* shape, int dims, F_Dtype dtype) {
+C_Tensor* C_NewTensor(const char* name, size_t name_len, 
+    const int* shape, int dims, C_Dtype dtype) {
   string name_str(name, name_len);
   TensorShape tshape;
   for (int i = 0; i < dims; i++)
     tshape.add_dim(shape[i]);
   Tensor t(name_str, 
-      GetAllocator(DeviceTypeToString(cavs::CPU)),
-      cavs::DataType((int)dtype),
+      GetAllocator(DeviceTypeToString(midend::CPU)),
+      midend::DataType((int)dtype),
       std::move(tshape));
-  return new F_Tensor{t};
+  return new C_Tensor{t};
 }
 
-//void F_SetOpChainOp(F_Session* s, 
-                    //const void* proto, size_t len) {
-  //OpChainDef def;
-  //def.ParseFromArray(proto, len);
-  //s->session->SetOpChainDef(def);
-//}
+C_DepGraph* C_GetDefaultDG() {
+  static C_DepGraph* dep_graph = new C_DepGraph{new DepGraph()};
+  return dep_graph;
+}
 
-void F_Run(F_Session* s, 
-    const char** c_output_names, F_Tensor** c_output_tensors, int noutputs, 
-    const char** c_input_names, F_Tensor* const* c_input_tensors, int ninputs) {
+void C_AddNode(C_DepGraph* C_graph, const void* def, size_t def_length) {
+  midend::OpDef op_def;
+  op_def.ParseFromArray(def, def_length);
+  frontend::Node* node = new Node(op_def);
+  C_graph->graph->AddNode(node);
+}
+
+void C_Run(C_Session* s, 
+    const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
+    const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {
   vector<string> output_names(noutputs);
   vector<Tensor> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++) {
@@ -87,22 +97,22 @@ void F_Run(F_Session* s,
   s->session->Run(output_names, &output_tensors, 
                   input_names, input_tensors);
   for (int i = 0; i < noutputs; i++) {
-    c_output_tensors[i] = new F_Tensor{output_tensors[i]};
+    c_output_tensors[i] = new C_Tensor{output_tensors[i]};
   }
 }
 
-void* F_TensorData(const F_Tensor* t) { 
-  return cavs::TensorCApi::raw_data(t->tensor); 
+void* C_TensorData(const C_Tensor* t) { 
+  return midend::TensorCApi::raw_data(t->tensor); 
 }
 
-size_t F_TensorSize(const F_Tensor* t) { 
-  return cavs::TensorCApi::size(t->tensor); 
+size_t C_TensorSize(const C_Tensor* t) { 
+  return midend::TensorCApi::size(t->tensor); 
 }
 
-//F_Tensor* F_GetTensorFromSession(
-      //F_Session* sess, const char* c_tensor_name, size_t len) {
+//C_Tensor* C_GetTensorFromSession(
+      //C_Session* sess, const char* c_tensor_name, size_t len) {
   //string tensor_name(c_tensor_name, len);
   //const Tensor* t = sess->session->GetTensor(tensor_name);
   //CHECK_NOTNULL(t);
-  //return new F_Tensor{const_cast<Tensor*>(t)};
+  //return new C_Tensor{const_cast<Tensor*>(t)};
 //}

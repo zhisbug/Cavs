@@ -2,9 +2,9 @@
 #define CAVS_MIDEND_TENSOR_TEST_H_
 
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/macros_gpu.h"
+#include "cavs/util/macros_gpu.h"
 
-namespace cavs {
+namespace midend {
 
 namespace test {
 
@@ -27,6 +27,6 @@ void FetchValues(vector<T>* vals, const Tensor& tensor) {
 
 } //namespace test
 
-} //namespace cavs
+} //namespace midend
 
 #endif
