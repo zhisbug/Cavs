@@ -18,7 +18,7 @@ void SymBody::Finalize(midend::OpDef* op_def) const {
   //shape
   attr->set_name("shape");
   for (auto dim : shape_)
-    attr->mutable_value()->mutable_list()->add_i(dim);
+    attr->mutable_value()->mutable_shape()->add_dim(dim);
 }
 
 Sym::Sym(const string& op_name,
@@ -26,7 +26,7 @@ Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
          const string& device,
-         const Shape& shape) {
+         const Shape& shape = {}) {
   static int id = 0;  
   body_.reset(new SymBody());
   body_->op_name_ = op_name;
@@ -40,7 +40,16 @@ Sym::Sym(const string& op_name,
   body_->Finalize(&op_def);
   string serial_def;
   op_def.SerializeToString(&serial_def);
-  C_AddNode(C_GetDefaultDG(), serial_def.c_str(), serial_def.length());
+  int *dim;
+  size_t dim_length;
+  C_AddNode(C_GetDefaultDG(),
+      serial_def.c_str(), serial_def.length(),
+      &dim, &dim_length);
+  body_->shape_.clear();
+  for (int i = 0; i < dim_length; i++)
+    body_->shape_.push_back(dim[i]);
+  free(dim);
+
 }
 
 Sym Sym::Variable(C_Dtype type, Shape shape, string output, string device) {
@@ -52,13 +61,15 @@ Sym Sym::Placeholder(C_Dtype type, Shape shape, string output, string device) {
 }
 
 Sym Sym::Abs(const Sym& a, string output, string device) {
-  Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
+  //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
+  Sym s("Abs", output, {a.output()}, a.type(), device);
   return s;
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string output, string device) {
   CHECK(a.type() == b.type());
-  Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
+  //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
+  Sym s("Add", output, {a.output(), b.output()}, a.type(), device);
   return s;
 }
 

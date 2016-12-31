@@ -3,6 +3,7 @@
 
 #include "cavs/midend/op.h"
 #include "cavs/midend/op_def.pb.h"
+#include "cavs/midend/tensor_shape.pb.h"
 #include "cavs/midend/allocator.h"
 
 namespace backend {
@@ -11,6 +12,7 @@ using ::midend::Op;
 using ::midend::OpContext;
 using ::midend::OpDef;
 using ::midend::Tensor;
+using ::midend::TensorShapeDef;
 
 template <typename FUNCTOR, typename T>//mathop, dtype
 class UnaryOp : public Op {
@@ -25,6 +27,14 @@ class UnaryOp : public Op {
     Tensor* out = context->Output(0);
     //test_func(out->mutable_data<T>(), inp->data<T>(), inp->count());
     FUNCTOR::Compute(out->mutable_data<T>(), inp.data<T>(), inp.count());
+  }
+
+  static void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {
+    CHECK(inputs.size() == 1);
+    shape->clear_dim();
+    for (auto dim : inputs[0]->dim())
+      shape->add_dim(dim);
   }
 };
 
@@ -43,8 +53,14 @@ class BinaryOp : public Op {
     FUNCTOR::Compute(out->mutable_data<T>(), inp0.data<T>(), inp1.data<T>(),
             inp0.count());
   }
- private:
-  FUNCTOR functor_;
+
+  static void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {
+    CHECK(inputs.size() == 2);
+    shape->clear_dim();
+    for (auto dim : inputs[0]->dim())
+      shape->add_dim(dim);
+  }
 };
 
 } //namespace backend

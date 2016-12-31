@@ -11,7 +11,7 @@ namespace frontend {
 
 class DepGraph {
  public:
-  void AddNode(const Node* node) {}
+  Node* AddNode(const ::midend::OpDef& op_def);
 
  private:
   std::vector<Node*> nodes_;

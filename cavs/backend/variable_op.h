@@ -3,6 +3,7 @@
 
 #include "cavs/midend/op.h"
 #include "cavs/midend/tensor.h"
+#include "cavs/midend/tensor_shape.pb.h"
 
 namespace backend {
 
@@ -10,6 +11,7 @@ using ::midend::Op;
 using ::midend::OpContext;
 using ::midend::OpDef;
 using ::midend::Tensor;
+using ::midend::TensorShapeDef;
 
 template <typename FUNCTOR, typename T>//fillop, dtype
 class VariableOp : public Op {
@@ -22,6 +24,9 @@ class VariableOp : public Op {
     LOG(INFO) << "here";
     FUNCTOR::Compute(out->mutable_data<T>(), out->count());
   }
+
+  static void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {}
 };
 
 } //namespace backend

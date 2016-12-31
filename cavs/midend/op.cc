@@ -33,23 +33,43 @@ namespace op_factory {
 typedef std::unordered_map<string, 
                            OpRegister::Factory> OpRegistry;
 static OpRegistry* GlobalOpRegistry() {
-    static OpRegistry* global_op_registry = new OpRegistry();
-    return global_op_registry;
+  static OpRegistry* global_op_registry = new OpRegistry();
+  return global_op_registry;
 }
 void OpRegister::InitInternal(const string& name,
-                                    Factory factory) {
-    GlobalOpRegistry()->insert(std::make_pair(
-        name, factory));
+                              Factory factory) {
+  GlobalOpRegistry()->insert(std::make_pair(
+      name, factory));
+}
+
+typedef std::unordered_map<string, 
+                           OpShapeRegister::Factory> OpShapeRegistry;
+static OpShapeRegistry* GlobalOpShapeRegistry() {
+  static OpShapeRegistry* global_op_shape_registry
+    = new OpShapeRegistry();
+  return global_op_shape_registry;
+}
+void OpShapeRegister::InitInternal(const string& name,
+                                   Factory factory) {
+  GlobalOpShapeRegistry()->insert(std::make_pair(
+      name, factory));
 }
 
 } //namespace op_factory
 
 Op* CreateOp(const OpDef& def) {
-    const string key = op_factory::Key(def).ToString();
-    if (op_factory::GlobalOpRegistry()->count(key) == 0)
-        return NULL;
-    else
-        return op_factory::GlobalOpRegistry()->at(key)(def);
+  const string& key = op_factory::Key(def).ToString();
+  if (op_factory::GlobalOpRegistry()->count(key) == 0)
+    return NULL;
+  else
+    return op_factory::GlobalOpRegistry()->at(key)(def);
+}
+
+void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {
+  const string& key = op_factory::Key(def).ToString();
+  CHECK(op_factory::GlobalOpShapeRegistry()->count(key) != 0);
+  op_factory::GlobalOpShapeRegistry()->at(key)(shape, def, inputs);
 }
 
 

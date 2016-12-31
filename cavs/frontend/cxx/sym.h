@@ -3,7 +3,6 @@
 
 #include "cavs/midend/op_def.pb.h"
 #include "cavs/frontend/c_api.h"
-//#include "cavs/frontend/cxx/chain.h"
 #include "cavs/util/logging.h"
 
 #include <string>
@@ -18,7 +17,6 @@ using std::vector;
 using std::shared_ptr;
 using std::ostream;
 
-class Chain;
 typedef struct SymBody {
   string op_name_;
   C_Dtype type_;

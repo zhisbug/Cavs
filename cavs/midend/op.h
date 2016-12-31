@@ -37,10 +37,16 @@ class Op {
         ::midend::op_factory::key.ToString(),               \
           [](const ::midend::OpDef& def) -> ::midend::Op* { \
               return new __VA_ARGS__(def);                  \
-            })
+            });                                             \
+    static ::midend::op_factory::OpShapeRegister            \
+      register_body_##ctr##_op_shape(                       \
+        ::midend::op_factory::key.ToString(),               \
+              __VA_ARGS__::ShapeInference)
 
 
 Op* CreateOp(const OpDef& def);
+void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs);
 
 namespace op_factory {
 
@@ -50,10 +56,6 @@ class Key {
       : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
-    //if (def.device() == GPU)
-      //dev_ = "GPU";
-    //else
-      //dev_ = "CPU";
     dev_ = DeviceTypeToString(def.device());
   }
   Key& Device(string dev) { dev_ = dev; return *this; }
@@ -70,6 +72,18 @@ class OpRegister {
   typedef Op* (*Factory)(const OpDef& def);
 
   OpRegister(const string& name, Factory factory) {
+    InitInternal(name, factory); 
+  }
+ private:
+  void InitInternal(const string& name, Factory factory); 
+};
+
+class OpShapeRegister {
+ public:
+  typedef void (*Factory)(TensorShapeDef* shape, 
+      const OpDef& def, const vector<const TensorShapeDef*>& inputs);
+
+  OpShapeRegister(const string& name, Factory factory) {
     InitInternal(name, factory); 
   }
  private:

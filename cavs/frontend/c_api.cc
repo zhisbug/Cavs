@@ -1,11 +1,12 @@
 #include "c_api.h"
 
-#include "cavs/midend/op_chain_def.pb.h"
 #include "cavs/midend/types.pb.h"
+#include "cavs/midend/tensor_shape.pb.h"
 #include "cavs/midend/devices.pb.h"
 #include "cavs/midend/session.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
+#include "cavs/midend/op.h"
 #include "cavs/util/logging.h"
 #include "cavs/frontend/dep_graph.h"
 #include "cavs/frontend/node.h"
@@ -15,7 +16,9 @@ using midend::SessionBase;
 using midend::GetSession;
 using midend::Tensor;
 using midend::TensorShape;
+using midend::TensorShapeDef;
 using midend::GetAllocator;
+using midend::ShapeInference;
 using midend::DeviceTypeToString;
 using frontend::DepGraph;
 using frontend::Node;
@@ -72,11 +75,20 @@ C_DepGraph* C_GetDefaultDG() {
   return dep_graph;
 }
 
-void C_AddNode(C_DepGraph* C_graph, const void* def, size_t def_length) {
+void C_AddNode(C_DepGraph* C_graph, 
+    const void* def, size_t def_length,
+    int** dim, size_t* dim_length) {
   midend::OpDef op_def;
   op_def.ParseFromArray(def, def_length);
-  frontend::Node* node = new Node(op_def);
-  C_graph->graph->AddNode(node);
+  Node* node = C_graph->graph->AddNode(op_def);
+  TensorShapeDef shape_def;
+  vector<const TensorShapeDef*> input_shapes;
+  node->InputShapes(&input_shapes);
+  ShapeInference(&shape_def, op_def, input_shapes);
+  *dim_length = shape_def.dim_size();
+  *dim = new int[*dim_length];
+  for (int i = 0; i < shape_def.dim_size(); i++)
+    (*dim)[i] = shape_def.dim(i);
 }
 
 void C_Run(C_Session* s, 

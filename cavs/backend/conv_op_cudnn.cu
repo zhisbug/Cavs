@@ -3,6 +3,7 @@
 #include "cavs/midend/allocator.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/cudnn_types.h"
+#include "cavs/midend/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
 
 namespace backend {
@@ -10,12 +11,14 @@ namespace backend {
 using midend::Allocator;
 using midend::GetAllocator;
 using midend::DataTypeToCudnnType;
+using midend::TensorShapeDef;
 
 class ConvCudnnOpBase : public Op {
  public:
   explicit ConvCudnnOpBase(const OpDef& def);
   ~ConvCudnnOpBase(); 
-  /*void Compute(OpContext* context) override {}*/
+  static void ShapeInference(TensorShapeDef* shape,
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {}
 
  protected:
   cudnnTensorDescriptor_t x_desc_, y_desc_;

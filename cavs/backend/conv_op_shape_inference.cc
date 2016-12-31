@@ -1,4 +1,3 @@
-#include "cavs/midend/shape_type_inference.h"
 #include "cavs/midend/tensor.h"
 
 namespace backend{

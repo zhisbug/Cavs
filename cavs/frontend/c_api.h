@@ -22,7 +22,11 @@ extern C_Session* C_NewSessionWithDG(
 extern C_Tensor* C_NewTensor(const char* name, size_t name_len, 
     const int* shape, int dims, C_Dtype dtype);
 extern C_DepGraph* C_GetDefaultDG();
-extern void C_AddNode(C_DepGraph* C_graph, const void* def, size_t def_length);
+//extern void C_ShapeInference(C_DepGraph* graph, 
+      //const void* def, size_t def_length);
+extern void C_AddNode(C_DepGraph* C_graph, 
+      const void* def, size_t def_length,
+      int** dim, size_t* dim_length);
 extern void C_Run(C_Session* s, 
       const char** c_output_names, C_Tensor** c_output_tensors, int noutputs,
       const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs);
