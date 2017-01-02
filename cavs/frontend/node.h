@@ -13,11 +13,25 @@ namespace frontend {
 class Node {
  public:
   explicit Node(const ::midend::OpDef& op_def) : op_def_(op_def) {}
-  void AddInput(const Node* n) { inputs_.push_back(n); }
-  void AddOutput(const Node* n) { outputs_.push_back(n); }
+  inline void AddInput(const Node* n) {
+    inputs_.push_back(n);
+  }
+  inline void AddOutput(const Node* n) {
+    outputs_.push_back(n);
+  }
   void InputShapes(std::vector<const ::midend::TensorShapeDef*>* inputs);
-  //Node* input_node(int idx);
-  //Node* output_node(int idx);
+  inline const ::midend::OpDef& op_def() const {
+    return op_def_; 
+  }
+  inline void SetShape(const ::midend::TensorShapeDef& def) {
+    for (int i = 0; i < op_def_.attr_size(); i++) {
+      ::midend::OpDef::AttrDef* attr = op_def_.mutable_attr(i);
+      if (attr->name() == "shape") {
+        *(attr->mutable_value()->mutable_shape()) = def;
+        break;
+      }
+    }
+  }
 
  private:
   ::midend::OpDef op_def_;
@@ -25,7 +39,7 @@ class Node {
   std::vector<const Node*> outputs_;
 };
 
-__inline__ void Node::InputShapes(
+inline void Node::InputShapes(
     std::vector<const ::midend::TensorShapeDef*>* inputs ) {
   for (auto* node : inputs_) {
     for (auto& attr : node->op_def_.attr()) {

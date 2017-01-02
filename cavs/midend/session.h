@@ -9,9 +9,6 @@ namespace midend {
 class SessionBase {
  public:
   SessionBase(const ::frontend::DepGraph* graph) : graph_(graph) {}
-  //virtual void SetOpChainDef(const OpChainDef& def) {
-    //op_chain_def_ = def;
-  //}
   const Tensor* GetTensor(const string& name) const;
   void InsertTensor(const Tensor& t);
   virtual void Run(const vector<string>& output_names, 

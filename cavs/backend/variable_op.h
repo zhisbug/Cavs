@@ -26,7 +26,15 @@ class VariableOp : public Op {
   }
 
   static void ShapeInference(TensorShapeDef* shape,
-    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {}
+    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {
+    shape->clear_dim();  
+    for (auto& attr : def.attr()) {
+      if (attr.name() == "shape") {
+        CHECK(attr.value().has_shape());
+        *shape = attr.value().shape();
+      }
+    }
+  }
 };
 
 } //namespace backend

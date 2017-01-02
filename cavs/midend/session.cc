@@ -60,11 +60,11 @@ class SimpleSession : public SessionBase {
 
 SimpleSession::SimpleSession(const ::frontend::DepGraph* graph)
     : SessionBase(graph) {
-  //for (const OpDef& op_def : op_chain_def_.op()) {
-    //Op* op = CreateOp(op_def);
-    //OpContext* context = new OpContext(op_def, this); 
-    //executors_.push_back(std::make_pair(op, context));
-  //}
+  for (int i = 0; i < graph->num_nodes(); i++) {
+    Op* op = CreateOp((*graph)[i]->op_def());
+    OpContext* context = new OpContext((*graph)[i]->op_def(), this); 
+    executors_.push_back(std::make_pair(op, context));
+  }
 }
 
 void SimpleSession::Run(const vector<string>& output_names,

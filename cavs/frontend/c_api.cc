@@ -85,6 +85,7 @@ void C_AddNode(C_DepGraph* C_graph,
   vector<const TensorShapeDef*> input_shapes;
   node->InputShapes(&input_shapes);
   ShapeInference(&shape_def, op_def, input_shapes);
+  node->SetShape(shape_def);
   *dim_length = shape_def.dim_size();
   *dim = new int[*dim_length];
   for (int i = 0; i < shape_def.dim_size(); i++)

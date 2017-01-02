@@ -12,6 +12,12 @@ namespace frontend {
 class DepGraph {
  public:
   Node* AddNode(const ::midend::OpDef& op_def);
+  inline int num_nodes() const {
+    return nodes_.size();
+  }
+  inline const Node* operator[](int node_id) const {
+    return nodes_[node_id];
+  }
 
  private:
   std::vector<Node*> nodes_;

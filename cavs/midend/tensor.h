@@ -35,8 +35,7 @@ class TensorBufferBase {
 class TensorShape {
  public:
   TensorShape() : n_elements_(0) {}
-  typedef OpDef::AttrType::ListValue ListValue;
-  explicit TensorShape(const ListValue& shape);
+  explicit TensorShape(const TensorShapeDef& shape);
   explicit TensorShape(std::initializer_list<int> shape);
   explicit TensorShape(const TensorShape& shape);
   explicit TensorShape(TensorShape&& shape);
@@ -90,13 +89,13 @@ class Tensor {
   DataType type_;
 };
 
-FORCE_INLINE TensorShape::TensorShape(const ListValue& shape) {
-  CHECK(shape.i_size() > 0);
-  shape_.resize(shape.i_size());
+FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {
+  CHECK(shape.dim_size() > 0);
+  shape_.resize(shape.dim_size());
   n_elements_ = 1;    
-  for (int idx = 0; idx < shape.i_size(); idx++) {
-    shape_[idx] = shape.i(idx);
-    n_elements_ *= shape.i(idx); 
+  for (int idx = 0; idx < shape.dim_size(); idx++) {
+    shape_[idx] = shape.dim(idx);
+    n_elements_ *= shape.dim(idx); 
   }
 }
 

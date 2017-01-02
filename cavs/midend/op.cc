@@ -13,8 +13,8 @@ OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
     if (!t)
       for (const OpDef::AttrDef& attr : op_def.attr()) {
         if (attr.name() == "shape") {
-          CHECK(attr.value().has_list());
-          TensorShape shape(attr.value().list()); 
+          CHECK(attr.value().has_shape());
+          TensorShape shape(attr.value().shape()); 
           Allocator* alloc = GetAllocator(op_def); 
           CHECK_NOTNULL(alloc);
           Tensor out(output, alloc, op_def.dtype(), std::move(shape));

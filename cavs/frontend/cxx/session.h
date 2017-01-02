@@ -26,12 +26,11 @@ class Session {
     //C_Run(s_, output_names, &output_tensors, res.size());
   //}
 
-  typedef std::initializer_list<std::pair<Sym&, void*>> FEED;
-  void Run(Sym& res, FEED feed) {
+  void Run(Sym& out, std::initializer_list<std::pair<Sym&, void*>> feed) {
     vector<C_Tensor*> input_tensor;
     vector<const char*> input_name;
     for (auto& input : feed) {
-      Sym& sym = input.first;
+      const Sym& sym = input.first;
       void* data = input.second;
       if (feed_map_.count(sym.output()) == 0) {
         feed_map_[sym.output()] = 
@@ -42,16 +41,14 @@ class Session {
       C_Tensor* ft = feed_map_[sym.output()];
       memcpy(C_TensorData(ft), data, C_TensorSize(ft));
       input_tensor.push_back(ft);
-      input_name.push_back(input.first.output().data());
+      input_name.push_back(sym.output().data());
     }
     vector<C_Tensor*> output_tensor(1);
     vector<const char*> output_name(1);
-    output_name[0] = res.output().c_str();
+    output_name[0] = out.output().c_str();
     C_Run(s_, output_name.data(), output_tensor.data(), 1,
           input_name.data(), input_tensor.data(), input_name.size());
-    //checkCudaError(cudaMemcpy(res.body_->raw_data, C_TensorData(output_tensor[0]), 
-               //C_TensorSize(output_tensor[0]), cudaMemcpyDeviceToHost));
-    res.body_->raw_data = C_TensorData(output_tensor[0]);
+    out.body_->raw_data = C_TensorData(output_tensor[0]);
     for (auto* t : output_tensor)
       free(t);
   }
