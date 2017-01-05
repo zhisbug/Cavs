@@ -5,16 +5,6 @@
 
 namespace backend {
 
-//template <typename op, typename T>
-//struct UnaryFunctor {
-  //virtual void operator () (T* out, const T *inp, int n) = 0;
-//};
-
-//template <typename op, typename T>
-//struct BinaryFunctor {
-  //virtual void operator () (T* out, const T *inp0, const T *inp1, int n) = 0;
-//};
-
 namespace math {
 
 template <typename T>
@@ -25,9 +15,37 @@ struct Abs {
 };
 
 template <typename T>
+struct Neg {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp) {
+    return -inp;
+  }
+};
+
+template <typename T>
 struct Add {
   FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
     return (inp0 + inp1);
+  }
+};
+
+template <typename T>
+struct Sub {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
+    return (inp0 - inp1);
+  }
+};
+
+template <typename T>
+struct Mul {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
+    return (inp0 * inp1);
+  }
+};
+
+template <typename T>
+struct Div {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
+    return (inp0 / inp1);
   }
 };
 

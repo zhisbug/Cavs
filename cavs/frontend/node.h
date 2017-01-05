@@ -23,34 +23,14 @@ class Node {
   inline const ::midend::OpDef& op_def() const {
     return op_def_; 
   }
-  inline void SetShape(const ::midend::TensorShapeDef& def) {
-    for (int i = 0; i < op_def_.attr_size(); i++) {
-      ::midend::OpDef::AttrDef* attr = op_def_.mutable_attr(i);
-      if (attr->name() == "shape") {
-        *(attr->mutable_value()->mutable_shape()) = def;
-        break;
-      }
-    }
-  }
+  void SetShape(const ::midend::TensorShapeDef& def); 
+  Node* GetGradientNode();
 
  private:
   ::midend::OpDef op_def_;
   std::vector<const Node*> inputs_;
   std::vector<const Node*> outputs_;
 };
-
-inline void Node::InputShapes(
-    std::vector<const ::midend::TensorShapeDef*>* inputs ) {
-  for (auto* node : inputs_) {
-    for (auto& attr : node->op_def_.attr()) {
-      if (attr.name() == "shape") {
-        CHECK(attr.value().has_shape());
-        inputs->push_back(&(attr.value().shape()));
-        break;
-      }
-    }
-  }
-}
 
 } //namespace frontend
 

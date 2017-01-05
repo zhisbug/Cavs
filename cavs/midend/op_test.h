@@ -14,9 +14,6 @@ namespace midend {
 
 namespace test{
 
-class SessionOpTest : public SessionBase {
-};
-
 class OpTest {
  public:
   OpTest (const OpDef& def);
@@ -44,12 +41,12 @@ class OpTest {
   std::unique_ptr<Op> op_;
   std::unique_ptr<OpContext> context_;
   OpDef op_def_;
-  SessionOpTest* sess_;
+  SessionBase* sess_;
 };
 
 OpTest ::OpTest(const OpDef& def) {
   op_def_.CopyFrom(def); 
-  sess_ = new SessionOpTest();
+  sess_ = new SessionBase();
 }
 
 } //namespace test

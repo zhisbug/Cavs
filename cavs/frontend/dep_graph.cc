@@ -22,4 +22,8 @@ Node* DepGraph::AddNode(const ::midend::OpDef& op_def) {
   return node;
 }
 
+void DepGraph::GradientPass() {
+  
+}
+
 } //namespace frontend

@@ -18,6 +18,7 @@ class DepGraph {
   inline const Node* operator[](int node_id) const {
     return nodes_[node_id];
   }
+  void GradientPass();
 
  private:
   std::vector<Node*> nodes_;
