@@ -7,7 +7,7 @@ using namespace std;
 
 namespace frontend {
 
-Node* DepGraph::AddNode(const ::midend::OpDef& op_def) {
+Node* DepGraph::AddNode(const OpDef& op_def) {
   const string& out = op_def.output(0);
   CHECK(out2node_.find(out) == out2node_.end());
   Node* node = new Node(op_def);

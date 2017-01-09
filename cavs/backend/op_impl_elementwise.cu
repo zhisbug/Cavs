@@ -1,4 +1,5 @@
-#include "cavs/backend/elementwise_ops.h"
+#include "cavs/backend/op_impl_elementwise_common.h"
+#include "cavs/backend/functors_elementwise.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/util/macros_gpu.h"
 
@@ -39,8 +40,7 @@ struct CUDABinaryFunctor {
 #define CudaBinaryOpInstance(math, dtype)   \
     BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype> 
 
-/*REGISTER_OP_BUILDER(Key("Add").Device("GPU"), UnaryOp<CUDAUnaryFunctor<math::Abs<float>, float>, float>);*/
-REGISTER_OP_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
-REGISTER_OP_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(math::Add, float));
+REGISTER_OP_IMPL_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
+REGISTER_OP_IMPL_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(math::Add, float));
 
 } //namespace backend

@@ -1,7 +1,12 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/allocator.h"
-#include "cavs/midend/op.h"
+#include "cavs/backend/op_impl.h"
+#include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
+
+using ::backend::OpImpl;
+using ::backend::OpDecl;
+using ::backend::CreateOp;
 
 namespace midend {
 
@@ -55,13 +60,13 @@ class SimpleSession : public SessionBase {
                  const vector<Tensor>& input_tensors) override;
   void FetchOutput(const vector<string>& output_names,
                    vector<Tensor>* output_tensors) override;
-  std::vector<std::pair<Op*, OpContext*>> executors_;
+  std::vector<std::pair<OpImpl*, OpContext*>> executors_;
 };
 
 SimpleSession::SimpleSession(const ::frontend::DepGraph* graph)
     : SessionBase(graph) {
   for (int i = 0; i < graph->num_nodes(); i++) {
-    Op* op = CreateOp((*graph)[i]->op_def());
+    OpImpl* op = CreateOp((*graph)[i]->op_def());
     OpContext* context = new OpContext((*graph)[i]->op_def(), this); 
     executors_.push_back(std::make_pair(op, context));
   }
@@ -75,7 +80,7 @@ void SimpleSession::Run(const vector<string>& output_names,
   FeedInput(input_names, input_tensors);
 
   for (auto& one_pair : executors_) {
-    Op* op = one_pair.first;
+    OpImpl* op = one_pair.first;
     OpContext* context = one_pair.second;
     op->Compute(context);
   }

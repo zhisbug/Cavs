@@ -1,24 +1,23 @@
 #include "c_api.h"
 
-#include "cavs/midend/types.pb.h"
-#include "cavs/midend/tensor_shape.pb.h"
-#include "cavs/midend/devices.pb.h"
+#include "cavs/proto/types.pb.h"
+#include "cavs/proto/tensor_shape.pb.h"
+#include "cavs/proto/devices.pb.h"
 #include "cavs/midend/session.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/op.h"
+#include "cavs/backend/op_decl.h"
+#include "cavs/backend/op_impl.h"
 #include "cavs/util/logging.h"
 #include "cavs/frontend/dep_graph.h"
 #include "cavs/frontend/node.h"
 
-using midend::DataType;
 using midend::SessionBase;
 using midend::GetSession;
 using midend::Tensor;
 using midend::TensorShape;
-using midend::TensorShapeDef;
 using midend::GetAllocator;
-using midend::ShapeInference;
+//using midend::ShapeInference;
 using midend::DeviceTypeToString;
 using frontend::DepGraph;
 using frontend::Node;
@@ -64,8 +63,7 @@ C_Tensor* C_NewTensor(const char* name, size_t name_len,
   for (int i = 0; i < dims; i++)
     tshape.add_dim(shape[i]);
   Tensor t(name_str, 
-      GetAllocator(DeviceTypeToString(midend::CPU)),
-      midend::DataType((int)dtype),
+      GetAllocator(DeviceTypeToString(CPU)), DataType((int)dtype),
       std::move(tshape));
   return new C_Tensor{t};
 }
@@ -78,13 +76,13 @@ C_DepGraph* C_GetDefaultDG() {
 void C_AddNode(C_DepGraph* C_graph, 
     const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
-  midend::OpDef op_def;
+  OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   Node* node = C_graph->graph->AddNode(op_def);
   TensorShapeDef shape_def;
   vector<const TensorShapeDef*> input_shapes;
   node->InputShapes(&input_shapes);
-  ShapeInference(&shape_def, op_def, input_shapes);
+  //ShapeInference(&shape_def, op_def, input_shapes);
   node->SetShape(shape_def);
   *dim_length = shape_def.dim_size();
   *dim = new int[*dim_length];

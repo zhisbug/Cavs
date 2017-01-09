@@ -1,24 +1,23 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/c_api.h"
-#include "cavs/midend/devices.pb.h"
+#include "cavs/proto/devices.pb.h"
 #include "cavs/util/logging.h"
 
-void SymBody::Finalize(midend::OpDef* op_def) const {
+void SymBody::Finalize(OpDef* op_def) const {
   op_def->set_name(op_name_);
   for (const string& str: input_)
     op_def->add_input(str);
   op_def->add_output(output_);
-  op_def->set_dtype(midend::DataType((int)type_));
+  op_def->set_dtype(DataType((int)type_));
   //device
   if (device_ == "GPU")
-    op_def->set_device(midend::GPU);
+    op_def->set_device(GPU);
   else
-    op_def->set_device(midend::CPU);
-  midend::OpDef::AttrDef* attr = op_def->add_attr();
+    op_def->set_device(CPU);
   //shape
-  attr->set_name("shape");
+  TensorShapeDef* shape_def = op_def->mutable_shape();
   for (auto dim : shape_)
-    attr->mutable_value()->mutable_shape()->add_dim(dim);
+    shape_def->add_dim(dim);
 }
 
 Sym::Sym(const string& op_name,
@@ -36,7 +35,7 @@ Sym::Sym(const string& op_name,
   body_->shape_ = shape; 
   body_->device_ = device; 
 
-  midend::OpDef op_def;
+  OpDef op_def;
   body_->Finalize(&op_def);
   string serial_def;
   op_def.SerializeToString(&serial_def);

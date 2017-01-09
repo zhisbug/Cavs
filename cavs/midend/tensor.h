@@ -1,8 +1,8 @@
 #ifndef CAVS_MIDEND_TENSOR_H_
 #define CAVS_MIDEND_TENSOR_H_
 
-#include "cavs/midend/types.pb.h"
-#include "cavs/midend/devices.pb.h"
+#include "cavs/proto/types.pb.h"
+#include "cavs/proto/devices.pb.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"

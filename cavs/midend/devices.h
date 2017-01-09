@@ -1,7 +1,7 @@
-#ifndef DEVICES_H
-#define DEVICES_H
+#ifndef CAVS_MIDEND_DEVICES_H_
+#define CAVS_MIDEND_DEVICES_H_
 
-#include "cavs/midend/types.pb.h"
+#include "cavs/proto/types.pb.h"
 #include "cavs/midend/tensor.h"
 
 namespace midend {

@@ -1,8 +1,9 @@
-#include "cavs/midend/op_def_builder.h"
+#include "cavs/backend/op_def_builder.h"
 #include "cavs/midend/op_test.h"
 #include "cavs/util/logging.h"
 
 using namespace midend;
+using namespace backend;
 using namespace midend::test;
 
 class AddOptest : public OpTest {

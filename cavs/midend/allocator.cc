@@ -20,6 +20,7 @@ Allocator* cpu_allocator() {
   static CPUAllocator cpu_alloc;
   return &cpu_alloc;
 }
+
 REGISTER_STATIC_ALLOCATOR(DeviceTypeToString(CPU), cpu_allocator());
 
 TrackingAllocator::TrackingAllocator(Allocator* allocator)

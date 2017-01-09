@@ -1,8 +1,8 @@
 #ifndef CAVS_FRONTEND_DEP_GRAPH_H_
 #define CAVS_FRONTEND_DEP_GRAPH_H_
 
-#include "cavs/midend/op_def.pb.h"
 #include "cavs/frontend/node.h"
+#include "cavs/proto/op_def.pb.h"
 
 #include <vector>
 #include <unordered_map>
@@ -11,7 +11,7 @@ namespace frontend {
 
 class DepGraph {
  public:
-  Node* AddNode(const ::midend::OpDef& op_def);
+  Node* AddNode(const OpDef& op_def);
   inline int num_nodes() const {
     return nodes_.size();
   }

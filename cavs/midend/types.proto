@@ -1,8 +1,0 @@
-syntax = "proto3";
-package midend;
-
-enum DataType {
-  DT_FLOAT    = 0;
-  DT_DOUBLE   = 1;
-  DT_INT32    = 2;
-}

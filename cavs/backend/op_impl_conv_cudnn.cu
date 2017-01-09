@@ -1,24 +1,22 @@
-#include "cavs/backend/conv_op.h"
+#include "cavs/backend/op_impl.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/midend/devices.h"
-#include "cavs/midend/cudnn_types.h"
-#include "cavs/midend/tensor_shape.pb.h"
+#include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/cudnn_types.h"
 
 namespace backend {
 
 using midend::Allocator;
 using midend::GetAllocator;
-using midend::DataTypeToCudnnType;
-using midend::TensorShapeDef;
+using midend::DeviceTypeToString;
+using midend::Tensor;
 
-class ConvCudnnOpBase : public Op {
+class ConvOpCudnnBase : public OpImpl {
  public:
-  explicit ConvCudnnOpBase(const OpDef& def);
-  ~ConvCudnnOpBase(); 
-  static void ShapeInference(TensorShapeDef* shape,
-    const OpDef& def, const vector<const TensorShapeDef*>& inputs) {}
+  explicit ConvOpCudnnBase(const OpDef& def);
+  ~ConvOpCudnnBase(); 
 
  protected:
   cudnnTensorDescriptor_t x_desc_, y_desc_;
@@ -31,16 +29,16 @@ class ConvCudnnOpBase : public Op {
   Allocator* alloc_;
 };
 
-ConvCudnnOpBase::ConvCudnnOpBase(const OpDef& def) : Op(def){
+ConvOpCudnnBase::ConvOpCudnnBase(const OpDef& def) : OpImpl(def){
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&bias_desc_));
   checkCUDNNError(cudnnCreateFilterDescriptor(&filter_desc_));
   checkCUDNNError(cudnnCreateConvolutionDescriptor(&conv_desc_));
-  alloc_ = GetAllocator(DeviceTypeToString(midend::GPU));
+  alloc_ = GetAllocator(DeviceTypeToString(GPU));
 }
 
-ConvCudnnOpBase::~ConvCudnnOpBase() {
+ConvOpCudnnBase::~ConvOpCudnnBase() {
   checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));
   checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));
   checkCUDNNError(cudnnDestroyTensorDescriptor(bias_desc_));
@@ -49,11 +47,11 @@ ConvCudnnOpBase::~ConvCudnnOpBase() {
 }
 
 template <typename T>
-class ConvCudnnOp: public ConvCudnnOpBase {
+class ConvOpCudnn: public ConvOpCudnnBase {
  public:
-  explicit ConvCudnnOp(const OpDef& def) 
-      : ConvCudnnOpBase(def), workspace(NULL), workspaceSizeInBytes(0) {}
-  ~ConvCudnnOp();
+  explicit ConvOpCudnn(const OpDef& def) 
+      : ConvOpCudnnBase(def), workspace(NULL), workspaceSizeInBytes(0) {}
+  ~ConvOpCudnn();
   void Compute(OpContext* context) override;
   /*static void inference_shape*/
 
@@ -63,13 +61,13 @@ class ConvCudnnOp: public ConvCudnnOpBase {
 };
 
 template <typename T>
-ConvCudnnOp<T>::~ConvCudnnOp() { 
+ConvOpCudnn<T>::~ConvOpCudnn() { 
   if (workspace)
     alloc_->Deallocate<char>((char*)workspace); 
 }
 
 template <typename T>
-void ConvCudnnOp<T>::Compute(OpContext* context) {
+void ConvOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   const Tensor& filter = context->Input(1);
   const Tensor& bias   = context->Input(2);
@@ -133,13 +131,13 @@ void ConvCudnnOp<T>::Compute(OpContext* context) {
 }
 
 template <typename T>
-class ConvCudnnOpGrad: public ConvCudnnOpBase {
+class ConvOpCudnnGrad: public ConvOpCudnnBase {
  public:
-  explicit ConvCudnnOpGrad(const OpDef& def) 
-      : ConvCudnnOpBase(def), 
+  explicit ConvOpCudnnGrad(const OpDef& def) 
+      : ConvOpCudnnBase(def), 
       filter_workspace(NULL), data_workspace(NULL),
       filter_workspaceSizeInBytes(0), data_workspaceSizeInBytes(0) {}
-  ~ConvCudnnOpGrad(); 
+  ~ConvOpCudnnGrad(); 
   void Compute(OpContext* context) override;
 
  private:
@@ -150,13 +148,13 @@ class ConvCudnnOpGrad: public ConvCudnnOpBase {
 };
 
 template <typename T>
-ConvCudnnOpGrad<T>::~ConvCudnnOpGrad() { 
+ConvOpCudnnGrad<T>::~ConvOpCudnnGrad() { 
   alloc_->Deallocate<char>((char*)filter_workspace); 
   alloc_->Deallocate<char>((char*)data_workspace); 
 }
 
 template <typename T>
-void ConvCudnnOpGrad<T>::Compute(OpContext* context) {
+void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& dy = context->Input(0);
   const Tensor& x = context->Input(1);
   const Tensor& filter = context->Input(2);

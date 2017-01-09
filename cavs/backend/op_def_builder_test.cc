@@ -1,7 +1,7 @@
-#include "cavs/midend/op_def_builder.h"
+#include "cavs/backend/op_def_builder.h"
 #include "cavs/util/logging.h"
 
-using namespace midend;
+using namespace backend;
 
 int main() {
   OpDef op_def;

@@ -1,5 +1,5 @@
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/types.h"
+#include "cavs/util/types.h"
 #include "cavs/util/logging.h"
 
 namespace midend {

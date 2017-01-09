@@ -1,5 +1,4 @@
 syntax = "proto3";
-package midend;
 
 message TensorShapeDef {
   repeated int64 dim = 1;

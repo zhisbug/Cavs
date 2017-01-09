@@ -4,6 +4,8 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/frontend/dep_graph.h"
 
+#include <unordered_map>
+
 namespace midend {
 
 class SessionBase {
@@ -21,7 +23,7 @@ class SessionBase {
   virtual void FetchOutput(const vector<string>& output_names,
                    vector<Tensor>* output_tensors) {}
   SessionBase() {}
-  unordered_map<string, Tensor> tensor_map_;
+  std::unordered_map<string, Tensor> tensor_map_;
   const ::frontend::DepGraph* graph_;
 };
 

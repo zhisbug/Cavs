@@ -1,7 +1,7 @@
-#ifndef CAVS_BACKEND_ELEMENTWISE_OPS_H_
-#define CAVS_BACKEND_ELEMENTWISE_OPS_H_
+#ifndef CAVS_BACKEND_FUNCTORS_ELEMENTWISE_H_
+#define CAVS_BACKEND_FUNCTORS_ELEMENTWISE_H_
 
-#include "cavs/backend/elementwise_ops_common.h"
+#include "cavs/util/macros.h"
 
 namespace backend {
 

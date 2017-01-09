@@ -1,4 +1,4 @@
-#include "cavs/backend/variable_op.h"
+#include "cavs/backend/op_impl_variable.h"
 #include "cavs/util/macros_gpu.h"
 
 namespace backend {
@@ -10,6 +10,6 @@ struct CUDAZeroFiller {
   }
 };
 
-REGISTER_OP_BUILDER(Key("Variable").Device("GPU"), VariableOp<CUDAZeroFiller<float>, float>);
+REGISTER_OP_IMPL_BUILDER(Key("Variable").Device("GPU"), VariableOpImpl<CUDAZeroFiller<float>, float>);
 
 } //namespace backend

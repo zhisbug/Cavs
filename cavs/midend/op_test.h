@@ -2,17 +2,25 @@
 #define CAVS_MIDEND_OP_TEST_H_
 
 #include "cavs/midend/allocator.h"
-#include "cavs/midend/types.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/op.h"
 #include "cavs/midend/session.h"
 #include "cavs/midend/tensor_test.h"
+#include "cavs/backend/op_impl.h"
+#include "cavs/util/types.h"
 
 #include <string>
+
+using ::backend::OpImpl;
+using ::backend::CreateOp;
 
 namespace midend {
 
 namespace test{
+
+class SessionOpTest : public SessionBase {
+
+};
+
 
 class OpTest {
  public:
@@ -38,15 +46,15 @@ class OpTest {
   }
 
  private:
-  std::unique_ptr<Op> op_;
+  std::unique_ptr<OpImpl> op_;
   std::unique_ptr<OpContext> context_;
   OpDef op_def_;
-  SessionBase* sess_;
+  SessionOpTest* sess_;
 };
 
 OpTest ::OpTest(const OpDef& def) {
-  op_def_.CopyFrom(def); 
-  sess_ = new SessionBase();
+  op_def_ = def; 
+  sess_ = new SessionOpTest();
 }
 
 } //namespace test

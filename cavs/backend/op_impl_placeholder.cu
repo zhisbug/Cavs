@@ -1,4 +1,4 @@
-#include "cavs/backend/placeholder_op.h"
+#include "cavs/backend/op_impl_placeholder.h"
 #include "cavs/util/macros_gpu.h"
 
 namespace backend {
@@ -10,7 +10,7 @@ struct CUDAMemCopy {
   }
 };
 
-REGISTER_OP_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOp<CUDAMemCopy<float>, float>);
+REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy<float>, float>);
 
 } //namespace backend
 

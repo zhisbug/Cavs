@@ -1,7 +1,7 @@
 #ifndef CAVS_FRONTEND_CXX_SYM_H_
 #define CAVS_FRONTEND_CXX_SYM_H_
 
-#include "cavs/midend/op_def.pb.h"
+#include "cavs/proto/op_def.pb.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/util/logging.h"
 
@@ -24,7 +24,7 @@ typedef struct SymBody {
   string output_;
   string device_;
   vector<string> input_;
-  void Finalize(midend::OpDef* op_def) const;
+  void Finalize(OpDef* op_def) const;
   void* raw_data = NULL;
 } SymBody;
 
@@ -32,7 +32,7 @@ class Sym {
  public:
   //Sym() {}
   Sym& operator =(const Sym& sym);
-  void Finalize(midend::OpDef* op_def) const { body_->Finalize(op_def); }
+  void Finalize(OpDef* op_def) const { body_->Finalize(op_def); }
 
   //non-arguments operation
   static Sym Variable(C_Dtype type, Shape shape, string output = "", string device = "GPU");
