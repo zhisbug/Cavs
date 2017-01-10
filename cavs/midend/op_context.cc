@@ -8,10 +8,11 @@ OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {
     const Tensor* t = sb->GetTensor(input); 
     inputs_.push_back(t);
   }
-  for (const string& output : op_def.output()) {
+  for (int i = 0; i < op_def.output_size(); i++) {
+    const string& output = op_def.output(i);
     const Tensor* t = sb->GetTensor(output);
     if (!t) {
-      TensorShape shape(op_def.shape()); 
+      TensorShape shape(op_def.shape(i)); 
       Allocator* alloc = GetAllocator(op_def); 
       CHECK_NOTNULL(alloc);
       Tensor out(output, alloc, op_def.dtype(), std::move(shape));

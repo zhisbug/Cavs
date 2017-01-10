@@ -10,4 +10,3 @@ int main() {
   LOG(INFO) << "\n" << op_def.DebugString();
   return 0;
 }
-

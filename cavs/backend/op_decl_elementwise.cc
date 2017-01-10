@@ -7,11 +7,11 @@ class UnaryOpDecl : public OpDecl {
  public:
   explicit UnaryOpDecl(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
-    const vector<const TensorShapeDef*>& inputs) override {
+    const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 1);
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
-    out_shape->at(0) = *(inputs[0]);
+    out_shape->at(0) = inputs[0];
   }
 };
 
@@ -19,11 +19,11 @@ class BinaryOpDecl : public OpDecl {
  public:
   explicit BinaryOpDecl(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
-    const vector<const TensorShapeDef*>& inputs) override {
+    const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2);
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
-    out_shape->at(0) = *(inputs[0]);
+    out_shape->at(0) = inputs[0];
   }
 };
 

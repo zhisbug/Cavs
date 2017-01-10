@@ -5,13 +5,13 @@ import "cavs/proto/types.proto";
 import "cavs/proto/tensor_shape.proto";
 
 message OpDef {
-  string name            = 1;
-  repeated string input  = 2;
-  repeated string output = 3;
-  TensorShapeDef shape   = 4;
-  DeviceType device      = 5; 
-  DataType dtype         = 6;
-  string label           = 7;
+  string name                   = 1;
+  repeated string input         = 2;
+  repeated string output        = 3;
+  repeated TensorShapeDef shape = 4;
+  DeviceType device             = 5; 
+  DataType dtype                = 6;
+  string label                  = 7;
 
   message AttrDef {
     string name    = 1;

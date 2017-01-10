@@ -15,9 +15,11 @@ void SymBody::Finalize(OpDef* op_def) const {
   else
     op_def->set_device(CPU);
   //shape
-  TensorShapeDef* shape_def = op_def->mutable_shape();
+  op_def->clear_shape();
+  TensorShapeDef* shape_def = op_def->add_shape();
   for (auto dim : shape_)
     shape_def->add_dim(dim);
+  LOG(INFO) << op_def->DebugString();
 }
 
 Sym::Sym(const string& op_name,
@@ -48,7 +50,6 @@ Sym::Sym(const string& op_name,
   for (int i = 0; i < dim_length; i++)
     body_->shape_.push_back(dim[i]);
   free(dim);
-
 }
 
 Sym Sym::Variable(C_Dtype type, Shape shape, string output, string device) {

@@ -4,7 +4,8 @@
 namespace backend {
 
 OpDefBuilder& OpDefBuilder::Shape(std::initializer_list<int> shape) {
-  TensorShapeDef* shape_def = op_def_.mutable_shape();
+  op_def_.clear_shape();
+  TensorShapeDef* shape_def = op_def_.add_shape();
   for (int dim : shape)
     shape_def->add_dim(dim);
   return *this;

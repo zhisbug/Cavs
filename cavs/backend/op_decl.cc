@@ -33,7 +33,7 @@ vector<OpDef> MakeGradient(const OpDef& def) {
 }
 
 vector<TensorShapeDef> ShapeInference(const OpDef& def, 
-    const vector<const TensorShapeDef*>& inputs) {
+    const vector<TensorShapeDef>& inputs) {
   CHECK(op_factory::GlobalOpDeclRegistry()->count(def.name()) > 0);
   OpDecl *op_decl = op_factory::GlobalOpDeclRegistry()->at(def.name())(def);
   vector<TensorShapeDef> ret;

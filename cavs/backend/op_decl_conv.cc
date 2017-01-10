@@ -6,7 +6,7 @@ class ConvOpDeclBase : public OpDecl {
  public:
   explicit ConvOpDeclBase(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* shape,
-    const vector<const TensorShapeDef*>& inputs) override {}
+    const vector<TensorShapeDef>& inputs) override {}
   virtual void MakeGradient(vector<OpDef>* grad) override {}
 };
 

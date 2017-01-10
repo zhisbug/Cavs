@@ -8,22 +8,33 @@ using namespace std;
 namespace frontend {
 
 Node* DepGraph::AddNode(const OpDef& op_def) {
-  const string& out = op_def.output(0);
-  CHECK(out2node_.find(out) == out2node_.end());
   Node* node = new Node(op_def);
-  out2node_[out] = node;
   nodes_.push_back(node);
+  for (auto& out : op_def.output()) {
+    CHECK(out2edge_.find(out) == out2edge_.end());
+    Edge* out_edge = new Edge(out);
+    out2edge_[out] = out_edge;
+    out_edge->SetSource(node);
+  }
 
   for (auto& input : op_def.input()) {
-    CHECK(out2node_.find(input) != out2node_.end());
-    node->AddInput(out2node_[input]);
-    out2node_[input]->AddOutput(node);
+    CHECK(out2edge_.find(input) != out2edge_.end());
+    node->AddInput(out2edge_[input]);
+    out2edge_[input]->AddDst(node);
   }
   return node;
 }
 
-void DepGraph::GradientPass() {
-  
+void Node::InputShapes(
+    vector<TensorShapeDef>* inputs) {
+  for (auto* edge: inputs_) {
+    inputs->push_back(edge->shape());
+  }
 }
+
+//void Node::SetShape(const vector<TensorShapeDef>& def) {
+  //for (auto& shape_def : def)
+    //*(op_def_.add_shape()) = shape_def;
+//}
 
 } //namespace frontend

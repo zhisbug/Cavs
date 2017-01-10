@@ -15,7 +15,7 @@ class OpDecl {
   virtual void MakeGradient(vector<OpDef>* grad) = 0;
   virtual void ShapeInference(
     vector<TensorShapeDef>* out_shape,
-    const vector<const TensorShapeDef*>& inputs) = 0;
+    const vector<TensorShapeDef>& inputs) = 0;
 
  protected:
   OpDef op_def_;
@@ -26,7 +26,7 @@ class OpDecl {
 
 vector<OpDef> MakeGradient(const OpDef& def);
 vector<TensorShapeDef> ShapeInference(const OpDef& def, 
-    const vector<const TensorShapeDef*>& inputs);
+    const vector<TensorShapeDef>& inputs);
 
 #define REGISTER_OP_DECL_BUILDER(key, ...)                         \
     REGISTER_OP_DECL_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)

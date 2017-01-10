@@ -10,15 +10,14 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/util/logging.h"
 #include "cavs/frontend/dep_graph.h"
-#include "cavs/frontend/node.h"
 
 using midend::SessionBase;
 using midend::GetSession;
 using midend::Tensor;
 using midend::TensorShape;
 using midend::GetAllocator;
-//using midend::ShapeInference;
 using midend::DeviceTypeToString;
+using backend::ShapeInference;
 using frontend::DepGraph;
 using frontend::Node;
 
@@ -79,15 +78,17 @@ void C_AddNode(C_DepGraph* C_graph,
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   Node* node = C_graph->graph->AddNode(op_def);
-  TensorShapeDef shape_def;
-  vector<const TensorShapeDef*> input_shapes;
+  vector<TensorShapeDef> input_shapes;
   node->InputShapes(&input_shapes);
-  //ShapeInference(&shape_def, op_def, input_shapes);
+  const vector<TensorShapeDef>& shape_def =
+    ShapeInference(op_def, input_shapes);
   node->SetShape(shape_def);
-  *dim_length = shape_def.dim_size();
+  //for user interface, the output of each operator can only be 1
+  CHECK(shape_def.size() == 1);
+  *dim_length = shape_def[0].dim_size();
   *dim = new int[*dim_length];
-  for (int i = 0; i < shape_def.dim_size(); i++)
-    (*dim)[i] = shape_def.dim(i);
+  for (int i = 0; i < shape_def[0].dim_size(); i++)
+    (*dim)[i] = shape_def[0].dim(i);
 }
 
 void C_Run(C_Session* s, 
