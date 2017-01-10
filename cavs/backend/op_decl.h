@@ -20,7 +20,7 @@ class OpDecl {
  protected:
   OpDef op_def_;
   inline std::string GetGradientName(const std::string& op) {
-    return op+"grad";
+    return op+"_grad";
   }
 };
 
