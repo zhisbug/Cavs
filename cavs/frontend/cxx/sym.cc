@@ -19,7 +19,6 @@ void SymBody::Finalize(OpDef* op_def) const {
   TensorShapeDef* shape_def = op_def->add_shape();
   for (auto dim : shape_)
     shape_def->add_dim(dim);
-  LOG(INFO) << op_def->DebugString();
 }
 
 Sym::Sym(const string& op_name,

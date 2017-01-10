@@ -15,6 +15,7 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
     Edge* out_edge = new Edge(out);
     out2edge_[out] = out_edge;
     out_edge->SetSource(node);
+    node->AddOutput(out_edge);
   }
 
   for (auto& input : op_def.input()) {

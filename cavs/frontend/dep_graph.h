@@ -2,6 +2,7 @@
 #define CAVS_FRONTEND_DEP_GRAPH_H_
 
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/util/logging.h"
 
 #include <vector>
 #include <unordered_map>
@@ -73,8 +74,10 @@ class Edge {
 };
 
 inline void Node::SetShape(const std::vector<TensorShapeDef>& def) {
+  op_def_.clear_shape();
   for (int i = 0; i < outputs_.size(); i++) {
     outputs_[i]->SetShape(def[i]);
+    *(op_def_.add_shape()) = def[i];
   }
 }
 
