@@ -1,8 +1,8 @@
 syntax = "proto3";
 
-import "cavs/proto/devices.proto";
-import "cavs/proto/types.proto";
-import "cavs/proto/tensor_shape.proto";
+import "devices.proto";
+import "types.proto";
+import "tensor_shape.proto";
 
 message OpDef {
   string name            = 1;
