@@ -56,12 +56,15 @@ Sym::Sym(const string& op_name,
 Sym::Sym(const string& op_name, const string& input) {
   CHECK(op_name == "Optimizer");
   char **grads;
-  size_t grads_num = 0;
+  int grads_num = 0;
   C_GetGrad(C_GetDefaultDG(),
             input.c_str(), input.length(),
             &grads, &grads_num);
+  node_.reset(new node());
+  node_->op_name_ = op_name;
+  node_->shape_.clear();
   for (int i = 0; i < grads_num; i++) {
-    node_->output_.push_back(grads[i]);
+    node_->output_.emplace_back(grads[i]);
     free(grads[i]);
   }
   free(grads);

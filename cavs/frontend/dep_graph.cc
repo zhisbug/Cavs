@@ -21,7 +21,6 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   }
 
   for (auto& input : op_def.input()) {
-    LOG(INFO) << input << "here";
     CHECK(out2edge_.find(input) != out2edge_.end());
     node->AddInput(out2edge_[input]);
     out2edge_[input]->AddDst(node);
@@ -29,11 +28,16 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   return node;
 }
 
-void DepGraph::BackPropagate(const string& loss) {
+void DepGraph::BackPropagate(
+    vector<string>* gen_grads, const string& loss) {
+  gen_grads->clear();
   for (int i = num_nodes()-1; i >= 0; i--) {
     const vector<OpDef>& grads = 
       ::backend::MakeGradient(nodes_[i]->op_def()); 
     for (auto& grad : grads) {
+      //it is only a temporary version
+      for (auto& grad_out_str : grad.output())
+        gen_grads->push_back(grad_out_str);
       for (auto& grad_input : grad.input()) {
         //if the grad_input does not exist, 
         //it must be the loss node,
@@ -58,6 +62,11 @@ void DepGraph::BackPropagate(const string& loss) {
       node->SetShape(out_shapes);
     }
   }
+}
+
+void DepGraph::DebugString() {
+  for (auto* node : nodes_)
+    LOG(INFO) << node->op_def().DebugString();
 }
 
 void Node::InputShapes(

@@ -92,10 +92,18 @@ void C_AddNode(C_DepGraph* C_graph,
 }
 
 void C_GetGrad(C_DepGraph* C_graph, 
-      const char* name, size_t name_len,
-      char ***grads, size_t* grads_num) {
-  string loss(name, name_len);
-  C_graph->graph->BackPropagate(loss);
+      const char* c_name, int name_len,
+      char *** c_grads, int* grads_num) {
+  string loss(c_name, name_len);
+  vector<string> grads_vec;
+  C_graph->graph->BackPropagate(&grads_vec, loss);
+  *grads_num = grads_vec.size();
+  *c_grads = (char**)malloc(grads_vec.size()*sizeof(char*));
+  for (int i = 0; i < grads_vec.size(); i++) {
+    (*c_grads)[i] = (char*)malloc(grads_vec[i].length());
+    memcpy((*c_grads)[i], grads_vec[i].c_str(), grads_vec[i].length()+1);
+  }
+  //C_graph->graph->DebugString();
 }
 
 void C_Run(C_Session* s, 
