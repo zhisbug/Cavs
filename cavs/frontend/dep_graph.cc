@@ -1,6 +1,7 @@
 #include "cavs/frontend/dep_graph.h"
 #include "cavs/util/logging.h"
 #include "cavs/backend/op_decl.h"
+#include "cavs/backend/op_def_builder.h"
 
 #include <string>
 
@@ -20,6 +21,7 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   }
 
   for (auto& input : op_def.input()) {
+    LOG(INFO) << input << "here";
     CHECK(out2edge_.find(input) != out2edge_.end());
     node->AddInput(out2edge_[input]);
     out2edge_[input]->AddDst(node);
@@ -32,6 +34,22 @@ void DepGraph::BackPropagate(const string& loss) {
     const vector<OpDef>& grads = 
       ::backend::MakeGradient(nodes_[i]->op_def()); 
     for (auto& grad : grads) {
+      for (auto& grad_input : grad.input()) {
+        //if the grad_input does not exist, 
+        //it must be the loss node,
+        //and it should be set to one-value matrix
+        if (out2edge_.find(grad_input) == out2edge_.end()) {
+          const string& ori_input = 
+            ::backend::OpDecl::GetOriginName(grad_input);
+          CHECK(out2edge_.find(ori_input) != out2edge_.end());
+          OpDef const_op;
+          ::backend::BuildConstantOpDef(&const_op, 
+              grad_input,
+              out2edge_[ori_input]->shape(),
+              1.f);
+          AddNode(const_op);
+        }
+      }
       Node* node = AddNode(grad);
       vector<TensorShapeDef> inputs;
       node->InputShapes(&inputs);

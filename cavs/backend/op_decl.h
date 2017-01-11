@@ -16,12 +16,17 @@ class OpDecl {
   virtual void ShapeInference(
     vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) = 0;
+  inline static std::string GetGradientName(const std::string& op) {
+    return op+"_grad";
+  }
+  inline static std::string GetOriginName(const std::string& op) {
+    CHECK(op.length() > 5);
+    CHECK(op.substr(op.length()-5, 5) == "_grad");
+    return op.substr(0, op.length()-5);
+  }
 
  protected:
   OpDef op_def_;
-  inline std::string GetGradientName(const std::string& op) {
-    return op+"_grad";
-  }
 };
 
 vector<OpDef> MakeGradient(const OpDef& def);
