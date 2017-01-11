@@ -1,5 +1,6 @@
 #include "cavs/frontend/dep_graph.h"
 #include "cavs/util/logging.h"
+#include "cavs/backend/op_decl.h"
 
 #include <string>
 
@@ -26,16 +27,26 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   return node;
 }
 
+void DepGraph::BackPropagate(const string& loss) {
+  for (int i = num_nodes()-1; i >= 0; i--) {
+    const vector<OpDef>& grads = 
+      ::backend::MakeGradient(nodes_[i]->op_def()); 
+    for (auto& grad : grads) {
+      Node* node = AddNode(grad);
+      vector<TensorShapeDef> inputs;
+      node->InputShapes(&inputs);
+      const vector<TensorShapeDef>& out_shapes = 
+        ::backend::ShapeInference(grad, inputs);
+      node->SetShape(out_shapes);
+    }
+  }
+}
+
 void Node::InputShapes(
     vector<TensorShapeDef>* inputs) {
   for (auto* edge: inputs_) {
     inputs->push_back(edge->shape());
   }
 }
-
-//void Node::SetShape(const vector<TensorShapeDef>& def) {
-  //for (auto& shape_def : def)
-    //*(op_def_.add_shape()) = shape_def;
-//}
 
 } //namespace frontend

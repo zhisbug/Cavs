@@ -3,11 +3,12 @@
 #include "cavs/proto/devices.pb.h"
 #include "cavs/util/logging.h"
 
-void SymBody::Finalize(OpDef* op_def) const {
+void Sym::node::Finalize(OpDef* op_def) const {
   op_def->set_name(op_name_);
   for (const string& str: input_)
     op_def->add_input(str);
-  op_def->add_output(output_);
+  for (const string& str: output_)
+    op_def->add_output(str);
   op_def->set_dtype(DataType((int)type_));
   //device
   if (device_ == "GPU")
@@ -28,27 +29,42 @@ Sym::Sym(const string& op_name,
          const string& device,
          const Shape& shape = {}) {
   static int id = 0;  
-  body_.reset(new SymBody());
-  body_->op_name_ = op_name;
-  body_->output_ = output == "" ? (op_name + std::to_string(id++)) : output;
-  body_->input_ = inputs;
-  body_->type_ = type;
-  body_->shape_ = shape; 
-  body_->device_ = device; 
+  node_.reset(new node());
+  node_->op_name_ = op_name;
+  node_->output_.push_back(output == "" ? 
+    (op_name + std::to_string(id++)) : output);
+  node_->input_ = inputs;
+  node_->type_ = type;
+  node_->shape_ = shape; 
+  node_->device_ = device; 
 
   OpDef op_def;
-  body_->Finalize(&op_def);
+  node_->Finalize(&op_def);
   string serial_def;
   op_def.SerializeToString(&serial_def);
-  int *dim;
+  int *dim = NULL;
   size_t dim_length;
   C_AddNode(C_GetDefaultDG(),
       serial_def.c_str(), serial_def.length(),
       &dim, &dim_length);
-  body_->shape_.clear();
+  node_->shape_.clear();
   for (int i = 0; i < dim_length; i++)
-    body_->shape_.push_back(dim[i]);
+    node_->shape_.push_back(dim[i]);
   free(dim);
+}
+
+Sym::Sym(const string& op_name, const string& input) {
+  CHECK(op_name == "Optimizer");
+  char **grads;
+  size_t grads_num = 0;
+  C_GetGrad(C_GetDefaultDG(),
+            input.c_str(), input.length(),
+            &grads, &grads_num);
+  for (int i = 0; i < grads_num; i++) {
+    node_->output_.push_back(grads[i]);
+    free(grads[i]);
+  }
+  free(grads);
 }
 
 Sym Sym::Variable(C_Dtype type, Shape shape, string output, string device) {
@@ -61,31 +77,41 @@ Sym Sym::Placeholder(C_Dtype type, Shape shape, string output, string device) {
 
 Sym Sym::Abs(const Sym& a, string output, string device) {
   //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
-  Sym s("Abs", output, {a.output()}, a.type(), device);
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Abs", output, {a.node_->output_[0]},
+        a.node_->type_, device);
   return s;
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string output, string device) {
-  CHECK(a.type() == b.type());
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
   //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
-  Sym s("Add", output, {a.output(), b.output()}, a.type(), device);
+  Sym s("Add", output, {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
+Sym Sym::Optimizer(const Sym& a) {
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Optimizer", a.node_->output_[0]);
   return s;
 }
 
 Sym& Sym::operator= (const Sym& sym) {
-  this->body_ = sym.body_; 
+  this->node_ = sym.node_; 
   return *this;
 }
 
 void Sym::print() {
   //hack here
   int length = 1;
-  CHECK_NOTNULL(body_.get());
-  for (int dim : body_->shape_)
+  CHECK_NOTNULL(node_.get());
+  for (int dim : node_->shape_)
     length *= dim;
-  if (body_->type_ == C_FLOAT) {
+  if (node_->type_ == C_FLOAT) {
     for (int i = 0; i < length; i++)
-      LOG(INFO) << (float)((float*)body_->raw_data)[i];
+      LOG(INFO) << (float)((float*)node_->raw_data)[i];
   }
 }
 

@@ -91,6 +91,13 @@ void C_AddNode(C_DepGraph* C_graph,
     (*dim)[i] = shape_def[0].dim(i);
 }
 
+void C_GetGrad(C_DepGraph* C_graph, 
+      const char* name, size_t name_len,
+      char ***grads, size_t* grads_num) {
+  string loss(name, name_len);
+  C_graph->graph->BackPropagate(loss);
+}
+
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {

@@ -21,7 +21,7 @@ class DepGraph {
   inline const Node* operator[](int node_id) const {
     return nodes_[node_id];
   }
-  void GradientPass();
+  void BackPropagate(const std::string& loss);
 
  private:
   std::vector<Node*> nodes_;
