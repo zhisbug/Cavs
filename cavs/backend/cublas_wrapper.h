@@ -8,7 +8,7 @@ namespace backend {
 
 //level3
 template <typename T>
-void MatMulCublasWrapper(
+void MatMulMatCublasWrapper(
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const T alpha, const T* A, const T* B,
@@ -17,10 +17,16 @@ void MatMulCublasWrapper(
 //level2
 template <typename T>
 void MatMulVecCublasWrapper(
-    const bool TransA, const bool TransB, 
+    const bool TransA,
     const int M, const int N,
     const T alpha, const T* A, const T* B,
     const T beta, T* C);
+
+//level1
+template <typename T>
+void AxpyCublasWrapper(
+    const int N, const T alpha,
+    const T* x, T* y);
 
 } //namespace backend
 

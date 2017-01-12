@@ -5,7 +5,7 @@
 namespace backend {
 
 template <>
-void MatMulCublasWrapper<float>(
+void MatMulMatCublasWrapper<float>(
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const float alpha, const float* A, const float* B,
@@ -22,7 +22,7 @@ void MatMulCublasWrapper<float>(
 }
 
 template <>
-void MatMulCublasWrapper<double>(
+void MatMulMatCublasWrapper<double>(
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const double alpha, const double* A, const double* B,
@@ -40,7 +40,7 @@ void MatMulCublasWrapper<double>(
 
 template <>
 void MatMulVecCublasWrapper<float>(
-    const bool TransA, const bool TransB, 
+    const bool TransA,
     const int M, const int N,
     const float alpha, const float* A, const float* x,
     const float beta, float* y) {
@@ -55,7 +55,7 @@ void MatMulVecCublasWrapper<float>(
 
 template <>
 void MatMulVecCublasWrapper<double>(
-    const bool TransA, const bool TransB, 
+    const bool TransA,
     const int M, const int N,
     const double alpha, const double* A, const double* x,
     const double beta, double* y) {
@@ -66,6 +66,24 @@ void MatMulVecCublasWrapper<double>(
   checkCublasError(cublasDgemv(CudaCommon::cublasHandle(),
       cuTransA,
       N, M, &alpha, A, lda, x, incx, &beta, y, incx));
+}
+
+template<>
+void AxpyCublasWrapper<float>(
+    const int N, const float alpha,
+    const float* x, float* y) {
+  int incx = 1;
+  checkCublasError(cublasSaxpy(CudaCommon::cublasHandle(),
+      N, &alpha, x, incx, y, incx));
+}
+
+template<>
+void AxpyCublasWrapper<double>(
+    const int N, const double alpha,
+    const double* x, double* y) {
+  int incx = 1;
+  checkCublasError(cublasDaxpy(CudaCommon::cublasHandle(),
+      N, &alpha, x, incx, y, incx));
 }
 
 } //namespace backend
