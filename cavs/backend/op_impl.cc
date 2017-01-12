@@ -1,6 +1,7 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/util/logging.h"
 
+using std::string;
 namespace backend {
 
 namespace op_factory {
@@ -26,5 +27,19 @@ OpImpl* CreateOp(const OpDef& def) {
   else
     return op_factory::GlobalOpImplRegistry()->at(key)(def);
 }
+
+#define INSTANTIATE_GETSINGLEARG(T, fieldname)      \
+  template<>                                        \
+  T OpImpl::GetSingleArg<T>(const string& key) {    \
+    for (auto& attr : op_def_.attr()){              \
+      if (attr.name() == key) {                     \
+        /*CHECK(attr.value().has_##fieldname());*/  \
+        return attr.value().fieldname();            \
+      }                                             \
+    }                                               \
+  }
+
+INSTANTIATE_GETSINGLEARG(float, f)
+INSTANTIATE_GETSINGLEARG(int, i)
 
 } //namespace backend

@@ -13,8 +13,8 @@ class OpContext {
   inline const Tensor& Input(int idx) { return *(inputs_.at(idx)); }
   inline Tensor* Output(int idx) { return outputs_.at(idx); }
  private:
-  vector<const Tensor*> inputs_;
-  vector<Tensor*> outputs_;
+  std::vector<const Tensor*> inputs_;
+  std::vector<Tensor*> outputs_;
 };
 
 

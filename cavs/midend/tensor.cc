@@ -2,6 +2,8 @@
 #include "cavs/util/types.h"
 #include "cavs/util/logging.h"
 
+using std::string;
+
 namespace midend {
 
 #define CASE(TYPE, STMTS)                             \

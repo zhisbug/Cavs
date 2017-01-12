@@ -2,6 +2,8 @@
 #include "cavs/midend/devices.h"
 #include "cavs/util/logging.h"
 
+using std::string;
+
 namespace midend {
 
 class CPUAllocator : public Allocator {

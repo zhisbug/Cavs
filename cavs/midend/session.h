@@ -11,23 +11,23 @@ namespace midend {
 class SessionBase {
  public:
   SessionBase(const ::frontend::DepGraph* graph) : graph_(graph) {}
-  const Tensor* GetTensor(const string& name) const;
+  const Tensor* GetTensor(const std::string& name) const;
   void InsertTensor(const Tensor& t);
-  virtual void Run(const vector<string>& output_names, 
-                   vector<Tensor>* output_tensors,
-                   const vector<string>& input_names,
-                   const vector<Tensor>& input_tensors) {}
+  virtual void Run(const std::vector<std::string>& output_names, 
+                   std::vector<Tensor>* output_tensors,
+                   const std::vector<std::string>& input_names,
+                   const std::vector<Tensor>& input_tensors) {}
  protected:
-  virtual void FeedInput(const vector<string>& input_names,
-                   const vector<Tensor>& input_tensors) {}
-  virtual void FetchOutput(const vector<string>& output_names,
-                   vector<Tensor>* output_tensors) {}
+  virtual void FeedInput(const std::vector<std::string>& input_names,
+                   const std::vector<Tensor>& input_tensors) {}
+  virtual void FetchOutput(const std::vector<std::string>& output_names,
+                   std::vector<Tensor>* output_tensors) {}
   SessionBase() {}
-  std::unordered_map<string, Tensor> tensor_map_;
+  std::unordered_map<std::string, Tensor> tensor_map_;
   const ::frontend::DepGraph* graph_;
 };
 
-SessionBase* GetSession(const string& name, const ::frontend::DepGraph* graph);
+SessionBase* GetSession(const std::string& name, const ::frontend::DepGraph* graph);
 
 #define REGISTER_SESSION_BUILDER(key, ...)                 \
     REGISTER_SESSION_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
@@ -46,11 +46,11 @@ namespace session_factory {
 class SessionRegister {
  public:
   typedef SessionBase* (*Factory)(const ::frontend::DepGraph* graph);
-  SessionRegister(const string& name, Factory factory) {
+  SessionRegister(const std::string& name, Factory factory) {
     InitInternal(name, factory); 
   }
  private:
-  void InitInternal(const string& name, Factory factory); 
+  void InitInternal(const std::string& name, Factory factory); 
 };
 
 } //namespace session_factory

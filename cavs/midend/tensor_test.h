@@ -4,6 +4,8 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/util/macros_gpu.h"
 
+using namespace std;
+
 namespace midend {
 
 namespace test {

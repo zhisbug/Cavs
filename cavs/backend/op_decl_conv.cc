@@ -1,5 +1,7 @@
 #include "cavs/backend/op_decl.h"
 
+using std::vector;
+
 namespace backend {
 
 class ConvOpDeclBase : public OpDecl {

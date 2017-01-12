@@ -8,6 +8,9 @@ using ::backend::OpImpl;
 using ::backend::OpDecl;
 using ::backend::CreateOp;
 
+using std::string;
+using std::vector;
+
 namespace midend {
 
 const Tensor* SessionBase::GetTensor(const string& name) const {

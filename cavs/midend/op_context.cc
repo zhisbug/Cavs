@@ -1,6 +1,8 @@
 #include "cavs/midend/op_context.h"
 #include "cavs/util/logging.h"
 
+using std::string;
+
 namespace midend {
 
 OpContext::OpContext(const OpDef& op_def, SessionBase* sb) {

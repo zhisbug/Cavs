@@ -29,7 +29,8 @@ class ConvOpCudnnBase : public OpImpl {
   Allocator* alloc_;
 };
 
-ConvOpCudnnBase::ConvOpCudnnBase(const OpDef& def) : OpImpl(def){
+ConvOpCudnnBase::ConvOpCudnnBase(const OpDef& def)
+    : OpImpl(def) {
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&bias_desc_));
@@ -50,7 +51,8 @@ template <typename T>
 class ConvOpCudnn: public ConvOpCudnnBase {
  public:
   explicit ConvOpCudnn(const OpDef& def) 
-      : ConvOpCudnnBase(def), workspace(NULL), workspaceSizeInBytes(0) {}
+      : ConvOpCudnnBase(def),
+        workspace(NULL), workspaceSizeInBytes(0) {}
   ~ConvOpCudnn();
   void Compute(OpContext* context) override;
   /*static void inference_shape*/

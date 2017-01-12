@@ -21,6 +21,9 @@ using backend::ShapeInference;
 using frontend::DepGraph;
 using frontend::Node;
 
+using std::string;
+using std::vector;
+
 namespace midend {
 
 class TensorCApi {

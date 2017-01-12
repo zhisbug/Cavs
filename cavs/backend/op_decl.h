@@ -12,10 +12,10 @@ namespace backend {
 class OpDecl {
  public:
   explicit OpDecl(const OpDef& def) : op_def_(def) {};
-  virtual void MakeGradient(vector<OpDef>* grad) = 0;
+  virtual void MakeGradient(std::vector<OpDef>* grad) = 0;
   virtual void ShapeInference(
-    vector<TensorShapeDef>* out_shape,
-    const vector<TensorShapeDef>& inputs) = 0;
+    std::vector<TensorShapeDef>* out_shape,
+    const std::vector<TensorShapeDef>& inputs) = 0;
   inline static std::string GetGradientName(const std::string& op) {
     return op+"_grad";
   }
@@ -29,9 +29,9 @@ class OpDecl {
   OpDef op_def_;
 };
 
-vector<OpDef> MakeGradient(const OpDef& def);
-vector<TensorShapeDef> ShapeInference(const OpDef& def, 
-    const vector<TensorShapeDef>& inputs);
+std::vector<OpDef> MakeGradient(const OpDef& def);
+std::vector<TensorShapeDef> ShapeInference(const OpDef& def, 
+    const std::vector<TensorShapeDef>& inputs);
 
 #define REGISTER_OP_DECL_BUILDER(key, ...)                         \
     REGISTER_OP_DECL_BUILDER_UNIQ(__COUNTER__, key, __VA_ARGS__)
@@ -50,12 +50,12 @@ class OpDeclRegister {
  public:
   typedef OpDecl* (*Factory)(const OpDef& def);
 
-  OpDeclRegister(const string& name, Factory factory) {
+  OpDeclRegister(const std::string& name, Factory factory) {
     InitInternal(name, factory); 
   }
 
  private:
-  void InitInternal(const string& name, Factory factory); 
+  void InitInternal(const std::string& name, Factory factory); 
 };
 
 } //namespace op_factory

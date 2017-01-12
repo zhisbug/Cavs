@@ -12,8 +12,6 @@
 #include <string>
 #include <memory>
 
-using std::vector;
-using std::string;
 
 namespace midend {
 
@@ -47,7 +45,7 @@ class TensorShape {
   void add_dim(int size);
 
  private:
-  vector<int> shape_;
+  std::vector<int> shape_;
   int n_elements_;
 };
 
@@ -55,8 +53,8 @@ class TensorCApi;
 class Tensor {
  public:
   Tensor() {}
-  Tensor(const string& name, Allocator *a, DataType type, const TensorShape& shape);
-  Tensor(const string& name, Allocator *a, DataType type, TensorShape&& shape);
+  Tensor(const std::string& name, Allocator *a, DataType type, const TensorShape& shape);
+  Tensor(const std::string& name, Allocator *a, DataType type, TensorShape&& shape);
   Tensor(const Tensor& t) { *this = t; }
   FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
     buf_   = tensor.buf_;
@@ -66,7 +64,7 @@ class Tensor {
     return *this;
   }
   FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
-  FORCE_INLINE const string& name() const { return name_; }
+  FORCE_INLINE const std::string& name() const { return name_; }
   //for opeators
   FORCE_INLINE size_t count() const { return buf_->count(); }
   FORCE_INLINE int dims() const { return shape_->dims(); }
@@ -85,7 +83,7 @@ class Tensor {
  private:
   std::shared_ptr<TensorBufferBase> buf_;
   std::shared_ptr<TensorShape> shape_;
-  string name_;
+  std::string name_;
   DataType type_;
 };
 

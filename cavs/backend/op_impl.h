@@ -12,12 +12,16 @@ using ::midend::OpContext;
 
 class OpImpl {
  public:
-  explicit OpImpl(const OpDef& def) {}
+  explicit OpImpl(const OpDef& def) : op_def_(def) {}
   //explicit Op(const OpDef& def): name_(def.name()) {}
-  //FORCE_INLINE const string& name() const { return name_; }
+  //FORCE_INLINE const std::string& name() const { return name_; }
   virtual void Compute(OpContext* context) = 0;
+ protected:
+  OpDef op_def_;
+  template<typename T>
+  T GetSingleArg(const std::string& key); 
  //private:
-  //string name_;
+  //std::string name_;
 };
 
 OpImpl* CreateOp(const OpDef& def);
@@ -38,32 +42,32 @@ namespace op_factory {
 
 class Key {
  public:
-  Key(const string& name) 
+  Key(const std::string& name) 
       : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
     dev_ = ::midend::DeviceTypeToString(def.device());
   }
-  Key& Device(string dev) { dev_ = dev; return *this; }
-  Key& Label(string label) { label_ = label; return *this; }
-  string ToString() const { return op_name_+":"+dev_+":"+label_; }
+  Key& Device(std::string dev) { dev_ = dev; return *this; }
+  Key& Label(std::string label) { label_ = label; return *this; }
+  std::string ToString() const { return op_name_+":"+dev_+":"+label_; }
 
  private:
-  string op_name_;
-  string dev_;
-  string label_;
+  std::string op_name_;
+  std::string dev_;
+  std::string label_;
 };
 
 class OpImplRegister {
  public:
   typedef OpImpl* (*Factory)(const OpDef& def);
 
-  OpImplRegister(const string& name, Factory factory) {
+  OpImplRegister(const std::string& name, Factory factory) {
     InitInternal(name, factory); 
   }
 
  private:
-  void InitInternal(const string& name, Factory factory); 
+  void InitInternal(const std::string& name, Factory factory); 
 };
 
 } //namespace op_factory
