@@ -8,6 +8,7 @@ int main() {
 
   OpDef op_def;
   D.Finalize(&op_def);
+  Sym::DumpGraph();
   LOG(INFO) << "\n" << op_def.DebugString();
   return 0;
 }

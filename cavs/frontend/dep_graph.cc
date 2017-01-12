@@ -13,10 +13,12 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   Node* node = new Node(op_def);
   nodes_.push_back(node);
   for (auto& out : op_def.output()) {
-    CHECK(out2edge_.find(out) == out2edge_.end());
-    Edge* out_edge = new Edge(out);
-    out2edge_[out] = out_edge;
-    out_edge->SetSource(node);
+    if (out2edge_.find(out) == out2edge_.end()) {
+      Edge* new_edge = new Edge(out);
+      out2edge_[out] = new_edge;
+    }
+    Edge* out_edge = out2edge_[out];
+    out_edge->AddSource(node);
     node->AddOutput(out_edge);
   }
 
@@ -86,7 +88,7 @@ void DepGraph::AddSolver(const string& solver) {
   }
 }
 
-void DepGraph::DebugString() {
+void DepGraph::Dump() {
   for (auto* node : nodes_)
     LOG(INFO) << node->op_def_.DebugString();
 }

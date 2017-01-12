@@ -30,6 +30,9 @@ class Sym {
   static Sym Optimizer(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string output = "", string device = "GPU");
+  //debug operations
+  static void DumpGraph();
+  void print();
   ////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }
@@ -39,7 +42,6 @@ class Sym {
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
-  void print();
         
   friend class Session;
 

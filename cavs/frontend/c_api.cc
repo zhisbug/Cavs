@@ -107,7 +107,9 @@ void C_GetGrad(C_DepGraph* C_graph,
     (*c_grads)[i] = (char*)malloc(grads_vec[i].length());
     memcpy((*c_grads)[i], grads_vec[i].c_str(), grads_vec[i].length()+1);
   }
-  //C_graph->graph->DebugString();
+}
+void C_DumpGraph(C_DepGraph* C_graph) {
+  C_graph->graph->Dump();
 }
 
 void C_Run(C_Session* s, 

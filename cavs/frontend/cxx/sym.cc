@@ -118,3 +118,7 @@ void Sym::print() {
   }
 }
 
+void Sym::DumpGraph() {
+  C_DumpGraph(C_GetDefaultDG());
+}
+

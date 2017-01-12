@@ -24,7 +24,7 @@ class DepGraph {
   void BackPropagate(std::vector<std::string>* gen_grads,
       const std::string& loss);
   void AddSolver(const std::string& solver);
-  void DebugString();
+  void Dump();
 
  private:
   std::vector<Node*> nodes_;
@@ -68,8 +68,8 @@ class Edge {
   inline const TensorShapeDef& shape() const {
     return tensor_shape_; 
   }
-  inline void SetSource(const Node* node) {
-    src_ = const_cast<Node*>(node);
+  inline void AddSource(const Node* node) {
+    src_.push_back(node); 
   }
   inline void AddDst(const Node* node) {
     dst_.push_back(node); 
@@ -79,7 +79,7 @@ class Edge {
  private:
   std::string tensor_name_;
   TensorShapeDef tensor_shape_;
-  Node* src_;
+  std::vector<const Node*> src_;
   std::vector<const Node*> dst_;
 };
 
