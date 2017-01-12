@@ -8,10 +8,10 @@
 
 namespace backend {
 
-using midend::Allocator;
-using midend::GetAllocator;
-using midend::DeviceTypeToString;
-using midend::Tensor;
+using ::midend::Allocator;
+using ::midend::GetAllocator;
+using ::midend::DeviceTypeToString;
+using ::midend::Tensor;
 
 class ConvOpCudnnBase : public OpImpl {
  public:
