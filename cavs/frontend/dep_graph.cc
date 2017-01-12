@@ -33,7 +33,7 @@ void DepGraph::BackPropagate(
   gen_grads->clear();
   for (int i = num_nodes()-1; i >= 0; i--) {
     const vector<OpDef>& grads = 
-      ::backend::MakeGradient(nodes_[i]->op_def()); 
+      ::backend::MakeGradient(nodes_[i]->op_def_); 
     for (auto& grad : grads) {
       //it is only a temporary version
       for (auto& grad_out_str : grad.output())
@@ -49,7 +49,7 @@ void DepGraph::BackPropagate(
           OpDef const_op;
           ::backend::BuildConstantOpDef(&const_op, 
               grad_input,
-              out2edge_[ori_input]->shape(),
+              out2edge_[ori_input]->tensor_shape_,
               1.f);
           AddNode(const_op);
         }
@@ -64,9 +64,31 @@ void DepGraph::BackPropagate(
   }
 }
 
+void DepGraph::AddSolver(const string& solver) {
+  for (int i = 0; i < num_nodes(); i++) {
+    if (nodes_[i]->IsVariableOp()) {
+      CHECK(nodes_[i]->outputs_.size() == 1);   
+      const string& var_name = 
+        nodes_[i]->outputs_[0]->tensor_name_;
+      CHECK(out2edge_.find(var_name) != out2edge_.end());
+      const string& var_grad_name = 
+        ::backend::OpDecl::GetGradientName(var_name);
+      if (out2edge_.find(var_grad_name) != out2edge_.end()) {
+        OpDef update;  
+        ::backend::OpDefBuilder(solver)
+            .Input(var_grad_name)
+            .Output(var_name)
+            .Shape(out2edge_.at(var_name)->tensor_shape_)
+            .Finalize(&update);
+        Node* node = AddNode(update);
+      }
+    }
+  }
+}
+
 void DepGraph::DebugString() {
   for (auto* node : nodes_)
-    LOG(INFO) << node->op_def().DebugString();
+    LOG(INFO) << node->op_def_.DebugString();
 }
 
 void Node::InputShapes(

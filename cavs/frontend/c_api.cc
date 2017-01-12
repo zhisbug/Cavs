@@ -100,6 +100,7 @@ void C_GetGrad(C_DepGraph* C_graph,
   string loss(c_name, name_len);
   vector<string> grads_vec;
   C_graph->graph->BackPropagate(&grads_vec, loss);
+  C_graph->graph->AddSolver("GradientDescent");
   *grads_num = grads_vec.size();
   *c_grads = (char**)malloc(grads_vec.size()*sizeof(char*));
   for (int i = 0; i < grads_vec.size(); i++) {

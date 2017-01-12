@@ -23,6 +23,7 @@ class DepGraph {
   }
   void BackPropagate(std::vector<std::string>* gen_grads,
       const std::string& loss);
+  void AddSolver(const std::string& solver);
   void DebugString();
 
  private:
@@ -45,6 +46,12 @@ class Node {
     return op_def_; 
   }
   inline void SetShape(const std::vector<TensorShapeDef>& def);
+  inline bool IsVariableOp() const {
+    if (op_def_.name() == "Variable")
+      return true;
+    return false;
+  }
+  friend class DepGraph;
 
  private:
   OpDef op_def_;
@@ -67,6 +74,7 @@ class Edge {
   inline void AddDst(const Node* node) {
     dst_.push_back(node); 
   }
+  friend class DepGraph;
 
  private:
   std::string tensor_name_;
