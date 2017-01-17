@@ -20,8 +20,6 @@ class OpImpl {
   OpDef op_def_;
   template<typename T>
   T GetSingleArg(const std::string& key); 
- //private:
-  //std::string name_;
 };
 
 OpImpl* CreateOp(const OpDef& def);

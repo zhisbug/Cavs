@@ -26,21 +26,21 @@ void load(void** doc_word) {
 }
 
 int main() {
-  Sym tpc_word = Sym::Variable(C_FLOAT, {});
-  Sym doc_tpc  = Sym::Variable(C_FLOAT, {});
-  Sym doc_word = Sym::Placeholder(C_FLOAT, {});
+  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V});
+  Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
+  Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
 
   Sym loss = Sym::Square(doc_word-(doc_tpc*tpc_word));
-  Sym step1 = loss.optimizer({doc_tpc}, 20, "projection");
-  Sym step2 = loss.optimizer({tpc_word}, 20, "projection");
+  //Sym step1 = loss.optimizer({doc_tpc}, 20, "projection");
+  //Sym step2 = loss.optimizer({tpc_word}, 20, "projection");
 
-  void* doc_word;
-  load(&doc_word);
-  Session sess;
-  int iters = 100;
-  for (int i = 0; i < iters; i++) {
-    sess.Run({step1, step2}, {{doc_tpc, doc_word}});
-  }
+  //void* doc_word;
+  //load(&doc_word);
+  //Session sess;
+  //int iters = 100;
+  //for (int i = 0; i < iters; i++) {
+    //sess.Run({step1, step2}, {{doc_tpc, doc_word}});
+  //}
 
   return 0;
 }

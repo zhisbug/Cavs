@@ -71,14 +71,31 @@ Sym::Sym(const string& op_name, const string& input) {
 }
 
 Sym Sym::Variable(C_Dtype type, Shape shape, string output, string device) {
+  CHECK(shape.size() > 0);
   return Sym("Variable", output, {}, type, device, shape);
 }
 
 Sym Sym::Placeholder(C_Dtype type, Shape shape, string output, string device) {
+  CHECK(shape.size() > 0);
   return Sym("Placeholder", output, {}, type, device, shape);
 }
 
 Sym Sym::Abs(const Sym& a, string output, string device) {
+  //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Abs", output, {a.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
+Sym Sym::Square(const Sym& a, string output, string device) {
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Square", output, {a.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
+Sym Sym::Square(const Sym& a, string output, string device) {
   //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
   CHECK(a.node_->output_.size() == 1);
   Sym s("Abs", output, {a.node_->output_[0]},

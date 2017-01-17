@@ -15,6 +15,13 @@ struct Abs {
 };
 
 template <typename T>
+struct Square {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp) {
+    return inp * inp;
+  }
+};
+
+template <typename T>
 struct Neg {
   FORCE_INLINE __DEVICE__ static T Compute(T inp) {
     return -inp;

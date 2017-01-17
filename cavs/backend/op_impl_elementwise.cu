@@ -41,6 +41,9 @@ struct CUDABinaryFunctor {
     BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype> 
 
 REGISTER_OP_IMPL_BUILDER(Key("Abs").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
+REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"), CudaUnaryOpInstance(math::Square, float));
 REGISTER_OP_IMPL_BUILDER(Key("Add").Device("GPU"), CudaBinaryOpInstance(math::Add, float));
+REGISTER_OP_IMPL_BUILDER(Key("Sub").Device("GPU"), CudaBinaryOpInstance(math::Sub, float));
+REGISTER_OP_IMPL_BUILDER(Key("Mul").Device("GPU"), CudaBinaryOpInstance(math::Mul, float));
 
 } //namespace backend

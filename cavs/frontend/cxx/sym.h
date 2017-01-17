@@ -6,7 +6,6 @@
 #include "cavs/util/logging.h"
 
 #include <string>
-#include <initializer_list>
 #include <vector>
 #include <memory>
 #include <iostream>
@@ -27,6 +26,7 @@ class Sym {
   static Sym Placeholder(C_Dtype type, Shape shape, string output = "", string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string output = "", string device = "GPU");
+  static Sym Square(const Sym& a, string output = "", string device = "GPU");
   static Sym Optimizer(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string output = "", string device = "GPU");
@@ -36,9 +36,10 @@ class Sym {
   ////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }
+  Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
   //binary operation
-  Sym Add(Sym& b) { return Add(*this, b); }
+  Sym Square(Sym& b) { return Square(*this, b); }
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
