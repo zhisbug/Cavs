@@ -6,10 +6,10 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
+#include "cavs/midend/dep_graph.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_impl.h"
 #include "cavs/util/logging.h"
-#include "cavs/frontend/dep_graph.h"
 
 using midend::SessionBase;
 using midend::GetSession;
@@ -17,9 +17,9 @@ using midend::Tensor;
 using midend::TensorShape;
 using midend::GetAllocator;
 using midend::DeviceTypeToString;
+using midend::DepGraph;
+using midend::Node;
 using backend::ShapeInference;
-using frontend::DepGraph;
-using frontend::Node;
 
 using std::string;
 using std::vector;

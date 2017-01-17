@@ -1,4 +1,4 @@
-#include "cavs/frontend/dep_graph.h"
+#include "cavs/midend/dep_graph.h"
 #include "cavs/util/logging.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_def_builder.h"
@@ -7,7 +7,7 @@
 
 using namespace std;
 
-namespace frontend {
+namespace midend {
 
 Node* DepGraph::AddNode(const OpDef& op_def) {
   Node* node = new Node(op_def);
@@ -100,4 +100,4 @@ void Node::InputShapes(
   }
 }
 
-} //namespace frontend
+} //namespace midend

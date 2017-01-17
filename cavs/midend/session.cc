@@ -42,7 +42,7 @@ void SessionRegister::InitInternal(
 } //namespace session_factory
 
 SessionBase* GetSession(const string& name, 
-    const ::frontend::DepGraph* graph) {
+    const DepGraph* graph) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
@@ -53,7 +53,7 @@ SessionBase* GetSession(const string& name,
 class SimpleSession : public SessionBase {
  public:
   //SimpleSession() {}
-  SimpleSession(const ::frontend::DepGraph* graph);
+  SimpleSession(const DepGraph* graph);
   void Run(const vector<string>& output_names, 
            vector<Tensor>* output_tensors,
            const vector<string>& input_names,
@@ -66,7 +66,7 @@ class SimpleSession : public SessionBase {
   std::vector<std::pair<OpImpl*, OpContext*>> executors_;
 };
 
-SimpleSession::SimpleSession(const ::frontend::DepGraph* graph)
+SimpleSession::SimpleSession(const DepGraph* graph)
     : SessionBase(graph) {
   for (int i = 0; i < graph->num_nodes(); i++) {
     OpImpl* op = CreateOp((*graph)[i]->op_def());

@@ -1,5 +1,5 @@
-#ifndef CAVS_FRONTEND_DEP_GRAPH_H_
-#define CAVS_FRONTEND_DEP_GRAPH_H_
+#ifndef CAVS_MIDEND_DEP_GRAPH_H_
+#define CAVS_MIDEND_DEP_GRAPH_H_
 
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"
@@ -8,7 +8,7 @@
 #include <unordered_map>
 #include <string>
 
-namespace frontend {
+namespace midend {
 
 class Node;
 class Edge;
@@ -91,6 +91,6 @@ inline void Node::SetShape(const std::vector<TensorShapeDef>& def) {
   }
 }
 
-} //namespace frontend
+} //namespace midend 
 
 #endif
