@@ -37,6 +37,8 @@ void BuildConstantOpDef(OpDef* op_def,
     const TensorShapeDef& shape,
     float val = 1.f);
 
+float GetConstFromConstantOp(const OpDef& def);
+
 } //namespace backend
 
 #endif

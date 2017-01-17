@@ -30,6 +30,8 @@ class Sym {
   static Sym Optimizer(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string output = "", string device = "GPU");
+  static Sym Sub(const Sym& a, const Sym& b, string output = "", string device = "GPU");
+  static Sym Mul(const Sym& a, const Sym& b, string output = "", string device = "GPU");
   //debug operations
   static void DumpGraph();
   void print();
@@ -39,10 +41,11 @@ class Sym {
   Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
   //binary operation
-  Sym Square(Sym& b) { return Square(*this, b); }
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
+  friend Sym operator -(const Sym& a, const Sym& b) { return Sub(a, b); }
+  friend Sym operator *(const Sym& a, const Sym& b) { return Mul(a, b); }
         
   friend class Session;
 

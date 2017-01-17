@@ -31,7 +31,7 @@ class BinaryOpDecl : public OpDecl {
 
 class AssignOpDecl : public UnaryOpDecl {
  public:
-  explicit AssignOpDecl (const OpDef& def) : UnaryOpDecl(def) {}
+  explicit AssignOpDecl(const OpDef& def) : UnaryOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
     grad->clear();
     CHECK(op_def_.input_size() == 1);
@@ -51,15 +51,16 @@ class AssignOpDecl : public UnaryOpDecl {
 
 class SquareOpDecl : public UnaryOpDecl {
  public:
-  explicit AssignOpDecl (const OpDef& def) : UnaryOpDecl(def) {}
+  explicit SquareOpDecl(const OpDef& def) : UnaryOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
     grad->clear();
     CHECK(op_def_.input_size() == 1);
     CHECK(op_def_.output_size() == 1);
     for (int i = 0; i < op_def_.input_size(); i++) {
       OpDef assign_def;
-      OpDefBuilder("Mul")
-        .Input(GetGradientName(op_def_.input(0)))
+      OpDefBuilder("Scal")
+        .Input(op_def_.input(0))
+        .Input("2.f")
         .Output(GetGradientName(op_def_.input(0)))
         .Shape(op_def_)
         .Device(op_def_)
@@ -153,8 +154,8 @@ class ScalOpDecl : public MulOpDecl {
     OpDef right_def;
     BuildConstantOpDef(&right_def, 
         GetGradientName(op_def_.input(0)),
-        Shape(op_def_),
-        ConstOpDecl::GetConstant(op_def_));
+        op_def_.shape(0),
+        GetConstFromConstantOp(op_def_));
     grad->push_back(std::move(right_def));
   }
 };

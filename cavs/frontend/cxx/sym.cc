@@ -95,19 +95,27 @@ Sym Sym::Square(const Sym& a, string output, string device) {
   return s;
 }
 
-Sym Sym::Square(const Sym& a, string output, string device) {
-  //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
-  CHECK(a.node_->output_.size() == 1);
-  Sym s("Abs", output, {a.node_->output_[0]},
-        a.node_->type_, device);
-  return s;
-}
-
 Sym Sym::Add(const Sym& a, const Sym& b, string output, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
   //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
   Sym s("Add", output, {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
+Sym Sym::Sub(const Sym& a, const Sym& b, string output, string device) {
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  Sym s("Sub", output, {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
+Sym Sym::Mul(const Sym& a, const Sym& b, string output, string device) {
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  Sym s("Mul", output, {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, device);
   return s;
 }

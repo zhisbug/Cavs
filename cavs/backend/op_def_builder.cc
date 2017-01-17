@@ -80,4 +80,10 @@ void BuildConstantOpDef(OpDef* op_def,
     .Finalize(op_def);
 }
 
+float GetConstFromConstantOp(const OpDef& def) {
+  for (auto & attr : def.attr())
+    if (attr.name() == "init")
+      return attr.value().f();
+}
+
 } //namespace midend
