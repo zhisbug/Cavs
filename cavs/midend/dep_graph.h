@@ -23,7 +23,8 @@ class DepGraph {
   }
   void BackPropagate(std::vector<std::string>* gen_grads,
       const std::string& loss);
-  void AddSolver(const std::string& solver);
+  void AddSolver(const std::string& solver, 
+      const std::vector<std::string>& var_names);
   void Dump();
 
  private:

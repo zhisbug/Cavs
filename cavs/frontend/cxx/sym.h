@@ -10,7 +10,6 @@
 #include <memory>
 #include <iostream>
 
-typedef std::vector<int> Shape;
 using std::string;
 using std::vector;
 using std::shared_ptr;
@@ -22,12 +21,13 @@ class Sym {
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(C_Dtype type, Shape shape, string output = "", string device = "GPU");
-  static Sym Placeholder(C_Dtype type, Shape shape, string output = "", string device = "GPU");
+  static Sym Variable(C_Dtype type, std::vector<int> shape, string output = "", string device = "GPU");
+  static Sym Placeholder(C_Dtype type, std::vector<int> shape, string output = "", string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string output = "", string device = "GPU");
   static Sym Square(const Sym& a, string output = "", string device = "GPU");
   static Sym Optimizer(const Sym& a);
+  static Sym Optimizer(const Sym& a, vector<Sym> variables, int iters, const string& projections);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string output = "", string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string output = "", string device = "GPU");
@@ -40,6 +40,9 @@ class Sym {
   Sym Abs() { return Abs(*this); }
   Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
+  Sym Optimizer(vector<Sym> variables, int iters, const string& projection) { 
+    return Optimizer(*this, variables, iters, projection); 
+  }
   //binary operation
   ////////////////////////////////////////////////
   //operator overloading
@@ -53,7 +56,7 @@ class Sym {
   typedef struct node {
     string op_name_;
     C_Dtype type_;
-    Shape shape_;
+    std::vector<int> shape_;
     string device_;
     vector<string> output_;
     vector<string> input_;
@@ -63,8 +66,11 @@ class Sym {
 
   Sym(const string& op_name,
       const string& output, const vector<string>& inputs, 
-      const C_Dtype type, const string& device, const Shape& shape);
-  Sym(const string& op_name, const string& input);//for optimizer
+      const C_Dtype type, const string& device, const std::vector<int>& shape);
+  Sym(const string& op_name, const string& input,
+      const vector<Sym>& variables = {},
+      const int iters = 0,
+      const string& projections = "");
   inline const std::vector<string>& outputs() const { 
     return node_->output_;
   }
@@ -73,7 +79,7 @@ class Sym {
   }
   inline string& op_name() const { return node_->op_name_; }
   inline C_Dtype type() const { return node_->type_; }
-  inline Shape& shape() const { return node_->shape_; }
+  inline std::vector<int> shape() const { return node_->shape_; }
   inline string& device() const { return node_->device_; }
   shared_ptr<node> node_;
 };

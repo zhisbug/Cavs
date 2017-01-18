@@ -3,6 +3,8 @@
 #include "cavs/proto/devices.pb.h"
 #include "cavs/util/logging.h"
 
+using std::vector;
+
 void Sym::node::Finalize(OpDef* op_def) const {
   op_def->set_name(op_name_);
   for (const string& str: input_)
@@ -27,7 +29,7 @@ Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
          const string& device,
-         const Shape& shape = {}) {
+         const vector<int>& shape = {}) {
   static int id = 0;  
   node_.reset(new node());
   node_->op_name_ = op_name;
@@ -53,12 +55,23 @@ Sym::Sym(const string& op_name,
   free(dim);
 }
 
-Sym::Sym(const string& op_name, const string& input) {
+Sym::Sym(const string& op_name, const string& input,
+    const vector<Sym>& variables,
+    const int iters,
+    const string& projections) {
   CHECK(op_name == "Optimizer");
+  char **var = (char**)malloc(variables.size()*sizeof(char*));
+  for (int i = 0; i < variables.size(); i++) {
+    CHECK(variables[i].node_->output_.size() == 1);
+    var[i] = const_cast<char*>(variables[i].node_->output_[0].c_str());
+  }
   char **grads;
   int grads_num = 0;
   C_GetGrad(C_GetDefaultDG(),
             input.c_str(), input.length(),
+            var, variables.size(),
+            projections.c_str(), projections.length(),
+            iters,
             &grads, &grads_num);
   node_.reset(new node());
   node_->op_name_ = op_name;
@@ -68,14 +81,15 @@ Sym::Sym(const string& op_name, const string& input) {
     free(grads[i]);
   }
   free(grads);
+  free(var);
 }
 
-Sym Sym::Variable(C_Dtype type, Shape shape, string output, string device) {
+Sym Sym::Variable(C_Dtype type, vector<int> shape, string output, string device) {
   CHECK(shape.size() > 0);
   return Sym("Variable", output, {}, type, device, shape);
 }
 
-Sym Sym::Placeholder(C_Dtype type, Shape shape, string output, string device) {
+Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string output, string device) {
   CHECK(shape.size() > 0);
   return Sym("Placeholder", output, {}, type, device, shape);
 }
@@ -123,6 +137,16 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string output, string device) {
 Sym Sym::Optimizer(const Sym& a) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0]);
+  return s;
+}
+
+Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
+    int iters, const string& projections) {
+  CHECK(variables.size() > 0);
+  CHECK(iters > 0);
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Optimizer", a.node_->output_[0],
+      variables, iters, projections);
   return s;
 }
 

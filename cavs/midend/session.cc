@@ -52,7 +52,6 @@ SessionBase* GetSession(const string& name,
 
 class SimpleSession : public SessionBase {
  public:
-  //SimpleSession() {}
   SimpleSession(const DepGraph* graph);
   void Run(const vector<string>& output_names, 
            vector<Tensor>* output_tensors,

@@ -95,12 +95,20 @@ void C_AddNode(C_DepGraph* C_graph,
 }
 
 void C_GetGrad(C_DepGraph* C_graph, 
-      const char* c_name, int name_len,
+      const char* c_loss_name, int loss_name_len,
+      char** c_var_name, int var_name_len,
+      const char* c_proj_name, int proj_name_len,
+      int iters,
       char *** c_grads, int* grads_num) {
-  string loss(c_name, name_len);
+  string loss(c_loss_name, loss_name_len);
+  vector<string> var_names;
+  for (int i = 0; i < var_name_len; i++)
+    var_names.emplace_back(c_var_name[i]);
+  string proj(c_proj_name, proj_name_len);
   vector<string> grads_vec;
   C_graph->graph->BackPropagate(&grads_vec, loss);
-  C_graph->graph->AddSolver("GradientDescent");
+  C_graph->graph->AddSolver("GradientDescent"+proj, var_names);
+  CHECK(grads_vec.size() == var_names.size());
   *grads_num = grads_vec.size();
   *c_grads = (char**)malloc(grads_vec.size()*sizeof(char*));
   for (int i = 0; i < grads_vec.size(); i++) {

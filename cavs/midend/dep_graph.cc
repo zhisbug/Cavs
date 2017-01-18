@@ -4,6 +4,7 @@
 #include "cavs/backend/op_def_builder.h"
 
 #include <string>
+#include <algorithm>
 
 using namespace std;
 
@@ -31,7 +32,8 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
 }
 
 void DepGraph::BackPropagate(
-    vector<string>* gen_grads, const string& loss) {
+    vector<string>* gen_grads,
+    const string& loss) {
   gen_grads->clear();
   for (int i = num_nodes()-1; i >= 0; i--) {
     const vector<OpDef>& grads = 
@@ -66,7 +68,8 @@ void DepGraph::BackPropagate(
   }
 }
 
-void DepGraph::AddSolver(const string& solver) {
+void DepGraph::AddSolver(const string& solver,
+   const vector<string>& var_names) {
   for (int i = 0; i < num_nodes(); i++) {
     if (nodes_[i]->IsVariableOp()) {
       CHECK(nodes_[i]->outputs_.size() == 1);   
@@ -75,7 +78,9 @@ void DepGraph::AddSolver(const string& solver) {
       CHECK(out2edge_.find(var_name) != out2edge_.end());
       const string& var_grad_name = 
         ::backend::OpDecl::GetGradientName(var_name);
-      if (out2edge_.find(var_grad_name) != out2edge_.end()) {
+      if (out2edge_.find(var_grad_name) != out2edge_.end() &&
+          std::find(var_names.begin(), 
+                var_names.end(), var_name) != var_names.end()) {
         OpDef update;  
         ::backend::OpDefBuilder(solver)
             .Input(var_grad_name)
