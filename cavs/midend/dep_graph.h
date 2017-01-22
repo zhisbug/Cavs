@@ -25,12 +25,19 @@ class DepGraph {
       const std::string& loss);
   void AddSolver(const std::string& solver, 
       const std::vector<std::string>& var_names);
+  BasicBlock* OptimizeLoss(const std::string& loss, 
+      const std::string& solver, 
+      const std::vector<std::string>& var_names);
   void Dump();
 
  private:
   std::vector<Node*> nodes_;
+  std::vector<std::vector<Node*>> grad_nodes_;
   std::vector<Edge*> edges_;
   std::unordered_map<std::string, Edge*> out2edge_;
+  void AddGradNode(const OpDef& op_def);
+  void RecursiveSearchInputNode(
+      const Node* father, std::vector<Statement>* stmts);
 };
 
 class Node {
