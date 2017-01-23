@@ -81,41 +81,59 @@ void C_AddNode(C_DepGraph* C_graph,
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   Node* node = C_graph->graph->AddNode(op_def);
+  LOG(INFO) << "here";
   vector<TensorShapeDef> input_shapes;
   node->InputShapes(&input_shapes);
   const vector<TensorShapeDef>& shape_def =
     ShapeInference(op_def, input_shapes);
   node->SetShape(shape_def);
+  LOG(INFO) << "here";
   //for user interface, the output of each operator can only be 1
   CHECK(shape_def.size() == 1);
   *dim_length = shape_def[0].dim_size();
   *dim = new int[*dim_length];
   for (int i = 0; i < shape_def[0].dim_size(); i++)
     (*dim)[i] = shape_def[0].dim(i);
+  LOG(INFO) << "here";
 }
 
-void C_GetGrad(C_DepGraph* C_graph, 
+void C_OptimizeWithLoss(C_DepGraph* c_graph, 
       const char* c_loss_name, int loss_name_len,
       char** c_var_name, int var_name_len,
       const char* c_proj_name, int proj_name_len,
-      int iters,
-      char *** c_grads, int* grads_num) {
+      int iters) {
   string loss(c_loss_name, loss_name_len);
   vector<string> var_names;
   for (int i = 0; i < var_name_len; i++)
     var_names.emplace_back(c_var_name[i]);
   string proj(c_proj_name, proj_name_len);
   vector<string> grads_vec;
-  C_graph->graph->BackPropagate(&grads_vec, loss);
+  c_graph->graph->OptimizeWithLoss(loss, "SGD"+proj, var_names);
   //C_graph->graph->AddSolver("GradientDescent"+proj, var_names);
-  CHECK(grads_vec.size() == var_names.size());
-  *grads_num = grads_vec.size();
-  *c_grads = (char**)malloc(grads_vec.size()*sizeof(char*));
-  for (int i = 0; i < grads_vec.size(); i++) {
-    (*c_grads)[i] = (char*)malloc(grads_vec[i].length());
-    memcpy((*c_grads)[i], grads_vec[i].c_str(), grads_vec[i].length()+1);
-  }
 }
+
+//void C_GetGrad(C_DepGraph* C_graph, 
+      //const char* c_loss_name, int loss_name_len,
+      //char** c_var_name, int var_name_len,
+      //const char* c_proj_name, int proj_name_len,
+      //int iters,
+      //char *** c_grads, int* grads_num) {
+  //string loss(c_loss_name, loss_name_len);
+  //vector<string> var_names;
+  //for (int i = 0; i < var_name_len; i++)
+    //var_names.emplace_back(c_var_name[i]);
+  //string proj(c_proj_name, proj_name_len);
+  //vector<string> grads_vec;
+  //C_graph->graph->BackPropagate(&grads_vec, loss);
+  ////C_graph->graph->AddSolver("GradientDescent"+proj, var_names);
+  //CHECK(grads_vec.size() == var_names.size());
+  //*grads_num = grads_vec.size();
+  //*c_grads = (char**)malloc(grads_vec.size()*sizeof(char*));
+  //for (int i = 0; i < grads_vec.size(); i++) {
+    //(*c_grads)[i] = (char*)malloc(grads_vec[i].length());
+    //memcpy((*c_grads)[i], grads_vec[i].c_str(), grads_vec[i].length()+1);
+  //}
+//}
 void C_DumpGraph(C_DepGraph* C_graph) {
   C_graph->graph->Dump();
 }

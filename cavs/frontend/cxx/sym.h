@@ -21,17 +21,17 @@ class Sym {
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(C_Dtype type, std::vector<int> shape, string output = "", string device = "GPU");
-  static Sym Placeholder(C_Dtype type, std::vector<int> shape, string output = "", string device = "GPU");
+  static Sym Variable(C_Dtype type, std::vector<int> shape, string device = "GPU");
+  static Sym Placeholder(C_Dtype type, std::vector<int> shape, string device = "GPU");
   //unary operation
-  static Sym Abs(const Sym& a, string output = "", string device = "GPU");
-  static Sym Square(const Sym& a, string output = "", string device = "GPU");
+  static Sym Abs(const Sym& a, string device = "GPU");
+  static Sym Square(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables, int iters, const string& projections);
   //binary operation
-  static Sym Add(const Sym& a, const Sym& b, string output = "", string device = "GPU");
-  static Sym Sub(const Sym& a, const Sym& b, string output = "", string device = "GPU");
-  static Sym Mul(const Sym& a, const Sym& b, string output = "", string device = "GPU");
+  static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
   //debug operations
   static void DumpGraph();
   void print();
@@ -65,7 +65,7 @@ class Sym {
   } node;
 
   Sym(const string& op_name,
-      const string& output, const vector<string>& inputs, 
+      const vector<string>& inputs, 
       const C_Dtype type, const string& device, const std::vector<int>& shape);
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},

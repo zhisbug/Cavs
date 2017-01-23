@@ -12,6 +12,7 @@
 namespace midend {
 
 class Node;
+class NodeGroup;
 class Edge;
 class DepGraph {
  public:
@@ -22,11 +23,9 @@ class DepGraph {
   inline const Node* operator[](int node_id) const {
     return nodes_[node_id];
   }
-  void BackPropagate(std::vector<std::string>* gen_grads,
-      const std::string& loss);
   //void AddSolver(const std::string& solver, 
       //const std::vector<std::string>& var_names);
-  BasicBlock* OptimizeLoss(const std::string& loss, 
+  BasicBlock* OptimizeWithLoss(const std::string& loss, 
       const std::string& solver, 
       const std::vector<std::string>& var_names);
   void Dump();
@@ -37,44 +36,26 @@ class DepGraph {
   std::vector<Node*> update_nodes_;
   std::vector<Edge*> edges_;
   std::unordered_map<std::string, Edge*> out2edge_;
+  std::unordered_map<std::string, NodeGroup*> out2ng_;
   void AddGradNode(const OpDef& op_def);
-  void RecursiveSearchInputNode(
-      const Edge* father, std::vector<Statement*>* stmts);
+  void SearchClosedSet(const Node* father,
+      NodeGroup* ng,
+      const std::vector<std::string>& vars,
+      bool* contained);
+  void BackPropagate();
   void AddSolver(const std::string& solver,
-      const std::vector<std::string>& var_names,
+      const std::vector<std::string>& vars,
       std::vector<Statement*>* stmts);
-};
-
-class Node {
- public:
-  explicit Node(const OpDef& op_def) : op_def_(op_def) {}
-  inline void AddInput(Edge* e) {
-    inputs_.push_back(e);
-  }
-  inline void AddOutput(Edge* e) {
-    outputs_.push_back(e);
-  }
-  void InputShapes(std::vector<TensorShapeDef>* inputs);
-  inline const OpDef& op_def() const {
-    return op_def_; 
-  }
-  inline void SetShape(const std::vector<TensorShapeDef>& def);
-  inline bool IsVariableOp() const {
-    if (op_def_.name() == "Variable")
-      return true;
-    return false;
-  }
-  friend class DepGraph;
-
- private:
-  OpDef op_def_;
-  std::vector<Edge*> inputs_;
-  std::vector<Edge*> outputs_;
+  void SetLossNodeGroup(const std::string& loss,
+      const std::vector<std::string>& vars);
 };
 
 class Edge {
  public:
   explicit Edge(const std::string& name) : tensor_name_(name) {} 
+  inline const std::string& name() const {
+    return tensor_name_;
+  }
   inline void SetShape(const TensorShapeDef& def) {
     tensor_shape_ = def;  
   }
@@ -94,6 +75,44 @@ class Edge {
   TensorShapeDef tensor_shape_;
   std::vector<const Node*> src_;
   std::vector<const Node*> dst_;
+};
+
+class Node {
+ public:
+  explicit Node(const OpDef& op_def) : op_def_(op_def) {}
+  inline void AddInput(const Edge* e) {
+    inputs_.push_back(const_cast<Edge*>(e));
+  }
+  inline void AddOutput(const Edge* e) {
+    outputs_.push_back(const_cast<Edge*>(e));
+  }
+  void InputShapes(std::vector<TensorShapeDef>* inputs);
+  inline const OpDef& op_def() const {
+    return op_def_; 
+  }
+  inline void SetShape(const std::vector<TensorShapeDef>& def);
+  inline bool IsVariableOp() const {
+    return (op_def_.name() == "Variable");
+  }
+  friend class DepGraph;
+  friend class NodeGroup;
+
+ private:
+  OpDef op_def_;
+  std::vector<Edge*> inputs_;
+  std::vector<Edge*> outputs_;
+};
+
+
+class NodeGroup {
+ public:
+  explicit NodeGroup(std::string name) : name_(name) {}
+  void AddNode(const Node* n);
+ private:
+  std::vector<const Node*> nodes_;
+  std::vector<Edge*> inputs_;
+  std::vector<Edge*> outputs_;
+  std::string name_;
 };
 
 inline void Node::SetShape(const std::vector<TensorShapeDef>& def) {
