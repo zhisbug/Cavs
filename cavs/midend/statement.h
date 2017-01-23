@@ -1,6 +1,9 @@
 #ifndef CAVS_MIDEND_STATEMENT_H_
 #define CAVS_MIDEND_STATEMENT_H_
 
+#include "cavs/midend/op_context.h"
+#include "cavs/backend/op_impl.h"
+
 #include <string>
 #include <vector>
 
@@ -14,7 +17,7 @@ class Statement {
 
  private:
    std::string name_;
-   OpImpl* op_;
+   ::backend::OpImpl* op_;
    OpContext* ctxt_;
 };
 

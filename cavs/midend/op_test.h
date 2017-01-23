@@ -41,7 +41,7 @@ class OpTest {
   }
   bool RunTest () {
     op_.reset(CreateOp(op_def_)); 
-    context_.reset(new OpContext(op_def_, sess_));
+    context_.reset(sess_->GetContext(op_def_));
     op_->Compute(context_.get());
   }
 

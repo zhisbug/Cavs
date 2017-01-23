@@ -1,4 +1,5 @@
 #include "cavs/midend/dep_graph.h"
+#include "cavs/midend/statement_builder.h"
 #include "cavs/util/logging.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_def_builder.h"
@@ -35,7 +36,7 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
 
 void DepGraph::AddGradNode(const OpDef& op_def) {
   const vector<OpDef>& grads = 
-    ::backend::MakeGradient(op_def_); 
+    ::backend::MakeGradient(op_def); 
   vector<Node*> grad_vec;
   for (auto& grad : grads) {
     Node* node = new Node(grad);
@@ -46,7 +47,7 @@ void DepGraph::AddGradNode(const OpDef& op_def) {
       CHECK(out2edge_.find(x) != out2edge_.end());
       if (out2edge_.find(dx) == out2edge_.end()) {
         Edge* dx_edge = new Edge(dx);
-        out2edge_[dx] = _edge;
+        out2edge_[dx] = dx_edge;
       }
       Edge* dx_edge = out2edge_[dx];
       dx_edge->AddSource(node);
@@ -71,11 +72,11 @@ void DepGraph::RecursiveSearchInputNode(
     const Edge* father, vector<Statement>* stmts) {
   const vector<const Node*>& src_node = father->src_;
   CHECK(src_node.size() == 1);
-  if (src_node[0].inputs_.size() == 0) {
-     *stmts.emplace_back(BuildStatements(src_node[0]));
+  if (src_node[0]->inputs_.size() == 0) {
+     stmts->emplace_back(BuildStatement(src_node[0]));
   }else {
-    for (int i = 0; i < src_node[0].inputs_.size(); i++) {
-      RecursiveSearchInputNode(src_node[0].inputs_[i], stmts);
+    for (int i = 0; i < src_node[0]->inputs_.size(); i++) {
+      RecursiveSearchInputNode(src_node[0]->inputs_[i], stmts);
     }
   }
 }
@@ -87,9 +88,9 @@ BasicBlock DepGraph::OptimizeLoss(
   unordered_map<string, bool> calculated_edges;
   vector<Statement> ordered_statements;
   for (auto& var : var_names) {
-    const string& d_var = 
+    const string& var_grad = 
       backend::OpDecl::GetGradientName(var);
-    const Edge* root = out2edge_[d_var];
+    const Edge* root = out2edge_[var_grad];
     RecursiveSearchInputNode(root, &ordered_statements);
   }
   return BuildBasicBlock(ordered_statements);
@@ -132,29 +133,24 @@ void DepGraph::BackPropagate(
   }
 }
 
-void DepGraph::AddSolver(const string& solver,
-   const vector<string>& var_names) {
-  //for (int i = 0; i < num_nodes(); i++) {
-    //if (nodes_[i]->IsVariableOp()) {
-      //CHECK(nodes_[i]->outputs_.size() == 1);   
-      //const string& var_name = 
-        //nodes_[i]->outputs_[0]->tensor_name_;
-      //CHECK(out2edge_.find(var_name) != out2edge_.end());
-      //const string& var_grad_name = 
-        //::backend::OpDecl::GetGradientName(var_name);
-      //if (out2edge_.find(var_grad_name) != out2edge_.end() &&
-          //std::find(var_names.begin(), 
-                //var_names.end(), var_name) != var_names.end()) {
-        //OpDef update;  
-        //::backend::OpDefBuilder(solver)
-            //.Input(var_grad_name)
-            //.Output(var_name)
-            //.Shape(out2edge_.at(var_name)->tensor_shape_)
-            //.Finalize(&update);
-        //Node* node = AddNode(update);
-      //}
-    //}
-  //}
+void DepGraph::AddSolver(
+    const string& solver,
+    const vector<string>& var_names,
+    vector<Statement>* stmts) {
+  for (auto& var : var_names) {
+    CHECK(out2edge_.find(var) != out2edge_.end());
+    const string& var_grad = 
+      ::backend::OpDecl::GetGradientName(var);
+    CHECK(out2edge_.find(var_grad) != out2edge_.end());
+    OpDef update;  
+    ::backend::OpDefBuilder(solver)
+        .Input(var_grad)
+        .Output(var)
+        .Shape(out2edge_.at(var)->tensor_shape_)
+        .Finalize(&update);
+    //Node* node = AddNode(update);
+    stmts->emplace_back(BuildStatement(update));
+  }
 }
 
 void DepGraph::Dump() {

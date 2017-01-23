@@ -1,8 +1,6 @@
 #ifndef CAVS_BACKEND_OP_IMPL_H_
 #define CAVS_BACKEND_OP_IMPL_H_
 
-#include "cavs/midend/tensor.h"
-#include "cavs/midend/session.h"
 #include "cavs/midend/op_context.h"
 #include "cavs/proto/op_def.pb.h"
 

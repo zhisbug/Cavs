@@ -1,6 +1,7 @@
 #ifndef CAVS_MIDEND_DEP_GRAPH_H_
 #define CAVS_MIDEND_DEP_GRAPH_H_
 
+#include "cavs/midend/statement.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"
 
@@ -23,9 +24,9 @@ class DepGraph {
   }
   void BackPropagate(std::vector<std::string>* gen_grads,
       const std::string& loss);
-  void AddSolver(const std::string& solver, 
-      const std::vector<std::string>& var_names);
-  BasicBlock* OptimizeLoss(const std::string& loss, 
+  //void AddSolver(const std::string& solver, 
+      //const std::vector<std::string>& var_names);
+  BasicBlock OptimizeLoss(const std::string& loss, 
       const std::string& solver, 
       const std::vector<std::string>& var_names);
   void Dump();
@@ -33,11 +34,15 @@ class DepGraph {
  private:
   std::vector<Node*> nodes_;
   std::vector<std::vector<Node*>> grad_nodes_;
+  std::vector<Node*> update_nodes_;
   std::vector<Edge*> edges_;
   std::unordered_map<std::string, Edge*> out2edge_;
   void AddGradNode(const OpDef& op_def);
   void RecursiveSearchInputNode(
-      const Node* father, std::vector<Statement>* stmts);
+      const Edge* father, std::vector<Statement>* stmts);
+  void AddSolver(const std::string& solver,
+      const std::vector<std::string>& var_names,
+      std::vector<Statement>* stmts);
 };
 
 class Node {

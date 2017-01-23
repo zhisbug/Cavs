@@ -25,6 +25,29 @@ void SessionBase::InsertTensor(const Tensor& t){
   tensor_map_[t.name()] = t;
 }
 
+OpContext* SessionBase::GetContext(const OpDef& op_def) {
+  OpContext* ctxt  = new OpContext();
+  for (const string& input : op_def.input()) {
+    //const Tensor* t = this->GetTensor(input); 
+    ctxt->AppendInput(*(GetTensor(input)));
+  }
+  for (int i = 0; i < op_def.output_size(); i++) {
+    const string& output = op_def.output(i);
+    const Tensor* t = this->GetTensor(output);
+    if (!t) {
+      TensorShape shape(op_def.shape(i)); 
+      Allocator* alloc = GetAllocator(op_def); 
+      CHECK_NOTNULL(alloc);
+      Tensor out(output, alloc, op_def.dtype(), std::move(shape));
+      this->InsertTensor(out);
+    }
+    t = this->GetTensor(output);
+    CHECK_NOTNULL(t);
+    ctxt->AppendOutput(*t);
+  }
+  return ctxt;
+}
+
 namespace session_factory {
 
 typedef std::unordered_map<string, 
@@ -59,9 +82,9 @@ class SimpleSession : public SessionBase {
            const vector<Tensor>& input_tensors) override;
  private:
   void FeedInput(const vector<string>& input_names,
-                 const vector<Tensor>& input_tensors) override;
+                 const vector<Tensor>& input_tensors);
   void FetchOutput(const vector<string>& output_names,
-                   vector<Tensor>* output_tensors) override;
+                   vector<Tensor>* output_tensors);
   std::vector<std::pair<OpImpl*, OpContext*>> executors_;
 };
 
@@ -69,10 +92,12 @@ SimpleSession::SimpleSession(const DepGraph* graph)
     : SessionBase(graph) {
   for (int i = 0; i < graph->num_nodes(); i++) {
     OpImpl* op = CreateOp((*graph)[i]->op_def());
-    OpContext* context = new OpContext((*graph)[i]->op_def(), this); 
+    //OpContext* context = new OpContext((*graph)[i]->op_def(), this); 
+    OpContext* context = GetContext((*graph)[i]->op_def());
     executors_.push_back(std::make_pair(op, context));
   }
 }
+
 
 void SimpleSession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
