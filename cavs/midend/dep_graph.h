@@ -26,7 +26,7 @@ class DepGraph {
       const std::string& loss);
   //void AddSolver(const std::string& solver, 
       //const std::vector<std::string>& var_names);
-  BasicBlock OptimizeLoss(const std::string& loss, 
+  BasicBlock* OptimizeLoss(const std::string& loss, 
       const std::string& solver, 
       const std::vector<std::string>& var_names);
   void Dump();
@@ -39,10 +39,10 @@ class DepGraph {
   std::unordered_map<std::string, Edge*> out2edge_;
   void AddGradNode(const OpDef& op_def);
   void RecursiveSearchInputNode(
-      const Edge* father, std::vector<Statement>* stmts);
+      const Edge* father, std::vector<Statement*>* stmts);
   void AddSolver(const std::string& solver,
       const std::vector<std::string>& var_names,
-      std::vector<Statement>* stmts);
+      std::vector<Statement*>* stmts);
 };
 
 class Node {

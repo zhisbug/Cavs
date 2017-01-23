@@ -69,11 +69,11 @@ void DepGraph::AddGradNode(const OpDef& op_def) {
 }
 
 void DepGraph::RecursiveSearchInputNode(
-    const Edge* father, vector<Statement>* stmts) {
+    const Edge* father, vector<Statement*>* stmts) {
   const vector<const Node*>& src_node = father->src_;
   CHECK(src_node.size() == 1);
   if (src_node[0]->inputs_.size() == 0) {
-     stmts->emplace_back(BuildStatement(src_node[0]));
+     stmts->emplace_back(BuildExprStatement(src_node[0]));
   }else {
     for (int i = 0; i < src_node[0]->inputs_.size(); i++) {
       RecursiveSearchInputNode(src_node[0]->inputs_[i], stmts);
@@ -81,12 +81,12 @@ void DepGraph::RecursiveSearchInputNode(
   }
 }
 
-BasicBlock DepGraph::OptimizeLoss(
+BasicBlock* DepGraph::OptimizeLoss(
     const string& loss, 
     const string& solver, 
     const vector<string>& var_names) {
   unordered_map<string, bool> calculated_edges;
-  vector<Statement> ordered_statements;
+  vector<Statement*> ordered_statements;
   for (auto& var : var_names) {
     const string& var_grad = 
       backend::OpDecl::GetGradientName(var);
@@ -136,7 +136,7 @@ void DepGraph::BackPropagate(
 void DepGraph::AddSolver(
     const string& solver,
     const vector<string>& var_names,
-    vector<Statement>* stmts) {
+    vector<Statement*>* stmts) {
   for (auto& var : var_names) {
     CHECK(out2edge_.find(var) != out2edge_.end());
     const string& var_grad = 
@@ -149,7 +149,7 @@ void DepGraph::AddSolver(
         .Shape(out2edge_.at(var)->tensor_shape_)
         .Finalize(&update);
     //Node* node = AddNode(update);
-    stmts->emplace_back(BuildStatement(update));
+    stmts->emplace_back(BuildExprStatement(update));
   }
 }
 

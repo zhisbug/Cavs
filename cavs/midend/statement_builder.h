@@ -9,9 +9,11 @@
 
 namespace midend {
 
-Statement BuildStatement(const Node* node);
-Statement BuildStatement(const OpDef& op_def);
-BasicBlock BuildBasicBlock(const std::vector<Statement>& stmts);
+ExprStatement* BuildExprStatement(const Node* node);
+ExprStatement* BuildExprStatement(const OpDef& op_def);
+BasicBlock* BuildBasicBlock(const OpDef& op_def);
+BasicBlock* BuildBasicBlock(const std::vector<OpDef>& op_defs);
+BasicBlock* BuildBasicBlock(const std::vector<Statement*>& stmts);
 
 } //namespace midend
 
