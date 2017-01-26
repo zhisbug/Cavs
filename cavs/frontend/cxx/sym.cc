@@ -64,6 +64,7 @@ Sym::Sym(const string& op_name,
   node_.reset(new node());
   node_->op_name_ = op_name;
   node_->output_.push_back(op_name + std::to_string(id++));
+  node_->input_ = {loss};
   char **var = (char**)malloc(variables.size()*sizeof(char*));
   for (int i = 0; i < variables.size(); i++) {
     CHECK(variables[i].node_->output_.size() == 1);

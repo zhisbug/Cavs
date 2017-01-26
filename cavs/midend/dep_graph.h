@@ -25,7 +25,8 @@ class DepGraph {
   }
   //void AddSolver(const std::string& solver, 
       //const std::vector<std::string>& var_names);
-  BasicBlock* OptimizeWithLoss(const std::string& loss, 
+  void GroupAllVariables(std::vector<std::string>* vars);
+  void OptimizeWithLoss(const std::string& loss, 
       const std::string& solver, 
       const std::vector<std::string>& var_names);
   void Dump();
@@ -35,6 +36,7 @@ class DepGraph {
   std::vector<std::vector<Node*>> grad_nodes_;
   std::vector<Node*> update_nodes_;
   std::vector<Edge*> edges_;
+  std::unordered_map<std::string, int> out2node_;
   std::unordered_map<std::string, Edge*> out2edge_;
   std::unordered_map<std::string, NodeGroup*> out2ng_;
   void AddGradNode(const OpDef& op_def);
@@ -52,7 +54,9 @@ class DepGraph {
 
 class Edge {
  public:
-  explicit Edge(const std::string& name) : tensor_name_(name) {} 
+  explicit Edge(const std::string& name, bool stateful)
+    : tensor_name_(name), stateful_(stateful) {} 
+  bool isStateful() const { return stateful_; }
   inline const std::string& name() const {
     return tensor_name_;
   }
@@ -63,6 +67,7 @@ class Edge {
     return tensor_shape_; 
   }
   inline void AddSource(const Node* node) {
+    CHECK(!stateful || src_.empty());
     src_.push_back(node); 
   }
   inline void AddDst(const Node* node) {
@@ -75,6 +80,7 @@ class Edge {
   TensorShapeDef tensor_shape_;
   std::vector<const Node*> src_;
   std::vector<const Node*> dst_;
+  bool stateful_;
 };
 
 class Node {
@@ -102,7 +108,6 @@ class Node {
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
 };
-
 
 class NodeGroup {
  public:

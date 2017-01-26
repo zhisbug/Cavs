@@ -104,10 +104,13 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
       int iters) {
   string loss(c_loss_name, loss_name_len);
   vector<string> var_names;
-  for (int i = 0; i < var_name_len; i++)
-    var_names.emplace_back(c_var_name[i]);
+  if (var_name_len > 0) {
+    for (int i = 0; i < var_name_len; i++)
+      var_names.emplace_back(c_var_name[i]);
+  }else {
+    c_graph->graph->GroupAllVariables(&var_names);
+  }
   string proj(c_proj_name, proj_name_len);
-  vector<string> grads_vec;
   c_graph->graph->OptimizeWithLoss(loss, "SGD"+proj, var_names);
   //C_graph->graph->AddSolver("GradientDescent"+proj, var_names);
 }

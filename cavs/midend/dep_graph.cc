@@ -72,7 +72,8 @@ void DepGraph::SearchClosedSet(
     const Node* father,
     NodeGroup* ng,
     const vector<string>& vars,
-    bool* contained) {
+    bool* contained
+    set<Node*> accessed) {
   const vector<Edge*>& input_edges = father->inputs_;
   if (input_edges.size() == 0) {
     *contained = false;
@@ -81,12 +82,11 @@ void DepGraph::SearchClosedSet(
     bool contain_child = false;
     for (auto* edge : input_edges) {
       CHECK(edge->src_.size() == 1);
+      SearchClosedSet(edge->src_[0], ng, vars, &contain_child);
       if (std::find(vars.begin(), vars.end(), edge->name())
           != vars.end()) {
         contain_child = true;
-        continue;
       }
-      SearchClosedSet(edge->src_[0], ng, vars, &contain_child);
     }
     if (contain_child) {
       *contained = true;
@@ -98,12 +98,23 @@ void DepGraph::SearchClosedSet(
   }
 }
 
-BasicBlock* DepGraph::OptimizeWithLoss(
+void DepGraph::GroupAllVariables(vector<string>* vars) {
+  for (Node* n : nodes_) {
+    if (n->IsVariableOp())
+      vars->push_back(n->op_def().name());
+  }
+}
+
+void DepGraph::OptimizeWithLoss(
     const string& loss, 
     const string& solver, 
     const vector<string>& var_names) {
-  unordered_map<string, bool> calculated_edges;
-  vector<Statement*> ordered_statements;
+  CHECK(var_names.size() > 0);
+  BackPropagate();
+  SearchClosedSet();
+  
+  //unordered_map<string, bool> calculated_edges;
+  //vector<Statement*> ordered_statements;
   for (auto& var : var_names) {
     const string& var_grad = 
       backend::OpDecl::GetGradientName(var);
@@ -111,7 +122,7 @@ BasicBlock* DepGraph::OptimizeWithLoss(
     //RecursiveSearchInputNode(root, &ordered_statements);
   }
   //AddGradNode(op_def);
-  return BuildBasicBlock(ordered_statements);
+  //return BuildBasicBlock(ordered_statements);
 }
 
 void DepGraph::BackPropagate() {
