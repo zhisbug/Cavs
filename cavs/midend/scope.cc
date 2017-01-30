@@ -24,7 +24,7 @@ void AddNode(Node* node) {
   node_table[name] = node;
 }
 
-Scope* Scope::GetGlobalScope() {
+const Scope* Scope::GetGlobalScope() {
   static Scope* s = new Scope(NULL, "global");
   return s;
 }

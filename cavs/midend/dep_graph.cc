@@ -11,7 +11,8 @@ using namespace std;
 
 namespace midend {
 
-Node* DepGraph::AddNode(const OpDef& op_def) {
+Node* DepGraph::AddNode(const OpDef& op_def,
+    const Scope* s) {
   Node* node = new Node(op_def);
   nodes_.push_back(node);
   for (auto& out : op_def.output()) {
@@ -222,13 +223,6 @@ void DepGraph::SetLossNodeGroup(const string& loss,
 void DepGraph::Dump() {
   for (auto* node : nodes_)
     LOG(INFO) << node->op_def_.DebugString();
-}
-
-void Node::InputShapes(
-    vector<TensorShapeDef>* inputs) {
-  for (auto* edge: inputs_) {
-    inputs->push_back(edge->shape());
-  }
 }
 
 } //namespace midend
