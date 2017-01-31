@@ -81,20 +81,17 @@ void C_AddNode(C_DepGraph* C_graph,
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   Node* node = C_graph->graph->AddNode(op_def);
-  LOG(INFO) << "here";
   vector<TensorShapeDef> input_shapes;
   node->InputShapes(&input_shapes);
   const vector<TensorShapeDef>& shape_def =
     ShapeInference(op_def, input_shapes);
   node->SetShape(shape_def);
-  LOG(INFO) << "here";
   //for user interface, the output of each operator can only be 1
   CHECK(shape_def.size() == 1);
   *dim_length = shape_def[0].dim_size();
   *dim = new int[*dim_length];
   for (int i = 0; i < shape_def[0].dim_size(); i++)
     (*dim)[i] = shape_def[0].dim(i);
-  LOG(INFO) << "here";
 }
 
 void C_OptimizeWithLoss(C_DepGraph* c_graph, 
