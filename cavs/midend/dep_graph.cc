@@ -12,82 +12,53 @@ using ::backend::OpDecl;
 
 namespace midend {
 
-DepGraph::DepGraph() {
-  OpDef def;
-  def.set_name("__internal__sink");
-  sink_ = AddNode(def, GetGlobalScope());
+//DepGraph::DepGraph() {
+  ////OpDef def;
+  ////def.set_name("__internal__sink");
+  ////sink_ = AddNode(def, GetGlobalScope());
+//}
+
+//void DepGraph::AddGradNode(const OpDef& op_def,
+    //const Scope* s) {
+//}
+
+Node* DepGraph::AddNode(const OpDef& op_def) { 
+  return s_->AddNode(op_def); 
 }
 
-Node* DepGraph::AddNode(const OpDef& op_def,
-    const Scope* s) {
-  Node* node = new Node(op_def);
-  node->set_id(nodes_.size());
-  nodes_.push_back(node);
-  for (auto& out : op_def.output()) {
-    Edge* out_edge = s->FindEdge(out);
-    if (!out_edge) {
-      bool stateful = (op_def.name() == "Variable");
-      out_edge = new Edge(out, stateful, s);
-      const_cast<Scope*>(s)->AddEdge(out_edge);
-      out_edge->AddDst(sink_);
-      //out_edge = s->FindEdge(out);
-    }
-    CHECK(out_edge);
-    out_edge->AddSource(node);
-    node->AddOutput(out_edge);
-  }
-  for (auto& input : op_def.input()) {
-    const Edge* in_edge = s->FindEdge(input);
-    CHECK(in_edge);
-    node->AddInput(in_edge);
-    const_cast<Edge*>(in_edge)->AddDst(node);
-  }
-  return node;
-}
-
-void DepGraph::AddGradNode(const OpDef& op_def,
-    const Scope* s) {
-  const vector<OpDef>& grads = 
-    ::backend::MakeGradient(op_def); 
-  vector<Node*> grad_vec;
-  for (auto& grad : grads) {
-    Node* node = new Node(grad);
-    grad_vec.push_back(node);
-    for (auto& dx : op_def.output()) {
-      const string& x = 
-        ::backend::OpDecl::GetOriginName(dx);
-      CHECK(s->FindEdge(x) != NULL);
-      Edge* dx_edge = s->FindEdge(dx);
-      if (!dx_edge) {
-        const_cast<Scope*>(s)->AddEdge(new Edge(dx, false, s));
-        dx_edge = s->FindEdge(dx);
+bool DepGraph::SearchCriticalPath(Scope*s,
+      const Edge* var, const Edge* curr,
+      const unordered_map<Node*, bool>& recalculate,
+      const unordered_map<Node*, bool>& accessed) {
+  if (curr == var) return true;
+  if (curr->isStateful()) return false;
+  CHECK(curr->srcs_size() == 1);
+  const Node* node = curr->src[0];
+  if (recalculate.find(node) == recalculate.end() &&
+      accessed.find(node) == accessed.end()) {
+    accessed[node] = true; 
+    for (auto* edge : node->inputs()) {
+      if (SearchCriticalPath(s, var, edge, recalculate)) {
+        s->AddNode(child->op_def(), true);
+        recalculate[node] = true; 
       }
-      CHECK(dx_edge);
-      dx_edge->AddSource(node);
-      node->AddOutput(dx_edge);
-    }
-
-    for (auto& dy: op_def.input()) {
-      const string& y = 
-        ::backend::OpDecl::GetOriginName(dy);
-      CHECK(s->FindEdge(y));
-      CHECK(!(s->FindEdge(dy)));
-      Edge* dy_edge = new Edge(dy, false, s);
-      const_cast<Scope*>(s)->AddEdge(dy_edge);
-      node->AddInput(dy_edge);
-      dy_edge->AddDst(node);
     }
   }
-  grad_nodes_.push_back(std::move(grad_vec));
+  return recalculate.find(node) != recalculate.end();
 }
 
-bool DepGraph::SearchClosedSet(
+void DepGraph::SearchClosedSet(
     const vector<string>& vars,
     const vector<string>& grad_vars,
     Scope* s) {
-  
-  for (auto& grad_var : grad_vars) {
-    //SearchCriticalPath
+  CHECK(vars.size() == grad_vars.size());
+  unordered_map<Node*, bool> recalculate;
+  for (int i = 0; i < vars.size(); i++) {
+    const Edge* var = s->FindEdge(vars[i]);
+    const Edge* grad_var = s->FindEdge(grad_vars[i]);
+    unordered_map<Node*, bool> accessed;
+    SearchCriticalPath(s, var, grad_var,
+        &recalculate, &accessed);
   }
   //const vector<Edge*>& input_edges = father->inputs_;
   //if (input_edges.size() == 0) {
@@ -130,6 +101,14 @@ void DepGraph::OptimizeWithLoss(
   vector<string> grad_var_names;
   for (auto& var : var_names)
     grad_var_names.push_back(OpDecl::GetGradientName(var));
+  Edge* loss_edge = GetGlobalScope()->FindEdge(loss);
+  CHECK(loss_node);
+  OpDef const_op;
+  BuildConstantOpDef(&const_op, 
+      OpDecl::GetGradientName(loss),
+      loss_edge->shape(),
+      1.f);
+  AddNode(const_op, s_loss);
   SearchClosedSet(var_names, grad_var_names, s_loss);
   
   //unordered_map<string, bool> calculated_edges;

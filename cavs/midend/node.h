@@ -36,7 +36,7 @@ class Node {
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable");
   }
-  inline const Edge* inputs(int i) {
+  inline const Edge* input(int i) {
     CHECK(i < inputs_.size());
     return inputs_[i];
   }
@@ -46,7 +46,7 @@ class Node {
   inline int inputs_size() const {
     return inputs_.size();
   }
-  inline const Edge* outputs(int i) {
+  inline const Edge* output(int i) {
     CHECK(i < outputs_.size());
     return outputs_[i];
   }

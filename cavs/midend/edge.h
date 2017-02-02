@@ -41,26 +41,32 @@ class Edge {
     std::remove(dst_.begin(), dst_.end(), node); 
   }
   inline const Node* src(size_t i) {
-    CHECK(i < src_.size());
-    return src_[i];
+    CHECK(i < srcs_.size());
+    return srcs_[i];
+  }
+  inline const vector<Node*>& srcs() const {
+    return srcs_;
   }
   inline int src_size() const {
-    return src_.size();
+    return srcs_.size();
   }
   inline const Node* dst(size_t i) {
-    CHECK(i < dst_.size());
-    return dst_[i];
+    CHECK(i < dsts_.size());
+    return dsts_[i];
   }
-  inline int dst_size() const {
-    return dst_.size();
+  inline const vector<Node*>& dsts() const {
+    return dsts_;
+  }
+  inline int dsts_size() const {
+    return dsts_.size();
   }
 
  private:
   Node* sink_;
   std::string tensor_name_;
   TensorShapeDef tensor_shape_;
-  std::vector<Node*> src_;
-  std::vector<Node*> dst_;
+  std::vector<Node*> srcs_;
+  std::vector<Node*> dsts_;
   bool stateful_;
   const Scope* s_;
 };

@@ -20,9 +20,11 @@ namespace midend {
 //the storage of actual data
 class DepGraph {
  public:
-  DepGraph();
-  Node* AddNode(const OpDef& op_def,
-      const Scope* s = GetGlobalScope());
+  DepGraph(const Scope* s = GetGlobalScope())
+    : s_(s) {}
+  inline Node* AddNode(const OpDef& op_def) {
+    return s_->AddNode(); 
+  }
   inline int num_nodes() const {
     return nodes_.size();
   }
@@ -36,37 +38,37 @@ class DepGraph {
   void Dump();
 
  private:
-  Node* sink_;
-  std::vector<Node*> nodes_;
-  std::vector<std::vector<Node*>> grad_nodes_;
-  std::vector<Node*> update_nodes_;
-  std::vector<Edge*> edges_;
-  void AddGradNode(const OpDef& op_def,
-      const Scope* s);
+  const Scope* s_;
+  //std::vector<Node*> nodes_;
+  //std::vector<std::vector<Node*>> grad_nodes_;
+  //std::vector<Node*> update_nodes_;
+  //std::vector<Edge*> edges_;
+  //void AddGradNode(const OpDef& op_def,
+      //const Scope* s);
   void BackPropagate();
   void AddSolver(const std::string& solver,
       const std::vector<std::string>& vars,
       std::vector<Statement*>* stmts);
-  void SetLossNodeGroup(const std::string& loss,
-      const std::vector<std::string>& vars,
-      const Scope* s);
-  bool SearchClosedSet(
+  bool SearchCriticalPath(Scope*s,
+      const Edge* var, const Edge* curr,
+      const unordered_map<Node*, bool>& recalculate,
+      const unordered_map<Node*, bool>& accessed) {
+  void SearchClosedSet(
       const std::vector<std::string>& vars,
       const std::vector<std::string>& grad_vars,
       Scope* s);
 };
 
-
-class NodeGroup {
- public:
-  explicit NodeGroup(std::string name) : name_(name) {}
-  void AddNode(const Node* n);
- private:
-  std::vector<const Node*> nodes_;
-  std::vector<Edge*> inputs_;
-  std::vector<Edge*> outputs_;
-  std::string name_;
-};
+//class NodeGroup {
+ //public:
+  //explicit NodeGroup(std::string name) : name_(name) {}
+  //void AddNode(const Node* n);
+ //private:
+  //std::vector<const Node*> nodes_;
+  //std::vector<Edge*> inputs_;
+  //std::vector<Edge*> outputs_;
+  //std::string name_;
+//};
 
 } //namespace midend 
 

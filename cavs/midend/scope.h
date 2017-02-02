@@ -16,10 +16,8 @@ class Scope {
  public:
   Scope(const Scope* s, const std::string& n)
     : father_(s), name_(n) {}
-  Node* FindNode(const std::string& n) const;
-  Edge* FindEdge(const std::string& n) const;
-  void AddNode(Node* node);
-  void AddEdge(Edge* edge);
+  Edge* FindEdge(const std::string& n, bool within = false) const;
+  Node* AddNode(const OpDef& op_def, bool within = false);
   //NodeGroup* FindNodeGroup(const std::string& n);
   //void AddNodeGroup(const Edge* edge);
     
@@ -28,8 +26,12 @@ class Scope {
   const Scope* father_;
   std::vector<Scope*> children_;
   std::unordered_map<std::string, Edge*> edge_table_;
-  std::unordered_map<std::string, Node*> node_table_;
-  std::unordered_map<std::string, NodeGroup*> nodegroup_table_;
+  std::vector<Node*> nodes_;
+  std::unordered_map<std::string, Edge*> in_edges_;
+  std::unordered_map<std::string, Edge*> out_edges_;
+  void AddEdge(Edge* edge);
+  //std::unordered_map<std::string, NodeGroup*> nodegroup_table_;
+  //Node* FindNode(const std::string& n, bool within = false) const;
 };
 
 const Scope* GetGlobalScope();
