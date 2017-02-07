@@ -9,6 +9,7 @@
 
 using namespace std;
 using ::backend::OpDecl;
+using ::backend::BuildConstantOpDef;
 
 namespace midend {
 
@@ -23,28 +24,36 @@ namespace midend {
 //}
 
 Node* DepGraph::AddNode(const OpDef& op_def) { 
-  return s_->AddNode(op_def); 
+  return const_cast<Scope*>(s_)->AddNode(op_def); 
+}
+
+int DepGraph::num_nodes() const {
+  return s_->nodes_.size();
+}
+
+const Node* DepGraph::operator[](int node_id) const {
+  return s_->nodes_[node_id];
 }
 
 bool DepGraph::SearchCriticalPath(Scope*s,
       const Edge* var, const Edge* curr,
-      const unordered_map<Node*, bool>& recalculate,
-      const unordered_map<Node*, bool>& accessed) {
+      unordered_map<const Node*, bool>* recalculate,
+      unordered_map<const Node*, bool>* accessed) {
   if (curr == var) return true;
   if (curr->isStateful()) return false;
   CHECK(curr->srcs_size() == 1);
-  const Node* node = curr->src[0];
-  if (recalculate.find(node) == recalculate.end() &&
-      accessed.find(node) == accessed.end()) {
-    accessed[node] = true; 
+  const Node* node = curr->src(0);
+  if (recalculate->find(node) == recalculate->end() &&
+      accessed->find(node) == accessed->end()) {
+    (*accessed)[node] = true; 
     for (auto* edge : node->inputs()) {
-      if (SearchCriticalPath(s, var, edge, recalculate)) {
-        s->AddNode(child->op_def(), true);
-        recalculate[node] = true; 
+      if (SearchCriticalPath(s, var, edge, recalculate, accessed)) {
+        s->AddNode(node->op_def());
+        (*recalculate)[node] = true; 
       }
     }
   }
-  return recalculate.find(node) != recalculate.end();
+  return recalculate->find(node) != recalculate->end();
 }
 
 void DepGraph::SearchClosedSet(
@@ -52,43 +61,21 @@ void DepGraph::SearchClosedSet(
     const vector<string>& grad_vars,
     Scope* s) {
   CHECK(vars.size() == grad_vars.size());
-  unordered_map<Node*, bool> recalculate;
+  unordered_map<const Node*, bool> recalculate;
   for (int i = 0; i < vars.size(); i++) {
     const Edge* var = s->FindEdge(vars[i]);
     const Edge* grad_var = s->FindEdge(grad_vars[i]);
-    unordered_map<Node*, bool> accessed;
+    unordered_map<const Node*, bool> accessed;
     SearchCriticalPath(s, var, grad_var,
         &recalculate, &accessed);
   }
-  //const vector<Edge*>& input_edges = father->inputs_;
-  //if (input_edges.size() == 0) {
-    //*contained = false;
-    //return;
-  //}else {
-    //bool contain_child = false;
-    //for (auto* edge : input_edges) {
-      //CHECK(edge->src_.size() == 1);
-      //SearchClosedSet(edge->src_[0], ng, vars, &contain_child);
-      //if (std::find(vars.begin(), vars.end(), edge->name())
-          //!= vars.end()) {
-        //contain_child = true;
-      //}
-    //}
-    //if (contain_child) {
-      //*contained = true;
-      //for (auto* edge : input_edges) {
-        //CHECK(edge->src_.size() == 1);
-        //ng->AddNode(edge->src_[0]);
-      //}
-    //}
-  //}
 }
 
 void DepGraph::GroupAllVariables(vector<string>* vars) {
-  for (Node* n : nodes_) {
-    if (n->IsVariableOp())
-      vars->push_back(n->name());
-  }
+  //for (Node* n : nodes_) {
+    //if (n->IsVariableOp())
+      //vars->push_back(n->name());
+  //}
 }
 
 void DepGraph::OptimizeWithLoss(
@@ -101,14 +88,14 @@ void DepGraph::OptimizeWithLoss(
   vector<string> grad_var_names;
   for (auto& var : var_names)
     grad_var_names.push_back(OpDecl::GetGradientName(var));
-  Edge* loss_edge = GetGlobalScope()->FindEdge(loss);
-  CHECK(loss_node);
+  Edge* loss_edge = s_->FindEdge(loss);
+  CHECK(loss_edge);
   OpDef const_op;
   BuildConstantOpDef(&const_op, 
       OpDecl::GetGradientName(loss),
       loss_edge->shape(),
       1.f);
-  AddNode(const_op, s_loss);
+  s_loss->AddNode(const_op);
   SearchClosedSet(var_names, grad_var_names, s_loss);
   
   //unordered_map<string, bool> calculated_edges;
@@ -126,41 +113,41 @@ void DepGraph::OptimizeWithLoss(
 //currently, we assume all ops defined by developpers
 //are in the scope of global
 void DepGraph::BackPropagate() {
-  for (int i = grad_nodes_.size();
-        i < nodes_.size(); i++) {
-    AddGradNode(nodes_[i]->op_def(), GetGlobalScope());  
-  }
-  ////gen_grads->clear();
-  for (int i = num_nodes()-1; i >= 0; i--) {
-    const vector<OpDef>& grads = 
-      ::backend::MakeGradient(nodes_[i]->op_def()); 
-    for (auto& grad : grads) {
-      ////for (auto& grad_out_str : grad.output())
-        ////gen_grads->push_back(grad_out_str);
-      //for (auto& grad_input : grad.input()) {
-        ////if the grad_input does not exist, 
-        ////it must be the loss node,
-        ////and it should be set to one-value matrix
-        //if (out2edge_.find(grad_input) == out2edge_.end()) {
-          //const string& ori_input = 
-            //::backend::OpDecl::GetOriginName(grad_input);
-          //CHECK(out2edge_.find(ori_input) != out2edge_.end());
-          //OpDef const_op;
-          //::backend::BuildConstantOpDef(&const_op, 
-              //grad_input,
-              //out2edge_[ori_input]->tensor_shape_,
-              //1.f);
-          //AddNode(const_op);
-        //}
-      //}
-      Node* node = AddNode(grad);
-      vector<TensorShapeDef> inputs;
-      node->InputShapes(&inputs);
-      const vector<TensorShapeDef>& out_shapes = 
-        ::backend::ShapeInference(grad, inputs);
-      node->SetShape(out_shapes);
-    }
-  }
+  //for (int i = grad_nodes_.size();
+        //i < nodes_.size(); i++) {
+    //AddGradNode(nodes_[i]->op_def(), GetGlobalScope());  
+  //}
+  //////gen_grads->clear();
+  //for (int i = num_nodes()-1; i >= 0; i--) {
+    //const vector<OpDef>& grads = 
+      //::backend::MakeGradient(nodes_[i]->op_def()); 
+    //for (auto& grad : grads) {
+      //////for (auto& grad_out_str : grad.output())
+        //////gen_grads->push_back(grad_out_str);
+      ////for (auto& grad_input : grad.input()) {
+        //////if the grad_input does not exist, 
+        //////it must be the loss node,
+        //////and it should be set to one-value matrix
+        ////if (out2edge_.find(grad_input) == out2edge_.end()) {
+          ////const string& ori_input = 
+            ////::backend::OpDecl::GetOriginName(grad_input);
+          ////CHECK(out2edge_.find(ori_input) != out2edge_.end());
+          ////OpDef const_op;
+          ////::backend::BuildConstantOpDef(&const_op, 
+              ////grad_input,
+              ////out2edge_[ori_input]->tensor_shape_,
+              ////1.f);
+          ////AddNode(const_op);
+        ////}
+      ////}
+      //Node* node = AddNode(grad);
+      //vector<TensorShapeDef> inputs;
+      //node->InputShapes(&inputs);
+      //const vector<TensorShapeDef>& out_shapes = 
+        //::backend::ShapeInference(grad, inputs);
+      //node->SetShape(out_shapes);
+    //}
+  //}
 }
 
 void DepGraph::AddSolver(
@@ -183,44 +170,44 @@ void DepGraph::AddSolver(
   //}
 }
 
-void NodeGroup::AddNode(const Node* n) {
-  for (auto* node : nodes_)
-    CHECK(node != n);
-  nodes_.push_back(n);
-  for (auto* edge : n->inputs()) {
-    auto it = std::find(outputs_.begin(), outputs_.end(), edge);
-    if (it == outputs_.end()) {
-      if (std::find(inputs_.begin(), inputs_.end(), edge) 
-          == inputs_.end()) {
-        inputs_.push_back(edge);
-      }
-    }else {
-      outputs_.erase(it);
-    }
-  }
-  for (auto* edge : n->outputs()) {
-    auto it = std::find(inputs_.begin(), inputs_.end(), edge); 
-    if (it == inputs_.end()) {
-      if (std::find(outputs_.begin(), outputs_.end(), edge) 
-          == outputs_.end()) {
-        outputs_.push_back(edge); 
-      }
-    }else {
-      inputs_.erase(it);  
-    }
-  }
-}
+//void NodeGroup::AddNode(const Node* n) {
+  //for (auto* node : nodes_)
+    //CHECK(node != n);
+  //nodes_.push_back(n);
+  //for (auto* edge : n->inputs()) {
+    //auto it = std::find(outputs_.begin(), outputs_.end(), edge);
+    //if (it == outputs_.end()) {
+      //if (std::find(inputs_.begin(), inputs_.end(), edge) 
+          //== inputs_.end()) {
+        //inputs_.push_back(edge);
+      //}
+    //}else {
+      //outputs_.erase(it);
+    //}
+  //}
+  //for (auto* edge : n->outputs()) {
+    //auto it = std::find(inputs_.begin(), inputs_.end(), edge); 
+    //if (it == inputs_.end()) {
+      //if (std::find(outputs_.begin(), outputs_.end(), edge) 
+          //== outputs_.end()) {
+        //outputs_.push_back(edge); 
+      //}
+    //}else {
+      //inputs_.erase(it);  
+    //}
+  //}
+//}
 
 
-void DepGraph::SetLossNodeGroup(const string& loss,
-    const vector<string>& vars,
-    const Scope* s) {
-  //CHECK(s.Fine(loss) == out2ng_.end());
-  //NodeGroup* ng = new NodeGroup(loss); 
-}
+//void DepGraph::SetLossNodeGroup(const string& loss,
+    //const vector<string>& vars,
+    //const Scope* s) {
+  ////CHECK(s.Fine(loss) == out2ng_.end());
+  ////NodeGroup* ng = new NodeGroup(loss); 
+//}
 
 void DepGraph::Dump() {
-  for (auto* node : nodes_)
+  for (auto* node : s_->nodes_)
     LOG(INFO) << node->op_def().DebugString();
 }
 

@@ -3,7 +3,7 @@
 namespace midend {
 
 void Edge::AddDst(Node* node) {
-  dst_.push_back(node); 
+  dsts_.push_back(node); 
   if (node->isSink()) {
     CHECK(sink_ == NULL); 
     sink_ = node;

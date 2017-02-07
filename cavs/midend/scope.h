@@ -2,6 +2,7 @@
 #define CAVS_MIDEND_SCOPE_H_
 
 #include "cavs/midend/dep_graph.h"
+#include "cavs/proto/op_def.pb.h"
 
 #include <string>
 #include <vector>
@@ -17,7 +18,9 @@ class Scope {
   Scope(const Scope* s, const std::string& n)
     : father_(s), name_(n) {}
   Edge* FindEdge(const std::string& n, bool within = false) const;
-  Node* AddNode(const OpDef& op_def, bool within = false);
+  Node* AddNode(const OpDef& op_def);
+  void AddGradNode(const OpDef& op_def);
+  friend class DepGraph;
   //NodeGroup* FindNodeGroup(const std::string& n);
   //void AddNodeGroup(const Edge* edge);
     

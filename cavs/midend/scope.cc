@@ -1,6 +1,10 @@
 #include "scope.h"
+#include "cavs/backend/op_decl.h"
+
+#include <vector>
 
 using std::string;
+using std::vector;
 
 namespace midend {
 
@@ -41,22 +45,29 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 }
 
 Node* Scope::AddNode(const OpDef& op_def) {
-  const string& name = node->name();
   Node* node = new Node(op_def);
   nodes_.push_back(node);
   node->set_id(nodes_.size());
   for (auto& out : op_def.output()) {
-    Edge* out_edge = FindEdge(out);
+    Edge* ori_out_edge = FindEdge(out, false);
+    Edge* out_edge = FindEdge(out, true);
     if (!out_edge) {
       bool stateful = (op_def.name() == "Variable");
-      out_edge = new Edge(out, stateful, s);
-      const_cast<Scope*>(s)->AddEdge(out_edge);
-      out_edge->AddDst(sink_);
+      out_edge = new Edge(out, stateful, this);
+      const_cast<Scope*>(this)->AddEdge(out_edge);
+      //out_edge->AddDst(sink_);
       //out_edge = FindEdge(out);
     }
     CHECK(out_edge);
     out_edge->AddSource(node);
     node->AddOutput(out_edge);
+    if (ori_out_edge) {
+      for (int i = 0; i < ori_out_edge->dsts_size(); i++) {
+        if (ori_out_edge->dst(i)->scope() == this) {
+          const_cast<Node*>(ori_out_edge->dst(i))->replaceInput(i, out_edge);
+        }
+      }
+    }
   }
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
@@ -78,11 +89,11 @@ void Scope::AddGradNode(const OpDef& op_def) {
     for (auto& dx : op_def.output()) {
       const string& x = 
         ::backend::OpDecl::GetOriginName(dx);
-      CHECK(s->FindEdge(x) != NULL);
-      Edge* dx_edge = s->FindEdge(dx);
+      CHECK(FindEdge(x) != NULL);
+      Edge* dx_edge = FindEdge(dx, true);
       if (!dx_edge) {
-        const_cast<Scope*>(s)->AddEdge(new Edge(dx, false, s));
-        dx_edge = s->FindEdge(dx);
+        AddEdge(new Edge(dx, false, this));
+        dx_edge = FindEdge(dx);
       }
       CHECK(dx_edge);
       dx_edge->AddSource(node);
@@ -92,10 +103,10 @@ void Scope::AddGradNode(const OpDef& op_def) {
     for (auto& dy: op_def.input()) {
       const string& y = 
         ::backend::OpDecl::GetOriginName(dy);
-      CHECK(s->FindEdge(y));
-      CHECK(!(s->FindEdge(dy)));
-      Edge* dy_edge = new Edge(dy, false, s);
-      const_cast<Scope*>(s)->AddEdge(dy_edge);
+      CHECK(FindEdge(y));
+      CHECK(!FindEdge(dy));
+      Edge* dy_edge = new Edge(dy, false, this);
+      const_cast<Scope*>(this)->AddEdge(dy_edge);
       node->AddInput(dy_edge);
       dy_edge->AddDst(node);
     }

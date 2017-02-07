@@ -33,28 +33,28 @@ class Edge {
     return tensor_shape_; 
   }
   inline void AddSource(Node* node) {
-    CHECK(!stateful_ || src_.empty());
-    src_.push_back(node); 
+    CHECK(!stateful_ || srcs_.empty());
+    srcs_.push_back(node); 
   }
   void AddDst(Node* node);
   inline void RemoveDst(Node* node) {
-    std::remove(dst_.begin(), dst_.end(), node); 
+    std::remove(dsts_.begin(), dsts_.end(), node); 
   }
-  inline const Node* src(size_t i) {
+  inline const Node* src(size_t i) const {
     CHECK(i < srcs_.size());
     return srcs_[i];
   }
-  inline const vector<Node*>& srcs() const {
+  inline const std::vector<Node*>& srcs() const {
     return srcs_;
   }
-  inline int src_size() const {
+  inline int srcs_size() const {
     return srcs_.size();
   }
   inline const Node* dst(size_t i) {
     CHECK(i < dsts_.size());
     return dsts_[i];
   }
-  inline const vector<Node*>& dsts() const {
+  inline const std::vector<Node*>& dsts() const {
     return dsts_;
   }
   inline int dsts_size() const {

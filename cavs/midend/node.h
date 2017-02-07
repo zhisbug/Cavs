@@ -32,6 +32,9 @@ class Node {
   inline const OpDef& op_def() const {
     return op_def_; 
   }
+  inline const Scope* scope() const {
+    return s_; 
+  }
   inline const std::string& name() const { return op_def_.name(); }
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable");
@@ -45,6 +48,10 @@ class Node {
   }
   inline int inputs_size() const {
     return inputs_.size();
+  }
+  inline void replaceInput(int i, Edge* edge) {
+    CHECK(i < inputs_.size());
+    inputs_[i] = edge; 
   }
   inline const Edge* output(int i) {
     CHECK(i < outputs_.size());

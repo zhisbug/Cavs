@@ -22,15 +22,9 @@ class DepGraph {
  public:
   DepGraph(const Scope* s = GetGlobalScope())
     : s_(s) {}
-  inline Node* AddNode(const OpDef& op_def) {
-    return s_->AddNode(); 
-  }
-  inline int num_nodes() const {
-    return nodes_.size();
-  }
-  inline const Node* operator[](int node_id) const {
-    return nodes_[node_id];
-  }
+  Node* AddNode(const OpDef& op_def);
+  int num_nodes() const;
+  const Node* operator[](int node_id) const;
   void GroupAllVariables(std::vector<std::string>* vars);
   void OptimizeWithLoss(const std::string& loss, 
       const std::string& solver, 
@@ -51,8 +45,8 @@ class DepGraph {
       std::vector<Statement*>* stmts);
   bool SearchCriticalPath(Scope*s,
       const Edge* var, const Edge* curr,
-      const unordered_map<Node*, bool>& recalculate,
-      const unordered_map<Node*, bool>& accessed) {
+      std::unordered_map<const Node*, bool>* recalculate,
+      std::unordered_map<const Node*, bool>* accessed);
   void SearchClosedSet(
       const std::vector<std::string>& vars,
       const std::vector<std::string>& grad_vars,
