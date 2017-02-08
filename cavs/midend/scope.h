@@ -20,6 +20,7 @@ class Scope {
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* AddNode(const OpDef& op_def);
   void AddGradNode(const OpDef& op_def);
+  void PrintSymbolTable();
   friend class DepGraph;
   //NodeGroup* FindNodeGroup(const std::string& n);
   //void AddNodeGroup(const Edge* edge);

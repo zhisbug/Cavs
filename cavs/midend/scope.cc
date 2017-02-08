@@ -48,8 +48,9 @@ Node* Scope::AddNode(const OpDef& op_def) {
   Node* node = new Node(op_def);
   nodes_.push_back(node);
   node->set_id(nodes_.size());
+  //PrintSymbolTable();
   for (auto& out : op_def.output()) {
-    Edge* ori_out_edge = FindEdge(out, false);
+    Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
     if (!out_edge) {
       bool stateful = (op_def.name() == "Variable");
@@ -61,10 +62,10 @@ Node* Scope::AddNode(const OpDef& op_def) {
     CHECK(out_edge);
     out_edge->AddSource(node);
     node->AddOutput(out_edge);
-    if (ori_out_edge) {
-      for (int i = 0; i < ori_out_edge->dsts_size(); i++) {
-        if (ori_out_edge->dst(i)->scope() == this) {
-          const_cast<Node*>(ori_out_edge->dst(i))->replaceInput(i, out_edge);
+    if (upper_out_edge) {
+      for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
+        if (upper_out_edge->dst(i)->scope() == this) {
+          const_cast<Node*>(upper_out_edge->dst(i))->replaceInput(i, out_edge);
         }
       }
     }
@@ -119,6 +120,14 @@ void Scope::AddEdge(Edge* edge) {
   CHECK(edge_table_.find(name) ==
         edge_table_.end());
   edge_table_[name] = edge;
+}
+
+void Scope::PrintSymbolTable() {
+  LOG(INFO) << "Printing Symbol Table";
+  for (auto& one_pair : edge_table_) {
+    LOG(INFO) << one_pair.first;
+    LOG(INFO) << one_pair.second->name();
+  }
 }
 
 const Scope* GetGlobalScope() {

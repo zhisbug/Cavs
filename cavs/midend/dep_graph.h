@@ -50,7 +50,7 @@ class DepGraph {
       std::list<const Node*>* newly_traversed);
   void GroupClosedSet(
       const std::vector<std::string>& vars,
-      const std::vector<std::string>& grad_vars,
+      const Edge* loss,
       const std::string& solver,
       Scope* s);
 };
