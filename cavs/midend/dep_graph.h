@@ -48,9 +48,10 @@ class DepGraph {
       const Edge* loss, const Edge* curr,
       std::unordered_map<const Node*, bool>* fwd_path,
       std::list<const Node*>* newly_traversed);
-  void SearchClosedSet(
+  void GroupClosedSet(
       const std::vector<std::string>& vars,
       const std::vector<std::string>& grad_vars,
+      const std::string& solver,
       Scope* s);
 };
 

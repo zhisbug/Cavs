@@ -71,18 +71,27 @@ bool DepGraph::TraverseCriticalPath(Scope*s,
   return (*fwd_path)[node];
 }
 
-void DepGraph::SearchClosedSet(
+void DepGraph::GroupClosedSet(
     const vector<string>& vars,
     const vector<string>& grad_vars,
+    const string& solver,
     Scope* s) {
   CHECK(vars.size() == grad_vars.size());
   unordered_map<const Node*, bool> recalculate;
-  for (int i = 0; i < vars.size(); i++) {
+  for (unsigned i = 0; i < vars.size(); i++) {
     const Edge* var = s->FindEdge(vars[i]);
     const Edge* grad_var = s->FindEdge(grad_vars[i]);
     list<const Node*> newly_traversed;
     TraverseCriticalPath(s, var, grad_var,
         &recalculate, &newly_traversed);
+    OpDef update;  
+    ::backend::OpDefBuilder(solver)
+        .Input(var->name())
+        .Input(grad_var->name())
+        .Output(var->name())
+        .Shape(var->shape())
+        .Finalize(&update);
+    const_cast<Scope*>(s_)->AddNode(update);
   }
 }
 
@@ -110,72 +119,12 @@ void DepGraph::OptimizeWithLoss(
       loss_edge->shape(),
       1.f);
   s_loss->AddNode(const_op);
-  SearchClosedSet(var_names, grad_var_names, s_loss);
-  
-  //for (auto& var : var_names) {
-    //const string& var_grad = 
-      //OpDecl::GetGradientName(var);
-  //}
+  GroupClosedSet(var_names, grad_var_names, solver, s_loss);
 }
 
 //currently, we assume all ops defined by developpers
 //are in the scope of global
 void DepGraph::BackPropagate() {
-  //for (int i = grad_nodes_.size();
-        //i < nodes_.size(); i++) {
-    //AddGradNode(nodes_[i]->op_def(), GetGlobalScope());  
-  //}
-  //////gen_grads->clear();
-  //for (int i = num_nodes()-1; i >= 0; i--) {
-    //const vector<OpDef>& grads = 
-      //::backend::MakeGradient(nodes_[i]->op_def()); 
-    //for (auto& grad : grads) {
-      //////for (auto& grad_out_str : grad.output())
-        //////gen_grads->push_back(grad_out_str);
-      ////for (auto& grad_input : grad.input()) {
-        //////if the grad_input does not exist, 
-        //////it must be the loss node,
-        //////and it should be set to one-value matrix
-        ////if (out2edge_.find(grad_input) == out2edge_.end()) {
-          ////const string& ori_input = 
-            ////::backend::OpDecl::GetOriginName(grad_input);
-          ////CHECK(out2edge_.find(ori_input) != out2edge_.end());
-          ////OpDef const_op;
-          ////::backend::BuildConstantOpDef(&const_op, 
-              ////grad_input,
-              ////out2edge_[ori_input]->tensor_shape_,
-              ////1.f);
-          ////AddNode(const_op);
-        ////}
-      ////}
-      //Node* node = AddNode(grad);
-      //vector<TensorShapeDef> inputs;
-      //node->InputShapes(&inputs);
-      //const vector<TensorShapeDef>& out_shapes = 
-        //::backend::ShapeInference(grad, inputs);
-      //node->SetShape(out_shapes);
-    //}
-  //}
-}
-
-void DepGraph::AddSolver(
-    const string& solver,
-    const vector<string>& var_names,
-    vector<Statement*>* stmts) {
-  //for (auto& var : var_names) {
-    //CHECK(out2edge_.find(var) != out2edge_.end());
-    //const string& var_grad = 
-      //::backend::OpDecl::GetGradientName(var);
-    //CHECK(out2edge_.find(var_grad) != out2edge_.end());
-    //OpDef update;  
-    //::backend::OpDefBuilder(solver)
-        //.Input(var_grad)
-        //.Output(var)
-        //.Shape(out2edge_.at(var)->tensor_shape_)
-        //.Finalize(&update);
-    ////Node* node = AddNode(update);
-    //stmts->emplace_back(BuildExprStatement(update));
-  //}
 }
 
 //void DepGraph::SetLossNodeGroup(const string& loss,
