@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <list>
 #include <string>
 
 namespace midend {
@@ -43,10 +44,10 @@ class DepGraph {
   void AddSolver(const std::string& solver,
       const std::vector<std::string>& vars,
       std::vector<Statement*>* stmts);
-  bool SearchCriticalPath(Scope*s,
-      const Edge* var, const Edge* curr,
-      std::unordered_map<const Node*, bool>* recalculate,
-      std::unordered_map<const Node*, bool>* accessed);
+  bool TraverseCriticalPath(Scope*s,
+      const Edge* loss, const Edge* curr,
+      std::unordered_map<const Node*, bool>* fwd_path,
+      std::list<const Node*>* newly_traversed);
   void SearchClosedSet(
       const std::vector<std::string>& vars,
       const std::vector<std::string>& grad_vars,

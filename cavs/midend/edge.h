@@ -50,7 +50,7 @@ class Edge {
   inline int srcs_size() const {
     return srcs_.size();
   }
-  inline const Node* dst(size_t i) {
+  inline const Node* dst(size_t i) const {
     CHECK(i < dsts_.size());
     return dsts_[i];
   }

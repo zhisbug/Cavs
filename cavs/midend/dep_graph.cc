@@ -6,22 +6,13 @@
 
 #include <string>
 #include <algorithm>
+#include <list>
 
 using namespace std;
 using ::backend::OpDecl;
 using ::backend::BuildConstantOpDef;
 
 namespace midend {
-
-//DepGraph::DepGraph() {
-  ////OpDef def;
-  ////def.set_name("__internal__sink");
-  ////sink_ = AddNode(def, GetGlobalScope());
-//}
-
-//void DepGraph::AddGradNode(const OpDef& op_def,
-    //const Scope* s) {
-//}
 
 Node* DepGraph::AddNode(const OpDef& op_def) { 
   return const_cast<Scope*>(s_)->AddNode(op_def); 
@@ -35,25 +26,49 @@ const Node* DepGraph::operator[](int node_id) const {
   return s_->nodes_[node_id];
 }
 
-bool DepGraph::SearchCriticalPath(Scope*s,
-      const Edge* var, const Edge* curr,
-      unordered_map<const Node*, bool>* recalculate,
-      unordered_map<const Node*, bool>* accessed) {
-  if (curr == var) return true;
-  if (curr->isStateful()) return false;
+bool DepGraph::TraverseCriticalPath(Scope*s,
+      const Edge* loss, const Edge* curr,
+      unordered_map<const Node*, bool>* fwd_path,
+      list<const Node*>* newly_traversed) {
   CHECK(curr->srcs_size() == 1);
-  const Node* node = curr->src(0);
-  if (recalculate->find(node) == recalculate->end() &&
-      accessed->find(node) == accessed->end()) {
-    (*accessed)[node] = true; 
-    for (auto* edge : node->inputs()) {
-      if (SearchCriticalPath(s, var, edge, recalculate, accessed)) {
-        s->AddNode(node->op_def());
-        (*recalculate)[node] = true; 
+  CHECK(curr->dsts_size() == 1);
+  const Node* node = curr->dst(0);
+  if (curr == loss ||
+      (fwd_path->find(node) != fwd_path->end() &&
+       (*fwd_path)[node])) {
+    for (auto* node : *newly_traversed)
+      s->AddNode(node->op_def());
+    newly_traversed->clear();
+    return true;
+  }
+  if (fwd_path->find(node) == fwd_path->end() ||
+      !(*fwd_path)[node]) {
+    (*fwd_path)[node] = false;
+    newly_traversed->push_back(node);
+    bool in_path = false;
+    for (auto* edge : node->outputs()) {
+      if (TraverseCriticalPath(s, loss, edge, fwd_path, newly_traversed)) {
+        const vector<OpDef>& grads = 
+          ::backend::MakeGradient(node->op_def()); 
+        for (auto& grad : grads) {
+          if (std::find(grad.output().begin(), grad.output().end(),
+                        curr->name()) == grad.output().end())
+            continue;
+          Node* grad_node = const_cast<Scope*>(s_)->AddNode(grad);
+          vector<TensorShapeDef> inputs;
+          grad_node->InputShapes(&inputs);
+          const vector<TensorShapeDef>& shapes = 
+            ::backend::ShapeInference(grad, inputs);
+          grad_node->SetShape(shapes);
+          in_path = true;
+          (*fwd_path)[node] = true; 
+        }
       }
     }
+    if (!in_path)
+      newly_traversed->pop_back();
   }
-  return recalculate->find(node) != recalculate->end();
+  return (*fwd_path)[node];
 }
 
 void DepGraph::SearchClosedSet(
@@ -65,17 +80,17 @@ void DepGraph::SearchClosedSet(
   for (int i = 0; i < vars.size(); i++) {
     const Edge* var = s->FindEdge(vars[i]);
     const Edge* grad_var = s->FindEdge(grad_vars[i]);
-    unordered_map<const Node*, bool> accessed;
-    SearchCriticalPath(s, var, grad_var,
-        &recalculate, &accessed);
+    list<const Node*> newly_traversed;
+    TraverseCriticalPath(s, var, grad_var,
+        &recalculate, &newly_traversed);
   }
 }
 
 void DepGraph::GroupAllVariables(vector<string>* vars) {
-  //for (Node* n : nodes_) {
-    //if (n->IsVariableOp())
-      //vars->push_back(n->name());
-  //}
+  for (Node* n : s_->nodes_) {
+    if (n->IsVariableOp())
+      vars->push_back(n->name());
+  }
 }
 
 void DepGraph::OptimizeWithLoss(
@@ -84,7 +99,6 @@ void DepGraph::OptimizeWithLoss(
     const vector<string>& var_names) {
   CHECK(var_names.size() > 0);
   Scope* s_loss = new Scope(GetGlobalScope(), loss);
-  BackPropagate();
   vector<string> grad_var_names;
   for (auto& var : var_names)
     grad_var_names.push_back(OpDecl::GetGradientName(var));
@@ -98,16 +112,10 @@ void DepGraph::OptimizeWithLoss(
   s_loss->AddNode(const_op);
   SearchClosedSet(var_names, grad_var_names, s_loss);
   
-  //unordered_map<string, bool> calculated_edges;
-  //vector<Statement*> ordered_statements;
-  for (auto& var : var_names) {
-    const string& var_grad = 
-      OpDecl::GetGradientName(var);
-    //const Edge* root = out2edge_[var_grad];
-    //RecursiveSearchInputNode(root, &ordered_statements);
-  }
-  //AddGradNode(op_def);
-  //return BuildBasicBlock(ordered_statements);
+  //for (auto& var : var_names) {
+    //const string& var_grad = 
+      //OpDecl::GetGradientName(var);
+  //}
 }
 
 //currently, we assume all ops defined by developpers
@@ -169,35 +177,6 @@ void DepGraph::AddSolver(
     //stmts->emplace_back(BuildExprStatement(update));
   //}
 }
-
-//void NodeGroup::AddNode(const Node* n) {
-  //for (auto* node : nodes_)
-    //CHECK(node != n);
-  //nodes_.push_back(n);
-  //for (auto* edge : n->inputs()) {
-    //auto it = std::find(outputs_.begin(), outputs_.end(), edge);
-    //if (it == outputs_.end()) {
-      //if (std::find(inputs_.begin(), inputs_.end(), edge) 
-          //== inputs_.end()) {
-        //inputs_.push_back(edge);
-      //}
-    //}else {
-      //outputs_.erase(it);
-    //}
-  //}
-  //for (auto* edge : n->outputs()) {
-    //auto it = std::find(inputs_.begin(), inputs_.end(), edge); 
-    //if (it == inputs_.end()) {
-      //if (std::find(outputs_.begin(), outputs_.end(), edge) 
-          //== outputs_.end()) {
-        //outputs_.push_back(edge); 
-      //}
-    //}else {
-      //inputs_.erase(it);  
-    //}
-  //}
-//}
-
 
 //void DepGraph::SetLossNodeGroup(const string& loss,
     //const vector<string>& vars,
