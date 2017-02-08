@@ -8,6 +8,21 @@ using std::vector;
 
 namespace midend {
 
+Scope::Scope(const Scope* s, const std::string& n)
+    : father_(s), name_(n) {
+  if (s) {
+    CHECK(s->children_.find(n) == s->children_.end());
+    const_cast<Scope*>(s)->children_[n] = const_cast<Scope*>(this);
+  }
+}
+
+Scope* Scope::FindChild(const string& n) const {
+  if (children_.find(n) == children_.end())
+    return NULL;
+  else
+    return const_cast<Scope*>(this)->children_[n]; 
+}
+
 //Node* Scope::FindNode(const string& n, bool within) const {
   //const Scope* s = this;
   //if (within) {
@@ -52,20 +67,32 @@ Node* Scope::AddNode(const OpDef& op_def) {
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
-    if (!out_edge) {
-      bool stateful = (op_def.name() == "Variable");
-      out_edge = new Edge(out, stateful, this);
-      const_cast<Scope*>(this)->AddEdge(out_edge);
-      //out_edge->AddDst(sink_);
-      //out_edge = FindEdge(out);
-    }
-    CHECK(out_edge);
-    out_edge->AddSource(node);
-    node->AddOutput(out_edge);
-    if (upper_out_edge) {
-      for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
-        if (upper_out_edge->dst(i)->scope() == this) {
-          const_cast<Node*>(upper_out_edge->dst(i))->replaceInput(i, out_edge);
+    bool stateful = (op_def.name() == "Variable");
+    //currently, only the variables can cross scopes
+    if (stateful) {
+      if (!upper_out_edge) {
+        CHECK(!father_);
+        out_edge = new Edge(out, stateful, this);
+        const_cast<Scope*>(this)->AddEdge(out_edge);
+        out_edge->AddSource(node);
+        node->AddOutput(out_edge);
+      }else {
+        CHECK(father_ && !out_edge);
+        upper_out_edge->AddSource(node);
+        node->AddOutput(upper_out_edge);
+      }
+    }else {
+      if (!out_edge) {
+        out_edge = new Edge(out, stateful, this);
+        const_cast<Scope*>(this)->AddEdge(out_edge);
+      }
+      out_edge->AddSource(node);
+      node->AddOutput(out_edge);
+      if (upper_out_edge) {
+        for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
+          if (upper_out_edge->dst(i)->scope() == this) {
+            const_cast<Node*>(upper_out_edge->dst(i))->replaceInput(i, out_edge);
+          }
         }
       }
     }
@@ -75,6 +102,10 @@ Node* Scope::AddNode(const OpDef& op_def) {
     CHECK(in_edge);
     node->AddInput(in_edge);
     const_cast<Edge*>(in_edge)->AddDst(node);
+    if (edge_table_.find(in_edge->name()) ==
+        edge_table_.end()) {
+      in_edges_[in_edge->name()] = const_cast<Edge*>(in_edge);
+    }
   }
   return node;
 }
@@ -126,7 +157,6 @@ void Scope::PrintSymbolTable() {
   LOG(INFO) << "Printing Symbol Table";
   for (auto& one_pair : edge_table_) {
     LOG(INFO) << one_pair.first;
-    LOG(INFO) << one_pair.second->name();
   }
 }
 

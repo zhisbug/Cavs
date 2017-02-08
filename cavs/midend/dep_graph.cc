@@ -99,7 +99,7 @@ void DepGraph::GroupClosedSet(
 void DepGraph::GroupAllVariables(vector<string>* vars) {
   for (Node* n : s_->nodes_) {
     if (n->IsVariableOp()) {
-      CHECK(n->outputs_size() == 1);
+      CHECK(n->outputs_size() == 1) << n->outputs_size();
       vars->push_back(n->output(0)->name());
     }
   }
@@ -121,18 +121,6 @@ void DepGraph::OptimizeWithLoss(
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, loss_scope);
 }
-
-//currently, we assume all ops defined by developpers
-//are in the scope of global
-void DepGraph::BackPropagate() {
-}
-
-//void DepGraph::SetLossNodeGroup(const string& loss,
-    //const vector<string>& vars,
-    //const Scope* s) {
-  ////CHECK(s.Fine(loss) == out2ng_.end());
-  ////NodeGroup* ng = new NodeGroup(loss); 
-//}
 
 void DepGraph::Dump() {
   for (auto* node : s_->nodes_)

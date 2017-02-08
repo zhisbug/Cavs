@@ -100,7 +100,6 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
       const char* c_proj_name, int proj_name_len,
       int iters) {
   string loss(c_loss_name, loss_name_len);
-  LOG(INFO) << "var_name_len" << var_name_len;
   vector<string> var_names;
   if (var_name_len > 0) {
     for (int i = 0; i < var_name_len; i++)
@@ -108,14 +107,11 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
   }else {
     c_graph->graph->GroupAllVariables(&var_names);
   }
-  LOG(INFO) << "var_names.size" << var_names.size();
   for (auto& name : var_names) {
     static int i = 0;
-    LOG(INFO) << "variable No." << i++ << ": " << name;
   }
   string proj(c_proj_name, proj_name_len);
   c_graph->graph->OptimizeWithLoss(loss, "SGD"+proj, var_names);
-  LOG(INFO) << "here";
 }
 
 //void C_GetGrad(C_DepGraph* C_graph, 

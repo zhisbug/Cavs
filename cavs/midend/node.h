@@ -20,6 +20,8 @@ class Node {
  public:
   explicit Node(const OpDef& op_def, const Scope* s = GetGlobalScope())
     : op_def_(op_def), s_(s) {}
+  //explicit Node(const Scope* s = GetGlobalScope())
+    //: s_(s) {}
   inline void AddInput(const Edge* e) {
     inputs_.push_back(const_cast<Edge*>(e));
   }
