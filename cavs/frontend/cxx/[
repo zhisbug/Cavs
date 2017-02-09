@@ -28,8 +28,7 @@ Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
          const string& device,
-         const vector<int>& shape = {},
-         const OpDef::AttrDef& attr) {
+         const vector<int>& shape = {}) {
   static int id = 0;  
   node_.reset(new node());
   node_->op_name_ = op_name;
@@ -79,10 +78,9 @@ Sym::Sym(const string& op_name,
   free(var);
 }
 
-Sym Sym::Variable(C_Dtype type, vector<int> shape,
-    const OpDef::AttrDef& attr, string device) {
+Sym Sym::Variable(C_Dtype type, vector<int> shape, string device) {
   CHECK(shape.size() > 0);
-  return Sym("Variable", {}, type, device, shape, attr);
+  return Sym("Variable", {}, type, device, shape);
 }
 
 Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string device) {
@@ -136,11 +134,8 @@ Sym Sym::Optimizer(const Sym& a) {
 }
 
 //filler operation
-OpDef::AttrDef Sym::Ones() {
+OpDef::AttrDef Sym::Ones(std::vector<int> shape) {
   OpDef::AttrDef attr;
-  attr.set_name("ConstFiller");
-  attr.mutable_value()->set_f(1.f);
-  return attr;
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

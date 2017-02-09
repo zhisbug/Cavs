@@ -21,17 +21,22 @@ class Sym {
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(C_Dtype type, std::vector<int> shape, string device = "GPU");
-  static Sym Placeholder(C_Dtype type, std::vector<int> shape, string device = "GPU");
+  static Sym Variable(C_Dtype type, std::vector<int> shape,
+      const OpDef::AttrDef& attr = Ones(), string device = "GPU");
+  static Sym Placeholder(C_Dtype type, std::vector<int> shape,
+      string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
   static Sym Square(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
-  static Sym Optimizer(const Sym& a, vector<Sym> variables, int iters, const string& projections);
+  static Sym Optimizer(const Sym& a, vector<Sym> variables,
+      int iters = 0, const string& projections = "");
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
+  //filler operation
+  static OpDef::AttrDef Ones();
   //debug operations
   static void DumpGraph();
   void print();
@@ -40,7 +45,8 @@ class Sym {
   Sym Abs() { return Abs(*this); }
   Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
-  Sym Optimizer(vector<Sym> variables, int iters, const string& projection) { 
+  Sym Optimizer(vector<Sym> variables, int iters = 0,
+      const string& projection = "") {
     return Optimizer(*this, variables, iters, projection); 
   }
   //binary operation
@@ -66,7 +72,10 @@ class Sym {
 
   Sym(const string& op_name,
       const vector<string>& inputs, 
-      const C_Dtype type, const string& device, const std::vector<int>& shape);
+      const C_Dtype type,
+      const string& device,
+      const std::vector<int>& shape,
+      const OpDef::AttrDef& attr = OpDef::AttrDef());
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
       const int iters = 0,
