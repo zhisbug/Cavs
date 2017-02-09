@@ -28,7 +28,8 @@ Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
          const string& device,
-         const vector<int>& shape = {}) {
+         const vector<int>& shape = {},
+         const OpDef::AttrDef& attr) {
   static int id = 0;  
   node_.reset(new node());
   node_->op_name_ = op_name;
@@ -75,26 +76,13 @@ Sym::Sym(const string& op_name,
       var, variables.size(),
       projection.c_str(), projection.length(),
       iters);
-  //char **grads;
-  //int grads_num = 0;
-  //C_GetGrad(C_GetDefaultDG(),
-            //input.c_str(), input.length(),
-            //var, variables.size(),
-            //projections.c_str(), projections.length(),
-            //iters,
-            //&grads, &grads_num);
-  //node_->shape_.clear();
-  //for (int i = 0; i < grads_num; i++) {
-    //node_->output_.emplace_back(grads[i]);
-    //free(grads[i]);
-  //}
-  //free(grads);
   free(var);
 }
 
-Sym Sym::Variable(C_Dtype type, vector<int> shape, string device) {
+Sym Sym::Variable(C_Dtype type, vector<int> shape,
+    const OpDef::AttrDef& attr, string device) {
   CHECK(shape.size() > 0);
-  return Sym("Variable", {}, type, device, shape);
+  return Sym("Variable", {}, type, device, shape, attr);
 }
 
 Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string device) {
@@ -103,7 +91,6 @@ Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string device) {
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
-  //Sym s("Abs", output, {a.output()}, a.type(), device, a.shape());
   CHECK(a.node_->output_.size() == 1);
   Sym s("Abs", {a.node_->output_[0]},
         a.node_->type_, device);
@@ -146,6 +133,14 @@ Sym Sym::Optimizer(const Sym& a) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0]);
   return s;
+}
+
+//filler operation
+OpDef::AttrDef Sym::Ones() {
+  OpDef::AttrDef attr;
+  attr.set_name("ConstFiller");
+  attr.mutable_value()->set_f(1.f);
+  return attr;
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

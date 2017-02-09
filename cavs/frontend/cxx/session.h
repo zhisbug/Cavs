@@ -17,7 +17,12 @@ class Session {
         name.c_str(), name.length(), C_GetDefaultDG());
   }
 
-  void Run(Sym& out, std::initializer_list<std::pair<Sym&, void*>> feed) {
+  void Run(const Sym& output,
+      const std::initializer_list<std::pair<Sym&, void*>>& feed) {
+    Run({output}, feed);
+  }
+  void Run(const std::initializer_list<Sym>& outputs,
+      const std::initializer_list<std::pair<Sym&, void*>>& feed) {
     vector<C_Tensor*> input_tensor;
     vector<const char*> input_name;
     for (auto& input : feed) {
@@ -38,13 +43,16 @@ class Session {
 
     vector<C_Tensor*> output_tensor;
     vector<const char*> output_name;
-    for (auto& out_str: out.outputs()) {
-      output_name.push_back(out_str.c_str());
+    for (auto& fetch: outputs) {
+      output_name.push_back(fetch.output(0).c_str());
     }
     output_tensor.resize(output_name.size());
     C_Run(s_, output_name.data(), output_tensor.data(), output_name.size(),
           input_name.data(), input_tensor.data(), input_name.size());
-    out.node_->raw_data = C_TensorData(output_tensor[0]);
+    for (auto& fetch: outputs) {
+      int i = 0;
+      fetch.node_->raw_data = C_TensorData(output_tensor[i++]);
+    }
     for (auto* t : output_tensor)
       free(t);
   }
