@@ -19,7 +19,7 @@ class DepGraph {
   DepGraph(const Scope* s = GetGlobalScope())
     : s_(s) {}
   Node* AddNode(const OpDef& op_def);
-  const Node* FindNode(const std::string& name);
+  const Node* FindNode(const std::string& name) const;
   //int num_nodes() const;
   //const Node* operator[](int node_id) const;
   void GroupAllVariables(std::vector<std::string>* vars);

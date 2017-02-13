@@ -62,7 +62,7 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 Node* Scope::AddNode(const OpDef& op_def) {
   Node* node = new Node(op_def);
   nodes_.push_back(node);
-  node->set_id(nodes_.size());
+  //node->set_id(nodes_.size());
   //PrintSymbolTable();
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);

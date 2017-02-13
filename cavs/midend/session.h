@@ -9,6 +9,7 @@
 namespace midend {
 
 class DepGraph;
+class OpContext;
 class SessionBase {
  public:
   SessionBase(const DepGraph* graph) : graph_(graph) {}

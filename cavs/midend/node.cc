@@ -2,7 +2,7 @@
 
 namespace midend {
 
-void SingleNode::SetShape(
+void Node::SetShape(
     const std::vector<TensorShapeDef>& def) {
   op_def_.clear_shape();
   for (int i = 0; i < outputs_.size(); i++) {
@@ -11,33 +11,35 @@ void SingleNode::SetShape(
   }
 }
 
-void SingleNode::InputShapes(
+void Node::InputShapes(
     std::vector<TensorShapeDef>* inputs) {
   for (auto* edge: inputs_) {
     inputs->push_back(edge->shape());
   }
 }
 
-Statement* SingleNode::Compile(SessionBase* sess) override {
-  OpImpl* op = CreateOp(node->op_def());
-  OpContext* context = sess->GetContext(node->op_def());
-  return new ExprStatement(op, context);
+Statement* SingleNode::Compile(
+    SessionBase* sess) const {
+  OpImpl* op = CreateOp(op_def());
+  OpContext* ctxt = sess->GetContext(op_def());
+  return new ExprStatement(op, ctxt);
 }
 
-void ScopedNode::ScopedNode(int iter, const OpDef& op_def,
-    const Scope* s = GetGlobalScope())
+ScopedNode::ScopedNode(int iter,
+      const OpDef& op_def,
+      const Scope* s)
     : Node(op_def, s), iter_(iter) {
-  for (auto& edge: in_edges_) {
+  for (auto& edge: s->in_edges_)
     inputs_.push_back(edge.second);
-  }
 }
 
-Statement* ScopedNode::Compile(SessionBase* sess) override {
+Statement* ScopedNode::Compile(
+    SessionBase* sess) const {
   BasicBlock* bb = new BasicBlock(iter_);
   for (auto* node : s_->nodes_) {
     OpImpl* op = CreateOp(node->op_def());     
     OpContext* ctxt = sess->GetContext(node->op_def());
-    bb->AppendStmt(new ExprStatement(op_context));
+    bb->AppendStmt(new ExprStatement(op, ctxt));
   }
   return bb;
 }

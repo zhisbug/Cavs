@@ -5,12 +5,15 @@
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
 
+#include <unordered_map>
+
 using ::backend::OpImpl;
 using ::backend::OpDecl;
 using ::backend::CreateOp;
 
 using std::string;
 using std::vector;
+using std::unordered_map;
 
 namespace midend {
 
@@ -115,19 +118,20 @@ void DepthSearch(const Node* curr,
         }
       }
     }
-    critical_path.push_back(curr);
+    critical_path->push_back(curr);
     (*include)[curr] = true;
   }
   return;
 }
 
 
-void SimpleSession::Compile(const vector<string>& output_names, 
+void SimpleSession::Compile(
+    const vector<string>& output_names, 
     const vector<string>& input_names) {
   vector<const Node*> critical_path;
-  unordered_map<const Node*, bool>* include;
+  unordered_map<const Node*, bool> include;
   for (auto& output : output_names) {
-    const Node* node = graph_->FindNode(name);
+    const Node* node = graph_->FindNode(output);
     DepthSearch(node, &critical_path, &include);
   }
 

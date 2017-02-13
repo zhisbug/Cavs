@@ -18,10 +18,13 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   return const_cast<Scope*>(s_)->AddNode(op_def); 
 }
 
-const Node* FindNode(const std::string& name) {
+const Node* DepGraph::FindNode(
+    const std::string& name) const {
   const Edge* edge = s_->FindEdge(name);
-  //CHECK(!edge->isStateful);
-  return edge;
+  if (!edge) return NULL;
+  CHECK(!edge->isStateful());
+  CHECK(edge->srcs_size() == 1);
+  return edge->src(0);
 }
 
 //int DepGraph::num_nodes() const {
@@ -104,7 +107,7 @@ void DepGraph::GroupClosedSet(
 
 void DepGraph::GroupAllVariables(vector<string>* vars) {
   for (Node* n : s_->nodes_) {
-    if (n->IsVariableOp()) {
+    if (static_cast<SingleNode*>(n)->IsVariableOp()) {
       CHECK(n->outputs_size() == 1) << n->outputs_size();
       vars->push_back(n->output(0)->name());
     }

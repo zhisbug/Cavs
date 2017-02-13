@@ -3,6 +3,8 @@
 
 #include "cavs/midend/scope.h"
 #include "cavs/midend/edge.h"
+#include "cavs/midend/session.h"
+#include "cavs/midend/statement.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"
 
@@ -22,7 +24,7 @@ class Node {
       const Scope* s = GetGlobalScope())
     : op_def_(op_def), s_(s) {}
 
-  virtual Statement* Compile(SessionBase* sess) {}
+  virtual Statement* Compile(SessionBase* sess) const {}
   inline const OpDef& op_def() const {
     return op_def_; 
   }
@@ -52,24 +54,6 @@ class Node {
   inline int outputs_size() const {
     return outputs_.size();
   }
-  //inline void set_id(int id) { id_ = id; }
-  //inline int id() const { return id_; }
-  //inline bool isSink() const { return id_ == 0; }
-
- protected:
-  OpDef op_def_;
-  const Scope* s_;
-  std::vector<Edge*> inputs_;
-  std::vector<Edge*> outputs_;
-  //int id_;
-};
-
-class SingleNode : public Node {
-  explicit SingleNode(const OpDef& op_def,
-      const Scope* s = GetGlobalScope())
-    : Node(op_def, s) {}
-  Statement* Compile(SessionBase* sess) override;
-  inline const OpDef& op_def() const {
   inline void AddInput(const Edge* e) {
     inputs_.push_back(const_cast<Edge*>(e));
   }
@@ -83,18 +67,37 @@ class SingleNode : public Node {
     CHECK(i < inputs_.size());
     inputs_[i] = edge; 
   }
+  void SetShape(const std::vector<TensorShapeDef>& def);
+  void InputShapes(std::vector<TensorShapeDef>* inputs);
+  //inline void set_id(int id) { id_ = id; }
+  //inline int id() const { return id_; }
+  //inline bool isSink() const { return id_ == 0; }
+
+ protected:
+  OpDef op_def_;
+  const Scope* s_;
+  std::vector<Edge*> inputs_;
+  std::vector<Edge*> outputs_;
+  //int id_;
+};
+
+class SingleNode : public Node {
+ public:
+  explicit SingleNode(const OpDef& op_def,
+      const Scope* s = GetGlobalScope())
+    : Node(op_def, s) {}
+  Statement* Compile(SessionBase* sess) const override;
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable");
   }
-  void SetShape(const std::vector<TensorShapeDef>& def);
-  void InputShapes(std::vector<TensorShapeDef>* inputs);
 }; 
 
 class ScopedNode : public Node {
  public:
-  explicit ScopedNode(int iter, const OpDef& op_def,
+  explicit ScopedNode(int iter,
+      const OpDef& op_def,
       const Scope* s = GetGlobalScope());
-  Statement* Compile(SessionBase* sess) override;
+  Statement* Compile(SessionBase* sess) const override;
 
  private:
   int iter_;
