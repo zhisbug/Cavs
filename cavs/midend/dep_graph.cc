@@ -18,13 +18,19 @@ Node* DepGraph::AddNode(const OpDef& op_def) {
   return const_cast<Scope*>(s_)->AddNode(op_def); 
 }
 
-int DepGraph::num_nodes() const {
-  return s_->nodes_.size();
+const Node* FindNode(const std::string& name) {
+  const Edge* edge = s_->FindEdge(name);
+  //CHECK(!edge->isStateful);
+  return edge;
 }
 
-const Node* DepGraph::operator[](int node_id) const {
-  return s_->nodes_[node_id];
-}
+//int DepGraph::num_nodes() const {
+  //return s_->nodes_.size();
+//}
+
+//const Node* DepGraph::operator[](int node_id) const {
+  //return s_->nodes_[node_id];
+//}
 
 bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
       const Edge* loss, const Edge* curr,

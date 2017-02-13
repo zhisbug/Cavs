@@ -22,8 +22,8 @@ class Scope {
   void AddGradNode(const OpDef& op_def);
   void PrintSymbolTable();
   friend class DepGraph;
-  //NodeGroup* FindNodeGroup(const std::string& n);
-  //void AddNodeGroup(const Edge* edge);
+  friend class ScopedNode;
+
     
  private:
   const std::string name_;

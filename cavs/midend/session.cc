@@ -1,5 +1,6 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/allocator.h"
+#include "cavs/midend/statement.h"
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
@@ -72,7 +73,6 @@ SessionBase* GetSession(const string& name,
     return session_factory::GlobalSessionRegistry()->at(name)(graph);
 }
 
-
 class SimpleSession : public SessionBase {
  public:
   SimpleSession(const DepGraph* graph);
@@ -85,33 +85,73 @@ class SimpleSession : public SessionBase {
                  const vector<Tensor>& input_tensors);
   void FetchOutput(const vector<string>& output_names,
                    vector<Tensor>* output_tensors);
-  std::vector<std::pair<OpImpl*, OpContext*>> executors_;
+  void Compile(const vector<string>& output_names, 
+               const vector<string>& input_names);
+  //std::vector<std::pair<OpImpl*, OpContext*>> executors_;
+  std::vector<Statement*> executors_;
 };
 
 SimpleSession::SimpleSession(const DepGraph* graph)
     : SessionBase(graph) {
-  for (int i = 0; i < graph->num_nodes(); i++) {
-    OpImpl* op = CreateOp((*graph)[i]->op_def());
-    //OpContext* context = new OpContext((*graph)[i]->op_def(), this); 
-    OpContext* context = GetContext((*graph)[i]->op_def());
-    executors_.push_back(std::make_pair(op, context));
-  }
+  //for (int i = 0; i < graph->num_nodes(); i++) {
+    //OpImpl* op = CreateOp((*graph)[i]->op_def());
+    //OpContext* context = GetContext((*graph)[i]->op_def());
+    //executors_.push_back(std::make_pair(op, context));
+  //}
 }
 
+void DepthSearch(const Node* curr,
+    vector<const Node*>* critical_path,
+    unordered_map<const Node*, bool>* include) {
+  bool isSource = (curr->inputs_size() == 0);
+  bool accessed = (include->find(curr) == include->end());
+
+  if (!accessed) {
+    if (!isSource) {
+      for (auto* edge : curr->inputs()) {
+        CHECK(edge->srcs_size() == 1 || edge->isStateful());
+        for (auto* node : edge->srcs()) {
+          DepthSearch(node, critical_path, include);
+        }
+      }
+    }
+    critical_path.push_back(curr);
+    (*include)[curr] = true;
+  }
+  return;
+}
+
+
+void SimpleSession::Compile(const vector<string>& output_names, 
+    const vector<string>& input_names) {
+  vector<const Node*> critical_path;
+  unordered_map<const Node*, bool>* include;
+  for (auto& output : output_names) {
+    const Node* node = graph_->FindNode(name);
+    DepthSearch(node, &critical_path, &include);
+  }
+
+  for (auto* node : critical_path) {
+    Statement* stmt = node->Compile(this);
+    executors_.push_back(stmt);
+  }
+
+  return;
+}
 
 void SimpleSession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
-
+  Compile(output_names, input_names);
   FeedInput(input_names, input_tensors);
-
-  for (auto& one_pair : executors_) {
-    OpImpl* op = one_pair.first;
-    OpContext* context = one_pair.second;
-    op->Compute(context);
-  }
-
+  //for (auto& one_pair : executors_) {
+    //OpImpl* op = one_pair.first;
+    //OpContext* context = one_pair.second;
+    //op->Compute(context);
+  //}
+  for (auto* exe : executors_)
+    exe->Run();
   FetchOutput(output_names, output_tensors);
 }
 

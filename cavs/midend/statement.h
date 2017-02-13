@@ -19,7 +19,8 @@ class Statement {
 
 class ExprStatement : public Statement {
  public:
-  ExprStatement() : op_(NULL), ctxt_(NULL) {}
+  ExprStatement(OpImpl* op = NULL, OpContext* ctxt = NULL)
+    : op_(op), ctxt_(ctxt) {}
   ~ExprStatement() {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
@@ -28,6 +29,7 @@ class ExprStatement : public Statement {
     op_->Compute(ctxt_);
   }
   inline void SetOp(OpImpl* op) { op_ = op; }
+  inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
 
  private:
    OpImpl* op_;
@@ -36,7 +38,8 @@ class ExprStatement : public Statement {
 
 class BasicBlock : public Statement {
  public:
-  BasicBlock() : iter_(1), stmts_(0) {}
+  BasicBlock(int iter = 1)
+    : iter_(iter), stmts_(0) {}
   ~BasicBlock() {
     for (auto* stmt : stmts_)
       free(stmt);

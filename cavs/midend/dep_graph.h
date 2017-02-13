@@ -14,14 +14,14 @@
 
 namespace midend {
 
-//the storage of actual data
 class DepGraph {
  public:
   DepGraph(const Scope* s = GetGlobalScope())
     : s_(s) {}
   Node* AddNode(const OpDef& op_def);
-  int num_nodes() const;
-  const Node* operator[](int node_id) const;
+  const Node* FindNode(const std::string& name);
+  //int num_nodes() const;
+  //const Node* operator[](int node_id) const;
   void GroupAllVariables(std::vector<std::string>* vars);
   void OptimizeWithLoss(const std::string& loss, 
       const std::string& solver, 

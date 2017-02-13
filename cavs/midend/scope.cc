@@ -143,7 +143,6 @@ void Scope::AddGradNode(const OpDef& op_def) {
       dy_edge->AddDst(node);
     }
   }
-  //grad_nodes_.push_back(std::move(grad_vec));
 }
 
 void Scope::AddEdge(Edge* edge) {

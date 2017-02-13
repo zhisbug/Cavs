@@ -143,6 +143,7 @@ void C_DumpGraph(C_DepGraph* C_graph) {
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {
+  LOG(INFO) << "here";
   vector<string> output_names(noutputs);
   vector<Tensor> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++) {
@@ -155,8 +156,10 @@ void C_Run(C_Session* s,
     input_tensors[i] = c_input_tensors[i]->tensor;
   }
 
+  LOG(INFO) << "here";
   s->session->Run(output_names, &output_tensors, 
                   input_names, input_tensors);
+  LOG(INFO) << "here";
   for (int i = 0; i < noutputs; i++) {
     c_output_tensors[i] = new C_Tensor{output_tensors[i]};
   }

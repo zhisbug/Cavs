@@ -20,10 +20,6 @@ class SessionBase {
                    const std::vector<Tensor>& input_tensors) {}
   virtual OpContext* GetContext(const OpDef& op_def);
  protected:
-  //virtual void FeedInput(const std::vector<std::string>& input_names,
-                   //const std::vector<Tensor>& input_tensors) {}
-  //virtual void FetchOutput(const std::vector<std::string>& output_names,
-                   //std::vector<Tensor>* output_tensors) {}
   SessionBase() {}
   std::unordered_map<std::string, Tensor> tensor_map_;
   const DepGraph* graph_;
