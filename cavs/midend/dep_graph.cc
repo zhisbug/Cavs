@@ -115,20 +115,39 @@ void DepGraph::GroupAllVariables(vector<string>* vars) {
 }
 
 void DepGraph::OptimizeWithLoss(
-    const string& loss, 
-    const string& solver, 
-    const vector<string>& var_names) {
-  CHECK(var_names.size() > 0);
+    const OpDef& def) {
+  CHECK(def.input_size() == 1);
+  const string& loss = def.input(0);
+  vector<string> var_names(0);
+  int iters = 0;
+  string proj;
+  string solver;
+  for (auto& attr : def.attr()) {
+    if (attr.name() == "vars") {
+      auto& vars = attr.value().list().s();
+      std::copy(vars.begin(), vars.end(), var_names.begin());
+    }else if (attr.name() == "solver") {
+      solver = attr.value().s(); 
+    }else if (attr.name() == "projection") {
+      proj = attr.value().s(); 
+    }else if (attr.name() == "iters") {
+      iters = attr.value().i(); 
+    }
+  }
+  CHECK(var_names.size());
+  CHECK(solver.length());
+  CHECK(proj.length());
+  CHECK(iters > 0);
   Scope* loss_scope = new Scope(GetGlobalScope(), loss);
   Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
   OpDef const_op;
   BuildConstantOpDef(&const_op, 
       OpDecl::GetGradientName(loss),
-      loss_edge->shape(),
-      1.f);
+      loss_edge->shape(), 1.f);
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, loss_scope);
+  ScopedNode* sn = new ScopedNode(iters);
 }
 
 void DepGraph::Dump() {

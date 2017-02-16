@@ -20,12 +20,8 @@ class DepGraph {
     : s_(s) {}
   Node* AddNode(const OpDef& op_def);
   const Node* FindNode(const std::string& name) const;
-  //int num_nodes() const;
-  //const Node* operator[](int node_id) const;
   void GroupAllVariables(std::vector<std::string>* vars);
-  void OptimizeWithLoss(const std::string& loss, 
-      const std::string& solver, 
-      const std::vector<std::string>& var_names);
+  void OptimizeWithLoss(const OpDef& op_def);
   void Dump();
 
  private:

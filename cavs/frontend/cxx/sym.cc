@@ -28,7 +28,7 @@ Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
          const string& device,
-         const vector<int>& shape = {},
+         const vector<int>& shape,
          const OpDef::AttrDef& attr) {
   static int id = 0;  
   node_.reset(new node());
@@ -66,17 +66,36 @@ Sym::Sym(const string& op_name,
   node_->op_name_ = op_name;
   node_->output_.push_back(op_name + std::to_string(id++));
   node_->input_ = {loss};
-  char **var = (char**)malloc(variables.size()*sizeof(char*));
-  for (int i = 0; i < variables.size(); i++) {
-    CHECK(variables[i].node_->output_.size() == 1);
-    var[i] = const_cast<char*>(variables[i].node_->output_[0].c_str());
-  }
+
+  OpDef op_def;
+  node_->Finalize(&op_def);
+
+  OpDef::AttrDef* var_attr = op_def.add_attr();
+  var_attr->set_name("vars");
+  OpDef::AttrType::ListValue* str_list
+    = var_attr->mutable_value()->mutable_list();
+  for (auto& sym : variables)
+    str_list->add_s(output(0));
+  OpDef::AttrDef* solver_attr = op_def.add_attr();
+  solver_attr->set_name("solver");
+  solver_attr->mutable_value()->set_s("SGD");
+  OpDef::AttrDef* proj_attr = op_def.add_attr();
+  proj_attr->set_name("projection");
+  proj_attr->mutable_value()->set_s(projection);
+  OpDef::AttrDef* iters_attr = op_def.add_attr();
+  iters_attr->set_name("iters");
+  iters_attr->mutable_value()->set_i(iters);
+
+  string serial_def;
+  op_def.SerializeToString(&serial_def);
+  //char **var = (char**)malloc(variables.size()*sizeof(char*));
+  //for (int i = 0; i < variables.size(); i++) {
+    //CHECK(variables[i].node_->output_.size() == 1);
+    //var[i] = const_cast<char*>(variables[i].node_->output_[0].c_str());
+  //}
   C_OptimizeWithLoss(C_GetDefaultDG(),
-      loss.c_str(), loss.length(),
-      var, variables.size(),
-      projection.c_str(), projection.length(),
-      iters);
-  free(var);
+    serial_def.c_str(), serial_def.length());
+  //free(var);
 }
 
 Sym Sym::Variable(C_Dtype type, vector<int> shape,

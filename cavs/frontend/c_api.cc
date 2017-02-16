@@ -95,23 +95,36 @@ void C_AddNode(C_DepGraph* C_graph,
 }
 
 void C_OptimizeWithLoss(C_DepGraph* c_graph, 
-      const char* c_loss_name, int loss_name_len,
-      char** c_var_name, int var_name_len,
-      const char* c_proj_name, int proj_name_len,
-      int iters) {
-  string loss(c_loss_name, loss_name_len);
-  vector<string> var_names;
-  if (var_name_len > 0) {
-    for (int i = 0; i < var_name_len; i++)
-      var_names.emplace_back(c_var_name[i]);
-  }else {
+    const void* def, size_t def_length) {
+  OpDef op_def;
+  op_def.ParseFromArray(def, def_length);
+  bool var_flag = false;
+  for (auto& attr : op_def.attr()) {
+    if (attr.name() == "vars")
+      var_flag = true;
+  }
+  if (!var_flag) {
+    vector<string> var_names;
     c_graph->graph->GroupAllVariables(&var_names);
+    OpDef::AttrDef* var_attr = op_def.add_attr();
+    var_attr->set_name("vars");
+    OpDef::AttrType::ListValue* str_list
+      = var_attr->mutable_value()->mutable_list();
+    for (auto& var: var_names)
+      str_list->add_s(var);
   }
-  for (auto& name : var_names) {
-    static int i = 0;
-  }
-  string proj(c_proj_name, proj_name_len);
-  c_graph->graph->OptimizeWithLoss(loss, "SGD"+proj, var_names);
+  //const string& loss = op_def.input(0);
+  //vector<string> var_names;
+  //if (var_name_len > 0) {
+    //for (int i = 0; i < var_name_len; i++)
+      //var_names.emplace_back(c_var_name[i]);
+  //}else {
+    //c_graph->graph->GroupAllVariables(&var_names);
+  //}
+  //for (auto& name : var_names) {
+    //static int i = 0;
+  //}
+  c_graph->graph->OptimizeWithLoss(op_def);
 }
 
 //void C_GetGrad(C_DepGraph* C_graph, 

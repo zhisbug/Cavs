@@ -23,7 +23,6 @@ class Scope {
   void PrintSymbolTable();
   friend class DepGraph;
   friend class ScopedNode;
-
     
  private:
   const std::string name_;
@@ -34,8 +33,6 @@ class Scope {
   std::unordered_map<std::string, Edge*> in_edges_;
   std::unordered_map<std::string, Edge*> out_edges_;
   void AddEdge(Edge* edge);
-  //std::unordered_map<std::string, NodeGroup*> nodegroup_table_;
-  //Node* FindNode(const std::string& n, bool within = false) const;
 };
 
 const Scope* GetGlobalScope();

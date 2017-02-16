@@ -27,10 +27,7 @@ extern void C_AddNode(C_DepGraph* c_graph,
     const void* def, size_t def_length,
     int** dim, size_t* dim_length);
 extern void C_OptimizeWithLoss(C_DepGraph* c_graph, 
-    const char* c_loss_name, int loss_name_len,
-    char** c_var_name, int var_name_len,
-    const char* c_proj_name, int proj_name_len,
-    int iters);
+    const void* def, size_t def_length);
 extern void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs,
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs);

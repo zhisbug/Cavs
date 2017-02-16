@@ -124,7 +124,6 @@ void DepthSearch(const Node* curr,
   return;
 }
 
-
 void SimpleSession::Compile(
     const vector<string>& output_names, 
     const vector<string>& input_names) {

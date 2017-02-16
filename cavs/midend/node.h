@@ -95,7 +95,7 @@ class SingleNode : public Node {
 class ScopedNode : public Node {
  public:
   explicit ScopedNode(int iter,
-      const OpDef& op_def,
+      const OpDef& op_def = OpDef(),
       const Scope* s = GetGlobalScope());
   Statement* Compile(SessionBase* sess) const override;
 

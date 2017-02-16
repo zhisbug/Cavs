@@ -74,7 +74,7 @@ class Sym {
       const vector<string>& inputs, 
       const C_Dtype type,
       const string& device,
-      const std::vector<int>& shape,
+      const std::vector<int>& shape = {},
       const OpDef::AttrDef& attr = OpDef::AttrDef());
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
