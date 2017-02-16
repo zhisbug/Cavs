@@ -47,8 +47,13 @@ class Session {
       output_name.push_back(fetch.output(0).c_str());
     }
     output_tensor.resize(output_name.size());
-    C_Run(s_, output_name.data(), output_tensor.data(), output_name.size(),
-          input_name.data(), input_tensor.data(), input_name.size());
+    C_Run(s_,
+          output_name.data(),
+          output_tensor.data(),
+          output_name.size(),
+          input_name.data(),
+          input_tensor.data(),
+          input_name.size());
     for (auto& fetch: outputs) {
       int i = 0;
       fetch.node_->raw_data = C_TensorData(output_tensor[i++]);

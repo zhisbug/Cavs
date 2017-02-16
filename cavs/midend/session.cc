@@ -96,18 +96,13 @@ class SimpleSession : public SessionBase {
 
 SimpleSession::SimpleSession(const DepGraph* graph)
     : SessionBase(graph) {
-  //for (int i = 0; i < graph->num_nodes(); i++) {
-    //OpImpl* op = CreateOp((*graph)[i]->op_def());
-    //OpContext* context = GetContext((*graph)[i]->op_def());
-    //executors_.push_back(std::make_pair(op, context));
-  //}
 }
 
 void DepthSearch(const Node* curr,
     vector<const Node*>* critical_path,
     unordered_map<const Node*, bool>* include) {
   bool isSource = (curr->inputs_size() == 0);
-  bool accessed = (include->find(curr) == include->end());
+  bool accessed = (include->find(curr) != include->end());
 
   if (!accessed) {
     if (!isSource) {
@@ -130,12 +125,14 @@ void SimpleSession::Compile(
   vector<const Node*> critical_path;
   unordered_map<const Node*, bool> include;
   for (auto& output : output_names) {
+    LOG(INFO) << output;
     const Node* node = graph_->FindNode(output);
+    LOG(INFO) << node->op_def().DebugString();
     DepthSearch(node, &critical_path, &include);
   }
-
   for (auto* node : critical_path) {
     Statement* stmt = node->Compile(this);
+    CHECK(stmt);
     executors_.push_back(stmt);
   }
 

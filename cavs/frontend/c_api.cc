@@ -100,8 +100,10 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
   op_def.ParseFromArray(def, def_length);
   bool var_flag = false;
   for (auto& attr : op_def.attr()) {
-    if (attr.name() == "vars")
+    if (attr.name() == "vars") {
+      CHECK(attr.value().list().s().size());
       var_flag = true;
+    }
   }
   if (!var_flag) {
     vector<string> var_names;
@@ -113,17 +115,6 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
     for (auto& var: var_names)
       str_list->add_s(var);
   }
-  //const string& loss = op_def.input(0);
-  //vector<string> var_names;
-  //if (var_name_len > 0) {
-    //for (int i = 0; i < var_name_len; i++)
-      //var_names.emplace_back(c_var_name[i]);
-  //}else {
-    //c_graph->graph->GroupAllVariables(&var_names);
-  //}
-  //for (auto& name : var_names) {
-    //static int i = 0;
-  //}
   c_graph->graph->OptimizeWithLoss(op_def);
 }
 
@@ -156,7 +147,6 @@ void C_DumpGraph(C_DepGraph* C_graph) {
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {
-  LOG(INFO) << "here";
   vector<string> output_names(noutputs);
   vector<Tensor> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++) {
@@ -169,10 +159,8 @@ void C_Run(C_Session* s,
     input_tensors[i] = c_input_tensors[i]->tensor;
   }
 
-  LOG(INFO) << "here";
   s->session->Run(output_names, &output_tensors, 
                   input_names, input_tensors);
-  LOG(INFO) << "here";
   for (int i = 0; i < noutputs; i++) {
     c_output_tensors[i] = new C_Tensor{output_tensors[i]};
   }

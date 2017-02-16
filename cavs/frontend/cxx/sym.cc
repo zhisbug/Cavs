@@ -70,12 +70,14 @@ Sym::Sym(const string& op_name,
   OpDef op_def;
   node_->Finalize(&op_def);
 
-  OpDef::AttrDef* var_attr = op_def.add_attr();
-  var_attr->set_name("vars");
-  OpDef::AttrType::ListValue* str_list
-    = var_attr->mutable_value()->mutable_list();
-  for (auto& sym : variables)
-    str_list->add_s(output(0));
+  if (variables.size()) {
+    OpDef::AttrDef* var_attr = op_def.add_attr();
+    var_attr->set_name("vars");
+    OpDef::AttrType::ListValue* str_list
+      = var_attr->mutable_value()->mutable_list();
+    for (auto& sym : variables)
+      str_list->add_s(output(0));
+  }
   OpDef::AttrDef* solver_attr = op_def.add_attr();
   solver_attr->set_name("solver");
   solver_attr->mutable_value()->set_s("SGD");

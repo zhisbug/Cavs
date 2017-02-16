@@ -78,8 +78,8 @@ class Sym {
       const OpDef::AttrDef& attr = OpDef::AttrDef());
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
-      const int iters = 0,
-      const string& projections = "");
+      const int iters = 1,
+      const string& projections = "proj");
   inline const std::vector<string>& outputs() const { 
     return node_->output_;
   }

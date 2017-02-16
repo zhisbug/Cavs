@@ -60,7 +60,7 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 }
 
 Node* Scope::AddNode(const OpDef& op_def) {
-  Node* node = new Node(op_def);
+  Node* node = new SingleNode(op_def);
   nodes_.push_back(node);
   //node->set_id(nodes_.size());
   //PrintSymbolTable();
@@ -115,7 +115,7 @@ void Scope::AddGradNode(const OpDef& op_def) {
     ::backend::MakeGradient(op_def); 
   //vector<Node*> grad_vec;
   for (auto& grad : grads) {
-    Node* node = new Node(grad);
+    Node* node = new SingleNode(grad);
     nodes_.push_back(node);
     //grad_vec.push_back(node);
     for (auto& dx : op_def.output()) {

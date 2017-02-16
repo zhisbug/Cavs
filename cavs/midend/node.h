@@ -24,7 +24,9 @@ class Node {
       const Scope* s = GetGlobalScope())
     : op_def_(op_def), s_(s) {}
 
-  virtual Statement* Compile(SessionBase* sess) const {}
+  virtual Statement* Compile(SessionBase* sess) const {
+    return NULL; 
+  }
   inline const OpDef& op_def() const {
     return op_def_; 
   }

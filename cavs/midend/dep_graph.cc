@@ -125,6 +125,7 @@ void DepGraph::OptimizeWithLoss(
   for (auto& attr : def.attr()) {
     if (attr.name() == "vars") {
       auto& vars = attr.value().list().s();
+      var_names.resize(vars.size());
       std::copy(vars.begin(), vars.end(), var_names.begin());
     }else if (attr.name() == "solver") {
       solver = attr.value().s(); 
