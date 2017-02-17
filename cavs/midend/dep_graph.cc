@@ -15,25 +15,17 @@ using ::backend::BuildConstantOpDef;
 namespace midend {
 
 Node* DepGraph::AddNode(const OpDef& op_def) { 
-  return const_cast<Scope*>(s_)->AddNode(op_def); 
+  return s_->AddNode(op_def); 
 }
 
 const Node* DepGraph::FindNode(
     const std::string& name) const {
   const Edge* edge = s_->FindEdge(name);
   if (!edge) return NULL;
-  CHECK(!edge->isStateful());
-  CHECK(edge->srcs_size() == 1);
+  CHECK(edge->isStateful() || edge->srcs_size() == 1)
+    << edge->name() << edge->srcs_size();
   return edge->src(0);
 }
-
-//int DepGraph::num_nodes() const {
-  //return s_->nodes_.size();
-//}
-
-//const Node* DepGraph::operator[](int node_id) const {
-  //return s_->nodes_[node_id];
-//}
 
 bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
       const Edge* loss, const Edge* curr,
@@ -46,6 +38,8 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
         (*fwd_path)[curr->dst(0)])) {
     for (auto* node : *newly_traversed) {
       loss_scope->AddNode(node->op_def());
+      LOG(INFO) << "Traversing, adding node"
+                << node->op_def().DebugString();
     }
     newly_traversed->clear();
     return true;
@@ -66,7 +60,7 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
           if (std::find(grad.output().begin(), grad.output().end(),
                OpDecl::GetGradientName(curr->name())) == grad.output().end())
             continue;
-          Node* grad_node = const_cast<Scope*>(loss_scope)->AddNode(grad);
+          Node* grad_node = loss_scope->AddNode(grad);
           vector<TensorShapeDef> inputs;
           grad_node->InputShapes(&inputs);
           const vector<TensorShapeDef>& shapes = 
@@ -90,6 +84,7 @@ void DepGraph::GroupClosedSet(
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
   for (auto& var_name : vars) {
+    //LOG(INFO) << var_name << "\there";
     const Edge* var = loss_scope->FindEdge(var_name);
     list<const Node*> newly_traversed;
     TraverseCriticalPath(loss_scope, loss, var,
@@ -101,8 +96,9 @@ void DepGraph::GroupClosedSet(
         .Output(var_name)
         .Shape(var->shape())
         .Finalize(&update);
-    const_cast<Scope*>(loss_scope)->AddNode(update);
+    loss_scope->AddNode(update);
   }
+  //LOG(INFO) << "here";
 }
 
 void DepGraph::GroupAllVariables(vector<string>* vars) {
@@ -139,16 +135,20 @@ void DepGraph::OptimizeWithLoss(
   CHECK(solver.length());
   CHECK(proj.length());
   CHECK(iters > 0);
-  Scope* loss_scope = new Scope(GetGlobalScope(), loss);
+  Scope* loss_scope = new Scope(s_, def.output(0));
   Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
   OpDef const_op;
   BuildConstantOpDef(&const_op, 
       OpDecl::GetGradientName(loss),
       loss_edge->shape(), 1.f);
+  //LOG(INFO) << const_op.DebugString();
+  //LOG(INFO) << loss_edge->shape().DebugString();
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, loss_scope);
-  ScopedNode* sn = new ScopedNode(iters);
+  ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
+  //s_->PrintSymbolTable();
+  //LOG(INFO) << "here";
 }
 
 void DepGraph::Dump() {

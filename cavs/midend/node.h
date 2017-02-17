@@ -16,13 +16,12 @@ namespace midend {
 
 class Scope;
 class Edge;
-extern const Scope* GetGlobalScope();
+extern Scope* GetGlobalScope();
 
 class Node {
  public:
   explicit Node(const OpDef& op_def,
-      const Scope* s = GetGlobalScope())
-    : op_def_(op_def), s_(s) {}
+      Scope* s = GetGlobalScope());
 
   virtual Statement* Compile(SessionBase* sess) const {
     return NULL; 
@@ -31,7 +30,7 @@ class Node {
     return op_def_; 
   }
   inline const Scope* scope() const {
-    return s_; 
+    return located_; 
   }
   inline const std::string& name() const {
     return op_def_.name();
@@ -77,7 +76,7 @@ class Node {
 
  protected:
   OpDef op_def_;
-  const Scope* s_;
+  Scope* located_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
   //int id_;
@@ -86,23 +85,29 @@ class Node {
 class SingleNode : public Node {
  public:
   explicit SingleNode(const OpDef& op_def,
-      const Scope* s = GetGlobalScope())
+      Scope* s = GetGlobalScope())
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) const override;
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable");
+  }
+  inline bool isSourceOp() const {
+    return op_def_.input_size() == 0;
   }
 }; 
 
 class ScopedNode : public Node {
  public:
   explicit ScopedNode(int iter,
+      Scope* contained,
       const OpDef& op_def = OpDef(),
-      const Scope* s = GetGlobalScope());
+      Scope* located = GetGlobalScope());
   Statement* Compile(SessionBase* sess) const override;
 
  private:
   int iter_;
+  Scope* contained_;
+  void Compress();
 };
 
 } //namespace midend

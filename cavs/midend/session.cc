@@ -104,17 +104,20 @@ void DepthSearch(const Node* curr,
   bool isSource = (curr->inputs_size() == 0);
   bool accessed = (include->find(curr) != include->end());
 
+  //LOG(INFO) << "here" << curr->op_def().DebugString();
+  //LOG(INFO) << curr->inputs_size();
+  //LOG(INFO) << isSource << accessed;
   if (!accessed) {
+    (*include)[curr] = true;
     if (!isSource) {
       for (auto* edge : curr->inputs()) {
         CHECK(edge->srcs_size() == 1 || edge->isStateful());
-        for (auto* node : edge->srcs()) {
-          DepthSearch(node, critical_path, include);
-        }
+        //for (auto* node : edge->srcs()) {
+        DepthSearch(edge->src(0), critical_path, include);
+        //}
       }
     }
     critical_path->push_back(curr);
-    (*include)[curr] = true;
   }
   return;
 }
@@ -125,16 +128,23 @@ void SimpleSession::Compile(
   vector<const Node*> critical_path;
   unordered_map<const Node*, bool> include;
   for (auto& output : output_names) {
-    LOG(INFO) << output;
     const Node* node = graph_->FindNode(output);
-    LOG(INFO) << node->op_def().DebugString();
+    CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
   for (auto* node : critical_path) {
+    LOG(INFO) << node->op_def().DebugString();
+    LOG(INFO) << node->scope()->name();
+  }
+  for (auto* node : critical_path) {
+    //LOG(INFO) << node->op_def().DebugString();
+    //LOG(INFO) << node->scope()->name();
+    LOG(INFO) << "compiling\t" << node->op_def().name();
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
     executors_.push_back(stmt);
   }
+  LOG(INFO) << "compile completed";
 
   return;
 }

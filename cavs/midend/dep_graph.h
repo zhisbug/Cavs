@@ -16,7 +16,7 @@ namespace midend {
 
 class DepGraph {
  public:
-  DepGraph(const Scope* s = GetGlobalScope())
+  DepGraph(Scope* s = GetGlobalScope())
     : s_(s) {}
   Node* AddNode(const OpDef& op_def);
   const Node* FindNode(const std::string& name) const;
@@ -25,7 +25,7 @@ class DepGraph {
   void Dump();
 
  private:
-  const Scope* s_;
+  Scope* s_;
   bool TraverseCriticalPath(Scope*s,
       const Edge* loss, const Edge* curr,
       std::unordered_map<const Node*, bool>* fwd_path,

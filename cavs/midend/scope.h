@@ -5,7 +5,7 @@
 #include "cavs/proto/op_def.pb.h"
 
 #include <string>
-#include <vector>
+#include <set>
 #include <unordered_map>
 
 namespace midend {
@@ -19,8 +19,13 @@ class Scope {
   Scope* FindChild(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* AddNode(const OpDef& op_def);
-  void AddGradNode(const OpDef& op_def);
+  void AddNode(const Node* node);
+  void AddEdge(const Edge* edge);
+  //void AddGradNode(const OpDef& op_def);
   void PrintSymbolTable();
+  inline const std::string& name() const {
+    return name_; 
+  }
   friend class DepGraph;
   friend class ScopedNode;
     
@@ -32,10 +37,9 @@ class Scope {
   std::vector<Node*> nodes_;
   std::unordered_map<std::string, Edge*> in_edges_;
   std::unordered_map<std::string, Edge*> out_edges_;
-  void AddEdge(Edge* edge);
 };
 
-const Scope* GetGlobalScope();
+Scope* GetGlobalScope();
 
 } //namespace midend
 #endif

@@ -30,7 +30,7 @@ class Sym {
   static Sym Square(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
-      int iters = 0, const string& projections = "");
+      int iters = 1, const string& projections = "proj");
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
@@ -45,8 +45,8 @@ class Sym {
   Sym Abs() { return Abs(*this); }
   Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
-  Sym Optimizer(vector<Sym> variables, int iters = 0,
-      const string& projection = "") {
+  Sym Optimizer(vector<Sym> variables, int iters = 1,
+      const string& projection = "proj") {
     return Optimizer(*this, variables, iters, projection); 
   }
   //binary operation

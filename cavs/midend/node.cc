@@ -2,6 +2,11 @@
 
 namespace midend {
 
+Node::Node(const OpDef& op_def, Scope* s)
+  : op_def_(op_def), located_(s) {
+    located_->AddNode(this);
+}
+
 void Node::SetShape(
     const std::vector<TensorShapeDef>& def) {
   op_def_.clear_shape();
@@ -14,6 +19,7 @@ void Node::SetShape(
 void Node::InputShapes(
     std::vector<TensorShapeDef>* inputs) {
   for (auto* edge: inputs_) {
+    CHECK(edge->shape().dim_size() > 0);
     inputs->push_back(edge->shape());
   }
 }
@@ -26,17 +32,30 @@ Statement* SingleNode::Compile(
 }
 
 ScopedNode::ScopedNode(int iter,
+      Scope* contained,
       const OpDef& op_def,
-      const Scope* s)
-    : Node(op_def, s), iter_(iter) {
-  for (auto& edge: s->in_edges_)
+      Scope* located)
+    : iter_(iter), contained_(contained),
+      Node(op_def, located) {
+  for (auto& edge: contained->in_edges_) {
     inputs_.push_back(edge.second);
+  }
+  CHECK(op_def.output_size() == 1);
+  Edge* output =
+    new Edge(op_def.output(0), false, located_);
+  output->AddSource(this);
 }
 
 Statement* ScopedNode::Compile(
     SessionBase* sess) const {
   BasicBlock* bb = new BasicBlock(iter_);
-  for (auto* node : s_->nodes_) {
+  LOG(INFO) << "compiling one by one";
+  for (auto* node : contained_->nodes_) {
+    LOG(INFO) << node->op_def().DebugString();
+  }
+  for (auto* node : contained_->nodes_) {
+    //LOG(INFO) << "????????";
+    //LOG(INFO) << node->op_def().DebugString();
     OpImpl* op = CreateOp(node->op_def());     
     OpContext* ctxt = sess->GetContext(node->op_def());
     bb->AppendStmt(new ExprStatement(op, ctxt));

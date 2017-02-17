@@ -48,7 +48,7 @@ Sym::Sym(const string& op_name,
   C_AddNode(C_GetDefaultDG(),
       serial_def.c_str(), serial_def.length(),
       &dim, &dim_length);
-  LOG(INFO) << op_name;
+  //LOG(INFO) << op_name;
   node_->shape_.clear();
   for (int i = 0; i < dim_length; i++)
     node_->shape_.push_back(dim[i]);
@@ -76,7 +76,7 @@ Sym::Sym(const string& op_name,
     OpDef::AttrType::ListValue* str_list
       = var_attr->mutable_value()->mutable_list();
     for (auto& sym : variables)
-      str_list->add_s(output(0));
+      str_list->add_s(sym.output(0));
   }
   OpDef::AttrDef* solver_attr = op_def.add_attr();
   solver_attr->set_name("solver");
@@ -90,14 +90,8 @@ Sym::Sym(const string& op_name,
 
   string serial_def;
   op_def.SerializeToString(&serial_def);
-  //char **var = (char**)malloc(variables.size()*sizeof(char*));
-  //for (int i = 0; i < variables.size(); i++) {
-    //CHECK(variables[i].node_->output_.size() == 1);
-    //var[i] = const_cast<char*>(variables[i].node_->output_[0].c_str());
-  //}
   C_OptimizeWithLoss(C_GetDefaultDG(),
     serial_def.c_str(), serial_def.length());
-  //free(var);
 }
 
 Sym Sym::Variable(C_Dtype type, vector<int> shape,

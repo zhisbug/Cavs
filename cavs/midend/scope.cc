@@ -23,24 +23,6 @@ Scope* Scope::FindChild(const string& n) const {
     return const_cast<Scope*>(this)->children_[n]; 
 }
 
-//Node* Scope::FindNode(const string& n, bool within) const {
-  //const Scope* s = this;
-  //if (within) {
-    //if (s->node_table_.find(n) == s->node_table_.end())
-      //return NULL;
-    //else
-      //return s->node_table_.at(n);
-  //}else {
-    //while (s && s->node_table_.find(n) == s->node_table_.end()) {
-      //s = s->father_; 
-    //}
-    //if (s)
-      //return s->node_table_.at(n);
-    //else
-      //return NULL;
-  //}
-//}
-
 Edge* Scope::FindEdge(const string& n, bool within) const {
   const Scope* s = this;
   if (within) {
@@ -60,21 +42,21 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 }
 
 Node* Scope::AddNode(const OpDef& op_def) {
-  Node* node = new SingleNode(op_def);
-  nodes_.push_back(node);
-  //node->set_id(nodes_.size());
-  //PrintSymbolTable();
+  SingleNode* node = new SingleNode(op_def, this);
+  //LOG(INFO) << "adding node\t" << op_def.DebugString();
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
-    bool stateful = (op_def.name() == "Variable");
-    //currently, only the variables can cross scopes
-    if (stateful) {
+    bool stateful = node->IsVariableOp();
+    //currently, only the source nodes can cross scopes
+    if (node->isSourceOp()) {
+      CHECK(op_def.shape_size() == 1);
+      CHECK(op_def.shape(0).dim_size() > 0);
       if (!upper_out_edge) {
-        CHECK(!father_);
+        //CHECK(!father_);
         out_edge = new Edge(out, stateful, this);
-        const_cast<Scope*>(this)->AddEdge(out_edge);
         out_edge->AddSource(node);
+        out_edge->SetShape(op_def.shape(0));
         node->AddOutput(out_edge);
       }else {
         CHECK(father_ && !out_edge);
@@ -83,83 +65,65 @@ Node* Scope::AddNode(const OpDef& op_def) {
       }
     }else {
       if (!out_edge) {
-        out_edge = new Edge(out, stateful, this);
-        const_cast<Scope*>(this)->AddEdge(out_edge);
+        if (upper_out_edge && upper_out_edge->isStateful()) {
+          out_edge = upper_out_edge;
+        }else {
+          out_edge = new Edge(out, stateful, this);
+        }
       }
       out_edge->AddSource(node);
       node->AddOutput(out_edge);
       if (upper_out_edge) {
         for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
           if (upper_out_edge->dst(i)->scope() == this) {
-            const_cast<Node*>(upper_out_edge->dst(i))->replaceInput(i, out_edge);
+            const_cast<Node*>(upper_out_edge->dst(i))
+              ->replaceInput(i, out_edge);
           }
         }
       }
     }
   }
+  //PrintSymbolTable();
   for (auto& input : op_def.input()) {
+    //LOG(INFO) << input << "\tscope name: " << name_;
     const Edge* in_edge = FindEdge(input);
     CHECK(in_edge);
     node->AddInput(in_edge);
+    //LOG(INFO) << in_edge->shape().DebugString();
     const_cast<Edge*>(in_edge)->AddDst(node);
-    if (edge_table_.find(in_edge->name()) ==
-        edge_table_.end()) {
+    if (!FindEdge(input, true) &&
+        in_edges_.find(in_edge->name()) == in_edges_.end()) {
+      //LOG(INFO) << "added\t" << in_edge->name()
+                //<< "\t in scope: " << name_;
       in_edges_[in_edge->name()] = const_cast<Edge*>(in_edge);
     }
   }
   return node;
 }
 
-void Scope::AddGradNode(const OpDef& op_def) {
-  const vector<OpDef>& grads = 
-    ::backend::MakeGradient(op_def); 
-  //vector<Node*> grad_vec;
-  for (auto& grad : grads) {
-    Node* node = new SingleNode(grad);
-    nodes_.push_back(node);
-    //grad_vec.push_back(node);
-    for (auto& dx : op_def.output()) {
-      const string& x = 
-        ::backend::OpDecl::GetOriginName(dx);
-      CHECK(FindEdge(x) != NULL);
-      Edge* dx_edge = FindEdge(dx, true);
-      if (!dx_edge) {
-        AddEdge(new Edge(dx, false, this));
-        dx_edge = FindEdge(dx);
-      }
-      CHECK(dx_edge);
-      dx_edge->AddSource(node);
-      node->AddOutput(dx_edge);
-    }
-
-    for (auto& dy: op_def.input()) {
-      const string& y = 
-        ::backend::OpDecl::GetOriginName(dy);
-      CHECK(FindEdge(y));
-      CHECK(!FindEdge(dy));
-      Edge* dy_edge = new Edge(dy, false, this);
-      const_cast<Scope*>(this)->AddEdge(dy_edge);
-      node->AddInput(dy_edge);
-      dy_edge->AddDst(node);
-    }
-  }
+void Scope::AddNode(const Node* node) {
+  CHECK(node->scope() == this);
+  LOG(INFO) << "adding node ptr " << node->op_def().DebugString()
+            << "in scope " << name();
+  nodes_.push_back(const_cast<Node*>(node));
 }
 
-void Scope::AddEdge(Edge* edge) {
+void Scope::AddEdge(const Edge* edge) {
+  CHECK(edge->scope() == this);
   const string& name = edge->name();
   CHECK(edge_table_.find(name) ==
         edge_table_.end());
-  edge_table_[name] = edge;
+  edge_table_[name] = const_cast<Edge*>(edge);
 }
 
 void Scope::PrintSymbolTable() {
-  LOG(INFO) << "Printing Symbol Table";
+  LOG(INFO) << "Printing Symbol Table\t" << name_;
   for (auto& one_pair : edge_table_) {
     LOG(INFO) << one_pair.first;
   }
 }
 
-const Scope* GetGlobalScope() {
+Scope* GetGlobalScope() {
   static Scope* s = new Scope(NULL, "global");
   return s;
 }

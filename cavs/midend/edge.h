@@ -14,14 +14,12 @@ namespace midend {
 
 class Scope;
 class Node;
-extern const Scope* GetGlobalScope();
+extern Scope* GetGlobalScope();
 
 class Edge {
  public:
   explicit Edge(const std::string& name, bool stateful, 
-      const Scope* s = GetGlobalScope())
-    : tensor_name_(name), stateful_(stateful),
-      s_(s), sink_(NULL) {} 
+      Scope* s = GetGlobalScope());
   bool isStateful() const { return stateful_; }
   inline const std::string& name() const {
     return tensor_name_;
@@ -33,12 +31,15 @@ class Edge {
     return tensor_shape_; 
   }
   inline void AddSource(Node* node) {
-    CHECK(!stateful_ || srcs_.empty());
+    CHECK(stateful_ || srcs_.empty());
     srcs_.push_back(node); 
   }
   void AddDst(Node* node);
   inline void RemoveDst(Node* node) {
     std::remove(dsts_.begin(), dsts_.end(), node); 
+  }
+  inline const Scope* scope() const {
+    return s_; 
   }
   inline const Node* src(size_t i) const {
     CHECK(i < srcs_.size());
@@ -62,13 +63,12 @@ class Edge {
   }
 
  private:
-  Node* sink_;
   std::string tensor_name_;
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> dsts_;
   bool stateful_;
-  const Scope* s_;
+  Scope* s_;
 };
 
 } //namespace midend
