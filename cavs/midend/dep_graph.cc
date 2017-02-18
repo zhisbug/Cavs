@@ -92,6 +92,7 @@ void DepGraph::GroupClosedSet(
         .Input(OpDecl::GetGradientName(var_name))
         .Output(var_name)
         .Shape(var->shape())
+        .Device("GPU")
         .Finalize(&update);
     loss_scope->AddNode(update);
   }
