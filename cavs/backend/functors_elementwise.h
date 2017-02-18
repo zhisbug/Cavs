@@ -56,6 +56,13 @@ struct Div {
   }
 };
 
+template <typename T>
+struct Assign {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp) {
+    return (inp);
+  }
+};
+
 } //namespace math
 
 } //namespace backend

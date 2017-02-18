@@ -85,16 +85,12 @@ Node* Scope::AddNode(const OpDef& op_def) {
   }
   //PrintSymbolTable();
   for (auto& input : op_def.input()) {
-    //LOG(INFO) << input << "\tscope name: " << name_;
     const Edge* in_edge = FindEdge(input);
     CHECK(in_edge);
     node->AddInput(in_edge);
-    //LOG(INFO) << in_edge->shape().DebugString();
     const_cast<Edge*>(in_edge)->AddDst(node);
     if (!FindEdge(input, true) &&
         in_edges_.find(in_edge->name()) == in_edges_.end()) {
-      //LOG(INFO) << "added\t" << in_edge->name()
-                //<< "\t in scope: " << name_;
       in_edges_[in_edge->name()] = const_cast<Edge*>(in_edge);
     }
   }
@@ -103,8 +99,6 @@ Node* Scope::AddNode(const OpDef& op_def) {
 
 void Scope::AddNode(const Node* node) {
   CHECK(node->scope() == this);
-  LOG(INFO) << "adding node ptr " << node->op_def().DebugString()
-            << "in scope " << name();
   nodes_.push_back(const_cast<Node*>(node));
 }
 

@@ -25,7 +25,9 @@ class ExprStatement : public Statement {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
   }
-  void Run() override {
+  inline void Run() override {
+    CHECK(op_);
+    CHECK(ctxt_);
     op_->Compute(ctxt_);
   }
   inline void SetOp(OpImpl* op) { op_ = op; }
@@ -44,10 +46,13 @@ class BasicBlock : public Statement {
     for (auto* stmt : stmts_)
       free(stmt);
   }
-  void Run() override {
+  inline void Run() override {
     for (int i = 0; i < iter_; i++) {
-      for (auto* stmt : stmts_)  
+      int counter = 0;
+      for (auto* stmt : stmts_) {
+        LOG(INFO) << "Running" << counter++;
         stmt->Run();
+      }
     }
   }
   inline void AppendStmt(Statement* stmt) {

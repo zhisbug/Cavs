@@ -38,8 +38,6 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
         (*fwd_path)[curr->dst(0)])) {
     for (auto* node : *newly_traversed) {
       loss_scope->AddNode(node->op_def());
-      LOG(INFO) << "Traversing, adding node"
-                << node->op_def().DebugString();
     }
     newly_traversed->clear();
     return true;
@@ -84,7 +82,6 @@ void DepGraph::GroupClosedSet(
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
   for (auto& var_name : vars) {
-    //LOG(INFO) << var_name << "\there";
     const Edge* var = loss_scope->FindEdge(var_name);
     list<const Node*> newly_traversed;
     TraverseCriticalPath(loss_scope, loss, var,
@@ -98,7 +95,6 @@ void DepGraph::GroupClosedSet(
         .Finalize(&update);
     loss_scope->AddNode(update);
   }
-  //LOG(INFO) << "here";
 }
 
 void DepGraph::GroupAllVariables(vector<string>* vars) {
@@ -142,13 +138,10 @@ void DepGraph::OptimizeWithLoss(
   BuildConstantOpDef(&const_op, 
       OpDecl::GetGradientName(loss),
       loss_edge->shape(), 1.f);
-  //LOG(INFO) << const_op.DebugString();
-  //LOG(INFO) << loss_edge->shape().DebugString();
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, loss_scope);
   ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
   //s_->PrintSymbolTable();
-  //LOG(INFO) << "here";
 }
 
 void DepGraph::Dump() {

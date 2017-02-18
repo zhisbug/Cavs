@@ -104,9 +104,6 @@ void DepthSearch(const Node* curr,
   bool isSource = (curr->inputs_size() == 0);
   bool accessed = (include->find(curr) != include->end());
 
-  //LOG(INFO) << "here" << curr->op_def().DebugString();
-  //LOG(INFO) << curr->inputs_size();
-  //LOG(INFO) << isSource << accessed;
   if (!accessed) {
     (*include)[curr] = true;
     if (!isSource) {
@@ -133,10 +130,6 @@ void SimpleSession::Compile(
     DepthSearch(node, &critical_path, &include);
   }
   for (auto* node : critical_path) {
-    LOG(INFO) << node->op_def().DebugString();
-    LOG(INFO) << node->scope()->name();
-  }
-  for (auto* node : critical_path) {
     //LOG(INFO) << node->op_def().DebugString();
     //LOG(INFO) << node->scope()->name();
     LOG(INFO) << "compiling\t" << node->op_def().name();
@@ -154,14 +147,19 @@ void SimpleSession::Run(const vector<string>& output_names,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   Compile(output_names, input_names);
+  LOG(INFO) << "feeding inputs...";
   FeedInput(input_names, input_tensors);
+  LOG(INFO) << "running inputs...";
   //for (auto& one_pair : executors_) {
     //OpImpl* op = one_pair.first;
     //OpContext* context = one_pair.second;
     //op->Compute(context);
   //}
-  for (auto* exe : executors_)
+  int i = 0;
+  for (auto* exe : executors_) {
+    LOG(INFO) << "Running " << i++;
     exe->Run();
+  }
   FetchOutput(output_names, output_tensors);
 }
 

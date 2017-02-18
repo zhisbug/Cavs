@@ -116,7 +116,6 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
       str_list->add_s(var);
   }
   c_graph->graph->OptimizeWithLoss(op_def);
-  LOG(INFO) << "here";
 }
 
 //void C_GetGrad(C_DepGraph* C_graph, 
@@ -160,7 +159,6 @@ void C_Run(C_Session* s,
     input_tensors[i] = c_input_tensors[i]->tensor;
   }
 
-  LOG(INFO) << "here";
   s->session->Run(output_names, &output_tensors, 
                   input_names, input_tensors);
   LOG(INFO) << "here";

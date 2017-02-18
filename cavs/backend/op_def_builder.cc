@@ -77,13 +77,16 @@ void BuildConstantOpDef(OpDef* op_def,
     float val) {
   OpDefBuilder("ConstOp").Output(output)
     .Shape(shape).Attr("init", val)
+    .Device("GPU")
     .Finalize(op_def);
 }
 
 float GetConstFromConstantOp(const OpDef& def) {
-  for (auto & attr : def.attr())
-    if (attr.name() == "init")
+  for (auto& attr : def.attr()) {
+    if (attr.name() == "init") 
       return attr.value().f();
+  }
+  LOG(FATAL) << "init value not found";
 }
 
 } //namespace midend

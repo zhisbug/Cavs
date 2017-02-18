@@ -28,6 +28,8 @@ Statement* SingleNode::Compile(
     SessionBase* sess) const {
   OpImpl* op = CreateOp(op_def());
   OpContext* ctxt = sess->GetContext(op_def());
+  CHECK(op) << op_def().DebugString();
+  CHECK(ctxt) << op_def().DebugString();
   return new ExprStatement(op, ctxt);
 }
 
@@ -49,15 +51,14 @@ ScopedNode::ScopedNode(int iter,
 Statement* ScopedNode::Compile(
     SessionBase* sess) const {
   BasicBlock* bb = new BasicBlock(iter_);
-  LOG(INFO) << "compiling one by one";
   for (auto* node : contained_->nodes_) {
     LOG(INFO) << node->op_def().DebugString();
   }
   for (auto* node : contained_->nodes_) {
-    //LOG(INFO) << "????????";
-    //LOG(INFO) << node->op_def().DebugString();
     OpImpl* op = CreateOp(node->op_def());     
     OpContext* ctxt = sess->GetContext(node->op_def());
+    CHECK(op) << node->op_def().DebugString();
+    CHECK(ctxt) << node->op_def().DebugString();
     bb->AppendStmt(new ExprStatement(op, ctxt));
   }
   return bb;
