@@ -51,9 +51,9 @@ ScopedNode::ScopedNode(int iter,
 Statement* ScopedNode::Compile(
     SessionBase* sess) const {
   BasicBlock* bb = new BasicBlock(iter_);
-  for (auto* node : contained_->nodes_) {
-    LOG(INFO) << node->op_def().DebugString();
-  }
+  //for (auto* node : contained_->nodes_) {
+    //LOG(INFO) << node->op_def().DebugString();
+  //}
   for (auto* node : contained_->nodes_) {
     OpImpl* op = CreateOp(node->op_def());     
     OpContext* ctxt = sess->GetContext(node->op_def());

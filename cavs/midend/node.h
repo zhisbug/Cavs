@@ -26,6 +26,9 @@ class Node {
   virtual Statement* Compile(SessionBase* sess) const {
     return NULL; 
   }
+  bool isVirtual() const {
+    return op_def_.name() == "Optimizer";
+  }
   inline const OpDef& op_def() const {
     return op_def_; 
   }

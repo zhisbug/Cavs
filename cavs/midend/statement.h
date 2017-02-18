@@ -47,10 +47,11 @@ class BasicBlock : public Statement {
       free(stmt);
   }
   inline void Run() override {
+    //LOG(INFO) << "Run " << iter_ << " iterations";
     for (int i = 0; i < iter_; i++) {
       int counter = 0;
       for (auto* stmt : stmts_) {
-        LOG(INFO) << "Running" << counter++;
+        //LOG(INFO) << "Running" << i << "\t" << counter++;
         stmt->Run();
       }
     }

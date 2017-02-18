@@ -137,7 +137,6 @@ void SimpleSession::Compile(
     CHECK(stmt);
     executors_.push_back(stmt);
   }
-  LOG(INFO) << "compile completed";
 
   return;
 }
@@ -149,7 +148,6 @@ void SimpleSession::Run(const vector<string>& output_names,
   Compile(output_names, input_names);
   LOG(INFO) << "feeding inputs...";
   FeedInput(input_names, input_tensors);
-  LOG(INFO) << "running inputs...";
   //for (auto& one_pair : executors_) {
     //OpImpl* op = one_pair.first;
     //OpContext* context = one_pair.second;
@@ -157,9 +155,9 @@ void SimpleSession::Run(const vector<string>& output_names,
   //}
   int i = 0;
   for (auto* exe : executors_) {
-    LOG(INFO) << "Running " << i++;
     exe->Run();
   }
+  LOG(INFO) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
 }
 
@@ -167,6 +165,8 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   CHECK(input_names.size() == input_tensors.size());
   for (int i = 0; i < input_names.size(); i++) {
+    CHECK(tensor_map_.find(input_names[i]) !=
+          tensor_map_.end());
     Tensor* t = &(tensor_map_[input_names[i]]);
     if (t->device_type() == GPU)
       DeviceContext::MemcpyHostToDevice(t, input_tensors[i]);
@@ -179,6 +179,10 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
+    if (graph_->FindNode(output_names[i])->isVirtual())
+      continue;
+    CHECK(tensor_map_.find(output_names[i]) !=
+          tensor_map_.end()) << output_names[i];
     const Tensor& t = tensor_map_[output_names[i]];
     if (t.device_type() == GPU) {
       (*output_tensors)[i].Rebase(GetAllocator(DeviceTypeToString(CPU)),
