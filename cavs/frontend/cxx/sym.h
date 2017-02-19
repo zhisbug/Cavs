@@ -35,6 +35,7 @@ class Sym {
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym MatMul(const Sym& a, const Sym& b, string device = "GPU");
   //filler operation
   static OpDef::AttrDef Ones();
   //debug operations

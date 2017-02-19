@@ -144,6 +144,14 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   return s;
 }
 
+Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
 Sym Sym::Optimizer(const Sym& a) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0]);

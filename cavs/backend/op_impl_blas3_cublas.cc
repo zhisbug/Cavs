@@ -35,4 +35,6 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
       0, C->mutable_data<T>());
 }
 
+REGISTER_OP_IMPL_BUILDER(Key("MatMul").Device("GPU"), MatMulMatOpCublas<float>);
+
 } //namespace backend

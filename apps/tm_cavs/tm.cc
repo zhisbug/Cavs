@@ -30,9 +30,9 @@ int main() {
   Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
   Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
 
-  Sym loss = Sym::Square(doc_word-(doc_tpc*tpc_word));
-  Sym step1 = loss.Optimizer({doc_tpc}, 20, "projection");
-  Sym step2 = loss.Optimizer({tpc_word}, 20, "projection");
+  Sym loss = Sym::Square(doc_word-(Sym::MatMul(doc_tpc, tpc_word)));
+  Sym step1 = loss.Optimizer({doc_tpc}, 20);
+  //Sym step2 = loss.Optimizer({tpc_word}, 20, "projection");
   Sym::DumpGraph();
 
   //void* doc_word;
