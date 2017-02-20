@@ -60,7 +60,9 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
             continue;
           Node* grad_node = loss_scope->AddNode(grad);
           vector<TensorShapeDef> inputs;
+          LOG(INFO) << grad.DebugString();
           grad_node->InputShapes(&inputs);
+          LOG(INFO) << "????";
           const vector<TensorShapeDef>& shapes = 
             ::backend::ShapeInference(grad, inputs);
           grad_node->SetShape(shapes);

@@ -18,7 +18,9 @@ void Node::SetShape(
 
 void Node::InputShapes(
     std::vector<TensorShapeDef>* inputs) {
+  LOG(INFO) << inputs_.size();
   for (auto* edge: inputs_) {
+    LOG(INFO) << edge->name();
     CHECK(edge->shape().dim_size() > 0);
     inputs->push_back(edge->shape());
   }

@@ -6,6 +6,7 @@ namespace midend {
 
 Edge::Edge(const string& name, bool stateful, Scope* s)
   : tensor_name_(name), stateful_(stateful), s_(s) {
+  LOG(INFO) << "adding edge\t" << name;
   s_->AddEdge(this);
 }
 
