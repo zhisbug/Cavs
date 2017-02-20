@@ -33,4 +33,19 @@ void AxpyOpCublas<T>::Compute(OpContext* context) {
       N, 1.f, x.data<T>(), y->mutable_data<T>());
 }
 
+template <typename T>
+class ScalOpCublas : public OpImpl {
+ public:
+  explicit ScalOpCublas(const OpDef& def)
+    : OpImpl(def) {
+    alpha = GetSingleArg<T>("alpha", 1.f);
+  }
+  void Compute(OpContext* context) override;
+
+ private:
+  T alpha;
+};
+
+//REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
+
 } //namespace backend

@@ -86,4 +86,22 @@ void AxpyCublasWrapper<double>(
       N, &alpha, x, incx, y, incx));
 }
 
+template <>
+void ScalCublasWrapper<float>(
+    const int N, const float alpha,
+    float* x) {
+  int incx = 1; 
+  checkCublasError(cublasSscal(CudaCommon::cublasHandle(),
+      N, &alpha, x, incx));
+}
+
+template <>
+void ScalCublasWrapper<double>(
+    const int N, const double alpha,
+    double* x) {
+  int incx = 1; 
+  checkCublasError(cublasDscal(CudaCommon::cublasHandle(),
+      N, &alpha, x, incx));
+}
+
 } //namespace backend

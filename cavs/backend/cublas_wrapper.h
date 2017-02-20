@@ -28,6 +28,12 @@ void AxpyCublasWrapper(
     const int N, const T alpha,
     const T* x, T* y);
 
+//level1
+template <typename T>
+void ScalCublasWrapper(
+    const int N, const T alpha,
+    T* x);
+
 } //namespace backend
 
 #endif

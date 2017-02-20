@@ -7,7 +7,6 @@
 
 namespace midend {
 
-class SessionBase;
 class OpContext {
  public:
   //OpContext();

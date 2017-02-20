@@ -1,4 +1,5 @@
 #include "cavs/frontend/cxx/sym.h"
+#include "cavs/frontend/cxx/session.h"
 
 #include <stdlib.h>
 
@@ -35,12 +36,12 @@ int main() {
   Sym step2 = loss.Optimizer({tpc_word}, 20);
   //Sym::DumpGraph();
 
-  //void* doc_word;
-  //load(&doc_word);
-  //Session sess;
-  //int iters = 100;
+  void* doc_word_buf;
+  load(&doc_word_buf);
+  Session sess;
+  int iters = 100;
   //for (int i = 0; i < iters; i++) {
-    //sess.Run({step1, step2}, {{doc_tpc, doc_word}});
+  sess.Run({step1, step2}, {{doc_word, doc_word_buf}});
   //}
 
   return 0;

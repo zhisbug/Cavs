@@ -37,6 +37,16 @@ OpImpl* CreateOp(const OpDef& def) {
         return attr.value().fieldname();            \
       }                                             \
     }                                               \
+    LOG(FATAL) << key << " NOT FOUND";              \
+  }                                                 \
+  template<>                                              \
+  T OpImpl::GetSingleArg<T>(const string& key, T value) { \
+    for (auto& attr : op_def_.attr()){                    \
+      if (attr.name() == key) {                           \
+        return attr.value().fieldname();                  \
+      }                                                   \
+    }                                                     \
+    return value;                                         \
   }
 
 INSTANTIATE_GETSINGLEARG(float, f)

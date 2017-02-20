@@ -18,6 +18,8 @@ class OpImpl {
   OpDef op_def_;
   template<typename T>
   T GetSingleArg(const std::string& key); 
+  template<typename T>
+  T GetSingleArg(const std::string& key, T value); 
 };
 
 OpImpl* CreateOp(const OpDef& def);

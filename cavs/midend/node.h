@@ -17,6 +17,7 @@ namespace midend {
 class Scope;
 class Edge;
 extern Scope* GetGlobalScope();
+class SessionBase;
 
 class Node {
  public:
