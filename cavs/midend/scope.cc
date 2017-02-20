@@ -43,7 +43,7 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 
 Node* Scope::AddNode(const OpDef& op_def) {
   SingleNode* node = new SingleNode(op_def, this);
-  LOG(INFO) << "adding node\t" << op_def.name();
+  //LOG(INFO) << "Adding node" << node->DebugInfo();
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
@@ -73,14 +73,16 @@ Node* Scope::AddNode(const OpDef& op_def) {
             out_edge->SetShape(upper_out_edge->shape());
           }
         }else {
-          LOG(INFO) << "No shape currently";
+          //LOG(INFO) << "No shape currently";
           out_edge = new Edge(out, stateful, this);
         }
       }
       out_edge->AddSource(node);
       node->AddOutput(out_edge);
-      if (upper_out_edge) {
+      if (upper_out_edge && !upper_out_edge->isStateful()) {
+        //LOG(INFO) << upper_out_edge->DebugInfo();
         for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
+          //LOG(INFO) << upper_out_edge->dst(i)->DebugInfo();
           if (upper_out_edge->dst(i)->scope() == this) {
             const_cast<Node*>(upper_out_edge->dst(i))
               ->replaceInput(i, out_edge);
@@ -90,14 +92,14 @@ Node* Scope::AddNode(const OpDef& op_def) {
     }
   }
   //PrintSymbolTable();
-  LOG(INFO) << op_def.DebugString();
+  //LOG(INFO) << op_def.DebugString();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
     CHECK(in_edge);
-    LOG(INFO) << in_edge->name()
-              << "???\t"
-              << in_edge->scope()->name()
-              << in_edge->shape().DebugString();
+    //LOG(INFO) << in_edge->name()
+              //<< "???\t"
+              //<< in_edge->scope()->name()
+              //<< in_edge->shape().DebugString();
     node->AddInput(in_edge);
     const_cast<Edge*>(in_edge)->AddDst(node);
     if (!FindEdge(input, true) &&

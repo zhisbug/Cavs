@@ -31,8 +31,12 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
       const Edge* loss, const Edge* curr,
       unordered_map<const Node*, bool>* fwd_path,
       list<const Node*>* newly_traversed) {
-  CHECK(curr->srcs_size() == 1) << curr->srcs_size();
-  CHECK(curr->dsts_size() <= 1) << curr->dsts_size();
+  CHECK(curr->srcs_size() == 1) << curr->DebugInfo();
+  LOG_IF(INFO, curr->dsts_size() > 1) << curr->DebugInfo();
+  //LOG(INFO) << curr->DebugInfo();
+  //for (int i = 0; i < curr->dsts_size(); i++) {
+    //LOG(INFO) << curr->dst(i)->DebugInfo();
+  //}
   if (curr == loss ||
       (fwd_path->find(curr->dst(0)) != fwd_path->end() &&
         (*fwd_path)[curr->dst(0)])) {
@@ -42,7 +46,7 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
     newly_traversed->clear();
     return true;
   }
-  CHECK(curr->dsts_size() == 1) << curr->dsts_size();
+  //CHECK(curr->dsts_size() == 1) << curr->dsts_size();
   const Node* node = curr->dst(0);
   if (fwd_path->find(node) == fwd_path->end() ||
       !(*fwd_path)[node]) {
@@ -60,9 +64,8 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
             continue;
           Node* grad_node = loss_scope->AddNode(grad);
           vector<TensorShapeDef> inputs;
-          LOG(INFO) << grad.DebugString();
+          //LOG(INFO) << grad.DebugString();
           grad_node->InputShapes(&inputs);
-          LOG(INFO) << "????";
           const vector<TensorShapeDef>& shapes = 
             ::backend::ShapeInference(grad, inputs);
           grad_node->SetShape(shapes);

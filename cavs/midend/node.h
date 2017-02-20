@@ -73,6 +73,7 @@ class Node {
   }
   void SetShape(const std::vector<TensorShapeDef>& def);
   void InputShapes(std::vector<TensorShapeDef>* inputs);
+  std::string DebugInfo() const;
   //inline void set_id(int id) { id_ = id; }
   //inline int id() const { return id_; }
   //inline bool isSink() const { return id_ == 0; }

@@ -25,8 +25,6 @@ class Edge {
     return tensor_name_;
   }
   inline void SetShape(const TensorShapeDef& def) {
-    LOG(INFO) << "Setting shape for " << name()
-              << def.DebugString();
     tensor_shape_ = def;  
   }
   inline const TensorShapeDef& shape() const {
@@ -63,6 +61,7 @@ class Edge {
   inline int dsts_size() const {
     return dsts_.size();
   }
+  std::string DebugInfo() const;
 
  private:
   std::string tensor_name_;
