@@ -44,12 +44,15 @@ OpContext* SessionBase::GetContext(const Node* node) {
       TensorShape shape(output->shape()); 
       Allocator* alloc = GetAllocator(op_def); 
       CHECK_NOTNULL(alloc);
-      LOG(INFO) << "allocating tensor for " << output;
+      LOG(INFO) << "allocating tensor for " << output->scoped_name()
+                << " with shape info: " << shape.DebugInfo();
       Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
+      LOG(INFO) << out.DebugInfo();
       this->InsertTensor(out);
     }
     t = this->GetTensor(output->scoped_name());
     CHECK_NOTNULL(t);
+    LOG(INFO) << t->DebugInfo();
     ctxt->AppendOutput(*t);
   }
   return ctxt;

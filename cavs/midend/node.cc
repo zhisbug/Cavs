@@ -36,7 +36,7 @@ string Node::DebugInfo() const {
 Statement* SingleNode::Compile(
     SessionBase* sess) const {
   LOG(INFO) << "compiling\t" << op_def().name();
-  LOG(INFO) << DebugInfo();
+  //LOG(INFO) << DebugInfo();
   OpImpl* op = CreateOp(op_def());
   OpContext* ctxt = sess->GetContext(this);
   CHECK(op) << op_def().DebugString();
@@ -68,13 +68,10 @@ Statement* ScopedNode::Compile(
   //}
   for (auto* node : contained_->nodes_) {
     LOG(INFO) << "\tcompiling\t" << node->op_def().name();
-    LOG(INFO) << node->DebugInfo();
     OpImpl* op = CreateOp(node->op_def());     
-    LOG(INFO) << "\tgetting context";
     OpContext* ctxt = sess->GetContext(node);
     CHECK(op) << node->op_def().DebugString();
     CHECK(ctxt) << node->op_def().DebugString();
-    LOG(INFO) << "\tappending stmt";
     bb->AppendStmt(new ExprStatement(op, ctxt));
   }
   return bb;

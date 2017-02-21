@@ -72,6 +72,7 @@ class Tensor {
   FORCE_INLINE int dims(int idx) const { return shape_->dims(idx); }
 
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
+  void Rebase(Allocator *a, DataType type, TensorShape&& shape);
   void Rebase(Allocator *a, const Tensor& t);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }

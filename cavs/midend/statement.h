@@ -26,7 +26,7 @@ class ExprStatement : public Statement {
     if (ctxt_) free(ctxt_);
   }
   inline void Run() override {
-    LOG(INFO) << op_->DebugInfo();
+    LOG(INFO) << "Running Operator " << op_->DebugInfo();
     CHECK(op_);
     CHECK(ctxt_);
     op_->Compute(ctxt_);

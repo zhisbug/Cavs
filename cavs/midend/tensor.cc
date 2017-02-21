@@ -59,20 +59,26 @@ string Tensor::DebugInfo() const {
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
     : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
-  shape_.reset(new TensorShape(shape));
-  Rebase(a, type, shape);
+  //shape_.reset(new TensorShape(shape));
+  Rebase(a, type, std::move(shape));
 }
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, TensorShape&& shape) 
     : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
-  shape_.reset(new TensorShape(std::move(shape)));
-  Rebase(a, type, shape);
+  //shape_.reset(new TensorShape(std::move(shape)));
+  Rebase(a, type, std::move(shape));
 }
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
   shape_.reset(new TensorShape(shape));
+  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
+}
+
+void Tensor::Rebase(Allocator *a, 
+        DataType type, TensorShape&& shape) {
+  shape_.reset(new TensorShape(std::move(shape)));
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
 }
 

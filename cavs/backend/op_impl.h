@@ -12,7 +12,6 @@ class OpImpl {
  public:
   explicit OpImpl(const OpDef& def) : op_def_(def) {}
   //explicit Op(const OpDef& def): name_(def.name()) {}
-  //FORCE_INLINE const std::string& name() const { return name_; }
   virtual void Compute(OpContext* context) = 0;
   std::string DebugInfo() const {
     return op_def_.DebugString(); 
