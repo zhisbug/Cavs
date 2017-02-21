@@ -37,7 +37,8 @@ OpImpl* CreateOp(const OpDef& def) {
         return attr.value().fieldname();            \
       }                                             \
     }                                               \
-    LOG(FATAL) << key << " NOT FOUND";              \
+    LOG(FATAL) << key << " NOT FOUND\n"             \
+               << op_def_.DebugString();            \
   }                                                 \
   template<>                                              \
   T OpImpl::GetSingleArg<T>(const string& key, T value) { \

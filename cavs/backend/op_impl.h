@@ -14,6 +14,9 @@ class OpImpl {
   //explicit Op(const OpDef& def): name_(def.name()) {}
   //FORCE_INLINE const std::string& name() const { return name_; }
   virtual void Compute(OpContext* context) = 0;
+  std::string DebugInfo() const {
+    return op_def_.DebugString(); 
+  }
  protected:
   OpDef op_def_;
   template<typename T>

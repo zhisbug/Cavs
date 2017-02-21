@@ -146,13 +146,14 @@ void SimpleSession::Run(const vector<string>& output_names,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   Compile(output_names, input_names);
-  LOG(INFO) << "feeding inputs...";
+  LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
   //for (auto& one_pair : executors_) {
     //OpImpl* op = one_pair.first;
     //OpContext* context = one_pair.second;
     //op->Compute(context);
   //}
+  LOG(INFO) << "Executing...";
   int i = 0;
   for (auto* exe : executors_) {
     exe->Run();

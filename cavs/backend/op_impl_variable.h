@@ -14,12 +14,21 @@ using ::midend::Tensor;
 template <typename FUNCTOR, typename T>//fillop, dtype
 class VariableOpImpl : public OpImpl {
  public:
-  explicit VariableOpImpl(const OpDef& def) : OpImpl(def) {}
+  explicit VariableOpImpl(const OpDef& def)
+    : OpImpl(def), initialized(false) {
+    init = GetSingleArg<T>("ConstFiller");
+  }
 
   void Compute(OpContext* context) override {
-    Tensor* out = context->Output(0);
-    FUNCTOR::Compute(out->mutable_data<T>(), out->count());
+    if (!initialized) {
+      Tensor* out = context->Output(0);
+      FUNCTOR::Compute(out->mutable_data<T>(), init, out->count());
+      initialized = true;
+    }
   }
+ private:
+  T init;
+  bool initialized;
 };
 
 } //namespace backend

@@ -41,6 +41,9 @@ Sym::Sym(const string& op_name,
 
   OpDef op_def;
   node_->Finalize(&op_def);
+  if (attr.ByteSizeLong() > 0) {
+    *(op_def.add_attr()) = attr;
+  }
   string serial_def;
   op_def.SerializeToString(&serial_def);
   int *dim = NULL;
