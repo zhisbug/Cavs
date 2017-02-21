@@ -5,6 +5,4 @@
 #include <glog/logging.h>
 #include <gflags/gflags.h>
 
-namespace xx {}
-
 #endif

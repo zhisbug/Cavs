@@ -30,8 +30,8 @@ class PoolingOpCudnn : public OpImpl {
 template <typename T>
 PoolingOpCudnn<T>::PoolingOpCudnn(const OpDef& def)
   : OpImpl(def) {
-  k_ = GetSingleArg<int>("k");
-  stride_ = GetSingleArg<int>("stride");
+  k_ = GetSingleArg<int>(op_def_, "k");
+  stride_ = GetSingleArg<int>(op_def_, "stride");
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreatePoolingDescriptor(&pooling_desc_));
@@ -86,8 +86,8 @@ class PoolingOpCudnnGrad : public OpImpl {
 template <typename T>
 PoolingOpCudnnGrad<T>::PoolingOpCudnnGrad(const OpDef& def)
   : OpImpl(def) {
-  k_ = GetSingleArg<int>("k");
-  stride_ = GetSingleArg<int>("stride");
+  k_ = GetSingleArg<int>(op_def_, "k");
+  stride_ = GetSingleArg<int>(op_def_, "stride");
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreatePoolingDescriptor(&pooling_desc_));

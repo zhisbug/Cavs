@@ -3,6 +3,9 @@
 
 #include "cavs/midend/op_context.h"
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/util/op_util.h"
+
+#include <vector>
 
 namespace backend {
 
@@ -18,10 +21,6 @@ class OpImpl {
   }
  protected:
   OpDef op_def_;
-  template<typename T>
-  T GetSingleArg(const std::string& key); 
-  template<typename T>
-  T GetSingleArg(const std::string& key, T value); 
 };
 
 OpImpl* CreateOp(const OpDef& def);

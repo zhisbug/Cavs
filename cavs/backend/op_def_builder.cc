@@ -64,12 +64,26 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
   return *this;
 }
 
-OpDefBuilder& OpDefBuilder::Attr(const string& key, float value) {
-  OpDef::AttrDef *attr = op_def_.add_attr();  
-  attr->set_name(key);
-  attr->mutable_value()->set_f(value);
-  return *this;
-}
+#define INSTANTIATE_SETSINGLEARG(T, fieldname)      \
+  template <>                                       \
+  OpDefBuilder& OpDefBuilder::Attr<T>(              \
+      const string& key, T value) {                 \
+    for (auto& attr : *(op_def_.mutable_attr())) {  \
+      if (attr.name() == key) {                     \
+        attr.mutable_value()->                      \
+          mutable_list()->add_##fieldname(value);   \
+          return *this;                             \
+      }                                             \
+    }                                               \
+    OpDef::AttrDef *attr = op_def_.add_attr();      \
+    attr->set_name(key);                            \
+    attr->mutable_value()->                         \
+      mutable_list()->add_##fieldname(value);       \
+    return *this;                                   \
+  }
+
+INSTANTIATE_SETSINGLEARG(float, f)
+INSTANTIATE_SETSINGLEARG(int, i)
 
 void BuildConstantOpDef(OpDef* op_def, 
     const string& output,
@@ -89,4 +103,4 @@ float GetConstFromConstantOp(const OpDef& def) {
   LOG(FATAL) << "init value not found";
 }
 
-} //namespace midend
+} //namespace backend

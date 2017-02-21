@@ -22,7 +22,7 @@ template <typename T>
 class ConstOpImpl : public OpImpl {
  public:
   explicit ConstOpImpl(const OpDef& def) : OpImpl(def) {
-    value = GetSingleArg<T>("init");
+    value = GetSingleArg<T>(op_def_, "init");
   }
 
   void Compute(OpContext* context) override {

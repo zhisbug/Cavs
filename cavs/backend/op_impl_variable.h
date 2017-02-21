@@ -16,7 +16,7 @@ class VariableOpImpl : public OpImpl {
  public:
   explicit VariableOpImpl(const OpDef& def)
     : OpImpl(def), initialized(false) {
-    init = GetSingleArg<T>("ConstFiller");
+    init = GetSingleArg<T>(op_def_, "ConstFiller");
   }
 
   void Compute(OpContext* context) override {

@@ -12,12 +12,23 @@ using ::midend::Tensor;
 template <typename T>
 class MatMulMatOpCublas : public OpImpl {
  public:
-  explicit MatMulMatOpCublas(const OpDef& def)
-    : OpImpl(def) {}
+  explicit MatMulMatOpCublas(const OpDef& def);
   void Compute(OpContext* context) override;
 
  private:
+  bool TransA;
+  bool TransB;
 };
+
+template <typename T>
+MatMulMatOpCublas<T>::MatMulMatOpCublas(const OpDef& def)
+    : OpImpl(def), TransA(false), TransB(false) {
+  for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
+    LOG(INFO) << "Transpose: " << t;
+    if (t == 0) TransA = true;
+    if (t == 1) TransB = true;
+  }
+}
 
 template <typename T>
 void MatMulMatOpCublas<T>::Compute(OpContext* context) {
@@ -29,14 +40,21 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   LOG(INFO) << B.DebugInfo();
   LOG(INFO) << C->DebugInfo();
 
-  int M = A.dims(0);
-  int K = A.dims(1);
-  CHECK(B.dims(0) == K);
-  int N = B.dims(1);
-  LOG(INFO) << M << K << N;
+  int MA = (TransA == false)? A.dims(0) : A.dims(1);
+  int KA = (TransA == false)? A.dims(1) : A.dims(0);
+  int KB = (TransB == false)? B.dims(0) : B.dims(1);
+  int NB = (TransB == false)? B.dims(1) : B.dims(0);
+  CHECK(KA == KB);
+  CHECK(C->dims(0) == MA)
+    << "C.dims(0): " << C->dims(0)
+    << "\tMA: "      << MA;
+  CHECK(C->dims(1) == NB)
+    << "C.dims(1): " << C->dims(1)
+    << "\tNB: "      << NB;
+  //LOG(INFO) << M << K << N;
 
   MatMulMatCublasWrapper<T>(false, false,
-      M, N, K, 1.f, A.data<T>(), B.data<T>(),
+      MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
       0, C->mutable_data<T>());
 }
 

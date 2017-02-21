@@ -19,11 +19,12 @@ class OpDefBuilder {
   OpDefBuilder& Output(const OpDef& def);
   OpDefBuilder& Device(const std::string& dev);
   OpDefBuilder& Device(const OpDef& def);
-  OpDefBuilder& Attr(const std::string& key, float value);
-  OpDefBuilder& Attr(const OpDef& def);
   OpDefBuilder& Shape(std::initializer_list<int> shape);
   OpDefBuilder& Shape(const TensorShapeDef& shape);
   OpDefBuilder& Shape(const OpDef& def);
+  OpDefBuilder& Attr(const OpDef& def);
+  template <typename T>
+  OpDefBuilder& Attr(const std::string& key, T value);
   OpDef* Finalize() { return &op_def_; }
   void Finalize(OpDef* op_def); 
 
