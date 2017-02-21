@@ -43,6 +43,7 @@ class TensorShape {
   FORCE_INLINE int dims(int idx) const { return shape_.at(idx); }
   void set_dim(int d, int size);
   void add_dim(int size);
+  std::string DebugInfo() const;
 
  private:
   std::vector<int> shape_;
@@ -76,6 +77,7 @@ class Tensor {
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
+  std::string DebugInfo() const;
 
   friend class TensorCApi;
   friend class DeviceContext;

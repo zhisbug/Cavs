@@ -22,7 +22,13 @@ class Edge {
       Scope* s = GetGlobalScope());
   bool isStateful() const { return stateful_; }
   inline const std::string& name() const {
-    return tensor_name_;
+    return name_;
+  }
+  inline const std::string& scoped_name() const {
+    return scoped_name_;
+  }
+  inline const Scope* scope() const {
+    return s_; 
   }
   inline void SetShape(const TensorShapeDef& def) {
     tensor_shape_ = def;  
@@ -37,9 +43,6 @@ class Edge {
   void AddDst(Node* node);
   inline void RemoveDst(Node* node) {
     std::remove(dsts_.begin(), dsts_.end(), node); 
-  }
-  inline const Scope* scope() const {
-    return s_; 
   }
   inline const Node* src(size_t i) const {
     CHECK(i < srcs_.size());
@@ -64,7 +67,8 @@ class Edge {
   std::string DebugInfo() const;
 
  private:
-  std::string tensor_name_;
+  std::string name_;
+  std::string scoped_name_;
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> dsts_;

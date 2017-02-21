@@ -29,27 +29,37 @@ void SessionBase::InsertTensor(const Tensor& t){
   tensor_map_[t.name()] = t;
 }
 
-OpContext* SessionBase::GetContext(const OpDef& op_def) {
+OpContext* SessionBase::GetContext(const Node* node) {
   OpContext* ctxt  = new OpContext();
-  for (const string& input : op_def.input()) {
-    //const Tensor* t = this->GetTensor(input); 
-    ctxt->AppendInput(*(GetTensor(input)));
+  const OpDef& op_def = node->op_def();
+  for (auto* input : node->inputs()) {
+    const Tensor* t = this->GetTensor(input->scoped_name()); 
+    CHECK(t) << "Getting " << input->scoped_name();
+    ctxt->AppendInput(*t);
   }
-  for (int i = 0; i < op_def.output_size(); i++) {
-    const string& output = op_def.output(i);
-    const Tensor* t = this->GetTensor(output);
+  for (auto* output : node->outputs()) {
+    const Tensor* t = this->GetTensor(output->scoped_name());
     if (!t) {
-      TensorShape shape(op_def.shape(i)); 
+      //TensorShape shape(op_def.shape(i)); 
+      TensorShape shape(output->shape()); 
       Allocator* alloc = GetAllocator(op_def); 
       CHECK_NOTNULL(alloc);
-      Tensor out(output, alloc, op_def.dtype(), std::move(shape));
+      LOG(INFO) << "allocating tensor for " << output;
+      Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
       this->InsertTensor(out);
     }
-    t = this->GetTensor(output);
+    t = this->GetTensor(output->scoped_name());
     CHECK_NOTNULL(t);
     ctxt->AppendOutput(*t);
   }
   return ctxt;
+}
+
+string SessionBase::DebugInfo() {
+  string ret;
+  for (auto& one_pair : tensor_map_)
+    ret += one_pair.first + "\t";
+  return ret;
 }
 
 namespace session_factory {
@@ -132,7 +142,7 @@ void SimpleSession::Compile(
   for (auto* node : critical_path) {
     //LOG(INFO) << node->op_def().DebugString();
     //LOG(INFO) << node->scope()->name();
-    LOG(INFO) << "compiling\t" << node->op_def().name();
+    //LOG(INFO) << "compiling\t" << node->op_def().name();
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
     executors_.push_back(stmt);
@@ -166,9 +176,9 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   CHECK(input_names.size() == input_tensors.size());
   for (int i = 0; i < input_names.size(); i++) {
-    CHECK(tensor_map_.find(input_names[i]) !=
-          tensor_map_.end());
-    Tensor* t = &(tensor_map_[input_names[i]]);
+    const Edge* edge = graph_->FindEdge(input_names[i]);
+    CHECK(edge) << "Edge: " << input_names[i];
+    Tensor* t = &(tensor_map_[edge->scoped_name()]);
     if (t->device_type() == GPU)
       DeviceContext::MemcpyHostToDevice(t, input_tensors[i]);
     else
@@ -182,9 +192,12 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
   for (int i = 0; i < output_names.size(); i++) {
     if (graph_->FindNode(output_names[i])->isVirtual())
       continue;
-    CHECK(tensor_map_.find(output_names[i]) !=
-          tensor_map_.end()) << output_names[i];
-    const Tensor& t = tensor_map_[output_names[i]];
+    const Edge* edge = graph_->FindEdge(output_names[i]);
+    CHECK(edge);
+    CHECK(tensor_map_.find(edge->scoped_name()) !=
+          tensor_map_.end()) << "Getting " << edge->scoped_name()
+          << "\tin\n" << DebugInfo();
+    const Tensor& t = tensor_map_[edge->scoped_name()];
     if (t.device_type() == GPU) {
       (*output_tensors)[i].Rebase(GetAllocator(DeviceTypeToString(CPU)),
           t);

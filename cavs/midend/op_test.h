@@ -29,7 +29,7 @@ class OpTest {
   void AddTensorFromVector(const string& name,
                            const TensorShape& shape, 
                            const vector<T>& vals) {
-    Tensor input(name, GetAllocator(op_def_), 
+    Tensor input(name, GetAllocator(node_->op_def()), 
                  DataTypeToEnum<T>::value, shape); 
     sess_->InsertTensor(input);
     FillValues<T>(&input, vals);
@@ -40,20 +40,22 @@ class OpTest {
     FetchValues<T>(data, *(sess_->GetTensor(name)));
   }
   bool RunTest () {
-    op_.reset(CreateOp(op_def_)); 
-    context_.reset(sess_->GetContext(op_def_));
+    op_.reset(CreateOp(node_->op_def())); 
+    context_.reset(sess_->GetContext(node_));
     op_->Compute(context_.get());
   }
 
  private:
   std::unique_ptr<OpImpl> op_;
   std::unique_ptr<OpContext> context_;
-  OpDef op_def_;
+  //OpDef op_def_;
+  Node* node_;
   SessionOpTest* sess_;
 };
 
 OpTest ::OpTest(const OpDef& def) {
-  op_def_ = def; 
+  node_ = new Node(def);
+  //op_def_ = def; 
   sess_ = new SessionOpTest();
 }
 

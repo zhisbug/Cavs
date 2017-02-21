@@ -37,7 +37,7 @@ class Node {
     return located_; 
   }
   inline const std::string& name() const {
-    return op_def_.name();
+    return node_name_;
   }
   inline const Edge* input(int i) const {
     CHECK(i < inputs_.size());
@@ -84,7 +84,7 @@ class Node {
   Scope* located_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
-  //int id_;
+  std::string node_name_;
 };
 
 class SingleNode : public Node {

@@ -51,7 +51,6 @@ Sym::Sym(const string& op_name,
   C_AddNode(C_GetDefaultDG(),
       serial_def.c_str(), serial_def.length(),
       &dim, &dim_length);
-  //LOG(INFO) << op_name;
   node_->shape_.clear();
   for (int i = 0; i < dim_length; i++)
     node_->shape_.push_back(dim[i]);

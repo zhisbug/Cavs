@@ -42,6 +42,20 @@ class TensorBuffer : public TensorBufferBase {
   DISALLOW_COPY_AND_ASSIGN(TensorBuffer);
 };
 
+string TensorShape::DebugInfo() const {
+  string ret; 
+  for (auto& s : shape_)
+    ret += std::to_string(s) + ",";
+  return ret;
+}
+string Tensor::DebugInfo() const {
+  string ret; 
+  ret += "\nname: " + name_;
+  ret += "\nshape: " + shape_->DebugInfo();
+  ret += "\ntype: " + std::to_string(type_);
+  return ret;
+}
+
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
     : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {

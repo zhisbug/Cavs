@@ -25,10 +25,15 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   const Tensor& B = context->Input(1);
   Tensor* C = context->Output(0);
 
+  LOG(INFO) << A.DebugInfo();
+  LOG(INFO) << B.DebugInfo();
+  LOG(INFO) << C->DebugInfo();
+
   int M = A.dims(0);
   int K = A.dims(1);
   CHECK(B.dims(0) == K);
   int N = B.dims(1);
+  LOG(INFO) << M << K << N;
 
   MatMulMatCublasWrapper<T>(false, false,
       M, N, K, 1.f, A.data<T>(), B.data<T>(),

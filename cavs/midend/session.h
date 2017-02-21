@@ -3,6 +3,7 @@
 
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/dep_graph.h"
+#include "cavs/midend/node.h"
 
 #include <unordered_map>
 
@@ -10,6 +11,7 @@ namespace midend {
 
 class DepGraph;
 class OpContext;
+class Node;
 class SessionBase {
  public:
   SessionBase(const DepGraph* graph) : graph_(graph) {}
@@ -19,7 +21,8 @@ class SessionBase {
                    std::vector<Tensor>* output_tensors,
                    const std::vector<std::string>& input_names,
                    const std::vector<Tensor>& input_tensors) {}
-  virtual OpContext* GetContext(const OpDef& op_def);
+  virtual OpContext* GetContext(const Node* node);
+  std::string DebugInfo();
  protected:
   SessionBase() {}
   std::unordered_map<std::string, Tensor> tensor_map_;

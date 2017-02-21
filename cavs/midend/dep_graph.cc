@@ -27,6 +27,11 @@ const Node* DepGraph::FindNode(
   return edge->src(0);
 }
 
+const Edge* DepGraph::FindEdge(
+    const std::string& name) const {
+  return s_->FindEdge(name);
+}
+
 bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
       const Edge* loss, const Edge* curr,
       unordered_map<const Node*, bool>* fwd_path,

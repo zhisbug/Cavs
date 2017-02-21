@@ -95,7 +95,7 @@ Node* Scope::AddNode(const OpDef& op_def) {
   //LOG(INFO) << op_def.DebugString();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
-    CHECK(in_edge);
+    CHECK(in_edge) << "name: " << input;
     //LOG(INFO) << in_edge->name()
               //<< "???\t"
               //<< in_edge->scope()->name()
@@ -119,7 +119,8 @@ void Scope::AddEdge(const Edge* edge) {
   CHECK(edge->scope() == this);
   const string& name = edge->name();
   CHECK(edge_table_.find(name) ==
-        edge_table_.end());
+        edge_table_.end())
+      << "Adding duplicated Edge: \"" << name << "\"";
   edge_table_[name] = const_cast<Edge*>(edge);
 }
 

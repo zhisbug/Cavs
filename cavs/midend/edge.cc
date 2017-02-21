@@ -5,7 +5,9 @@ using std::string;
 namespace midend {
 
 Edge::Edge(const string& name, bool stateful, Scope* s)
-  : tensor_name_(name), stateful_(stateful), s_(s) {
+  : stateful_(stateful), s_(s),
+    name_(name),
+    scoped_name_(s->name() + ":" + name) {
   s_->AddEdge(this);
 }
 
