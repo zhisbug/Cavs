@@ -56,6 +56,8 @@ string Tensor::DebugInfo() const {
   return ret;
 }
 
+Tensor::Tensor() : buf_(nullptr), shape_(nullptr) {}
+
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
     : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {

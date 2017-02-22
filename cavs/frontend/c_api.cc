@@ -29,7 +29,10 @@ namespace midend {
 class TensorCApi {
  public:
   static void* raw_data(const Tensor& tensor) {
-    return tensor.buf_->data();
+    if (tensor.buf_)
+      return tensor.buf_->data();
+    else
+      return NULL;
   }
   static size_t size(const Tensor& tensor) {
     return tensor.buf_->size();
@@ -145,6 +148,7 @@ void C_Run(C_Session* s,
 }
 
 void* C_TensorData(const C_Tensor* t) { 
+  CHECK(t);
   return midend::TensorCApi::raw_data(t->tensor); 
 }
 

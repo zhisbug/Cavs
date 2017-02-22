@@ -46,7 +46,7 @@ class Session {
     for (auto& fetch: outputs) {
       output_name.push_back(fetch.output(0).c_str());
     }
-    output_tensor.resize(output_name.size());
+    output_tensor.resize(output_name.size(), NULL);
     C_Run(s_,
           output_name.data(),
           output_tensor.data(),

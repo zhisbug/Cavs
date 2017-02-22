@@ -173,6 +173,7 @@ void SimpleSession::Run(const vector<string>& output_names,
   }
   LOG(INFO) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
+  LOG(INFO) << "Execution completed";
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,

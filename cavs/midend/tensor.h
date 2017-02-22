@@ -53,7 +53,7 @@ class TensorShape {
 class TensorCApi;
 class Tensor {
  public:
-  Tensor() {}
+  Tensor();
   Tensor(const std::string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const std::string& name, Allocator *a, DataType type, TensorShape&& shape);
   Tensor(const Tensor& t) { *this = t; }
