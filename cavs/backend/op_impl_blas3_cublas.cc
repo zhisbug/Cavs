@@ -24,7 +24,7 @@ template <typename T>
 MatMulMatOpCublas<T>::MatMulMatOpCublas(const OpDef& def)
     : OpImpl(def), TransA(false), TransB(false) {
   for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
-    LOG(INFO) << "Transpose: " << t;
+    //LOG(INFO) << "Transpose: " << t;
     if (t == 0) TransA = true;
     if (t == 1) TransB = true;
   }
@@ -35,10 +35,6 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   const Tensor& A = context->Input(0);
   const Tensor& B = context->Input(1);
   Tensor* C = context->Output(0);
-
-  LOG(INFO) << A.DebugInfo();
-  LOG(INFO) << B.DebugInfo();
-  LOG(INFO) << C->DebugInfo();
 
   int MA = (TransA == false)? A.dims(0) : A.dims(1);
   int KA = (TransA == false)? A.dims(1) : A.dims(0);
@@ -51,7 +47,6 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   CHECK(C->dims(1) == NB)
     << "C.dims(1): " << C->dims(1)
     << "\tNB: "      << NB;
-  //LOG(INFO) << M << K << N;
 
   MatMulMatCublasWrapper<T>(false, false,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),

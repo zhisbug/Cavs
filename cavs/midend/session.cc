@@ -40,7 +40,6 @@ OpContext* SessionBase::GetContext(const Node* node) {
   for (auto* output : node->outputs()) {
     const Tensor* t = this->GetTensor(output->scoped_name());
     if (!t) {
-      //TensorShape shape(op_def.shape(i)); 
       TensorShape shape(output->shape()); 
       Allocator* alloc = GetAllocator(op_def); 
       CHECK_NOTNULL(alloc);
@@ -52,7 +51,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
     }
     t = this->GetTensor(output->scoped_name());
     CHECK_NOTNULL(t);
-    LOG(INFO) << t->DebugInfo();
+    //LOG(INFO) << t->DebugInfo();
     ctxt->AppendOutput(*t);
   }
   return ctxt;
@@ -105,11 +104,11 @@ class SimpleSession : public SessionBase {
                const vector<string>& input_names);
   //std::vector<std::pair<OpImpl*, OpContext*>> executors_;
   std::vector<Statement*> executors_;
+  bool compiled_;
 };
 
 SimpleSession::SimpleSession(const DepGraph* graph)
-    : SessionBase(graph) {
-}
+    : SessionBase(graph), compiled_(false) {}
 
 void DepthSearch(const Node* curr,
     vector<const Node*>* critical_path,
@@ -158,7 +157,10 @@ void SimpleSession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
-  Compile(output_names, input_names);
+  if (!compiled_) {
+    Compile(output_names, input_names);
+    compiled_ = true;
+  }
   LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
   //for (auto& one_pair : executors_) {
