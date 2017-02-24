@@ -29,7 +29,7 @@ Sym::Sym(const string& op_name,
          const C_Dtype type,
          const string& device,
          const vector<int>& shape,
-         const OpDef::AttrDef& attr) {
+         const vector<OpDef::AttrDef>& attrs) {
   static int id = 0;  
   node_.reset(new node());
   node_->op_name_ = op_name;
@@ -41,9 +41,8 @@ Sym::Sym(const string& op_name,
 
   OpDef op_def;
   node_->Finalize(&op_def);
-  if (attr.ByteSizeLong() > 0) {
+  for (auto& attr : attrs)
     *(op_def.add_attr()) = attr;
-  }
   string serial_def;
   op_def.SerializeToString(&serial_def);
   int *dim = NULL;
@@ -99,12 +98,19 @@ Sym::Sym(const string& op_name,
 Sym Sym::Variable(C_Dtype type, vector<int> shape,
     const OpDef::AttrDef& attr, string device) {
   CHECK(shape.size() > 0);
-  return Sym("Variable", {}, type, device, shape, attr);
+  return Sym("Variable", {}, type, device, shape, {attr});
 }
 
 Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string device) {
   CHECK(shape.size() > 0);
   return Sym("Placeholder", {}, type, device, shape);
+}
+
+Sym Sym::MnistInput(int batch, string file, string device) {
+  OpDef::AttrDef attr;
+  attr.set_name("Batch");
+  attr.mutable_value()->set_i(batch);
+  return Sym("MnistInput", {}, C_FLOAT, device, {}, {attr}); 
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
@@ -119,6 +125,34 @@ Sym Sym::Square(const Sym& a, string device) {
   Sym s("Square", {a.node_->output_[0]},
         a.node_->type_, device);
   return s;
+}
+
+Sym Sym::Maxpooling(const Sym&a,
+    int HightWindow, int WidthWindow, string device) {
+  vector<OpDef::AttrDef> attrs;
+  {
+    OpDef::AttrDef attr;
+    attr.set_name("HightWindow");
+    attr.mutable_value()->set_i(HightWindow);
+    attrs.push_back(std::move(attr));
+  }
+  {
+    OpDef::AttrDef attr;
+    attr.set_name("HightWindow");
+    attr.mutable_value()->set_i(HightWindow);
+    attrs.push_back(std::move(attr));
+  }
+  return Sym("Maxpooling", {a.node_->output_[0]}, a.node_->type_,
+         device, {}, attrs);
+}
+
+Sym Sym::Relu(const Sym&a, string device) {
+  return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, device);
+}
+
+Sym Sym::SoftmaxEntropyLogits(const Sym&a, string device) {
+  return Sym("SoftmaxEntropyLogits", { a.node_->output_[0] },
+        a.node_->type_, device);
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string device) {
@@ -152,6 +186,20 @@ Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, device);
   return s;
+}
+
+Sym Sym::Conv(const Sym& a, const Sym& b, string device) {
+  CHECK(b.op_name() == "Variable");
+  CHECK(a.node_->type_ == b.node_->type_);
+  return Sym("Convolution",
+      {a.node_->output_[0], b.node_->output_[0]},
+      a.node_->type_, device);
+}
+
+Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {
+  CHECK(b.op_name() == "Variable");
+  CHECK(a.node_->type_ == b.node_->type_);
+  return MatMul(a, b, device);
 }
 
 Sym Sym::Optimizer(const Sym& a) {
