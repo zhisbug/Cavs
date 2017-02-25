@@ -27,9 +27,6 @@ class Node {
   virtual Statement* Compile(SessionBase* sess) const {
     return NULL; 
   }
-  bool isVirtual() const {
-    return op_def_.name() == "Optimizer";
-  }
   inline const OpDef& op_def() const {
     return op_def_; 
   }
@@ -101,6 +98,12 @@ class SingleNode : public Node {
   }
 }; 
 
+//The ScopedNode is defined as a group of nodes
+//which update some certain tensors iteratively.
+//Motivated by how to denote embedded loops in the 
+//computation graph, the ScopedNode is introduced
+//and will be translated into a basic block during
+//compilation
 class ScopedNode : public Node {
  public:
   explicit ScopedNode(int iter,

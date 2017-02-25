@@ -11,6 +11,7 @@ int main() {
   Sym loss = input.Conv(kernel1).Maxpooling(2, 2).Conv(kernel2).Maxpooling(2, 2).
               FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits();
   Sym train = loss.Optimizer();
+  Sym::DumpGraph();
 
   Session sess;
   sess.Run({train});

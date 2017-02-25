@@ -1,27 +1,74 @@
 #include "cavs/backend/op_decl.h"
+#include "cavs/backend/op_def_builder.h"
+#include "cavs/util/op_util.h"
 
 using std::vector;
 
 namespace backend {
 
-class ConvOpDeclBase : public OpDecl {
+class ConvOpDecl : public OpDecl{
  public:
-  explicit ConvOpDeclBase(const OpDef& def) : OpDecl(def) {}
-  void ShapeInference(vector<TensorShapeDef>* shape,
-    const vector<TensorShapeDef>& inputs) override {}
-  virtual void MakeGradient(vector<OpDef>* grad) override {}
+  ConvOpDecl(const OpDef& def) : OpDecl(def) {};
+  void MakeGradient(vector<OpDef>* grad) override {
+    grad->clear();
+    CHECK(op_def_.input_size() == 3);
+    CHECK(op_def_.output_size() == 1);
+    OpDef ConvGrad;
+    OpDefBuilder("MatMul")
+      .Input(GetGradientName(op_def_.output(0)))
+      .Input(op_def_.input(0))
+      .Input(op_def_.input(1))
+      .Output(GetGradientName(op_def_.input(1)))
+      .Output(GetGradientName(op_def_.input(2)))
+      .Output(GetGradientName(op_def_.input(0)))
+      .Device(op_def_)
+      .Finalize(&ConvGrad);
+  }
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 3);
+    //Currently, we assume the image layout is N, C, H, W
+    //Input dim: N, C, H, W
+    //Variable dim: K, C, H, W
+    CHECK(inputs[0].dim_size() == 4);
+    CHECK(inputs[1].dim_size() == 4);
+    CHECK(inputs[0].dim(1) == inputs[1].dim(1))
+      << "Channels Must Match";
+    int pad = GetSingleArg<int>(op_def_, "Pad");
+    int stride = GetSingleArg<int>(op_def_, "Stride");
+    int N = inputs[0].dim(0);
+    int C = inputs[0].dim(1);
+    int H = 1 + (inputs[0].dim(2) + 2*pad -inputs[1].dim(2)) /stride;
+    int W = 1 + (inputs[0].dim(3) + 2*pad -inputs[1].dim(3)) /stride;
+    out_shape->resize(1);
+    out_shape->at(0).clear_dim();
+    out_shape->at(0).add_dim(N);
+    out_shape->at(0).add_dim(C);
+    out_shape->at(0).add_dim(H);
+    out_shape->at(0).add_dim(W);
+  };
 };
 
-REGISTER_OP_DECL_BUILDER("Conv", ConvOpDeclBase);
+class ConvGradOpDecl : public OpDecl{
+ public:
+  ConvGradOpDecl(const OpDef& def) : OpDecl(def) {};
+  void MakeGradient(vector<OpDef>* grad) override {}
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 4);
+    CHECK(inputs[0].dim_size() == 4);
+    CHECK(inputs[1].dim_size() == 4);
+    CHECK(inputs[0].dim(1) == inputs[1].dim(1))
+      << "Channels Must Match";
+    out_shape->resize(3);
+    out_shape->at(0) = inputs[2];
+    out_shape->at(1) = inputs[3];
+    out_shape->at(2) = inputs[1];
+  };
+};
 
-//static TensorShape conv_op_shape_inference(OpDef* def) {
-  //int pad_h = 0;
-  //int pad_w = 0;
-  //int stride_h = 1;
-  //int stride_w = 1;
+REGISTER_OP_DECL_BUILDER("Conv", ConvOpDecl);
+REGISTER_OP_DECL_BUILDER("ConvGrad", ConvGradOpDecl);
 
-  //check
-  //int XN = def.
-//}
 
 } //namespace backend

@@ -21,6 +21,9 @@ class Edge {
   explicit Edge(const std::string& name, bool stateful, 
       Scope* s = GetGlobalScope());
   bool isStateful() const { return stateful_; }
+  bool isVirtual() const {
+    return tensor_shape_.dim_size() == 0; 
+  }
   inline const std::string& name() const {
     return name_;
   }

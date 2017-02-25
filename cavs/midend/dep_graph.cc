@@ -155,9 +155,8 @@ void DepGraph::OptimizeWithLoss(
   //s_->PrintSymbolTable();
 }
 
-void DepGraph::Dump() {
-  for (auto* node : s_->nodes_)
-    LOG(INFO) << node->op_def().DebugString();
+string DepGraph::DebugInfo() {
+  return s_->DebugInfo();
 }
 
 } //namespace midend

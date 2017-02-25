@@ -122,7 +122,7 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
 }
 
 void C_DumpGraph(C_DepGraph* C_graph) {
-  C_graph->graph->Dump();
+  LOG(INFO) << C_graph->graph->DebugInfo();
 }
 
 void C_Run(C_Session* s, 

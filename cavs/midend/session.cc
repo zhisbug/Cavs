@@ -196,7 +196,7 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
-    if (graph_->FindNode(output_names[i])->isVirtual())
+    if (graph_->FindEdge(output_names[i])->isVirtual())
       continue;
     const Edge* edge = graph_->FindEdge(output_names[i]);
     CHECK(edge);

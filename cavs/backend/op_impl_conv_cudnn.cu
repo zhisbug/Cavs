@@ -160,10 +160,10 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& dy = context->Input(0);
   const Tensor& x = context->Input(1);
   const Tensor& filter = context->Input(2);
-  const Tensor& bias   = context->Input(3);
+  /*const Tensor& bias   = context->Input(3);*/
   Tensor* df = context->Output(0);
-  Tensor* dx = context->Output(1);
-  Tensor* db = context->Output(2);
+  Tensor* db = context->Output(1);
+  Tensor* dx = context->Output(2);
 
   int XN = x.dims(0);
   int XC = x.dims(1);

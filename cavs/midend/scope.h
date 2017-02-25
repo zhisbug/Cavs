@@ -21,11 +21,11 @@ class Scope {
   Node* AddNode(const OpDef& op_def);
   void AddNode(const Node* node);
   void AddEdge(const Edge* edge);
-  //void AddGradNode(const OpDef& op_def);
   void PrintSymbolTable();
   inline const std::string& name() const {
     return name_; 
   }
+  std::string DebugInfo();
   friend class DepGraph;
   friend class ScopedNode;
     

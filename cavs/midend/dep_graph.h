@@ -23,7 +23,7 @@ class DepGraph {
   const Edge* FindEdge(const std::string& name) const;
   void GroupAllVariables(std::vector<std::string>* vars);
   void OptimizeWithLoss(const OpDef& op_def);
-  void Dump();
+  std::string DebugInfo();
 
  private:
   Scope* s_;

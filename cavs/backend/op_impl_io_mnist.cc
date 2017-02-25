@@ -60,9 +60,9 @@ struct ImageFileDescriptor{
   }
 };
 
-class MnistIOOp : public IOOpBase {
+class MnistInputOp : public IOOpBase {
  public:
-  explicit MnistIOOp(const OpDef& def) :
+  explicit MnistInputOp(const OpDef& def) :
     IOOpBase(def), image_buf_(NULL), label_buf_(NULL) {
     batch_ = GetSingleArg<int>(def, "Batch");
     image_name_ = GetSingleArg<string>(def, "Imagename");
@@ -80,7 +80,7 @@ class MnistIOOp : public IOOpBase {
   LabelFileDescriptor label_desc_;
 };
 
-void MnistIOOp::Compute(OpContext* context) {
+void MnistInputOp::Compute(OpContext* context) {
   Tensor* image = context->Output(0);
   Tensor* label = context->Output(1);
   if (!image_buf_) {

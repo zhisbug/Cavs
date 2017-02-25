@@ -50,8 +50,10 @@ Node* Scope::AddNode(const OpDef& op_def) {
     bool stateful = node->IsVariableOp();
     //currently, only the source nodes can cross scopes
     if (node->isSourceOp()) {
-      CHECK(op_def.shape_size() == 1);
-      CHECK(op_def.shape(0).dim_size() > 0);
+      //CHECK(op_def.shape_size() == 1) 
+        //<< op_def.DebugString();
+      LOG_IF(INFO, op_def.shape(0).dim_size() == 0)
+          << op_def.DebugString();
       if (!upper_out_edge) {
         //CHECK(!father_);
         out_edge = new Edge(out, stateful, this);
@@ -80,9 +82,7 @@ Node* Scope::AddNode(const OpDef& op_def) {
       out_edge->AddSource(node);
       node->AddOutput(out_edge);
       if (upper_out_edge && !upper_out_edge->isStateful()) {
-        //LOG(INFO) << upper_out_edge->DebugInfo();
         for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
-          //LOG(INFO) << upper_out_edge->dst(i)->DebugInfo();
           if (upper_out_edge->dst(i)->scope() == this) {
             const_cast<Node*>(upper_out_edge->dst(i))
               ->replaceInput(i, out_edge);
@@ -92,7 +92,6 @@ Node* Scope::AddNode(const OpDef& op_def) {
     }
   }
   //PrintSymbolTable();
-  //LOG(INFO) << op_def.DebugString();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
     CHECK(in_edge) << "name: " << input;
@@ -129,6 +128,19 @@ void Scope::PrintSymbolTable() {
   for (auto& one_pair : edge_table_) {
     LOG(INFO) << one_pair.first;
   }
+}
+
+string Scope::DebugInfo() {
+  string ret = "\n============================\n";
+  ret += "<<<<<<<<< In Scope " + name_ + " <<<<<<<<<\n";
+  for (auto* node : nodes_) {
+    ret += node->op_def().DebugString();
+  }
+  for (auto& child: children_) {
+    ret += child.second->DebugInfo();
+  }
+  ret += "\n============================\n";
+  return ret;
 }
 
 Scope* GetGlobalScope() {
