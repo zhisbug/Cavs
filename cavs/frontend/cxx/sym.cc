@@ -138,11 +138,17 @@ Sym Sym::Maxpooling(const Sym&a,
   }
   {
     OpDef::AttrDef attr;
-    attr.set_name("HightWindow");
+    attr.set_name("WidthWindow");
     attr.mutable_value()->set_i(HightWindow);
     attrs.push_back(std::move(attr));
   }
-  return Sym("Maxpooling", {a.node_->output_[0]}, a.node_->type_,
+  {
+    OpDef::AttrDef attr;
+    attr.set_name("PoolingMode");
+    attr.mutable_value()->set_s("Max");
+    attrs.push_back(std::move(attr));
+  }
+  return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_,
          device, {}, attrs);
 }
 
@@ -188,11 +194,14 @@ Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   return s;
 }
 
-Sym Sym::Conv(const Sym& a, const Sym& b, string device) {
+Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
   CHECK(b.op_name() == "Variable");
-  CHECK(a.node_->type_ == b.node_->type_);
-  return Sym("Convolution",
-      {a.node_->output_[0], b.node_->output_[0]},
+  CHECK(c.op_name() == "Variable");
+  CHECK(a.node_->type_ == b.node_->type_ &&
+        b.node_->type_ == c.node_->type_)
+    << a.node_->type_ << b.node_->type_ << c.node_->type_;
+  return Sym("Conv",
+      {a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
       a.node_->type_, device);
 }
 

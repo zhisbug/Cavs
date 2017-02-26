@@ -14,7 +14,7 @@ class ConvOpDecl : public OpDecl{
     CHECK(op_def_.input_size() == 3);
     CHECK(op_def_.output_size() == 1);
     OpDef ConvGrad;
-    OpDefBuilder("MatMul")
+    OpDefBuilder("ConvGrad")
       .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
       .Input(op_def_.input(1))
@@ -32,20 +32,24 @@ class ConvOpDecl : public OpDecl{
     //Variable dim: K, C, H, W
     CHECK(inputs[0].dim_size() == 4);
     CHECK(inputs[1].dim_size() == 4);
-    CHECK(inputs[0].dim(1) == inputs[1].dim(1))
-      << "Channels Must Match";
-    int pad = GetSingleArg<int>(op_def_, "Pad");
-    int stride = GetSingleArg<int>(op_def_, "Stride");
+    CHECK(inputs[0].dim(1) == inputs[1].dim(1));
+    //LOG(INFO) << inputs[0].DebugString() << inputs[1].DebugString();
+    CHECK(inputs[1].dim(2) == inputs[1].dim(3));//kernel is square
+    int pad = GetSingleArg<int>(op_def_, "Pad", 0);
+    int stride = GetSingleArg<int>(op_def_, "Stride", inputs[1].dim(2));
     int N = inputs[0].dim(0);
-    int C = inputs[0].dim(1);
+    int C = inputs[1].dim(0);
     int H = 1 + (inputs[0].dim(2) + 2*pad -inputs[1].dim(2)) /stride;
     int W = 1 + (inputs[0].dim(3) + 2*pad -inputs[1].dim(3)) /stride;
+    LOG(INFO) << pad << "\t" << stride << "\t"
+              << N << "\t" << C << "\t" << H << "\t" << W;
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
     out_shape->at(0).add_dim(N);
     out_shape->at(0).add_dim(C);
     out_shape->at(0).add_dim(H);
     out_shape->at(0).add_dim(W);
+    LOG(INFO) << out_shape->at(0).DebugString();
   };
 };
 

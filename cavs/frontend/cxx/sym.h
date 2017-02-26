@@ -40,8 +40,9 @@ class Sym {
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym MatMul(const Sym& a, const Sym& b, string device = "GPU");
-  static Sym Conv(const Sym& a, const Sym& b, string device = "GPU");
   static Sym FullyConnected(const Sym& a, const Sym& b, string device = "GPU");
+  //ternary operation
+  static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
   //filler operation
   static OpDef::AttrDef Ones();
   //debug operations
@@ -62,8 +63,9 @@ class Sym {
   Sym Relu() { return Relu(*this); }
   Sym SoftmaxEntropyLogits() { return SoftmaxEntropyLogits(*this); }
   //binary operation
-  Sym Conv(const Sym& b) { return Conv(*this, b); }
   Sym FullyConnected(const Sym& b) { return FullyConnected(*this, b); }
+  //ternary operation
+  Sym Conv(const Sym& b, const Sym& c) { return Conv(*this, b, c); }
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
