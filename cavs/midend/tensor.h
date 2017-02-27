@@ -56,12 +56,14 @@ class Tensor {
   Tensor();
   Tensor(const std::string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const std::string& name, Allocator *a, DataType type, TensorShape&& shape);
+  Tensor(const std::string& name, const Tensor& t)
+      : buf_(t.buf_), shape_(t.shape_), type_(t.type_), name_(name) {} 
   Tensor(const Tensor& t) { *this = t; }
-  FORCE_INLINE Tensor& operator =(const Tensor& tensor) {
-    buf_   = tensor.buf_;
-    shape_ = tensor.shape_;
-    name_  = tensor.name_;
-    type_  = tensor.type_;
+  FORCE_INLINE Tensor& operator =(const Tensor& t) {
+    buf_   = t.buf_;
+    shape_ = t.shape_;
+    name_  = t.name_;
+    type_  = t.type_;
     return *this;
   }
   FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }

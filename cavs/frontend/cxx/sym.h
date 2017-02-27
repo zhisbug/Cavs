@@ -35,6 +35,7 @@ class Sym {
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
   static Sym SoftmaxEntropyLogits(const Sym&a, string device = "GPU");
+  static Sym Flatten(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
@@ -62,6 +63,7 @@ class Sym {
   }
   Sym Relu() { return Relu(*this); }
   Sym SoftmaxEntropyLogits() { return SoftmaxEntropyLogits(*this); }
+  Sym Flatten() { return Flatten(*this); };
   //binary operation
   Sym FullyConnected(const Sym& b) { return FullyConnected(*this, b); }
   //ternary operation

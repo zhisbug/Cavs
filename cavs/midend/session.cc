@@ -4,6 +4,7 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/op_util.h"
 
 #include <unordered_map>
 
@@ -40,18 +41,29 @@ OpContext* SessionBase::GetContext(const Node* node) {
   for (auto* output : node->outputs()) {
     const Tensor* t = this->GetTensor(output->scoped_name());
     if (!t) {
-      TensorShape shape(output->shape()); 
-      Allocator* alloc = GetAllocator(op_def); 
-      CHECK_NOTNULL(alloc);
-      LOG(INFO) << "allocating tensor for " << output->scoped_name()
-                << " with shape info: " << shape.DebugInfo();
-      Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
-      LOG(INFO) << out.DebugInfo();
-      this->InsertTensor(out);
+      bool shared_mem = GetSingleArg<bool>(op_def, "ShareMemory", false);
+      if (shared_mem) {
+        //currently, we only support sharing memory
+        //for single-input and single-output operators
+        CHECK(node->inputs_size() == 1); 
+        CHECK(node->outputs_size() == 1); 
+        Tensor out(output->scoped_name(),
+            *GetTensor(node->input(0)->scoped_name()));
+        LOG(INFO) << "Share Memory Tensor" << out.DebugInfo();
+        InsertTensor(out);
+      }else {
+        TensorShape shape(output->shape()); 
+        Allocator* alloc = GetAllocator(op_def); 
+        CHECK_NOTNULL(alloc);
+        LOG(INFO) << "allocating tensor for " << output->scoped_name()
+                  << " with shape info: " << shape.DebugInfo();
+        Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
+        LOG(INFO) << out.DebugInfo();
+        InsertTensor(out);
+      }
     }
-    t = this->GetTensor(output->scoped_name());
-    CHECK_NOTNULL(t);
-    //LOG(INFO) << t->DebugInfo();
+    t = GetTensor(output->scoped_name());
+    CHECK(t) << t->DebugInfo();
     ctxt->AppendOutput(*t);
   }
   return ctxt;

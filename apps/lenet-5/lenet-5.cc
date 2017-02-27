@@ -11,7 +11,7 @@ int main() {
 
   Sym input = Sym::MnistInput(100, "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
   Sym loss = input.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2).
-              FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits();
+              Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits();
   Sym train = loss.Optimizer();
   Sym::DumpGraph();
 
