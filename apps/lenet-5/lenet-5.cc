@@ -6,8 +6,8 @@ int main() {
   Sym bias1 = Sym::Variable(C_FLOAT, {1, 20, 1, 1});
   Sym kernel2 = Sym::Variable(C_FLOAT, {50, 20, 5, 5});
   Sym bias2 = Sym::Variable(C_FLOAT, {1, 50, 1, 1});
-  Sym fc1 = Sym::Variable(C_FLOAT, {800, 500});
-  Sym fc2 = Sym::Variable(C_FLOAT, {500, 10});
+  Sym fc1 = Sym::Variable(C_FLOAT, {500, 800});
+  Sym fc2 = Sym::Variable(C_FLOAT, {10, 500});
 
   Sym input = Sym::MnistInput(100, "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
   Sym loss = input.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2).

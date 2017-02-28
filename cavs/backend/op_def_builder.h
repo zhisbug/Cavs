@@ -24,7 +24,9 @@ class OpDefBuilder {
   OpDefBuilder& Shape(const OpDef& def);
   OpDefBuilder& Attr(const OpDef& def);
   template <typename T>
-  OpDefBuilder& Attr(const std::string& key, T value);
+  OpDefBuilder& AttrSingle(const std::string& key, T value);
+  template <typename T>
+  OpDefBuilder& AttrList(const std::string& key, T value);
   OpDef* Finalize() { return &op_def_; }
   void Finalize(OpDef* op_def); 
 

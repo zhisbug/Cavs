@@ -31,7 +31,7 @@ class SquareOpDecl : public ReductionOpDecl {
         .Input(GetGradientName(op_def_.output(0)))
         .Output(GetGradientName(op_def_.input(0)))
         .Shape(op_def_)
-        .Attr("alpha", 2.f)
+        .AttrSingle("alpha", 2.f)
         .Device(op_def_)
         .Finalize(&assign_def);
       grad->push_back(std::move(assign_def));

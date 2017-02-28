@@ -173,7 +173,8 @@ Sym Sym::Flatten(const Sym& a) {
 
 Sym Sym::Add(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
-  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
   //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
   Sym s("Add", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, device);
@@ -182,7 +183,8 @@ Sym Sym::Add(const Sym& a, const Sym& b, string device) {
 
 Sym Sym::Sub(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
-  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
   Sym s("Sub", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, device);
   return s;
@@ -198,7 +200,8 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
 
 Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
-  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
   Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, device);
   return s;
@@ -208,8 +211,7 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
   CHECK(b.op_name() == "Variable");
   CHECK(c.op_name() == "Variable");
   CHECK(a.node_->type_ == b.node_->type_ &&
-        b.node_->type_ == c.node_->type_)
-    << a.node_->type_ << b.node_->type_ << c.node_->type_;
+        b.node_->type_ == c.node_->type_);
   return Sym("Conv",
       {a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
       a.node_->type_, device);
@@ -218,7 +220,13 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
 Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {
   CHECK(b.op_name() == "Variable");
   CHECK(a.node_->type_ == b.node_->type_);
-  return MatMul(a, b, device);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
+  OpDef::AttrDef attr;
+  attr.set_name("Transpose");
+  attr.mutable_value()->mutable_list()->add_i(1);
+  return Sym("MatMul", {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, device, {}, {attr});
 }
 
 Sym Sym::Optimizer(const Sym& a) {

@@ -54,4 +54,7 @@ class FlattenOpDecl : public ReshapeOpDecl {
   }
 };
 
+REGISTER_OP_DECL_BUILDER("Flatten", FlattenOpDecl);
+REGISTER_OP_DECL_BUILDER("ReshapeLike", ReshapeLikeOpDecl);
+
 } //namespace backend

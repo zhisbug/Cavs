@@ -1,33 +1,9 @@
-#include "cavs/backend/op_decl.h"
+#include "cavs/backend/op_decl_elementwise.h"
 #include "cavs/backend/op_def_builder.h"
 
 using std::vector;
 
 namespace backend {
-
-class UnaryOpDecl : public OpDecl {
- public:
-  explicit UnaryOpDecl(const OpDef& def) : OpDecl(def) {}
-  void ShapeInference(vector<TensorShapeDef>* out_shape,
-    const vector<TensorShapeDef>& inputs) override {
-    CHECK(inputs.size() == 1);
-    out_shape->resize(1);
-    out_shape->at(0).clear_dim();
-    out_shape->at(0) = inputs[0];
-  }
-};
-
-class BinaryOpDecl : public OpDecl {
- public:
-  explicit BinaryOpDecl(const OpDef& def) : OpDecl(def) {}
-  void ShapeInference(vector<TensorShapeDef>* out_shape,
-    const vector<TensorShapeDef>& inputs) override {
-    CHECK(inputs.size() == 2) << inputs.size();
-    out_shape->resize(1);
-    out_shape->at(0).clear_dim();
-    out_shape->at(0) = inputs[0];
-  }
-};
 
 class AssignOpDecl : public UnaryOpDecl {
  public:

@@ -64,9 +64,26 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
   return *this;
 }
 
-#define INSTANTIATE_SETSINGLEARG(T, fieldname)      \
+#define INSTANTIATE_SETATTR(T, fieldname)           \
   template <>                                       \
-  OpDefBuilder& OpDefBuilder::Attr<T>(              \
+  OpDefBuilder& OpDefBuilder::AttrSingle<T>(        \
+      const string& key, T value) {                 \
+    for (auto& attr : *(op_def_.mutable_attr())) {  \
+      if (attr.name() == key) {                     \
+        LOG(WARNING) << "Rewriting " << key;        \
+        attr.mutable_value()->                      \
+          set_##fieldname(value);                   \
+          return *this;                             \
+      }                                             \
+    }                                               \
+    OpDef::AttrDef *attr = op_def_.add_attr();      \
+    attr->set_name(key);                            \
+    attr->mutable_value()->                         \
+      set_##fieldname(value);                       \
+    return *this;                                   \
+  }                                                 \
+  template <>                                       \
+  OpDefBuilder& OpDefBuilder::AttrList<T>(          \
       const string& key, T value) {                 \
     for (auto& attr : *(op_def_.mutable_attr())) {  \
       if (attr.name() == key) {                     \
@@ -82,15 +99,17 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
     return *this;                                   \
   }
 
-INSTANTIATE_SETSINGLEARG(float, f)
-INSTANTIATE_SETSINGLEARG(int, i)
+INSTANTIATE_SETATTR(float, f)
+INSTANTIATE_SETATTR(int, i)
 
 void BuildConstantOpDef(OpDef* op_def, 
     const string& output,
     const TensorShapeDef& shape,
     float val) {
-  OpDefBuilder("ConstOp").Output(output)
-    .Shape(shape).Attr("init", val)
+  OpDefBuilder("ConstOp")
+    .Output(output)
+    .Shape(shape)
+    .AttrSingle("init", val)
     .Device("GPU")
     .Finalize(op_def);
 }

@@ -36,20 +36,20 @@ class ConvOpDecl : public OpDecl{
     //LOG(INFO) << inputs[0].DebugString() << inputs[1].DebugString();
     CHECK(inputs[1].dim(2) == inputs[1].dim(3));//kernel is square
     int pad = GetSingleArg<int>(op_def_, "Pad", 0);
-    int stride = GetSingleArg<int>(op_def_, "Stride", inputs[1].dim(2));
+    int stride = GetSingleArg<int>(op_def_, "Stride", 1);
     int N = inputs[0].dim(0);
     int C = inputs[1].dim(0);
     int H = 1 + (inputs[0].dim(2) + 2*pad -inputs[1].dim(2)) /stride;
     int W = 1 + (inputs[0].dim(3) + 2*pad -inputs[1].dim(3)) /stride;
-    LOG(INFO) << pad << "\t" << stride << "\t"
-              << N << "\t" << C << "\t" << H << "\t" << W;
+    //LOG(INFO) << pad << "\t" << stride << "\t"
+              //<< N << "\t" << C << "\t" << H << "\t" << W;
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
     out_shape->at(0).add_dim(N);
     out_shape->at(0).add_dim(C);
     out_shape->at(0).add_dim(H);
     out_shape->at(0).add_dim(W);
-    LOG(INFO) << out_shape->at(0).DebugString();
+    //LOG(INFO) << out_shape->at(0).DebugString();
   };
 };
 
@@ -73,6 +73,5 @@ class ConvGradOpDecl : public OpDecl{
 
 REGISTER_OP_DECL_BUILDER("Conv", ConvOpDecl);
 REGISTER_OP_DECL_BUILDER("ConvGrad", ConvGradOpDecl);
-
 
 } //namespace backend

@@ -72,5 +72,4 @@ class PoolingGradOpDecl : public OpDecl{
 REGISTER_OP_DECL_BUILDER("Pooling", PoolingOpDecl);
 REGISTER_OP_DECL_BUILDER("PoolingGrad", PoolingGradOpDecl);
 
-
 } //namespace backend
