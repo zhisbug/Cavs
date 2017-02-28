@@ -73,20 +73,22 @@ Sym::Sym(const string& op_name,
 
   if (variables.size()) {
     OpDef::AttrDef* var_attr = op_def.add_attr();
-    var_attr->set_name("vars");
+    var_attr->set_name("Vars");
     OpDef::AttrType::ListValue* str_list
       = var_attr->mutable_value()->mutable_list();
     for (auto& sym : variables)
       str_list->add_s(sym.output(0));
   }
   OpDef::AttrDef* solver_attr = op_def.add_attr();
-  solver_attr->set_name("solver");
+  solver_attr->set_name("Solver");
   solver_attr->mutable_value()->set_s("SGD");
-  OpDef::AttrDef* proj_attr = op_def.add_attr();
-  proj_attr->set_name("projection");
-  proj_attr->mutable_value()->set_s(projection);
+  if (projection.length() > 0) {
+    OpDef::AttrDef* proj_attr = op_def.add_attr();
+    proj_attr->set_name("Projection");
+    proj_attr->mutable_value()->set_s(projection);
+  }
   OpDef::AttrDef* iters_attr = op_def.add_attr();
-  iters_attr->set_name("iters");
+  iters_attr->set_name("Iters");
   iters_attr->mutable_value()->set_i(iters);
 
   string serial_def;
@@ -234,12 +236,12 @@ OpDef::AttrDef Sym::Ones() {
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
-    int iters, const string& projections) {
+    int iters, const string& projection) {
   CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0],
-      variables, iters, projections);
+      variables, iters, projection);
   return s;
 }
 

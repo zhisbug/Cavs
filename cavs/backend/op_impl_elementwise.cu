@@ -29,24 +29,30 @@ __global__ void BinaryScalarKernel(T* out, const T* inp0, const T *inp1, size_t 
 template <typename OP, typename T>
 struct CUDAUnaryFunctor {
   static void Compute(T* out, const T* inp, size_t n) {
-    UnaryKernel<OP, T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
+    checkCudaError(cudaGetLastError());
+    UnaryKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         out, inp, n);
+    checkCudaError(cudaGetLastError());
   }
 };
 
 template <typename OP, typename T>
 struct CUDABinaryFunctor {
   static void Compute(T* out, const T* inp0, const T* inp1, size_t n) {
-    BinaryKernel<OP, T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
+    checkCudaError(cudaGetLastError());
+    BinaryKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         out, inp0, inp1, n);
+    checkCudaError(cudaGetLastError());
   }
 };
 
 template <typename OP, typename T>
 struct CUDABinaryScalarFunctor {
   static void Compute(T* out, const T* inp0, const T* inp1, size_t n) {
-    BinaryKernel<OP, T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
+    checkCudaError(cudaGetLastError());
+    BinaryKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         out, inp0, inp1, n);
+    checkCudaError(cudaGetLastError());
   }
 };
 

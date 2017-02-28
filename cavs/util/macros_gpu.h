@@ -9,6 +9,11 @@
 
 #define checkCudaError(status)                      \
     do {                                            \
+      cudaError_t err = cudaGetLastError();         \
+      if (err != cudaSuccess) {                     \
+        LOG(FATAL) << "Last CUDA failure: "         \
+                   << cudaGetErrorString(err);      \
+      }                                             \
       if (status != cudaSuccess) {                  \
         LOG(FATAL) << "CUDA failure: "              \
                    << cudaGetErrorString(status);   \
@@ -17,6 +22,11 @@
 
 #define checkCublasError(status)                    \
     do {                                            \
+      cudaError_t err = cudaGetLastError();         \
+      if (err != cudaSuccess) {                     \
+        LOG(FATAL) << "Last CUDA failure: "         \
+                   << cudaGetErrorString(err);      \
+      }                                             \
       if (status != CUBLAS_STATUS_SUCCESS) {        \
         LOG(FATAL) << "CUDA failure: "              \
                    << status;                       \
@@ -25,6 +35,11 @@
 
 #define checkCUDNNError(status)                     \
     do {                                            \
+      cudaError_t err = cudaGetLastError();         \
+      if (err != cudaSuccess) {                     \
+        LOG(FATAL) << "Last CUDA failure: "         \
+                   << cudaGetErrorString(err);      \
+      }                                             \
       if (status != CUDNN_STATUS_SUCCESS){          \
         LOG(FATAL) << "CUDNN failure: "             \
                    << cudnnGetErrorString(status);  \

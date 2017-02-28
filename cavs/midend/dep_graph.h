@@ -35,6 +35,7 @@ class DepGraph {
       const std::vector<std::string>& vars,
       const Edge* loss,
       const std::string& solver,
+      const std::string& proj,
       Scope* s);
 };
 

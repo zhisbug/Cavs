@@ -15,7 +15,7 @@ template <typename T>
 struct CUDAFiller {
   static void Compute(T* out, T value, size_t n) {
     /*checkCudaError(cudaMemset(out, 0, n*sizeof(T)));*/
-    FillKernel<T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
+    FillKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         out, value, n);
   }
 };

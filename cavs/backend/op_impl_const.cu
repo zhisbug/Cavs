@@ -28,7 +28,7 @@ class ConstOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     Tensor* out = context->Output(0);
     int n = out->count();
-    ConstKernel<T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>> (
+    ConstKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>> (
         out->mutable_data<T>(), value, n);
   }
 

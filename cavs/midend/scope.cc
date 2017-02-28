@@ -133,8 +133,12 @@ void Scope::PrintSymbolTable() {
 string Scope::DebugInfo() {
   string ret = "\n============================\n";
   ret += "<<<<<<<<< In Scope " + name_ + " <<<<<<<<<\n";
+  int i = 0;
   for (auto* node : nodes_) {
+    ret += "The " + std::to_string(i++)
+          + "th operators:\n";
     ret += node->op_def().DebugString();
+    ret += "\n\n";
   }
   for (auto& child: children_) {
     ret += child.second->DebugInfo();

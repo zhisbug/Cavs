@@ -103,7 +103,7 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
   op_def.ParseFromArray(def, def_length);
   bool var_flag = false;
   for (auto& attr : op_def.attr()) {
-    if (attr.name() == "vars") {
+    if (attr.name() == "Vars") {
       CHECK(attr.value().list().s().size());
       var_flag = true;
     }
@@ -112,7 +112,7 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
     vector<string> var_names;
     c_graph->graph->GroupAllVariables(&var_names);
     OpDef::AttrDef* var_attr = op_def.add_attr();
-    var_attr->set_name("vars");
+    var_attr->set_name("Vars");
     OpDef::AttrType::ListValue* str_list
       = var_attr->mutable_value()->mutable_list();
     for (auto& var: var_names)

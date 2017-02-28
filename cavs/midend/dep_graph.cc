@@ -89,6 +89,7 @@ void DepGraph::GroupClosedSet(
     const vector<string>& vars,
     const Edge* loss,
     const string& solver,
+    const string& proj,
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
   for (auto& var_name : vars) {
@@ -105,6 +106,17 @@ void DepGraph::GroupClosedSet(
         .Device("GPU")
         .Finalize(&update);
     loss_scope->AddNode(update);
+    if (proj.length() > 0) {
+      //LOG(FATAL) << proj;
+      OpDef projection;  
+      ::backend::OpDefBuilder(proj)
+          .Input(var_name)
+          .Output(var_name)
+          .Shape(var->shape())
+          .Device("GPU")
+          .Finalize(&projection);
+      loss_scope->AddNode(projection);
+    }
   }
 }
 
@@ -126,21 +138,21 @@ void DepGraph::OptimizeWithLoss(
   string proj;
   string solver;
   for (auto& attr : def.attr()) {
-    if (attr.name() == "vars") {
+    if (attr.name() == "Vars") {
       auto& vars = attr.value().list().s();
       var_names.resize(vars.size());
       std::copy(vars.begin(), vars.end(), var_names.begin());
-    }else if (attr.name() == "solver") {
+    }else if (attr.name() == "Solver") {
       solver = attr.value().s(); 
-    }else if (attr.name() == "projection") {
+    }else if (attr.name() == "Projection") {
       proj = attr.value().s(); 
-    }else if (attr.name() == "iters") {
+    }else if (attr.name() == "Iters") {
       iters = attr.value().i(); 
     }
   }
   CHECK(var_names.size());
   CHECK(solver.length());
-  CHECK(proj.length());
+  LOG(INFO) << "Projection Method: " << proj;
   CHECK(iters > 0);
   Scope* loss_scope = new Scope(s_, def.output(0));
   Edge* loss_edge = s_->FindEdge(loss);
@@ -150,7 +162,7 @@ void DepGraph::OptimizeWithLoss(
       OpDecl::GetGradientName(loss),
       loss_edge->shape(), 1.f);
   loss_scope->AddNode(const_op);
-  GroupClosedSet(var_names, loss_edge, solver, loss_scope);
+  GroupClosedSet(var_names, loss_edge, solver, proj, loss_scope);
   ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
   //s_->PrintSymbolTable();
 }

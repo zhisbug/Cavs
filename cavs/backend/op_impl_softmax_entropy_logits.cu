@@ -124,7 +124,7 @@ void SoftmaxEntropyLogitsOpCudnnGrad<T>::Compute(OpContext* context) {
                   /*CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,*/
                   /*y.dims(0), y.dims(1), y.dims(2), y.dims(3)));*/
   int n = y.count();
-  SoftmaxEntropyLogitsBackwardKernel<T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>>(
+  SoftmaxEntropyLogitsBackwardKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         dx->mutable_data<T>(), y.data<T>(), label.data<T>(), n, CY);
   checkCudaError(cudaDeviceSynchronize());
 }

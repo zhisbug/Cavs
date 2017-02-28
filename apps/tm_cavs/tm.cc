@@ -32,14 +32,14 @@ int main() {
   Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
 
   Sym loss = Sym::Square(doc_word-(Sym::MatMul(doc_tpc, tpc_word)));
-  Sym step1 = loss.Optimizer({doc_tpc}, 20);
-  Sym step2 = loss.Optimizer({tpc_word}, 20);
-  //Sym::DumpGraph();
+  Sym step1 = loss.Optimizer({doc_tpc}, 20, "Simplex");
+  Sym step2 = loss.Optimizer({tpc_word}, 20, "Simplex");
+  Sym::DumpGraph();
 
   void* doc_word_buf;
   load(&doc_word_buf);
   Session sess;
-  int iters = 100;
+  int iters = 1;
   for (int i = 0; i < iters; i++) {
     sess.Run({step1, step2}, {{doc_word, doc_word_buf}});
   }

@@ -31,7 +31,7 @@ class Sym {
   static Sym Square(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
-      int iters = 1, const string& projections = "proj");
+      int iters = 1, const string& projections = "");
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
   static Sym SoftmaxEntropyLogits(const Sym&a, string device = "GPU");
@@ -55,8 +55,8 @@ class Sym {
   Sym Square() { return Square(*this); }
   Sym Optimizer() { return Optimizer(*this); }
   Sym Optimizer(vector<Sym> variables,
-      int iters = 1, const string& projections = "proj") {
-    return Optimizer(*this, variables); 
+      int iters = 1, const string& projection = "") {
+    return Optimizer(*this, variables, iters, projection); 
   }
   Sym Maxpooling(int HightWindow, int WidthWindow) {
     return Maxpooling(*this, HightWindow, WidthWindow);

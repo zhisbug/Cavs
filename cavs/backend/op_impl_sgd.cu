@@ -29,7 +29,7 @@ class SGDOpImpl : public OpImpl {
     const Tensor& inp1 = context->Input(1);
     Tensor* out = context->Output(0);
     int n = out->count();
-    SGDKernel<T><<<THREADS_PER_BLOCK, BLOCKS_PER_GRID(n)>>> (
+    SGDKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>> (
         out->mutable_data<T>(),
         inp0.data<T>(), inp1.data<T>(), n);
   }
