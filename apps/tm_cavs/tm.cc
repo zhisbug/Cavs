@@ -39,9 +39,10 @@ int main() {
   void* doc_word_buf;
   load(&doc_word_buf);
   Session sess;
-  int iters = 1;
+  int iters = 100;
   for (int i = 0; i < iters; i++) {
-    sess.Run({step1, step2}, {{doc_word, doc_word_buf}});
+    sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
+    loss.print();
   }
 
   return 0;

@@ -34,7 +34,7 @@ ProjectionOpThrust<T>::ProjectionOpThrust(const OpDef& def)
     : OpImpl(def), workspace(NULL), lamda(NULL) {
   alloc_ = GetAllocator(DeviceTypeToString(GPU));
   if (!lamda)
-    lamda = alloc_->Allocate<T>(sizeof(T));
+    lamda = alloc_->Allocate<T>(1);
 }
 
 template <typename T>
