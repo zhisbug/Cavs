@@ -7,7 +7,7 @@ namespace backend {
 class PlaceholderOpDecl : public OpDecl {
  public:
   PlaceholderOpDecl(const OpDef& def) : OpDecl(def) {};
-  void MakeGradient(vector<OpDef>* grad) override {}
+  //void MakeGradient(vector<OpDef>* grad) override {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override;
 };

@@ -65,7 +65,7 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
           ::backend::MakeGradient(node->op_def()); 
         for (auto& grad : grads) {
           if (std::find(grad.output().begin(), grad.output().end(),
-               OpDecl::GetGradientName(curr->name())) == grad.output().end())
+               GetGradientName(curr->name())) == grad.output().end())
             continue;
           Node* grad_node = loss_scope->AddNode(grad);
           vector<TensorShapeDef> inputs;
@@ -100,7 +100,7 @@ void DepGraph::GroupClosedSet(
     OpDef update;  
     ::backend::OpDefBuilder(solver)
         .Input(var_name)
-        .Input(OpDecl::GetGradientName(var_name))
+        .Input(GetGradientName(var_name))
         .Output(var_name)
         .Shape(var->shape())
         .Device("GPU")
@@ -159,7 +159,7 @@ void DepGraph::OptimizeWithLoss(
   CHECK(loss_edge);
   OpDef const_op;
   BuildConstantOpDef(&const_op, 
-      OpDecl::GetGradientName(loss),
+      GetGradientName(loss),
       loss_edge->shape(), 1.f);
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, proj, loss_scope);

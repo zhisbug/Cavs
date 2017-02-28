@@ -1,5 +1,4 @@
 #include "cavs/backend/op_decl_elementwise.h"
-#include "cavs/backend/op_def_builder.h"
 
 using std::vector;
 

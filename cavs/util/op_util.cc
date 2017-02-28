@@ -4,6 +4,16 @@
 using std::string;
 using std::vector;
 
+string GetGradientName(const string& op) {
+  return op+"_grad";
+}
+
+string GetOriginName(const string& op) {
+  CHECK(op.length() > 5);
+  CHECK(op.substr(op.length()-5, 5) == "_grad");
+  return op.substr(0, op.length()-5);
+}
+
 #define INSTANTIATE_GETSINGLEARG(T, fieldname)      \
   template<>                                        \
   T GetSingleArg<T>(const OpDef& op_def,            \

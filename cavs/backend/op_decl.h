@@ -12,17 +12,13 @@ namespace backend {
 class OpDecl {
  public:
   explicit OpDecl(const OpDef& def) : op_def_(def) {};
-  virtual void MakeGradient(std::vector<OpDef>* grad) = 0;
+  virtual void MakeGradient(std::vector<OpDef>* grad) {
+    LOG(FATAL) << "Not Implemented";
+  }
   virtual void ShapeInference(
     std::vector<TensorShapeDef>* out_shape,
-    const std::vector<TensorShapeDef>& inputs) = 0;
-  inline static std::string GetGradientName(const std::string& op) {
-    return op+"_grad";
-  }
-  inline static std::string GetOriginName(const std::string& op) {
-    CHECK(op.length() > 5);
-    CHECK(op.substr(op.length()-5, 5) == "_grad");
-    return op.substr(0, op.length()-5);
+    const std::vector<TensorShapeDef>& inputs) {
+    LOG(FATAL) << "Not Implemented";
   }
 
  protected:
