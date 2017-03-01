@@ -12,22 +12,26 @@ class MatMulOpDecl : public OpDecl {
     grad->clear();
     CHECK(op_def_.input_size() == 2);
     CHECK(op_def_.output_size() == 1);
-    OpDef mul_def_0;
-    OpDefBuilder("MatMul")
-      .Input(GetGradientName(op_def_.output(0)))
-      .Input(op_def_.input(1))
-      .Output(GetGradientName(op_def_.input(0)))
-      .Device(op_def_)
-      .AttrList("Transpose", 1)
-      .Finalize(&mul_def_0);
-    grad->push_back(std::move(mul_def_0));
+    {
+      OpDef mul_def_0;
+      OpDefBuilder("MatMul")
+        .Input(GetGradientName(op_def_.output(0)))
+        .Input(op_def_.input(1))
+        .Output(GetGradientName(op_def_.input(0)))
+        .Device(op_def_)
+        //.AttrList("Transpose", 1)
+        .AttrList("Transpose", TransMask({false, true}))
+        .Finalize(&mul_def_0);
+      grad->push_back(std::move(mul_def_0));
+    }
     OpDef mul_def_1;
     OpDefBuilder("MatMul")
       .Input(op_def_.input(0))
       .Input(GetGradientName(op_def_.output(0)))
       .Output(GetGradientName(op_def_.input(1)))
       .Device(op_def_)
-      .AttrList("Transpose", 0)
+      //.AttrList("Transpose", 0)
+      .AttrList("Transpose", TransMask({true, false}))
       .Finalize(&mul_def_1);
     grad->push_back(std::move(mul_def_1));
   }
@@ -38,7 +42,7 @@ class MatMulOpDecl : public OpDecl {
     CHECK(inputs[1].dim_size() == 2);
     bool TransA = false;
     bool TransB = false;
-    //LOG(INFO) << op_def_.DebugString();
+    LOG(INFO) << op_def_.DebugString();
     for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
       if (t == 0) TransA = true;
       if (t == 1) TransB = true;
@@ -52,6 +56,19 @@ class MatMulOpDecl : public OpDecl {
     out_shape->at(0).clear_dim();
     out_shape->at(0).add_dim(MA);
     out_shape->at(0).add_dim(NB);
+  }
+
+ private:
+  vector<int> TransMask(const vector<bool>& trans) {
+    vector<int> input = GetListArg<int>(op_def_, "Transpose");
+    vector<int> output;
+    for (unsigned i = 0; i < trans.size(); i++) {
+      bool trans_input =
+        std::find(input.begin(), input.end(), i) != input.end();
+      if (trans_input ^ trans[i])
+        output.push_back(i);
+    }
+    return output;
   }
 };
 

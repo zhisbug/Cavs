@@ -5,6 +5,7 @@
 #include "cavs/util/macros.h"
 
 #include <string>
+#include <vector>
 
 namespace backend {
 
@@ -27,6 +28,8 @@ class OpDefBuilder {
   OpDefBuilder& AttrSingle(const std::string& key, T value);
   template <typename T>
   OpDefBuilder& AttrList(const std::string& key, T value);
+  template <typename T>
+  OpDefBuilder& AttrList(const std::string& key, const std::vector<T> value);
   OpDef* Finalize() { return &op_def_; }
   void Finalize(OpDef* op_def); 
 

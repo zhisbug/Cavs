@@ -2,6 +2,7 @@
 #include "cavs/util/logging.h"
 
 using std::string;
+using std::vector;
 using std::initializer_list;
 
 namespace backend {
@@ -96,6 +97,26 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
     attr->set_name(key);                            \
     attr->mutable_value()->                         \
       mutable_list()->add_##fieldname(value);       \
+    return *this;                                   \
+  }                                                 \
+  template <>                                       \
+  OpDefBuilder& OpDefBuilder::AttrList<T>(          \
+      const string& key, const vector<T> value) {   \
+    for (auto& attr : *(op_def_.mutable_attr())) {  \
+      if (attr.name() == key) {                     \
+        auto* l = attr.mutable_value()->            \
+          mutable_list();                           \
+        for (auto& t : value)                       \
+          l->add_##fieldname(t);                    \
+        return *this;                               \
+      }                                             \
+    }                                               \
+    OpDef::AttrDef *attr = op_def_.add_attr();      \
+    attr->set_name(key);                            \
+    auto* l = attr->mutable_value()->               \
+      mutable_list();                               \
+    for (auto& t : value)                           \
+      l->add_##fieldname(t);                        \
     return *this;                                   \
   }
 
