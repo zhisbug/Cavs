@@ -37,6 +37,10 @@ class DepGraph {
       const std::string& solver,
       const std::string& proj,
       Scope* s);
+  void DeduceAndApplyOneGradNode(
+      Scope*s,
+      const Node* node,
+      const std::string& edge);
 };
 
 } //namespace midend 

@@ -65,6 +65,11 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
   return *this;
 }
 
+OpDefBuilder& OpDefBuilder::Attr(const OpDef& def) {
+  *(op_def_.mutable_attr()) = def.attr();
+  return *this;
+}
+
 #define INSTANTIATE_SETATTR(T, fieldname)           \
   template <>                                       \
   OpDefBuilder& OpDefBuilder::AttrSingle<T>(        \

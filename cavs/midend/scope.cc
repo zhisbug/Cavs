@@ -41,9 +41,21 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
   }
 }
 
+//if node exists: return NULL;
+//otherwise: return new allocated node;
 Node* Scope::AddNode(const OpDef& op_def) {
+  size_t hash_code = GetHash(op_def);
+  if (hash_nodes_.find(hash_code) != hash_nodes_.end()) {
+    LOG(WARNING) << "Duplicated node in current scope"
+                 << op_def.DebugString();
+    return NULL;
+  }else {
+    hash_nodes_.insert(hash_code);
+  }
+
   SingleNode* node = new SingleNode(op_def, this);
-  //LOG(INFO) << "Adding node" << node->DebugInfo();
+  //LOG(INFO) << "Adding node \t" << node->DebugInfo()
+            //<< "\nTo Scope " << name();
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
@@ -94,7 +106,8 @@ Node* Scope::AddNode(const OpDef& op_def) {
   //PrintSymbolTable();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
-    CHECK(in_edge) << "name: " << input;
+    CHECK(in_edge) << "name: " << input
+      << DebugInfo();
     //LOG(INFO) << in_edge->name()
               //<< "???\t"
               //<< in_edge->scope()->name()

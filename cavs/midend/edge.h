@@ -39,10 +39,7 @@ class Edge {
   inline const TensorShapeDef& shape() const {
     return tensor_shape_; 
   }
-  inline void AddSource(Node* node) {
-    CHECK(stateful_ || srcs_.empty());
-    srcs_.push_back(node); 
-  }
+  void AddSource(Node* node);
   void AddDst(Node* node);
   inline void RemoveDst(Node* node) {
     std::remove(dsts_.begin(), dsts_.end(), node); 

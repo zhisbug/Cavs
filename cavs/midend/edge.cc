@@ -15,11 +15,18 @@ void Edge::AddDst(Node* node) {
   dsts_.push_back(node); 
 }
 
+void Edge::AddSource(Node* node) {
+  CHECK(stateful_ || srcs_.empty())
+    << node->DebugInfo()
+    << DebugInfo();
+  srcs_.push_back(node); 
+}
+
 string Edge::DebugInfo() const {
   return "\nname:\t" + name() + 
          "\nshape:\t" + shape().DebugString() + 
-         "\nscope:\t" + s_->name() +
-         "srcs_size:\t" + std::to_string(srcs_size()) + 
+         "scope:\t" + s_->name() +
+         "\tsrcs_size:\t" + std::to_string(srcs_size()) + 
          "\ndsts_size:\t" + std::to_string(dsts_size());
 }
 

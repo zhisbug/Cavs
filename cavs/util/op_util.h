@@ -15,3 +15,5 @@ std::vector<T> GetListArg(const OpDef& op_def, const std::string& key);
 std::string GetGradientName(const std::string& op);
 
 std::string GetOriginName(const std::string& op);
+
+size_t GetHash(const OpDef& op_def);

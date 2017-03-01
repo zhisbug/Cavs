@@ -10,17 +10,23 @@ class PoolingOpDecl : public OpDecl{
  public:
   PoolingOpDecl(const OpDef& def) : OpDecl(def) {};
   void MakeGradient(vector<OpDef>* grad) override {
-    grad->clear();
-    CHECK(op_def_.input_size() == 3);
-    CHECK(op_def_.output_size() == 1);
-    OpDef ConvGrad;
+    CHECK(grad->size() == 0);
+    CHECK(op_def_.input_size() == 1)
+      << op_def_.DebugString();
+    CHECK(op_def_.output_size() == 1)
+      << op_def_.DebugString();
+    OpDef conv_grad;
     OpDefBuilder("PoolingGrad")
-      .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.output(0))
+      .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
       .Output(GetGradientName(op_def_.input(0)))
       .Device(op_def_)
-      .Finalize(&ConvGrad);
+      .Attr(op_def_)
+      .Finalize(&conv_grad);
+    //LOG(INFO) << op_def_.DebugString();
+    //LOG(INFO) << conv_grad.DebugString();
+    grad->push_back(std::move(conv_grad));
   }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {

@@ -37,6 +37,7 @@ class Scope {
   std::vector<Node*> nodes_;
   std::unordered_map<std::string, Edge*> in_edges_;
   std::unordered_map<std::string, Edge*> out_edges_;
+  std::set<size_t> hash_nodes_;
 };
 
 Scope* GetGlobalScope();

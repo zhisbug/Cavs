@@ -10,19 +10,22 @@ class ConvOpDecl : public OpDecl{
  public:
   ConvOpDecl(const OpDef& def) : OpDecl(def) {};
   void MakeGradient(vector<OpDef>* grad) override {
-    grad->clear();
+    CHECK_NOTNULL(grad);
+    CHECK(grad->size() == 0);
     CHECK(op_def_.input_size() == 3);
     CHECK(op_def_.output_size() == 1);
-    OpDef ConvGrad;
+    OpDef conv_grad;
     OpDefBuilder("ConvGrad")
       .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
       .Input(op_def_.input(1))
+      .Input(op_def_.input(2))
       .Output(GetGradientName(op_def_.input(1)))
       .Output(GetGradientName(op_def_.input(2)))
       .Output(GetGradientName(op_def_.input(0)))
       .Device(op_def_)
-      .Finalize(&ConvGrad);
+      .Finalize(&conv_grad);
+    grad->push_back(std::move(conv_grad));
   }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
@@ -62,8 +65,10 @@ class ConvGradOpDecl : public OpDecl{
     CHECK(inputs.size() == 4);
     CHECK(inputs[0].dim_size() == 4);
     CHECK(inputs[1].dim_size() == 4);
-    CHECK(inputs[0].dim(1) == inputs[1].dim(1))
-      << "Channels Must Match";
+    CHECK(inputs[0].dim(1) == inputs[2].dim(0))
+      << inputs[0].DebugString() << inputs[2].DebugString();
+    CHECK(inputs[1].dim(1) == inputs[2].dim(1))
+      << inputs[1].DebugString() << inputs[2].DebugString();
     out_shape->resize(3);
     out_shape->at(0) = inputs[2];
     out_shape->at(1) = inputs[3];

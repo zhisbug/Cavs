@@ -39,12 +39,17 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
   CHECK(curr->srcs_size() == 1) << curr->DebugInfo();
   LOG_IF(INFO, curr->dsts_size() > 1) << curr->DebugInfo();
   //LOG(INFO) << curr->DebugInfo();
-  //for (int i = 0; i < curr->dsts_size(); i++) {
-    //LOG(INFO) << curr->dst(i)->DebugInfo();
-  //}
-  if (curr == loss ||
-      (fwd_path->find(curr->dst(0)) != fwd_path->end() &&
-        (*fwd_path)[curr->dst(0)])) {
+  if (curr == loss) {
+    for (auto* node : *newly_traversed) {
+      loss_scope->AddNode(node->op_def());
+    }
+    newly_traversed->clear();
+    return true;
+  }
+  const Node* node = curr->dst(0);
+  CHECK(node);
+  if (fwd_path->find(node) != fwd_path->end() && (*fwd_path)[node]) {
+    DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
     for (auto* node : *newly_traversed) {
       loss_scope->AddNode(node->op_def());
     }
@@ -52,7 +57,6 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
     return true;
   }
   //CHECK(curr->dsts_size() == 1) << curr->dsts_size();
-  const Node* node = curr->dst(0);
   if (fwd_path->find(node) == fwd_path->end() ||
       !(*fwd_path)[node]) {
     (*fwd_path)[node] = false;
@@ -63,26 +67,61 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
             fwd_path, newly_traversed)) {
         const vector<OpDef>& grads = 
           ::backend::MakeGradient(node->op_def()); 
-        for (auto& grad : grads) {
-          if (std::find(grad.output().begin(), grad.output().end(),
-               GetGradientName(curr->name())) == grad.output().end())
-            continue;
-          Node* grad_node = loss_scope->AddNode(grad);
-          vector<TensorShapeDef> inputs;
-          //LOG(INFO) << grad.DebugString();
-          grad_node->InputShapes(&inputs);
-          const vector<TensorShapeDef>& shapes = 
-            ::backend::ShapeInference(grad, inputs);
-          grad_node->SetShape(shapes);
-          in_path = true;
-          (*fwd_path)[node] = true; 
-        }
+        CHECK(grads.size()) << node->op_def().DebugString();
+        //for (auto& grad : grads) {
+          //if (std::find(grad.output().begin(), grad.output().end(),
+               //GetGradientName(curr->name())) == grad.output().end()) {
+            //continue;
+          //}
+          //Node* grad_node = loss_scope->AddNode(grad);
+          //vector<TensorShapeDef> inputs;
+          ////LOG(INFO) << grad.DebugString();
+          //grad_node->InputShapes(&inputs);
+          //const vector<TensorShapeDef>& shapes = 
+            //::backend::ShapeInference(grad, inputs);
+          //grad_node->SetShape(shapes);
+        //}
+        DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
+        in_path = true;
+        (*fwd_path)[node] = true; 
       }
     }
-    if (!in_path)
+    if (!in_path) {
+      CHECK(newly_traversed->size() > 0);
       newly_traversed->pop_back();
+    }
   }
   return (*fwd_path)[node];
+}
+
+void DepGraph::DeduceAndApplyOneGradNode(
+    Scope* s,
+    const Node* node,
+    const string& edge) {
+  const vector<OpDef>& grads = 
+    ::backend::MakeGradient(node->op_def()); 
+  CHECK(grads.size()) << node->op_def().DebugString();
+  bool exist = false;
+  for (auto& grad : grads) {
+    if (std::find(grad.output().begin(), grad.output().end(),
+         GetGradientName(edge)) == grad.output().end()) {
+      continue;
+    }
+    CHECK(!exist) << "Two grad possible?"
+                  << node->op_def().DebugString()
+                  << grad.DebugString();
+    Node* grad_node = s->AddNode(grad);
+    if (grad_node) {
+      vector<TensorShapeDef> inputs;
+      grad_node->InputShapes(&inputs);
+      const vector<TensorShapeDef>& shapes = 
+        ::backend::ShapeInference(grad, inputs);
+      grad_node->SetShape(shapes);
+    }
+    exist = true;
+  }
+  CHECK(exist) << "No gradient wrt the edge name";
+  return;
 }
 
 void DepGraph::GroupClosedSet(
@@ -93,6 +132,7 @@ void DepGraph::GroupClosedSet(
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
   for (auto& var_name : vars) {
+    LOG(INFO) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
     list<const Node*> newly_traversed;
     TraverseCriticalPath(loss_scope, loss, var,
@@ -152,7 +192,7 @@ void DepGraph::OptimizeWithLoss(
   }
   CHECK(var_names.size());
   CHECK(solver.length());
-  LOG(INFO) << "Projection Method: " << proj;
+  //LOG(INFO) << "Projection Method: " << proj;
   CHECK(iters > 0);
   Scope* loss_scope = new Scope(s_, def.output(0));
   Edge* loss_edge = s_->FindEdge(loss);

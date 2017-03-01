@@ -1,6 +1,8 @@
 #include "cavs/util/op_util.h"
 #include "cavs/util/logging.h"
 
+#include <functional>
+
 using std::string;
 using std::vector;
 
@@ -12,6 +14,16 @@ string GetOriginName(const string& op) {
   CHECK(op.length() > 5);
   CHECK(op.substr(op.length()-5, 5) == "_grad");
   return op.substr(0, op.length()-5);
+}
+
+size_t GetHash(const OpDef& op_def) {
+  std::hash<string> hash_fn;
+  string s;
+  for (auto& input : op_def.input())
+    s += input;
+  for (auto& output : op_def.output())
+    s+= output;
+  return hash_fn(s);
 }
 
 #define INSTANTIATE_GETSINGLEARG(T, fieldname)      \
