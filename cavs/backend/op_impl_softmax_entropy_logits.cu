@@ -44,19 +44,16 @@ template <typename T>
 void SoftmaxEntropyLogitsOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
-  int XN = x.dims(0);
-  int XC = x.dims(1);
-  int XH = x.dims(2);
-  int XW = x.dims(3);
-  int YN = y->dims(0);
-  int YC = y->dims(1);
-  int YH = y->dims(2);
-  int YW = y->dims(3);
+  CHECK(x.dims() == y->dims());
+  CHECK(x.dims() == 2);
+  CHECK(x.dims(0) == y->dims(0));
+  CHECK(x.dims(1) == y->dims(1));
 
-  CHECK(XN == YN);
-  CHECK(XC == YC);
-  CHECK(XH == YH);
-  CHECK(XW == YW);
+  int XN, YN, XC, YC, XH, YH, XW, YW;
+  XN = YN = x.dims(0);
+  XC = YC = x.dims(1);
+  XH = YH = 1;
+  XW = YW = 1;
 
   float alpha = 1.f, beta = 0.f;
   checkCUDNNError(cudnnSetTensor4dDescriptor(x_desc_,
@@ -101,33 +98,31 @@ void SoftmaxEntropyLogitsOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& label = context->Input(1);
   Tensor* dx = context->Output(0);
 
+  CHECK(dx->dims() == y.dims());
+  CHECK(dx->dims() == label.dims());
+  CHECK(dx->dims() == 2);
+  CHECK(dx->dims(0) == y.dims(0));
+  CHECK(dx->dims(1) == y.dims(1));
+
   int NY = y.dims(0);
   int CY = y.dims(1);
   int NLabel = label.dims(0);
   int CLabel = label.dims(1);
   int NX = dx->dims(0);
   int CX = dx->dims(1);
-  CHECK(NY == NX == NLabel);
-  CHECK(CY == CX);
   CHECK(CLabel == 1);
-  CHECK(y.dims(2) == y.dims(3) == label.dims(2) == label.dims(3)
-        == dx->dims(2) == dx->dims(3) == 1);
+  //I don't know why cudnn has this bug(in NdTensor support)...
 
-  /*float alpha = 1.f, beta = 0.f;*/
-  /*checkCUDNNError(cudnnSetTensor4dDescriptor(x_desc_,*/
-                  /*CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,*/
-                  /*x.dims(0), x.dims(1), x.dims(2), x.dims(3)));*/
-  /*checkCUDNNError(cudnnSetTensor4dDescriptor(label_desc_,*/
-                  /*CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,*/
-                  /*label.dims(0), label.dims(1), label.dims(2), label.dims(3)));*/
-  /*checkCUDNNError(cudnnSetTensor4dDescriptor(y_desc_,*/
-                  /*CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,*/
-                  /*y.dims(0), y.dims(1), y.dims(2), y.dims(3)));*/
   int n = y.count();
   SoftmaxEntropyLogitsBackwardKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         dx->mutable_data<T>(), y.data<T>(), label.data<T>(), n, CY);
   checkCudaError(cudaDeviceSynchronize());
 }
+
+REGISTER_OP_IMPL_BUILDER(Key("SoftmaxEntropyLogits").Device("GPU"),
+    SoftmaxEntropyLogitsOpCudnn<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("SoftmaxEntropyLogits")).Device("GPU"),
+    SoftmaxEntropyLogitsOpCudnnGrad<float>);
 
 } //namespace backend
 

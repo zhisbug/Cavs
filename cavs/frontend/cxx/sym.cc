@@ -103,16 +103,41 @@ Sym Sym::Variable(C_Dtype type, vector<int> shape,
   return Sym("Variable", {}, type, device, shape, {attr});
 }
 
-Sym Sym::Placeholder(C_Dtype type, vector<int> shape, string device) {
+Sym Sym::Placeholder(C_Dtype type, vector<int> shape,
+    string device) {
   CHECK(shape.size() > 0);
   return Sym("Placeholder", {}, type, device, shape);
 }
 
-Sym Sym::MnistInput(int batch, string file, string device) {
-  OpDef::AttrDef attr;
-  attr.set_name("Batch");
-  attr.mutable_value()->set_i(batch);
-  return Sym("MnistInput", {}, C_FLOAT, device, {}, {attr}); 
+Sym Sym::MnistInput(int batch, string source, string file, string device) {
+  OpDef::AttrDef batch_attr;
+  batch_attr.set_name("Batch");
+  batch_attr.mutable_value()->set_i(batch);
+  OpDef::AttrDef source_attr;
+  source_attr.set_name("Source");
+  source_attr.mutable_value()->set_s(source);
+  OpDef::AttrDef file_attr;
+  file_attr.set_name("ImageDir");
+  file_attr.mutable_value()->set_s(file);
+  return Sym("MnistInput", {}, C_FLOAT, device, {},
+      {batch_attr, source_attr, file_attr}); 
+}
+
+Sym Sym::Data(C_Dtype type, vector<int> shape,
+    int batch, void* data, string device) {
+  OpDef::AttrDef batch_attr;
+  batch_attr.set_name("Batch");
+  batch_attr.mutable_value()->set_i(batch);
+  OpDef::AttrDef data_attr;
+  data_attr.set_name("DataPtr");
+  data_attr.mutable_value()->set_i(reinterpret_cast<intptr_t>(data));
+  return Sym("Data", {}, C_FLOAT, device, {}, {batch_attr, data_attr});
+}
+
+Sym Sym::DDV(C_Dtype type, vector<int> shape,
+    const Sym& data, string device) {
+  return Sym("DDV", {data.node_->output_[0]},
+      type, device);
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
@@ -158,8 +183,9 @@ Sym Sym::Relu(const Sym&a, string device) {
   return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, device);
 }
 
-Sym Sym::SoftmaxEntropyLogits(const Sym&a, string device) {
-  return Sym("SoftmaxEntropyLogits", { a.node_->output_[0] },
+Sym Sym::SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device) {
+  return Sym("SoftmaxEntropyLogits",
+      { a.node_->output_[0], b.node_->output_[0] },
         a.node_->type_, device);
 }
 

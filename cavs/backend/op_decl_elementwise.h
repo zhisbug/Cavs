@@ -9,7 +9,7 @@ class UnaryOpDecl : public OpDecl {
   explicit UnaryOpDecl(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(std::vector<TensorShapeDef>* out_shape,
     const std::vector<TensorShapeDef>& inputs) override {
-    CHECK(inputs.size() == 1);
+    CHECK(inputs.size() == 1) << op_def_.DebugString();
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
     out_shape->at(0) = inputs[0];
@@ -37,6 +37,27 @@ class BinaryOpDecl : public OpDecl {
   void ShapeInference(std::vector<TensorShapeDef>* out_shape,
     const std::vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2) << inputs.size();
+    CHECK(inputs[0].dim_size() == inputs[1].dim_size());
+    for (unsigned i = 0; i < inputs[0].dim_size(); i++)
+      CHECK(inputs[0].dim(i) == inputs[1].dim(i));
+    out_shape->resize(1);
+    out_shape->at(0).clear_dim();
+    out_shape->at(0) = inputs[0];
+  }
+};
+
+class TernaryOpDecl : public OpDecl {
+ public:
+  explicit TernaryOpDecl(const OpDef& def) : OpDecl(def) {}
+  void ShapeInference(std::vector<TensorShapeDef>* out_shape,
+    const std::vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 3) << inputs.size();
+    CHECK(inputs[0].dim_size() == inputs[1].dim_size());
+    CHECK(inputs[1].dim_size() == inputs[2].dim_size());
+    for (unsigned i = 0; i < inputs[0].dim_size(); i++) {
+      CHECK(inputs[0].dim(i) == inputs[1].dim(i));
+      CHECK(inputs[1].dim(i) == inputs[2].dim(i));
+    }
     out_shape->resize(1);
     out_shape->at(0).clear_dim();
     out_shape->at(0) = inputs[0];

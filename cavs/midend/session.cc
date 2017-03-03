@@ -49,6 +49,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
         CHECK(node->outputs_size() == 1); 
         Tensor out(output->scoped_name(),
             *GetTensor(node->input(0)->scoped_name()));
+        out.Reshape(output->shape());
         LOG(INFO) << "Share Memory Tensor" << out.DebugInfo();
         InsertTensor(out);
       }else {
@@ -175,13 +176,7 @@ void SimpleSession::Run(const vector<string>& output_names,
   }
   LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
-  //for (auto& one_pair : executors_) {
-    //OpImpl* op = one_pair.first;
-    //OpContext* context = one_pair.second;
-    //op->Compute(context);
-  //}
   LOG(INFO) << "Executing...";
-  int i = 0;
   for (auto* exe : executors_) {
     exe->Run();
   }

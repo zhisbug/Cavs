@@ -16,7 +16,7 @@ class PoolingOpDecl : public OpDecl{
     CHECK(op_def_.output_size() == 1)
       << op_def_.DebugString();
     OpDef conv_grad;
-    OpDefBuilder("PoolingGrad")
+    OpDefBuilder(GetGradientName("Pooling"))
       .Input(op_def_.output(0))
       .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
@@ -76,6 +76,6 @@ class PoolingGradOpDecl : public OpDecl{
 };
 
 REGISTER_OP_DECL_BUILDER("Pooling", PoolingOpDecl);
-REGISTER_OP_DECL_BUILDER("PoolingGrad", PoolingGradOpDecl);
+REGISTER_OP_DECL_BUILDER(GetGradientName("Pooling"), PoolingGradOpDecl);
 
 } //namespace backend

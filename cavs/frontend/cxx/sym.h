@@ -25,7 +25,9 @@ class Sym {
       const OpDef::AttrDef& attr = Ones(), string device = "GPU");
   static Sym Placeholder(C_Dtype type, std::vector<int> shape,
       string device = "GPU");
-  static Sym MnistInput(int batch, string file, string device = "GPU");
+  static Sym MnistInput(int batch, string source, string file, string device = "GPU");
+  static Sym Data(C_Dtype type, std::vector<int> shape, int batch, void* data, string device = "GPU");
+  static Sym DDV(C_Dtype type, std::vector<int> shape, const Sym& data, string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
   static Sym Square(const Sym& a, string device = "GPU");
@@ -34,7 +36,6 @@ class Sym {
       int iters = 1, const string& projections = "");
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
-  static Sym SoftmaxEntropyLogits(const Sym&a, string device = "GPU");
   static Sym Flatten(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
@@ -42,6 +43,7 @@ class Sym {
   static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym MatMul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym FullyConnected(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device = "GPU");
   //ternary operation
   static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
   //filler operation
@@ -62,10 +64,10 @@ class Sym {
     return Maxpooling(*this, HightWindow, WidthWindow);
   }
   Sym Relu() { return Relu(*this); }
-  Sym SoftmaxEntropyLogits() { return SoftmaxEntropyLogits(*this); }
   Sym Flatten() { return Flatten(*this); };
   //binary operation
   Sym FullyConnected(const Sym& b) { return FullyConnected(*this, b); }
+  Sym SoftmaxEntropyLogits(const Sym& b) { return SoftmaxEntropyLogits(*this, b); }
   //ternary operation
   Sym Conv(const Sym& b, const Sym& c) { return Conv(*this, b, c); }
   ////////////////////////////////////////////////
@@ -97,7 +99,7 @@ class Sym {
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
       const int iters = 1,
-      const string& projections = "proj");
+      const string& projections = "");
   inline const std::vector<string>& outputs() const { 
     return node_->output_;
   }

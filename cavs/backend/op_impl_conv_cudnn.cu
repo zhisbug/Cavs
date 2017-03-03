@@ -101,7 +101,7 @@ void ConvOpCudnn<T>::Compute(OpContext* context) {
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
                   YN, YC, YH, YW));
   checkCUDNNError(cudnnSetFilter4dDescriptor(filter_desc_,
-                  DataTypeToCudnnType<T>::value, 
+                  DataTypeToCudnnType<T>::value, CUDNN_TENSOR_NCHW, 
                   FYC, FXC, FH, FW));
   checkCUDNNError(cudnnSetConvolution2dDescriptor(conv_desc_,
                   0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION));
@@ -191,7 +191,7 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
                   YN, YC, YH, YW));
   checkCUDNNError(cudnnSetFilter4dDescriptor(filter_desc_,
-                  DataTypeToCudnnType<T>::value, 
+                  DataTypeToCudnnType<T>::value, CUDNN_TENSOR_NCHW, 
                   FYC, FXC, FH, FW));
   checkCUDNNError(cudnnSetConvolution2dDescriptor(conv_desc_,
                   0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION));
@@ -229,5 +229,8 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
                   &alpha, y_desc_, dy.data<T>(),
                   &beta, bias_desc_, db->mutable_data<T>()));
 }
+
+REGISTER_OP_IMPL_BUILDER(Key("Conv").Device("GPU"), ConvOpCudnn<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Conv")).Device("GPU"), ConvOpCudnnGrad<float>);
 
 } //namespace backend

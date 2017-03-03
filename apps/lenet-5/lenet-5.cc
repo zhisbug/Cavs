@@ -9,9 +9,10 @@ int main() {
   Sym fc1 = Sym::Variable(C_FLOAT, {500, 800});
   Sym fc2 = Sym::Variable(C_FLOAT, {10, 500});
 
-  Sym input = Sym::MnistInput(100, "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
-  Sym loss = input.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2).
-              Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits();
+  Sym image = Sym::MnistInput(100, "Image", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
+  Sym label = Sym::MnistInput(100, "Label", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
+  Sym loss = image.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2).
+              Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits(label);
   Sym train = loss.Optimizer();
   Sym::DumpGraph();
 

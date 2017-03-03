@@ -10,8 +10,15 @@ namespace midend {
 class OpContext {
  public:
   //OpContext();
-  inline const Tensor& Input(int idx) const { return inputs_.at(idx); }
-  inline Tensor* Output(int idx) { return &(outputs_.at(idx)); }
+  inline const Tensor& Input(int idx) const {
+    CHECK(idx < inputs_.size())
+      << idx << "\t" << inputs_.size();
+    return inputs_.at(idx); 
+  }
+  inline Tensor* Output(int idx) { 
+    CHECK(idx < outputs_.size());
+    return &(outputs_.at(idx)); 
+  }
   inline void AppendInput(const Tensor& t) { inputs_.push_back(t); }
   inline void AppendOutput(const Tensor& t) { outputs_.push_back(t); }
  private:

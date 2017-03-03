@@ -5,6 +5,8 @@
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/cudnn_types.h"
 
+using std::vector;
+
 namespace backend {
 
 using ::midend::Tensor;
@@ -47,19 +49,16 @@ template <typename T>
 void ActivationOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
-  int XN = x.dims(0);
-  int XC = x.dims(1);
-  int XH = x.dims(2);
-  int XW = x.dims(3);
-  int YN = y->dims(0);
-  int YC = y->dims(1);
-  int YH = y->dims(2);
-  int YW = y->dims(3);
+  CHECK(x.dims() == y->dims());
+  CHECK(x.dims() < 5);
+  CHECK(x.dims() > 1);
 
-  CHECK(XN == YN);
-  CHECK(XC == YC);
-  CHECK(XH == YH);
-  CHECK(XW == YW);
+  //I don't know why cudnn has this bug(in NdTensor support)...
+  int XN, YN, XC, YC, XH, YH, XW, YW;
+  XN = YN = x.dims(0);
+  XC = YC = x.dims(1);
+  XH = YH = x.dims() > 2? x.dims(2) : 1;
+  XW = YW = x.dims() > 3? x.dims(3) : 1;
 
   float alpha = 1.f, beta = 0.f;
   checkCUDNNError(cudnnSetTensor4dDescriptor(x_desc_,
@@ -89,18 +88,23 @@ void ActivationOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(2);
   Tensor* dx = context->Output(0);
 
-  CHECK(dy.dims(0) == y.dims(0) == x.dims(0) == dx->dims(0));
-  CHECK(dy.dims(1) == y.dims(1) == x.dims(1) == dx->dims(1));
-  CHECK(dy.dims(2) == y.dims(2) == x.dims(2) == dx->dims(2));
-  CHECK(dy.dims(3) == y.dims(3) == x.dims(3) == dx->dims(3));
+  CHECK(x.dims() == y.dims());
+  CHECK(x.dims() < 5);
+  CHECK(x.dims() > 1);
+  //I don't know why cudnn has this bug(in NdTensor support)...
+  int XN, YN, XC, YC, XH, YH, XW, YW;
+  XN = YN = x.dims(0);
+  XC = YC = x.dims(1);
+  XH = YH = x.dims() > 2? x.dims(2) : 1;
+  XW = YW = x.dims() > 3? x.dims(3) : 1;
 
   float alpha = 1.f, beta = 0.f;
   checkCUDNNError(cudnnSetTensor4dDescriptor(x_desc_,
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
-                  x.dims(0), x.dims(1), x.dims(2), x.dims(3)));
+                  XN, XC, XH, XW));
   checkCUDNNError(cudnnSetTensor4dDescriptor(y_desc_,
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
-                  y.dims(0), y.dims(1), y.dims(2), y.dims(3)));
+                  YN, YC, YH, YW));
   checkCUDNNError(cudnnActivationBackward(CudaCommon::cudnnHandle(),
                   activation_desc_,
                   &alpha, y_desc_, y.data<T>(),
@@ -109,5 +113,8 @@ void ActivationOpCudnnGrad<T>::Compute(OpContext* context) {
                   &beta,
                   x_desc_, dx->mutable_data<T>()));
 }
+
+REGISTER_OP_IMPL_BUILDER(Key("Relu").Device("GPU"), ActivationOpCudnn<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Relu")).Device("GPU"), ActivationOpCudnnGrad<float>);
 
 } //namespace backend

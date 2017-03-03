@@ -22,22 +22,27 @@ class PoolingOpCudnn : public OpImpl {
  private:
   cudnnTensorDescriptor_t x_desc_, y_desc_;
   cudnnPoolingDescriptor_t pooling_desc_;
+  //currently, only maxpooling is supported
   /*cudnnPoolingMode_t mode_;*/
-  int k_;
-  int stride_;
+  int height_window_;
+  int width_window_;
+  int height_stride_;
+  int width_stride_;
 };
 
 template <typename T>
 PoolingOpCudnn<T>::PoolingOpCudnn(const OpDef& def)
   : OpImpl(def) {
-  k_ = GetSingleArg<int>(op_def_, "k");
-  stride_ = GetSingleArg<int>(op_def_, "stride");
+  height_window_ = GetSingleArg<int>(op_def_, "HightWindow");
+  width_window_ = GetSingleArg<int>(op_def_, "WidthWindow");
+  height_stride_ = GetSingleArg<int>(op_def_, "HightStride", height_window_);
+  width_stride_ = GetSingleArg<int>(op_def_, "HightStride", width_window_);
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreatePoolingDescriptor(&pooling_desc_));
   checkCUDNNError(cudnnSetPooling2dDescriptor(pooling_desc_,
       CUDNN_POOLING_MAX, CUDNN_NOT_PROPAGATE_NAN,
-      k_, k_, 0, 0, stride_, stride_));
+      height_window_, width_window_, 0, 0, height_stride_, width_stride_));
 }
 
 template <typename T>
@@ -79,21 +84,25 @@ class PoolingOpCudnnGrad : public OpImpl {
   cudnnTensorDescriptor_t x_desc_, y_desc_;
   cudnnPoolingDescriptor_t pooling_desc_;
   /*cudnnPoolingMode_t mode_;*/
-  int k_;
-  int stride_;
+  int height_window_;
+  int width_window_;
+  int height_stride_;
+  int width_stride_;
 };
 
 template <typename T>
 PoolingOpCudnnGrad<T>::PoolingOpCudnnGrad(const OpDef& def)
   : OpImpl(def) {
-  k_ = GetSingleArg<int>(op_def_, "k");
-  stride_ = GetSingleArg<int>(op_def_, "stride");
+  height_window_ = GetSingleArg<int>(op_def_, "HightWindow");
+  width_window_ = GetSingleArg<int>(op_def_, "WidthWindow");
+  height_stride_ = GetSingleArg<int>(op_def_, "HightStride", height_window_);
+  width_stride_ = GetSingleArg<int>(op_def_, "HightStride", width_window_);
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));
   checkCUDNNError(cudnnCreatePoolingDescriptor(&pooling_desc_));
   checkCUDNNError(cudnnSetPooling2dDescriptor(pooling_desc_,
       CUDNN_POOLING_MAX, CUDNN_NOT_PROPAGATE_NAN,
-      k_, k_, 0, 0, stride_, stride_));
+      height_window_, width_window_, 0, 0, height_stride_, width_stride_));
 }
 
 template <typename T>
@@ -129,6 +138,11 @@ void PoolingOpCudnnGrad<T>::Compute(OpContext* context) {
       &beta,
       x_desc_, dx->mutable_data<T>()));
 }
+
+REGISTER_OP_IMPL_BUILDER(Key("Pooling").Device("GPU"),
+    PoolingOpCudnn<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Pooling")).Device("GPU"),
+    PoolingOpCudnnGrad<float>);
 
 } //namespace backend
 

@@ -34,13 +34,17 @@ class TensorShape {
  public:
   TensorShape() : n_elements_(0) {}
   explicit TensorShape(const TensorShapeDef& shape);
-  explicit TensorShape(std::initializer_list<int> shape);
+  explicit TensorShape(const std::vector<int>& shape);
   explicit TensorShape(const TensorShape& shape);
   explicit TensorShape(TensorShape&& shape);
   TensorShape& operator =(const TensorShape& b);
   FORCE_INLINE int n_elements() const { return n_elements_; }
   FORCE_INLINE int dims() const { return shape_.size(); }
-  FORCE_INLINE int dims(int idx) const { return shape_.at(idx); }
+  FORCE_INLINE int dims(unsigned idx) const {
+    CHECK(idx < shape_.size())
+      << idx << "\t" << shape_.size();
+    return shape_.at(idx); 
+  }
   void set_dim(int d, int size);
   void add_dim(int size);
   std::string DebugInfo() const;
@@ -76,6 +80,9 @@ class Tensor {
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
   void Rebase(Allocator *a, DataType type, TensorShape&& shape);
   void Rebase(Allocator *a, const Tensor& t);
+  void Reshape(const TensorShapeDef& shape);
+  void Reshape(const std::vector<int>& dims);
+  void Reshape(const Tensor&t);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
@@ -103,7 +110,7 @@ FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {
 }
 
 //mainly for test usage
-FORCE_INLINE TensorShape::TensorShape(std::initializer_list<int> shape) 
+FORCE_INLINE TensorShape::TensorShape(const std::vector<int>& shape) 
     : shape_(shape) {
   n_elements_ = 1;    
   for (const int dim : shape) {

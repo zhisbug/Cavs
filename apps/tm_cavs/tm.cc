@@ -30,11 +30,11 @@ int main() {
   void* doc_word_buf;
   load(&doc_word_buf);
 
-  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V});
-  //Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
-  Sym doc_tpc  = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size, doc_word_buf);
   //Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
-  Sym doc_word = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
+  Sym doc_word  = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size, doc_word_buf);
+  //Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
+  Sym doc_tpc = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
+  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V});
 
   Sym loss = Sym::Square(doc_word-(Sym::MatMul(doc_tpc, tpc_word)));
   Sym step1 = loss.Optimizer({doc_tpc}, 20, "Simplex");

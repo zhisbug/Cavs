@@ -15,7 +15,7 @@ class ConvOpDecl : public OpDecl{
     CHECK(op_def_.input_size() == 3);
     CHECK(op_def_.output_size() == 1);
     OpDef conv_grad;
-    OpDefBuilder("ConvGrad")
+    OpDefBuilder(GetGradientName("Conv"))
       .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
       .Input(op_def_.input(1))
@@ -77,6 +77,6 @@ class ConvGradOpDecl : public OpDecl{
 };
 
 REGISTER_OP_DECL_BUILDER("Conv", ConvOpDecl);
-REGISTER_OP_DECL_BUILDER("ConvGrad", ConvGradOpDecl);
+REGISTER_OP_DECL_BUILDER(GetGradientName("Conv"), ConvGradOpDecl);
 
 } //namespace backend

@@ -3,6 +3,7 @@
 #include "cavs/util/logging.h"
 
 using std::string;
+using std::vector;
 
 namespace midend {
 
@@ -86,6 +87,27 @@ void Tensor::Rebase(Allocator *a,
 
 void Tensor::Rebase(Allocator *a, const Tensor& t) {
   Rebase(a, t.type_, *(t.shape_));
+}
+
+void Tensor::Reshape(const TensorShapeDef& shape) {
+  int new_counts = 1;
+  for (auto& dim : shape.dim())
+    new_counts *= dim;
+  CHECK(new_counts == count());
+  shape_.reset(new TensorShape(shape));
+}
+
+void Tensor::Reshape(const vector<int>& dims) {
+  int new_counts = 1;
+  for (auto& dim : dims)
+    new_counts *= dim;
+  CHECK(new_counts == count());
+  shape_.reset(new TensorShape(dims));
+}
+
+void Tensor::Reshape(const Tensor& t) {
+  CHECK(t.count() == count());
+  shape_ = t.shape_;
 }
 
 } //namespace midend
