@@ -104,4 +104,22 @@ void ScalCublasWrapper<double>(
       N, &alpha, x, incx));
 }
 
+template <>
+void AsumCublasWrapper<float>(
+    const int N, const float* x,
+    float* y) {
+  int incx = 1;
+  checkCublasError(cublasSasum(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void AsumCublasWrapper<double>(
+    const int N, const double* x,
+    double* y) {
+  int incx = 1;
+  checkCublasError(cublasDasum(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
 } //namespace backend

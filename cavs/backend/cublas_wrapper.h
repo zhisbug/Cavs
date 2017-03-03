@@ -34,6 +34,12 @@ void ScalCublasWrapper(
     const int N, const T alpha,
     T* x);
 
+//level1
+template <typename T>
+void AsumCublasWrapper(
+    const int N, const T* x,
+    T* y);
+
 } //namespace backend
 
 #endif

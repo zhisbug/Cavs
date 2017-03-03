@@ -46,6 +46,32 @@ class ScalOpCublas : public OpImpl {
   T alpha;
 };
 
-//REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"), CudaUnaryOpInstance(math::Abs, float));
+//absolute value sum
+template <typename T>
+class AsumOpCublas : public OpImpl {
+ public:
+  explicit AsumOpCublas(const OpDef& def)
+    : OpImpl(def) {
+  }
+  void Compute(OpContext* context) override;
+
+ private:
+  T alpha;
+};
+
+template <typename T>
+void AsumOpCublas<T>::Compute(OpContext* context) {
+  const Tensor& x = context->Input(0);
+  Tensor* y = context->Output(0);
+  CHECK(1 == y->count());
+  int N = x.count();
+  CHECK(N > 0);
+
+  AxpyCublasWrapper<T>(
+      N, 1.f, x.data<T>(), y->mutable_data<T>());
+}
+
+REGISTER_OP_IMPL_BUILDER(Key("Reduce_mean").Device("GPU"),
+    AsumOpCublas<float>);
 
 } //namespace backend

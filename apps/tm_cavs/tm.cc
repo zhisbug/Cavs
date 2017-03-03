@@ -43,13 +43,13 @@ int main() {
   Sym step2 = loss.Optimizer({tpc_word}, 20, "Simplex");
   Sym::DumpGraph();
 
-  //Session sess;
-  //int iters = 100;
-  ////int epoch = 100;
+  Session sess;
+  int iters = 100;
+  //int epoch = 100;
   //for (int i = 0; i < iters; i++) {
-  ////for (int i = 0; i < epoch; i++) {
-    //sess.Run({loss, step1, step2});
-    //loss.print();
+  //for (int i = 0; i < epoch; i++) {
+    sess.Run({loss, step1, step2});
+    loss.print();
   //}
 
   return 0;
