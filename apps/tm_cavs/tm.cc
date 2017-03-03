@@ -23,6 +23,8 @@ void load(void** doc_word) {
   for(int i = 0; i < FLAGS_D; i++) {
     fread(d_w+i*FLAGS_V, sizeof(float), FLAGS_V, fp);
   }
+  //for (int i = 0; i < FLAGS_V; i++)
+    //LOG(INFO) << i << "\t" << d_w[i];
   fclose(fp);
 }
 
@@ -30,25 +32,25 @@ int main() {
   void* doc_word_buf;
   load(&doc_word_buf);
 
-  //Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
-  Sym doc_word  = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size, doc_word_buf);
-  //Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
-  Sym doc_tpc = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
+  Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
+  //Sym doc_word  = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size, doc_word_buf);
+  Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K});
+  //Sym doc_tpc = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V});
 
-  Sym loss = Sym::Square(doc_word-(Sym::MatMul(doc_tpc, tpc_word)));
+  Sym loss = (doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean();
   Sym step1 = loss.Optimizer({doc_tpc}, 20, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, 20, "Simplex");
   Sym::DumpGraph();
 
-  Session sess;
+  //Session sess;
   //int iters = 100;
-  int epoch = 100;
+  ////int epoch = 100;
   //for (int i = 0; i < iters; i++) {
-  for (int i = 0; i < epoch; i++) {
-    sess.Run({loss, step1, step2});
-    loss.print();
-  }
+  ////for (int i = 0; i < epoch; i++) {
+    //sess.Run({loss, step1, step2});
+    //loss.print();
+  //}
 
   return 0;
 }

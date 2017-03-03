@@ -31,6 +31,7 @@ class Sym {
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
   static Sym Square(const Sym& a, string device = "GPU");
+  static Sym Reduce_mean(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
       int iters = 1, const string& projections = "");
@@ -55,6 +56,7 @@ class Sym {
   //unary operation
   Sym Abs() { return Abs(*this); }
   Sym Square() { return Square(*this); }
+  Sym Reduce_mean() { return Reduce_mean(*this); };
   Sym Optimizer() { return Optimizer(*this); }
   Sym Optimizer(vector<Sym> variables,
       int iters = 1, const string& projection = "") {

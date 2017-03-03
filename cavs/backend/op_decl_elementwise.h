@@ -37,7 +37,9 @@ class BinaryOpDecl : public OpDecl {
   void ShapeInference(std::vector<TensorShapeDef>* out_shape,
     const std::vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2) << inputs.size();
-    CHECK(inputs[0].dim_size() == inputs[1].dim_size());
+    CHECK(inputs[0].dim_size() == inputs[1].dim_size())
+      << inputs[0].DebugString() << "\n" << inputs[1].DebugString()
+      << op_def_.DebugString();
     for (unsigned i = 0; i < inputs[0].dim_size(); i++)
       CHECK(inputs[0].dim(i) == inputs[1].dim(i));
     out_shape->resize(1);

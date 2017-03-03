@@ -4,13 +4,6 @@
 
 namespace backend {
 
-#define CudaUnaryOpInstance(math, dtype)    \
-    UnaryOp<CUDAUnaryFunctor<math<dtype>, dtype>, dtype> 
-#define CudaBinaryOpInstance(math, dtype)   \
-    BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype> 
-#define CudaBinaryScalarOpInstance(math, dtype)   \
-    BinaryOp<CUDABinaryScalarFunctor<math<dtype>, dtype>, dtype> 
-
 REGISTER_OP_IMPL_BUILDER(Key("Abs").Device("GPU"),
     CudaUnaryOpInstance(math::Abs, float));
 REGISTER_OP_IMPL_BUILDER(Key("Neg").Device("GPU"),
@@ -25,5 +18,7 @@ REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
     CudaBinaryScalarOpInstance(math::Mul, float));
 REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"),
     CudaUnaryOpInstance(math::Square, float));
+REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),
+    CudaUnaryScalarOpInstance(math::Assign, float));
 
 } //namespace backend

@@ -154,6 +154,13 @@ Sym Sym::Square(const Sym& a, string device) {
   return s;
 }
 
+Sym Sym::Reduce_mean(const Sym& a, string device) {
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Reduce_mean", {a.node_->output_[0]},
+        a.node_->type_, device);
+  return s;
+}
+
 Sym Sym::Maxpooling(const Sym&a,
     int HightWindow, int WidthWindow, string device) {
   vector<OpDef::AttrDef> attrs;

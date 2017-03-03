@@ -11,6 +11,38 @@ __global__ void UnaryKernel(T* out, const T* inp, size_t n) {
 }
 
 template <typename OP, typename T> 
+__global__ void UnaryScalarKernel(T* out, const T* value, size_t n) {
+  CUDA_1D_KERNEL_LOOP(i, n) { 
+    out[i] = OP::Compute(*value); 
+  } 
+}
+
+template <typename OP, typename T> 
+__global__ void UnaryConstScalarKernel(T* out, const T value, size_t n) {
+  CUDA_1D_KERNEL_LOOP(i, n) { 
+    out[i] = OP::Compute(value); 
+  } 
+}
+
+template <typename OP, typename T> 
+struct CUDAUnaryScalarFunctor{
+  static void Compute(T* out, const T* value, size_t n) {
+    /*checkCudaError(cudaMemset(out, 0, n*sizeof(T)));*/
+    UnaryScalarKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
+        out, value, n);
+  }
+};
+
+template <typename OP, typename T> 
+struct CUDAUnaryConstScalarFunctor{
+  static void Compute(T* out, const T value, size_t n) {
+    /*checkCudaError(cudaMemset(out, 0, n*sizeof(T)));*/
+    UnaryConstScalarKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
+        out, value, n);
+  }
+};
+
+template <typename OP, typename T> 
 __global__ void BinaryKernel(T* out, const T* inp0, const T* inp1, size_t n) {
   CUDA_1D_KERNEL_LOOP(i, n) { 
     out[i] = OP::Compute(inp0[i], inp1[i]); 
@@ -53,5 +85,14 @@ struct CUDABinaryScalarFunctor {
     checkCudaError(cudaGetLastError());
   }
 };
+
+#define CudaUnaryOpInstance(math, dtype)    \
+    UnaryOp<CUDAUnaryFunctor<math<dtype>, dtype>, dtype>
+#define CudaUnaryScalarOpInstance(math, dtype)    \
+    UnaryOp<CUDAUnaryScalarFunctor<math<dtype>, dtype>, dtype>
+#define CudaBinaryOpInstance(math, dtype)   \
+    BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+#define CudaBinaryScalarOpInstance(math, dtype)   \
+    BinaryOp<CUDABinaryScalarFunctor<math<dtype>, dtype>, dtype> 
 
 } //namespace backend
