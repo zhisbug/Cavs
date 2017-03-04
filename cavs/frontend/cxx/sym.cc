@@ -3,6 +3,9 @@
 #include "cavs/proto/devices.pb.h"
 #include "cavs/util/logging.h"
 
+#include <algorithm>
+#include <iomanip>
+
 using std::vector;
 
 void Sym::node::Finalize(OpDef* op_def) const {
@@ -298,8 +301,10 @@ void Sym::print() {
   for (int dim : node_->shape_)
     length *= dim;
   if (node_->type_ == C_FLOAT) {
-    for (int i = 0; i < length; i++)
-      LOG(INFO) << (float)((float*)node_->raw_data)[i];
+    for (int i = 0; i < std::min(length, 10); i++)
+      LOG(INFO) << "[" << i << "]:\t"
+                << std::fixed << std::setprecision(10)
+                << (float)((float*)node_->raw_data)[i];
   }
 }
 

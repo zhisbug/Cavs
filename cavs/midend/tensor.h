@@ -88,6 +88,8 @@ class Tensor {
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
   std::string DebugInfo() const;
+  template <typename T>
+  void DebugNumerical() const;
 
   friend class TensorCApi;
   friend class DeviceContext;

@@ -67,8 +67,10 @@ void AsumOpCublas<T>::Compute(OpContext* context) {
   int N = x.count();
   CHECK(N > 0);
 
-  AxpyCublasWrapper<T>(
-      N, 1.f, x.data<T>(), y->mutable_data<T>());
+  //x.DebugNumerical<T>();
+  AsumCublasWrapper<T>(
+      N, x.data<T>(), y->mutable_data<T>());
+  //y->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Reduce_mean").Device("GPU"),

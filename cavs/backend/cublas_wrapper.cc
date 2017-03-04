@@ -2,6 +2,11 @@
 #include "cavs/backend/cuda_common.h"
 #include "cavs/util/macros_gpu.h"
 
+#include <vector>
+#include <algorithm>
+
+using std::vector;
+
 namespace backend {
 
 template <>
@@ -108,9 +113,15 @@ template <>
 void AsumCublasWrapper<float>(
     const int N, const float* x,
     float* y) {
+  //it is useful for chain rule
+  //because all the data are located on GPU
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
   int incx = 1;
   checkCublasError(cublasSasum(CudaCommon::cublasHandle(),
       N, x, incx, y)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_HOST));
 }
 
 template <>

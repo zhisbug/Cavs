@@ -19,8 +19,22 @@ class OpContext {
     CHECK(idx < outputs_.size());
     return &(outputs_.at(idx)); 
   }
-  inline void AppendInput(const Tensor& t) { inputs_.push_back(t); }
+  inline void AppendInput(const Tensor& t) {inputs_.push_back(t); }
   inline void AppendOutput(const Tensor& t) { outputs_.push_back(t); }
+  inline std::string DebugInfo() {
+    std::string info;
+    for (unsigned i = 0; i < inputs_.size(); i++) {
+      info += "input tensor[" + std::to_string(i)
+              + "]:\t" + inputs_[i].name();
+      info += "\n";
+    }
+    for (unsigned i = 0; i < outputs_.size(); i++) {
+      info += "output tensor[" + std::to_string(i)
+              + "]:\t" + outputs_[i].name();
+      info += "\n";
+    }
+    return info;
+  }
  private:
   std::vector<Tensor> inputs_;
   std::vector<Tensor> outputs_;

@@ -34,6 +34,7 @@ template <typename T>
 void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   const Tensor& A = context->Input(0);
   const Tensor& B = context->Input(1);
+  //A.DebugNumerical<T>();
   Tensor* C = context->Output(0);
 
   int MA = (TransA == false)? A.dims(0) : A.dims(1);
@@ -51,6 +52,7 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   MatMulMatCublasWrapper<T>(false, false,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
       0, C->mutable_data<T>());
+  //C->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("MatMul").Device("GPU"), MatMulMatOpCublas<float>);

@@ -12,7 +12,6 @@ class MatMulOpDecl : public OpDecl {
     grad->clear();
     CHECK(op_def_.input_size() == 2);
     CHECK(op_def_.output_size() == 1);
-    LOG(INFO) << op_def_.DebugString();
     OpDef mul_def_0;
     OpDefBuilder("MatMul")
       .Input(GetGradientName(op_def_.output(0)))
@@ -22,7 +21,6 @@ class MatMulOpDecl : public OpDecl {
       //.AttrList("Transpose", 1)
       .AttrList("Transpose", TransMask({{1,true}}))
       .Finalize(&mul_def_0);
-    LOG(INFO) << mul_def_0.DebugString();
     grad->push_back(std::move(mul_def_0));
     OpDef mul_def_1;
     OpDefBuilder("MatMul")
@@ -33,7 +31,6 @@ class MatMulOpDecl : public OpDecl {
       //.AttrList("Transpose", 0)
       .AttrList("Transpose", TransMask({{0, true}}))
       .Finalize(&mul_def_1);
-    LOG(INFO) << mul_def_1.DebugString();
     grad->push_back(std::move(mul_def_1));
   }
   void ShapeInference(vector<TensorShapeDef>* out_shape,

@@ -39,18 +39,22 @@ int main() {
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V});
 
   Sym loss = (doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean();
-  Sym step1 = loss.Optimizer({doc_tpc}, 20, "Simplex");
-  Sym step2 = loss.Optimizer({tpc_word}, 20, "Simplex");
+  Sym step1 = loss.Optimizer({doc_tpc}, 2, "Simplex");
+  Sym step2 = loss.Optimizer({tpc_word}, 2, "Simplex");
   Sym::DumpGraph();
 
   Session sess;
-  int iters = 100;
+  int iters = 20;
+  //sess.Run({tpc_word});
+  //tpc_word.print();
   //int epoch = 100;
-  //for (int i = 0; i < iters; i++) {
+  for (int i = 0; i < iters; i++) {
   //for (int i = 0; i < epoch; i++) {
-    sess.Run({loss, step1, step2});
+    //sess.Run({loss, step1, step2});
+    sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
     loss.print();
-  //}
+    //doc_tpc.print();
+  }
 
   return 0;
 }

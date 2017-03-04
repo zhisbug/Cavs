@@ -16,8 +16,10 @@ class UnaryOp : public OpImpl {
   explicit UnaryOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     const Tensor& inp = context->Input(0);
+    //inp.DebugNumerical<T>();
     Tensor* out = context->Output(0);
-    FUNCTOR::Compute(out->mutable_data<T>(), inp.data<T>(), inp.count());
+    FUNCTOR::Compute(out->mutable_data<T>(), inp.data<T>(), out->count());
+    //out->DebugNumerical<T>();
   }
 };
 
@@ -28,9 +30,12 @@ class BinaryOp : public OpImpl {
   void Compute(OpContext* context) override {
     const Tensor& inp0 = context->Input(0);
     const Tensor& inp1 = context->Input(1);
+    //inp0.DebugNumerical<T>();
+    //inp1.DebugNumerical<T>();
     Tensor* out = context->Output(0);
     FUNCTOR::Compute(out->mutable_data<T>(), inp0.data<T>(), inp1.data<T>(),
-            inp0.count());
+            out->count());
+    //out->DebugNumerical<T>();
   }
 };
 

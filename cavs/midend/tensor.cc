@@ -1,6 +1,7 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/util/types.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/macros_gpu.h"
 
 using std::string;
 using std::vector;
@@ -55,6 +56,15 @@ string Tensor::DebugInfo() const {
   ret += "\nshape: " + shape_->DebugInfo();
   ret += "\ntype: " + std::to_string(type_);
   return ret;
+}
+
+template <>
+void Tensor::DebugNumerical<float>() const {
+  vector<float> res(count());
+  checkCudaError(cudaMemcpy(res.data(), data<float>(),
+        count()*sizeof(float), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < 10 && i < count(); i++)
+    LOG(INFO) << "[" << i << "]: " << res[i];
 }
 
 Tensor::Tensor() : buf_(nullptr), shape_(nullptr) {}
