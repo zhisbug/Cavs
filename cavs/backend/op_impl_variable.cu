@@ -6,7 +6,9 @@
 
 namespace backend {
 
-REGISTER_OP_IMPL_BUILDER(Key("Variable").Device("GPU"),
-    VariableOpImpl<CUDAUnaryConstScalarFunctor<math::Assign<float>, float>, float>);
+REGISTER_OP_IMPL_BUILDER(Key("Variable").Device("GPU").Label("ConstantFiller"),
+    VariableOpImpl<CudaConstantFiller<math::Assign<float>, float>, float>);
+REGISTER_OP_IMPL_BUILDER(Key("Variable").Device("GPU").Label("UniformRandom"),
+    VariableOpImpl<CudaFiller<UniformNormalizer<float>, float>, float>);
 
 } //namespace backend

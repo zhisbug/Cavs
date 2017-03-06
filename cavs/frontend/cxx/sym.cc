@@ -30,6 +30,7 @@ void Sym::node::Finalize(OpDef* op_def) const {
 Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
+         const string label,
          const string& device,
          const vector<int>& shape,
          const vector<OpDef::AttrDef>& attrs) {
@@ -39,6 +40,7 @@ Sym::Sym(const string& op_name,
   node_->output_.push_back(op_name + std::to_string(id++));
   node_->input_ = inputs;
   node_->type_ = type;
+  node_->label_ = label;
   node_->shape_ = shape; 
   node_->device_ = device; 
 
@@ -101,7 +103,7 @@ Sym::Sym(const string& op_name,
 }
 
 Sym Sym::Variable(C_Dtype type, vector<int> shape,
-    const OpDef::AttrDef& attr, string device) {
+    const pair<string, OpDef::AttrDef>& filler, string device) {
   CHECK(shape.size() > 0);
   return Sym("Variable", {}, type, device, shape, {attr});
 }
@@ -122,7 +124,7 @@ Sym Sym::MnistInput(int batch, string source, string file, string device) {
   OpDef::AttrDef file_attr;
   file_attr.set_name("ImageDir");
   file_attr.mutable_value()->set_s(file);
-  return Sym("MnistInput", {}, C_FLOAT, device, {},
+  return Sym("MnistInput", {}, C_FLOAT, "", device, {},
       {batch_attr, source_attr, file_attr}); 
 }
 
@@ -134,33 +136,33 @@ Sym Sym::Data(C_Dtype type, vector<int> shape,
   OpDef::AttrDef data_attr;
   data_attr.set_name("DataPtr");
   data_attr.mutable_value()->set_i(reinterpret_cast<intptr_t>(data));
-  return Sym("Data", {}, C_FLOAT, device, {}, {batch_attr, data_attr});
+  return Sym("Data", {}, C_FLOAT, "", device, {}, {batch_attr, data_attr});
 }
 
 Sym Sym::DDV(C_Dtype type, vector<int> shape,
     const Sym& data, string device) {
   return Sym("DDV", {data.node_->output_[0]},
-      type, device);
+      type, "", device);
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Abs", {a.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
 Sym Sym::Square(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Square", {a.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
 Sym Sym::Reduce_mean(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Reduce_mean", {a.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
@@ -185,18 +187,18 @@ Sym Sym::Maxpooling(const Sym&a,
     attr.mutable_value()->set_s("Max");
     attrs.push_back(std::move(attr));
   }
-  return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_,
+  return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_, "",
          device, {}, attrs);
 }
 
 Sym Sym::Relu(const Sym&a, string device) {
-  return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, device);
+  return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, "", device);
 }
 
 Sym Sym::SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device) {
   return Sym("SoftmaxEntropyLogits",
       { a.node_->output_[0], b.node_->output_[0] },
-        a.node_->type_, device);
+        a.node_->type_, "", device);
 }
 
 Sym Sym::Flatten(const Sym& a) {
@@ -204,7 +206,7 @@ Sym Sym::Flatten(const Sym& a) {
   attr.set_name("ShareMemory");
   attr.mutable_value()->set_b(true);
   return Sym("Flatten", { a.node_->output_[0] },
-      a.node_->type_, a.node_->device_, {}, {attr});
+      a.node_->type_, "", a.node_->device_, {}, {attr});
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string device) {
@@ -213,7 +215,7 @@ Sym Sym::Add(const Sym& a, const Sym& b, string device) {
         b.node_->output_.size() == 1);
   //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
   Sym s("Add", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
@@ -222,7 +224,7 @@ Sym Sym::Sub(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
   Sym s("Sub", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
@@ -230,7 +232,7 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
   Sym s("Mul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
@@ -239,7 +241,7 @@ Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
   Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, device);
+        a.node_->type_, "", device);
   return s;
 }
 
@@ -250,7 +252,7 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
         b.node_->type_ == c.node_->type_);
   return Sym("Conv",
       {a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
-      a.node_->type_, device);
+      a.node_->type_, "", device);
 }
 
 Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {
@@ -262,7 +264,7 @@ Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {
   attr.set_name("Transpose");
   attr.mutable_value()->mutable_list()->add_i(1);
   return Sym("MatMul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, device, {}, {attr});
+        a.node_->type_, "", device, {}, {attr});
 }
 
 Sym Sym::Optimizer(const Sym& a) {
@@ -272,11 +274,25 @@ Sym Sym::Optimizer(const Sym& a) {
 }
 
 //filler operation
-OpDef::AttrDef Sym::Ones() {
+pair<string, OpDef::AttrDef> Sym::Ones() {
   OpDef::AttrDef attr;
-  attr.set_name("ConstFiller");
+  attr.set_name("const_value");
   attr.mutable_value()->set_f(1.f);
-  return attr;
+  return make_pair<"ConstantFiller", std::move(attr)>;
+}
+
+pair<string, OpDef::AttrDef> Sym::Zeros() {
+  OpDef::AttrDef attr;
+  attr.set_name("const_value");
+  attr.mutable_value()->set_f(0.f);
+  return make_pair<"ConstantFiller", std::move(attr)>;
+}
+
+pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
+  OpDef::AttrDef attr;
+  attr.set_name("stride");
+  attr.mutable_value()->set_i(1);
+  return make_pair<"UniformRandom", std::move(attr)>;
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

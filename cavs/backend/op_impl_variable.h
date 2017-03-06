@@ -11,24 +11,22 @@ namespace backend {
 using ::midend::OpContext;
 using ::midend::Tensor;
 
-template <typename FUNCTOR, typename T>//fillop, dtype
+template <typename FILLFUNCTOR, typename T>//fillop, dtype
 class VariableOpImpl : public OpImpl {
  public:
   explicit VariableOpImpl(const OpDef& def)
     : OpImpl(def), initialized(false) {
-    init = GetSingleArg<T>(op_def_, "ConstFiller");
   }
 
   void Compute(OpContext* context) override {
-    if (!initialized) {
+    if (!initialized_) {
       Tensor* out = context->Output(0);
-      FUNCTOR::Compute(out->mutable_data<T>(), init, out->count());
-      initialized = true;
+      FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
+      initialized_ = true;
     }
   }
  private:
-  T init;
-  bool initialized;
+  bool initialized_;
 };
 
 } //namespace backend

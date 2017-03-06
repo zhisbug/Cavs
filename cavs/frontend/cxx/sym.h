@@ -48,7 +48,9 @@ class Sym {
   //ternary operation
   static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
   //filler operation
-  static OpDef::AttrDef Ones();
+  static std::pair<std::string, OpDef::AttrDef> Ones();
+  static std::pair<std::string, OpDef::AttrDef> Zeros();
+  static std::pair<std::string, OpDef::AttrDef> UniformRandom(int stride);
   //debug operations
   static void DumpGraph();
   void print();
@@ -84,6 +86,7 @@ class Sym {
   typedef struct node {
     string op_name_;
     C_Dtype type_;
+    std::string label_;
     std::vector<int> shape_;
     string device_;
     vector<string> output_;
@@ -95,6 +98,7 @@ class Sym {
   Sym(const string& op_name,
       const vector<string>& inputs, 
       const C_Dtype type,
+      const string& label,
       const string& device,
       const std::vector<int>& shape = {},
       const vector<OpDef::AttrDef>& attrs = {});
