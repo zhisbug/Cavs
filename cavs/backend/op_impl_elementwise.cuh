@@ -1,3 +1,6 @@
+#ifndef CAVS_BACKEND_OP_IMPL_ELEMENTWISE_CUH_
+#define CAVS_BACKEND_OP_IMPL_ELEMENTWISE_CUH_
+
 #include "cavs/backend/cuda_common.h"
 #include "cavs/util/macros_gpu.h"
 
@@ -96,3 +99,5 @@ struct CUDABinaryScalarFunctor {
     BinaryOp<CUDABinaryScalarFunctor<math<dtype>, dtype>, dtype> 
 
 } //namespace backend
+
+#endif

@@ -15,6 +15,7 @@ void Sym::node::Finalize(OpDef* op_def) const {
   for (const string& str: output_)
     op_def->add_output(str);
   op_def->set_dtype(DataType((int)type_));
+  op_def->set_label(label_);
   //device
   if (device_ == "GPU")
     op_def->set_device(GPU);
@@ -30,7 +31,7 @@ void Sym::node::Finalize(OpDef* op_def) const {
 Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
          const C_Dtype type,
-         const string label,
+         const string& label,
          const string& device,
          const vector<int>& shape,
          const vector<OpDef::AttrDef>& attrs) {
@@ -105,13 +106,13 @@ Sym::Sym(const string& op_name,
 Sym Sym::Variable(C_Dtype type, vector<int> shape,
     const pair<string, OpDef::AttrDef>& filler, string device) {
   CHECK(shape.size() > 0);
-  return Sym("Variable", {}, type, device, shape, {attr});
+  return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
 }
 
 Sym Sym::Placeholder(C_Dtype type, vector<int> shape,
     string device) {
   CHECK(shape.size() > 0);
-  return Sym("Placeholder", {}, type, device, shape);
+  return Sym("Placeholder", {}, type, "", device, shape);
 }
 
 Sym Sym::MnistInput(int batch, string source, string file, string device) {
@@ -278,21 +279,21 @@ pair<string, OpDef::AttrDef> Sym::Ones() {
   OpDef::AttrDef attr;
   attr.set_name("const_value");
   attr.mutable_value()->set_f(1.f);
-  return make_pair<"ConstantFiller", std::move(attr)>;
+  return std::make_pair("ConstantFiller", std::move(attr));
 }
 
 pair<string, OpDef::AttrDef> Sym::Zeros() {
   OpDef::AttrDef attr;
   attr.set_name("const_value");
   attr.mutable_value()->set_f(0.f);
-  return make_pair<"ConstantFiller", std::move(attr)>;
+  return std::make_pair("ConstantFiller", std::move(attr));
 }
 
 pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
   OpDef::AttrDef attr;
   attr.set_name("stride");
   attr.mutable_value()->set_i(1);
-  return make_pair<"UniformRandom", std::move(attr)>;
+  return std::make_pair("UniformRandom", std::move(attr));
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

@@ -15,7 +15,7 @@ template <typename FILLFUNCTOR, typename T>//fillop, dtype
 class VariableOpImpl : public OpImpl {
  public:
   explicit VariableOpImpl(const OpDef& def)
-    : OpImpl(def), initialized(false) {
+    : OpImpl(def), initialized_(false) {
   }
 
   void Compute(OpContext* context) override {

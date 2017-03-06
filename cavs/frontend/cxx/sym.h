@@ -9,11 +9,13 @@
 #include <vector>
 #include <memory>
 #include <iostream>
+#include <utility>
 
 using std::string;
 using std::vector;
 using std::shared_ptr;
 using std::ostream;
+using std::pair;
 
 class Sym {
  public:
@@ -22,7 +24,7 @@ class Sym {
 
   //non-arguments operation
   static Sym Variable(C_Dtype type, std::vector<int> shape,
-      const OpDef::AttrDef& attr = Ones(), string device = "GPU");
+    const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
   static Sym Placeholder(C_Dtype type, std::vector<int> shape,
       string device = "GPU");
   static Sym MnistInput(int batch, string source, string file, string device = "GPU");

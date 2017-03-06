@@ -1,5 +1,5 @@
 #include "cavs/backend/op_impl_variable.h"
-#include "cavs/backend/op_impl_elementwise.cuh"
+#include "cavs/backend/functor_filler.cuh"
 #include "cavs/backend/functors_elementwise.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/util/macros_gpu.h"
