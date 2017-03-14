@@ -13,12 +13,13 @@ namespace backend {
 template <typename OP, typename T>
 struct CudaFiller {
   CudaFiller(const OpDef& op_def) {
-    stride = GetSingleArg<T>(op_def, "stride");
+    stride = GetSingleArg<int>(op_def, "stride");
+    CHECK(stride > 0);
   }
   FORCE_INLINE void Compute(T* buf, int N) {
     std::vector<T> cpu_buf(N);
     for (int i = 0; i < N; i+=stride) {
-      OP::Compute(cpu_buf.data()+i, (i+stride>=N) ? (N-i) : stride);
+      OP::Compute(cpu_buf.data()+i, (i+stride>N) ? (N-i) : stride);
     }
     checkCudaError(cudaMemcpy(buf, cpu_buf.data(), N*sizeof(T),
                               cudaMemcpyHostToDevice));

@@ -3,6 +3,8 @@
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
 
+#include <iomanip>
+
 using std::string;
 using std::vector;
 
@@ -63,8 +65,15 @@ void Tensor::DebugNumerical<float>() const {
   vector<float> res(count());
   checkCudaError(cudaMemcpy(res.data(), data<float>(),
         count()*sizeof(float), cudaMemcpyDeviceToHost));
+  for (int i = 0; i < count(); i++)
+    CHECK(!isnan(res[i])) << i;
+  float sum = 0;
+  for (int i = 0; i < count(); i++)
+    sum += res[i]*res[i];
+  LOG(INFO) << "L2 Norm: " << sum;
   for (int i = 0; i < 10 && i < count(); i++)
-    LOG(INFO) << "[" << i << "]: " << res[i];
+    LOG(INFO) << name() << "[" << i << "]: "
+              << std::setprecision(15) << res[i];
 }
 
 Tensor::Tensor() : buf_(nullptr), shape_(nullptr) {}

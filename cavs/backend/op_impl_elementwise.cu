@@ -14,6 +14,8 @@ REGISTER_OP_IMPL_BUILDER(Key("Sub").Device("GPU"),
     CudaBinaryOpInstance(math::Sub, float));
 REGISTER_OP_IMPL_BUILDER(Key("Mul").Device("GPU"),
     CudaBinaryOpInstance(math::Mul, float));
+REGISTER_OP_IMPL_BUILDER(Key("Div").Device("GPU"),
+    CudaBinaryOpInstance(math::Div, float));
 REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
     CudaBinaryScalarOpInstance(math::Mul, float));
 REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"),

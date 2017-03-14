@@ -128,6 +128,7 @@ void DepGraph::GroupClosedSet(
     const vector<string>& vars,
     const Edge* loss,
     const string& solver,
+    const float lr,
     const string& proj,
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
@@ -143,6 +144,7 @@ void DepGraph::GroupClosedSet(
         .Input(GetGradientName(var_name))
         .Output(var_name)
         .Shape(var->shape())
+        .AttrSingle<float>("learning_rate", lr)
         .Device("GPU")
         .Finalize(&update);
     loss_scope->AddNode(update);
@@ -177,6 +179,7 @@ void DepGraph::OptimizeWithLoss(
   int iters = 0;
   string proj;
   string solver;
+  float lr;
   for (auto& attr : def.attr()) {
     if (attr.name() == "Vars") {
       auto& vars = attr.value().list().s();
@@ -188,6 +191,8 @@ void DepGraph::OptimizeWithLoss(
       proj = attr.value().s(); 
     }else if (attr.name() == "Iters") {
       iters = attr.value().i(); 
+    }else if (attr.name() == "learning_rate") {
+      lr = attr.value().f(); 
     }
   }
   CHECK(var_names.size());
@@ -202,7 +207,7 @@ void DepGraph::OptimizeWithLoss(
       GetGradientName(loss),
       loss_edge->shape(), 1.f);
   loss_scope->AddNode(const_op);
-  GroupClosedSet(var_names, loss_edge, solver, proj, loss_scope);
+  GroupClosedSet(var_names, loss_edge, solver, lr, proj, loss_scope);
   ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
   //s_->PrintSymbolTable();
 }

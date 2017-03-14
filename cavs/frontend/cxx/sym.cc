@@ -60,11 +60,13 @@ Sym::Sym(const string& op_name,
   for (int i = 0; i < dim_length; i++)
     node_->shape_.push_back(dim[i]);
   free(dim);
+  LOG(INFO) << op_def.DebugString();
 }
 
 Sym::Sym(const string& op_name,
     const string& loss,
     const vector<Sym>& variables,
+    const float lr,
     const int iters,
     const string& projection) {
   CHECK(op_name == "Optimizer");
@@ -93,6 +95,10 @@ Sym::Sym(const string& op_name,
     proj_attr->set_name("Projection");
     proj_attr->mutable_value()->set_s(projection);
   }
+  OpDef::AttrDef* lr_attr = op_def.add_attr();
+  lr_attr->set_name("learning_rate");
+  lr_attr->mutable_value()->set_f(lr);
+
   OpDef::AttrDef* iters_attr = op_def.add_attr();
   iters_attr->set_name("Iters");
   iters_attr->mutable_value()->set_i(iters);
@@ -101,6 +107,14 @@ Sym::Sym(const string& op_name,
   op_def.SerializeToString(&serial_def);
   C_OptimizeWithLoss(C_GetDefaultDG(),
     serial_def.c_str(), serial_def.length());
+}
+
+template <>
+Sym::Sym<float> (float c) {
+  OpDef::AttrDef attr;
+  attr.set_name("init");
+  attr.mutable_value()->set_f(c);
+  Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
 }
 
 Sym Sym::Variable(C_Dtype type, vector<int> shape,
@@ -292,17 +306,17 @@ pair<string, OpDef::AttrDef> Sym::Zeros() {
 pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
   OpDef::AttrDef attr;
   attr.set_name("stride");
-  attr.mutable_value()->set_i(1);
+  attr.mutable_value()->set_i(stride);
   return std::make_pair("UniformRandom", std::move(attr));
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
-    int iters, const string& projection) {
+    float lr, int iters, const string& projection) {
   CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0],
-      variables, iters, projection);
+      variables, lr, iters, projection);
   return s;
 }
 
@@ -320,7 +334,7 @@ void Sym::print() {
   if (node_->type_ == C_FLOAT) {
     for (int i = 0; i < std::min(length, 10); i++)
       LOG(INFO) << "[" << i << "]:\t"
-                << std::fixed << std::setprecision(10)
+                << std::fixed << std::setprecision(15)
                 << (float)((float*)node_->raw_data)[i];
   }
 }

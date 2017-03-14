@@ -19,6 +19,7 @@ using std::pair;
 
 class Sym {
  public:
+  template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
@@ -36,7 +37,7 @@ class Sym {
   static Sym Reduce_mean(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
-      int iters = 1, const string& projections = "");
+      float lr, int iters = 1, const string& projections = "");
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
   static Sym Flatten(const Sym& a);
@@ -63,8 +64,8 @@ class Sym {
   Sym Reduce_mean() { return Reduce_mean(*this); };
   Sym Optimizer() { return Optimizer(*this); }
   Sym Optimizer(vector<Sym> variables,
-      int iters = 1, const string& projection = "") {
-    return Optimizer(*this, variables, iters, projection); 
+      float lr, int iters = 1, const string& projection = "") {
+    return Optimizer(*this, variables, lr, iters, projection); 
   }
   Sym Maxpooling(int HightWindow, int WidthWindow) {
     return Maxpooling(*this, HightWindow, WidthWindow);
@@ -106,6 +107,7 @@ class Sym {
       const vector<OpDef::AttrDef>& attrs = {});
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
+      const float lr = 1,
       const int iters = 1,
       const string& projections = "");
   inline const std::vector<string>& outputs() const { 
