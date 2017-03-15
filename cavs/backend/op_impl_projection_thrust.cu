@@ -40,7 +40,7 @@ ProjectionOpThrust<T>::ProjectionOpThrust(const OpDef& def)
     : OpImpl(def), workspace(NULL), lamda(NULL), THREAD_POOL_SIZE(32) {
   alloc_ = GetAllocator(DeviceTypeToString(GPU));
   if (!lamda)
-    lamda = alloc_->Allocate<T>(1);
+    lamda = alloc_->Allocate<T>(THREAD_POOL_SIZE);
 }
 
 template <typename T>
@@ -71,28 +71,29 @@ __global__ void GetOutput(T *x, const T* y, const T* lamda, int n) {
 }
 
 template <typename T>
-void thread_func(T* out, const T* in, int N, int offset, int stride) {
+void thread_func(T* out, const T* in, int N, int offset, int stride,
+                 T* lamda) {
   for (int i = offset; i < stride; i++) {
     thrust::device_ptr<T> dev_ptr(const_cast<T*>(in+i*N));
     thrust::device_vector<T> mu(dev_ptr, dev_ptr+N);
     thrust::sort(mu.begin(), mu.end(), thrust::greater<T>());
-    if (i == 0) {
-      std::vector<T> h_vec(10); 
-      checkCudaError(cudaMemcpy(h_vec.data(),
-            thrust::raw_pointer_cast(mu.data()), 10*sizeof(T),
-            cudaMemcpyDeviceToHost));
-      for (int i = 0; i < 10; i++) {
-        LOG(INFO) << "sorted[" << i << "]: "
-                  << h_vec[i];
-      }
-    }
-    thrust::device_vector<T> mu_scan(n);
+    /*if (i == 0) {*/
+      /*std::vector<T> h_vec(10); */
+      /*checkCudaError(cudaMemcpy(h_vec.data(),*/
+            /*thrust::raw_pointer_cast(mu.data()), 10*sizeof(T),*/
+            /*cudaMemcpyDeviceToHost));*/
+      /*for (int i = 0; i < 10; i++) {*/
+        /*LOG(INFO) << "sorted[" << i << "]: "*/
+                  /*<< h_vec[i];*/
+      /*}*/
+    /*}*/
+    thrust::device_vector<T> mu_scan(N);
     thrust::inclusive_scan(mu.begin(), mu.end(), mu_scan.begin());
     /*checkCudaError(cudaDeviceSynchronize());*/
-    FindMax<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(lamda,
+    FindMax<T><<<BLOCKS_PER_GRID(N), THREADS_PER_BLOCK>>>(lamda,
         thrust::raw_pointer_cast(mu.data()), 
         thrust::raw_pointer_cast(mu_scan.data()),
-        n);
+        N);
     /*if (i <= 10) {*/
       /*LOG(INFO) << "\n\n\n";*/
       /*T lamda_h; */
@@ -101,11 +102,11 @@ void thread_func(T* out, const T* in, int N, int offset, int stride) {
       /*LOG(INFO) << "lamda = " << lamda_h << "\n\n\n";*/
     /*}*/
     /*checkCudaError(cudaDeviceSynchronize());*/
-    GetOutput<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
-        var_out->mutable_data<T>()+i*n,
-        var_in.data<T>()+i*n, 
+    GetOutput<T><<<BLOCKS_PER_GRID(N), THREADS_PER_BLOCK>>>(
+        out+i*N,
+        in+i*N, 
         lamda,
-        n);
+        N);
   }
 
 }
@@ -123,11 +124,13 @@ void ProjectionOpThrust<T>::Compute(OpContext* context) {
   CHECK(var_in.count() == var_out->count());
   int N = var_in.count()/var_in.dims(0);
   vector<thread> thread_pool;
-  for (int i = 0; i < var_in.dims(0)/THREAD_POOL_SIZE; i++) {
-    /*LOG(INFO) << "here " << i;*/
+  for (int th = 0; th < THREAD_POOL_SIZE; th++) {
+    int offset = th*(var_in.dims(0)+THREAD_POOL_SIZE-1)/THREAD_POOL_SIZE;
+    int stride = ((offset+THREAD_POOL_SIZE) > var_in.dims(0)) ? 
+                 var_in.dims(0)-offset : THREAD_POOL_SIZE;
     thread_pool.push_back(thread(&thread_func<T>,
             var_out->mutable_data<T>(), var_in.data<T>(),
-            N, i*THREAD_POOL_SIZE, (i+1)*THREAD_POOL_SIZE));
+            N, offset, stride, (lamda+th)));
   }
   for (auto& th : thread_pool)
     th.join();
