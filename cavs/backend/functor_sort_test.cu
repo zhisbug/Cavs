@@ -20,7 +20,7 @@ int main() {
       thrust::host_vector<int> h_vec(Batch*N);
       thrust::generate(h_vec.begin(), h_vec.end(), rand);
       thrust::device_vector<int> d_vec = h_vec;
-      thrust::host_vector<int> h_vec_verity = h_vec;
+      thrust::host_vector<int> h_vec_verify = h_vec;
       thrust::device_vector<int> d_vec_verify = h_vec;
       LOG(INFO) << "Testing with N = " << N
                 << "\tand Batch = " << Batch << "\t...";
@@ -31,23 +31,24 @@ int main() {
 
       BatchedMergeSort<int, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
           thrust::raw_pointer_cast(d_vec.data()),
-          Batch, N, direction);
+          N, direction);
 
+      checkCudaError(cudaDeviceSynchronize());
       checkCudaError(cudaGetLastError());
       thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
 
       for (int i = 0; i < Batch; i++)
         thrust::sort(d_vec_verify.begin()+i*N, d_vec_verify.begin()+(i+1)*N);
 
-      thrust::copy(d_vec_verify.begin(), d_vec_verify.end(), h_vec_verity.begin());
+      thrust::copy(d_vec_verify.begin(), d_vec_verify.end(), h_vec_verify.begin());
 
       for (int i = 0; i < Batch; i++) {
         for (int j = 0; j < N; j++) {
-          CHECK((h_vec[i*N+j] == h_vec_verity[i*N+j]) == direction)
+          CHECK(h_vec[i*N+j] == h_vec_verify[i*N+j])
                << "h_vec[" << i << "][" << j << "]: "
                << h_vec[i*N+j]
                << "\th_vec_verify[" << i << "][" << j << "]: "
-               << h_vec_verity[i*N+j];
+               << h_vec_verify[i*N+j];
         }
       }
       LOG(INFO) << "Test Passed!";

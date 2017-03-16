@@ -1,6 +1,8 @@
 #ifndef CAVS_BACKEND_FUNCTOR_SORT_SCAN_CUH_
 #define CAVS_BACKEND_FUNCTOR_SORT_SCAN_CUH_
 
+#include <iostream>
+
 namespace backend {
 
 template <typename T>
@@ -14,7 +16,7 @@ __device__ inline void Comparator(T& valA, T& valB, bool direction) {
 }
 
 template <typename T, unsigned int SHARE_SIZE_LIMIT>
-__global__ void BatchedMergeSort(T* inout, unsigned int batch, unsigned int N, bool direction) {
+__global__ void BatchedMergeSort(T* inout, unsigned int N, bool direction) {
   __shared__ T s_val[SHARE_SIZE_LIMIT];
   T* d_val = inout + blockIdx.x*N+ threadIdx.x;
   s_val[threadIdx.x] = d_val[0];
@@ -43,41 +45,39 @@ __global__ void BatchedMergeSort(T* inout, unsigned int batch, unsigned int N, b
 }
 
 template <typename T, unsigned int SHARE_SIZE_LIMIT>
-__global__ void BatchedScan(
-    T* inout, unsigned int batch, unsigned int N) {}
+__global__ void BatchedScan(T* inout, unsigned int N) {}
 //N == blockDim.x
 //N < 1024 (warp_id < 32)
 //There must be less than 32 warps in one block,
 //as required in the syntax of CUDA)
 /*template <unsigned int SHARE_SIZE_LIMIT>*/
 template <unsigned int SHARE_SIZE_LIMIT>
-__global__ void BatchedScan(
-    float* inout, unsigned int batch, unsigned int N) {
+__global__ void BatchedScan(float* inout, unsigned int N) {
   __shared__ float s_val[SHARE_SIZE_LIMIT]; 
-  int id = threadIdx.x + blockIdx.x*N;
-  const int warpSize = 1 << 5;
-  int lane_id = id & (warpSize-1);
-  int warp_id = threadIdx.x >> 5;
-
-  float val = inout[id];
-
-#pragma unroll
-  for (int i = 1; i < warpSize; i <<= 1) {
-    float pre_sum = __shfl_up(val, i, warpSize);
-    if (lane_id >= i) val += pre_sum;
+  if (threadIdx.x < N) {
+    int id = threadIdx.x + blockIdx.x*N;
+    const int warpSize = 1 << 5;
+    int lane_id = threadIdx.x & (warpSize-1);
+    int warp_id = threadIdx.x >> 5;
+    float val = inout[id];
+    #pragma unroll
+    for (int i = 1; i < warpSize; i <<= 1) {
+      float pre_sum = __shfl_up(val, i, warpSize);
+      if (lane_id >= i) val += pre_sum;
+    }
+    s_val[threadIdx.x] = val;
+    __syncthreads();
+    
+    for (int i = 1; i < N/warpSize; i <<= 1) {
+      if (warp_id >= i) {
+        float pre_sum = s_val[((warp_id-i+1) << 5)-1];
+        __syncthreads();
+        s_val[threadIdx.x] += pre_sum;
+        __syncthreads();
+      }  
+    }
+    inout[id] = s_val[threadIdx.x];
   }
-  s_val[threadIdx.x] = val;
-  __syncthreads();
-  
-  for (int i = 1; i < N/warpSize; i <<= 1) {
-    if (warp_id >= i) {
-      float pre_sum = s_val[((warp_id-i+1) >> 5)-1];
-      __syncthreads();
-      s_val[threadIdx.x] += pre_sum;
-      __syncthreads();
-    }  
-  }
-  inout[id] = s_val[threadIdx.x];
 }
 
 } //namespace backend
