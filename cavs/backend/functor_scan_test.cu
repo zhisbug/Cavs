@@ -14,8 +14,8 @@ const int SHARE_SIZE_LIMIT = 1 << 13;
 
 int main() {
   //8k documents
-  for (int Batch = 2; Batch <= 1 << 10; Batch <<= 1) {
-    for (int N = 8; N <= 1 << 10; N <<= 1) {
+  for (int Batch = 1; Batch <= 1 << 10; Batch <<= 1) {
+    for (int N = 5; N <= 1 << 10; N <<= 1) {
       thrust::host_vector<float> h_vec(Batch*N, 2.f);
       thrust::device_vector<float> d_vec(h_vec);
       thrust::host_vector<float> h_vec_verify(h_vec);

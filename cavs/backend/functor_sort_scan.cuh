@@ -1,7 +1,7 @@
 #ifndef CAVS_BACKEND_FUNCTOR_SORT_SCAN_CUH_
 #define CAVS_BACKEND_FUNCTOR_SORT_SCAN_CUH_
 
-#include <iostream>
+#include <stdio.h>
 
 namespace backend {
 
@@ -54,30 +54,29 @@ __global__ void BatchedScan(T* inout, unsigned int N) {}
 template <unsigned int SHARE_SIZE_LIMIT>
 __global__ void BatchedScan(float* inout, unsigned int N) {
   __shared__ float s_val[SHARE_SIZE_LIMIT]; 
-  if (threadIdx.x < N) {
-    int id = threadIdx.x + blockIdx.x*N;
-    const int warpSize = 1 << 5;
-    int lane_id = threadIdx.x & (warpSize-1);
-    int warp_id = threadIdx.x >> 5;
-    float val = inout[id];
-    #pragma unroll
-    for (int i = 1; i < warpSize; i <<= 1) {
-      float pre_sum = __shfl_up(val, i, warpSize);
-      if (lane_id >= i) val += pre_sum;
-    }
-    s_val[threadIdx.x] = val;
-    __syncthreads();
-    
-    for (int i = 1; i < N/warpSize; i <<= 1) {
-      if (warp_id >= i) {
-        float pre_sum = s_val[((warp_id-i+1) << 5)-1];
-        __syncthreads();
-        s_val[threadIdx.x] += pre_sum;
-        __syncthreads();
-      }  
-    }
-    inout[id] = s_val[threadIdx.x];
+  int id = threadIdx.x + blockIdx.x*N;
+  const int warpSize = 1 << 5;
+  int lane_id = threadIdx.x & (warpSize-1);
+  int warp_id = threadIdx.x >> 5;
+  float val = inout[id];
+  #pragma unroll
+  for (int i = 1; i < warpSize; i <<= 1) {
+    float pre_sum = __shfl_up(val, i, warpSize);
+    if (lane_id >= i) val += pre_sum;
   }
+  s_val[threadIdx.x] = val;
+  __syncthreads();
+  
+  /*printf("%d\t%d\t%f\n", threadIdx.x, lane_id, val);*/
+  for (int i = 1; i <= (N-1) >> 5; i <<= 1) {
+    if (warp_id >= i) {
+      float pre_sum = s_val[((warp_id-i+1) << 5)-1];
+      __syncthreads();
+      s_val[threadIdx.x] += pre_sum;
+      __syncthreads();
+    }  
+  }
+  inout[id] = s_val[threadIdx.x];
 }
 
 } //namespace backend
