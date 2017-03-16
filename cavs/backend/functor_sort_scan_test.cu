@@ -10,7 +10,6 @@
 #include <iostream>
 
 using namespace backend;
-/*using namespace std;*/
 
 const int SHARE_SIZE_LIMIT = 1 << 13;
 
@@ -29,14 +28,19 @@ int main() {
       int blocksPerGrid = Batch;
       bool direction = true;//small first
       CHECK(N <= SHARE_SIZE_LIMIT);
+
       BatchedMergeSort<int, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
           thrust::raw_pointer_cast(d_vec.data()),
           Batch, N, direction);
+
       checkCudaError(cudaGetLastError());
       thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
+
       for (int i = 0; i < Batch; i++)
         thrust::sort(d_vec_verify.begin()+i*N, d_vec_verify.begin()+(i+1)*N);
+
       thrust::copy(d_vec_verify.begin(), d_vec_verify.end(), h_vec_verity.begin());
+
       for (int i = 0; i < Batch; i++) {
         for (int j = 0; j < N; j++) {
           CHECK((h_vec[i*N+j] == h_vec_verity[i*N+j]) == direction)
