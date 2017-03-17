@@ -16,7 +16,7 @@ const int SHARE_SIZE_LIMIT = 1 << 13;
 int main() {
   //8k documents
   for (int Batch = 1; Batch <= 1 << 13; Batch <<= 1) {
-    for (int N = 1; N <= 1 << 10; N <<= 1) {
+    for (int N = 3; N <= 1 << 10; N <<= 1) {
       thrust::host_vector<int> h_vec(Batch*N);
       thrust::generate(h_vec.begin(), h_vec.end(), rand);
       thrust::device_vector<int> d_vec = h_vec;
@@ -24,7 +24,9 @@ int main() {
       thrust::device_vector<int> d_vec_verify = h_vec;
       LOG(INFO) << "Testing with N = " << N
                 << "\tand Batch = " << Batch << "\t...";
-      int threadsPerBlock = (N+1)/2;
+      int threadsPerBlock = 1;
+      while (threadsPerBlock < N) { threadsPerBlock <<= 1; }
+      threadsPerBlock >>= 1;
       int blocksPerGrid = Batch;
       bool direction = true;//small first
       CHECK(N <= SHARE_SIZE_LIMIT);

@@ -20,28 +20,36 @@ __global__ void BatchedMergeSort(T* inout, unsigned int N, bool direction) {
   __shared__ T s_val[SHARE_SIZE_LIMIT];
   T* d_val = inout + blockIdx.x*N+ threadIdx.x;
   s_val[threadIdx.x] = d_val[0];
-  s_val[threadIdx.x+N/2] = d_val[N/2];
+  if (threadIdx.x + (N+1)/2 < N)
+    s_val[threadIdx.x+(N+1)/2] = d_val[(N+1)/2];
 
-  for (unsigned size = 2; size <= N; size <<= 1) {
-    unsigned stride = size / 2; 
+  /*for (unsigned size = 2; size <= N; size <<= 1) {*/
+  for (unsigned outer_stride = 1; outer_stride < N; outer_stride <<= 1) {
+    /*unsigned stride = size / 2; */
+    unsigned stride = outer_stride;
     unsigned offset = threadIdx.x & (stride -1);
     __syncthreads();
     {
       unsigned pos = 2*threadIdx.x - offset; 
-      Comparator(s_val[pos], s_val[pos+stride], direction);
+      if (pos+stride < N) {
+        Comparator(s_val[pos], s_val[pos+stride], direction);
+      }
+      /*printf("%d\t%d\t%d\n", threadIdx.x, s_val[pos], s_val[pos+stride]);*/
       stride >>= 1;
     }
     for (; stride > 0; stride >>= 1) {
       __syncthreads(); 
       unsigned pos = 2*threadIdx.x - (threadIdx.x&(stride-1));
-      if (offset >= stride) {
+      if (offset >= stride && pos < N) {
         Comparator(s_val[pos-stride], s_val[pos], direction);
+        /*printf("%d\t%d\t%d\n", threadIdx.x, s_val[pos-stride], s_val[pos]);*/
       }
     }
   }
   __syncthreads();
   d_val[0] = s_val[threadIdx.x];
-  d_val[N/2] = s_val[threadIdx.x+N/2];
+  if (threadIdx.x + (N+1)/2 < N)
+    d_val[(N+1)/2] = s_val[threadIdx.x+(N+1)/2];
 }
 
 template <typename T, unsigned int SHARE_SIZE_LIMIT>
@@ -68,7 +76,7 @@ __global__ void BatchedScan(float* inout, unsigned int N) {
   __syncthreads();
   
   /*printf("%d\t%d\t%f\n", threadIdx.x, lane_id, val);*/
-  for (int i = 1; i <= (N-1) >> 5; i <<= 1) {
+  for (int i = 1; i <= (N >> 5); i <<= 1) {
     if (warp_id >= i) {
       float pre_sum = s_val[((warp_id-i+1) << 5)-1];
       __syncthreads();
