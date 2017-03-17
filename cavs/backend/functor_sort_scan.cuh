@@ -18,7 +18,7 @@ __device__ inline void Comparator(T& valA, T& valB, bool direction) {
 template <typename T, unsigned int SHARE_SIZE_LIMIT>
 __global__ void BatchedMergeSort(T* out, const T* in, unsigned int N, bool direction) {
   __shared__ T s_val[SHARE_SIZE_LIMIT];
-  T* in_val = in + blockIdx.x*N+ threadIdx.x;
+  const T* in_val = in + blockIdx.x*N+ threadIdx.x;
   T* out_val = out + blockIdx.x*N+ threadIdx.x;
   s_val[threadIdx.x] = in_val[0];
   if (threadIdx.x + blockDim.x < N)

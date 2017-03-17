@@ -28,7 +28,9 @@ int main() {
       CHECK(N == threadsPerBlock);//it is assumed in current implementation
 
       BatchedScan<SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
-          thrust::raw_pointer_cast(d_vec.data()), N);
+          thrust::raw_pointer_cast(d_vec.data()),
+          thrust::raw_pointer_cast(d_vec.data()),
+          N);
 
       checkCudaError(cudaDeviceSynchronize());
       checkCudaError(cudaGetLastError());

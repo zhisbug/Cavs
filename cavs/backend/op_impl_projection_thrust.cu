@@ -36,7 +36,7 @@ class ProjectionOpThrust: public OpImpl {
 
 template <typename T>
 ProjectionOpThrust<T>::ProjectionOpThrust(const OpDef& def)
-    : OpImpl(def), lamda(NULL), THREAD_POOL_SIZE(32) {
+    : OpImpl(def), lamda(NULL)/*, THREAD_POOL_SIZE(32)*/ {
   alloc_ = GetAllocator(DeviceTypeToString(GPU));
   if (!lamda)
     lamda = alloc_->Allocate<T>(1);
@@ -120,6 +120,6 @@ void ProjectionOpThrust<T>::Compute(OpContext* context) {
   /*checkCudaError(cudaDeviceSynchronize());*/
 }
 
-REGISTER_OP_IMPL_BUILDER(Key("Simplex").Device("GPU"), ProjectionOpThrust<float>);
+/*REGISTER_OP_IMPL_BUILDER(Key("Simplex").Device("GPU"), ProjectionOpThrust<float>);*/
 
 } //namespace backend

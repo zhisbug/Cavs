@@ -1,5 +1,4 @@
 #include "cavs/backend/op_impl.h"
-#include "cavs/backend/op_impl_projection.cuh"
 #include "cavs/backend/functor_sort_scan.cuh"
 #include "cavs/midend/allocator.h"
 #include "cavs/backend/cuda_common.h"
@@ -106,25 +105,11 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
         var_in.data<T>(),
         lamda, N);
   }
-  for (int i = 0; i < vec_num; i++) {
-    thrust::device_ptr<T> dev_ptr(const_cast<T*>(var_in.data<T>()+i*vec_size));
-    thrust::device_vector<T> mu(dev_ptr, dev_ptr+vec_size);
-    thrust::sort(mu.begin(), mu.end());
-    thrust::device_vector<T> mu_scan(vec_size);
-    thrust::inclusive_scan(mu.begin(), mu.end(), mu_scan.begin());
-    FindMax<T><<<BLOCKS_PER_GRID(vec_size), THREADS_PER_BLOCK>>>(lamda,
-        thrust::raw_pointer_cast(mu.data()), 
-        thrust::raw_pointer_cast(mu_scan.data()),
-        vec_size);
-    GetOutput<T><<<BLOCKS_PER_GRID(vec_size), THREADS_PER_BLOCK>>>(
-        var_out->mutable_data<T>()+i*vec_size,
-        var_in.data<T>()+i*vec_size,
-        lamda, vec_size);
-  }
 
   /*var_out->DebugNumerical<T>();*/
   /*checkCudaError(cudaDeviceSynchronize());*/
 }
 
+REGISTER_OP_IMPL_BUILDER(Key("Simplex").Device("GPU"), ProjectionOpKernel<float>);
 
 } //namespace backend

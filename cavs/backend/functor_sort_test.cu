@@ -33,6 +33,7 @@ int main() {
 
       BatchedMergeSort<int, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
           thrust::raw_pointer_cast(d_vec.data()),
+          thrust::raw_pointer_cast(d_vec.data()),
           N, direction);
 
       checkCudaError(cudaDeviceSynchronize());
