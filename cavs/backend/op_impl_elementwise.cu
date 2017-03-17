@@ -1,6 +1,6 @@
 #include "cavs/backend/op_impl_elementwise.cuh"
 #include "cavs/backend/op_impl_elementwise_common.h"
-#include "cavs/backend/functors_elementwise.h"
+#include "cavs/backend/functor_elementwise.h"
 
 namespace backend {
 

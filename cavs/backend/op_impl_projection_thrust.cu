@@ -29,18 +29,17 @@ class ProjectionOpThrust: public OpImpl {
 
  private:
   Allocator* alloc_;
-  T* workspace;
   T* lamda;
-  const int THREAD_POOL_SIZE;
+  /*const int THREAD_POOL_SIZE;*/
   /*void thread_func(T* out, const T* in, int begin, int stride);*/
 };
 
 template <typename T>
 ProjectionOpThrust<T>::ProjectionOpThrust(const OpDef& def)
-    : OpImpl(def), workspace(NULL), lamda(NULL), THREAD_POOL_SIZE(32) {
+    : OpImpl(def), lamda(NULL), THREAD_POOL_SIZE(32) {
   alloc_ = GetAllocator(DeviceTypeToString(GPU));
   if (!lamda)
-    lamda = alloc_->Allocate<T>(THREAD_POOL_SIZE);
+    lamda = alloc_->Allocate<T>(1);
 }
 
 template <typename T>
@@ -77,31 +76,12 @@ void thread_func(T* out, const T* in, int N, int offset, int stride,
     thrust::device_ptr<T> dev_ptr(const_cast<T*>(in+i*N));
     thrust::device_vector<T> mu(dev_ptr, dev_ptr+N);
     thrust::sort(mu.begin(), mu.end(), thrust::greater<T>());
-    /*if (i == 0) {*/
-      /*std::vector<T> h_vec(10); */
-      /*checkCudaError(cudaMemcpy(h_vec.data(),*/
-            /*thrust::raw_pointer_cast(mu.data()), 10*sizeof(T),*/
-            /*cudaMemcpyDeviceToHost));*/
-      /*for (int i = 0; i < 10; i++) {*/
-        /*LOG(INFO) << "sorted[" << i << "]: "*/
-                  /*<< h_vec[i];*/
-      /*}*/
-    /*}*/
     thrust::device_vector<T> mu_scan(N);
     thrust::inclusive_scan(mu.begin(), mu.end(), mu_scan.begin());
-    /*checkCudaError(cudaDeviceSynchronize());*/
     FindMax<T><<<BLOCKS_PER_GRID(N), THREADS_PER_BLOCK>>>(lamda,
         thrust::raw_pointer_cast(mu.data()), 
         thrust::raw_pointer_cast(mu_scan.data()),
         N);
-    /*if (i <= 10) {*/
-      /*LOG(INFO) << "\n\n\n";*/
-      /*T lamda_h; */
-      /*checkCudaError(cudaMemcpy(&lamda_h, lamda, sizeof(T),*/
-            /*cudaMemcpyDeviceToHost));*/
-      /*LOG(INFO) << "lamda = " << lamda_h << "\n\n\n";*/
-    /*}*/
-    /*checkCudaError(cudaDeviceSynchronize());*/
     GetOutput<T><<<BLOCKS_PER_GRID(N), THREADS_PER_BLOCK>>>(
         out+i*N,
         in+i*N, 
@@ -115,27 +95,29 @@ template <typename T>
 void ProjectionOpThrust<T>::Compute(OpContext* context) {
   const Tensor& var_in = context->Input(0);
   Tensor* var_out = context->Output(0);
-  /*if (!workspace)*/
-    /*workspace = alloc_->Allocate<char>(var_in.count()*sizeof(T));*/
-  /*checkCudaError(cudaMemcpy(var_out->mutable_data<T>(),*/
-        /*var_in.data<T>(), var_in.count()*sizeof(T),*/
-        /*cudaMemcpyDeviceToDevice));*/
   CHECK(var_in.dims(0) == var_out->dims(0));
   CHECK(var_in.count() == var_out->count());
-  int N = var_in.count()/var_in.dims(0);
-  vector<thread> thread_pool;
-  for (int th = 0; th < THREAD_POOL_SIZE; th++) {
-    int offset = th*(var_in.dims(0)+THREAD_POOL_SIZE-1)/THREAD_POOL_SIZE;
-    int stride = ((offset+THREAD_POOL_SIZE) > var_in.dims(0)) ? 
-                 var_in.dims(0)-offset : THREAD_POOL_SIZE;
-    thread_pool.push_back(thread(&thread_func<T>,
-            var_out->mutable_data<T>(), var_in.data<T>(),
-            N, offset, stride, (lamda+th)));
+
+  int vec_num = var_in.dims(0);
+  int vec_size = var_in.count()/var_in.dims(0);
+  for (int i = 0; i < vec_num; i++) {
+    thrust::device_ptr<T> dev_ptr(const_cast<T*>(var_in.data<T>()+i*vec_size));
+    thrust::device_vector<T> mu(dev_ptr, dev_ptr+vec_size);
+    thrust::sort(mu.begin(), mu.end());
+    thrust::device_vector<T> mu_scan(vec_size);
+    thrust::inclusive_scan(mu.begin(), mu.end(), mu_scan.begin());
+    FindMax<T><<<BLOCKS_PER_GRID(vec_size), THREADS_PER_BLOCK>>>(lamda,
+        thrust::raw_pointer_cast(mu.data()), 
+        thrust::raw_pointer_cast(mu_scan.data()),
+        vec_size);
+    GetOutput<T><<<BLOCKS_PER_GRID(vec_size), THREADS_PER_BLOCK>>>(
+        var_out->mutable_data<T>()+i*vec_size,
+        var_in.data<T>()+i*vec_size,
+        lamda, vec_size);
   }
-  for (auto& th : thread_pool)
-    th.join();
+
   /*var_out->DebugNumerical<T>();*/
-  checkCudaError(cudaDeviceSynchronize());
+  /*checkCudaError(cudaDeviceSynchronize());*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Simplex").Device("GPU"), ProjectionOpThrust<float>);

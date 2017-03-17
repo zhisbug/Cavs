@@ -1,4 +1,4 @@
-#include "cavs/backend/functors_elementwise.h"
+#include "cavs/backend/functor_elementwise.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/backend/op_impl.h"
 #include "cavs/midend/tensor.h"
