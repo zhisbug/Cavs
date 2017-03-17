@@ -20,8 +20,10 @@ __global__ void BatchedMergeSort(T* inout, unsigned int N, bool direction) {
   __shared__ T s_val[SHARE_SIZE_LIMIT];
   T* d_val = inout + blockIdx.x*N+ threadIdx.x;
   s_val[threadIdx.x] = d_val[0];
-  if (threadIdx.x + (N+1)/2 < N)
-    s_val[threadIdx.x+(N+1)/2] = d_val[(N+1)/2];
+  /*if (threadIdx.x + (N+1)/2 < N)*/
+    /*s_val[threadIdx.x+(N+1)/2] = d_val[(N+1)/2];*/
+  if (threadIdx.x + blockDim.x < N)
+    s_val[threadIdx.x+blockDim.x] = d_val[blockDim.x];
 
   /*for (unsigned size = 2; size <= N; size <<= 1) {*/
   for (unsigned outer_stride = 1; outer_stride < N; outer_stride <<= 1) {
@@ -48,8 +50,10 @@ __global__ void BatchedMergeSort(T* inout, unsigned int N, bool direction) {
   }
   __syncthreads();
   d_val[0] = s_val[threadIdx.x];
-  if (threadIdx.x + (N+1)/2 < N)
-    d_val[(N+1)/2] = s_val[threadIdx.x+(N+1)/2];
+  /*if (threadIdx.x + (N+1)/2 < N)*/
+    /*d_val[(N+1)/2] = s_val[threadIdx.x+(N+1)/2];*/
+  if (threadIdx.x + blockDim.x < N)
+    d_val[blockDim.x] = s_val[threadIdx.x+blockDim.x];
 }
 
 template <typename T, unsigned int SHARE_SIZE_LIMIT>
