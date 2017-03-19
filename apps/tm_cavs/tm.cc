@@ -38,8 +38,10 @@ int main() {
   //Sym doc_tpc = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
 
-  //Sym loss = (0.5f/FLAGS_D*(doc_word-(Sym::MatMul(doc_tpc, tpc_word)))).Square().Reduce_mean();
-  Sym loss = (doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean();
+  LOG(INFO) << "here";
+  Sym loss = (0.5f/FLAGS_D*(doc_word-(Sym::MatMul(doc_tpc, tpc_word)))).Square().Reduce_mean();
+  LOG(INFO) << "here";
+  //Sym loss = (doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean();
   Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr/FLAGS_mb_size, 20, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr/FLAGS_mb_size, 20, "Simplex");
   Sym::DumpGraph();

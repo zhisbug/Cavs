@@ -18,7 +18,8 @@ class UnaryOp : public OpImpl {
     const Tensor& inp = context->Input(0);
     //inp.DebugNumerical<T>();
     Tensor* out = context->Output(0);
-    FUNCTOR::Compute(out->mutable_data<T>(), inp.data<T>(), out->count());
+    FUNCTOR::Compute(out->mutable_data<T>(), out->count(), 
+        inp.data<T>(), inp.count());
     //out->DebugNumerical<T>();
   }
 };
@@ -33,8 +34,8 @@ class BinaryOp : public OpImpl {
     //inp0.DebugNumerical<T>();
     //inp1.DebugNumerical<T>();
     Tensor* out = context->Output(0);
-    FUNCTOR::Compute(out->mutable_data<T>(), inp0.data<T>(), inp1.data<T>(),
-            out->count());
+    FUNCTOR::Compute(out->mutable_data<T>(), out->count(), 
+        inp0.data<T>(), inp0.count(), inp1.data<T>(), inp1.count());
     //out->DebugNumerical<T>();
   }
 };

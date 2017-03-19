@@ -16,11 +16,11 @@ REGISTER_OP_IMPL_BUILDER(Key("Mul").Device("GPU"),
     CudaBinaryOpInstance(math::Mul, float));
 REGISTER_OP_IMPL_BUILDER(Key("Div").Device("GPU"),
     CudaBinaryOpInstance(math::Div, float));
-REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
-    CudaBinaryScalarOpInstance(math::Mul, float));
 REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"),
     CudaUnaryOpInstance(math::Square, float));
+REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
+    CudaBinaryOpInstance(math::Mul, float));
 REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),
-    CudaUnaryScalarOpInstance(math::Assign, float));
+    CudaUnaryOpInstance(math::Assign, float));
 
 } //namespace backend

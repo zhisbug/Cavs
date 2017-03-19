@@ -114,7 +114,7 @@ Sym::Sym<float> (float c) {
   OpDef::AttrDef attr;
   attr.set_name("init");
   attr.mutable_value()->set_f(c);
-  Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
+  new (this)Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
 }
 
 Sym Sym::Variable(C_Dtype type, vector<int> shape,
@@ -245,9 +245,11 @@ Sym Sym::Sub(const Sym& a, const Sym& b, string device) {
 
 Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
-  CHECK(a.node_->output_.size() == b.node_->output_.size() == 1);
+  CHECK(a.node_->output_.size() == b.node_->output_.size());
+  CHECK(a.node_->output_.size() == 1);
   Sym s("Mul", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, "", device);
+  LOG(INFO) << a.op_name();
   return s;
 }
 

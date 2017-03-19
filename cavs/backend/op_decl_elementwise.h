@@ -33,19 +33,31 @@ class UnaryOpDecl : public OpDecl {
 
 class BinaryOpDecl : public OpDecl {
  public:
-  explicit BinaryOpDecl(const OpDef& def) : OpDecl(def) {}
+  explicit BinaryOpDecl(const OpDef& def) :
+    OpDecl(def), partial_(-1) {}
   void ShapeInference(std::vector<TensorShapeDef>* out_shape,
     const std::vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2) << inputs.size();
-    CHECK(inputs[0].dim_size() == inputs[1].dim_size())
-      << inputs[0].DebugString() << "\n" << inputs[1].DebugString()
-      << op_def_.DebugString();
-    for (unsigned i = 0; i < inputs[0].dim_size(); i++)
-      CHECK(inputs[0].dim(i) == inputs[1].dim(i));
-    out_shape->resize(1);
-    out_shape->at(0).clear_dim();
-    out_shape->at(0) = inputs[0];
+    CHECK(out_shape && out_shape->empty());
+    if (inputs[0].dim_size() == inputs[1].dim_size()) {
+      for (unsigned i = 0; i < inputs[0].dim_size(); i++)
+        CHECK(inputs[0].dim(i) == inputs[1].dim(i));
+      out_shape->push_back(inputs[0]);
+    }else if (inputs[0].dim_size() == 1 && inputs[0].dim(0) == 1) {
+      out_shape->push_back(inputs[1]);
+      partial_ = 0;
+    }else if (inputs[1].dim_size() == 1 && inputs[1].dim(0) == 1) {
+      out_shape->push_back(inputs[0]);
+      partial_ = 1;
+    }else {
+      LOG(FATAL) << inputs[0].DebugString() << "\n"
+                 << inputs[1].DebugString() << "\n"
+                 << op_def_.DebugString();
+    }
   }
+
+ protected:
+  int partial_;
 };
 
 class TernaryOpDecl : public OpDecl {
