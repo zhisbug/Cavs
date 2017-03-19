@@ -9,13 +9,8 @@ template <typename T>
 class SquareGradOpImpl: public OpImpl {
  public:
   explicit SquareGradOpImpl(const OpDef& def)
-    : OpImpl(def) {
-      alpha_ = GetSingleArg<T>(def, "alpha");
-    }
+    : OpImpl(def) {}
   void Compute(OpContext* context) override;
-
- private:
-  T alpha_;
 };
 
 template <typename T> 

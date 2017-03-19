@@ -249,7 +249,6 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Mul", {a.node_->output_[0], b.node_->output_[0]},
         a.node_->type_, "", device);
-  LOG(INFO) << a.op_name();
   return s;
 }
 

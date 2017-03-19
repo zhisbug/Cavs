@@ -173,7 +173,6 @@ class SquareOpDecl : public UnaryOpDecl {
       .Input(GetGradientName(op_def_.output(0)))
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)
-      .AttrSingle<float>("alpha", 2.f)
       .Device(op_def_)
       .Finalize(&mul_def);
     grad->push_back(std::move(mul_def));
