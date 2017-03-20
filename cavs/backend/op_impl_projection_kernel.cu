@@ -93,10 +93,10 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
   }
 
   {
-    const int SHARE_SIZE_LIMIT = 1 << 13;
     int threadsPerBlock = N;
     int blocksPerGrid = batch;
-    BatchedScan<SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
+    BatchedScanInCache<float><<<blocksPerGrid, threadsPerBlock,
+                         threadsPerBlock*sizeof(T)>>>(
         workspace_scan, workspace_sort, N);
     BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
         lamda, workspace_sort, workspace_scan, N);
