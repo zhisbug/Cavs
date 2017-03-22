@@ -11,12 +11,14 @@
 
 using namespace backend;
 
-const int SHARE_SIZE_LIMIT = 1 << 13;
+const int MAX_THREADS_IN_BLOCK = 1 << 10;
+const bool direction = true; //small left 
 
 int main() {
   //8k documents
-  for (int Batch = 1; Batch <= 1 << 13; Batch <<= 1) {
-    for (int N = 3; N <= 1 << 10; N <<= 1) {
+  for (int Batch = 1; Batch < 1 << 1; Batch <<= 1) {
+    /*for (int N = 3; N <= 1 << 10; N <<= 1) {*/
+    for (int N = 4; N <= 1 << 2; N <<= 1) {
       thrust::host_vector<int> h_vec(Batch*N);
       thrust::generate(h_vec.begin(), h_vec.end(), rand);
       thrust::device_vector<int> d_vec = h_vec;
@@ -24,20 +26,24 @@ int main() {
       thrust::device_vector<int> d_vec_verify = h_vec;
       LOG(INFO) << "Testing with N = " << N
                 << "\tand Batch = " << Batch << "\t...";
-      int threadsPerBlock = 1;
-      while (threadsPerBlock < N) { threadsPerBlock <<= 1; }
-      threadsPerBlock >>= 1;
-      int blocksPerGrid = Batch;
-      bool direction = true;//small first
-      CHECK(N <= SHARE_SIZE_LIMIT);
-
-      BatchedMergeSort<int, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
-          thrust::raw_pointer_cast(d_vec.data()),
-          thrust::raw_pointer_cast(d_vec.data()),
-          N, direction);
-
-      checkCudaError(cudaDeviceSynchronize());
-      checkCudaError(cudaGetLastError());
+      if (N <= 2*MAX_THREADS_IN_BLOCK) {
+        //it is assumed in in-cache implementation
+        int threadsPerBlock = 1;
+        while (threadsPerBlock < N) { threadsPerBlock <<= 1; }
+        threadsPerBlock >>= 1;
+        int blocksPerGrid = Batch;
+        BatchedOddEvenSortInCache<int><<<blocksPerGrid, threadsPerBlock,
+          threadsPerBlock*2*sizeof(int)>>>(
+            thrust::raw_pointer_cast(d_vec.data()),
+            thrust::raw_pointer_cast(d_vec.data()),
+            direction, N);
+        checkCudaError(cudaGetLastError());
+      }else {
+        BatchedOddEvenSort<int>(
+            thrust::raw_pointer_cast(d_vec.data()),
+            thrust::raw_pointer_cast(d_vec.data()),
+            direction, N, Batch);
+      }
       thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
 
       for (int i = 0; i < Batch; i++)

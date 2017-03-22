@@ -33,12 +33,11 @@ int main() {
             thrust::raw_pointer_cast(d_vec.data()),
             N);
         checkCudaError(cudaGetLastError());
-        thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
       } else {
         BatchedScan(thrust::raw_pointer_cast(d_vec.data()),
             thrust::raw_pointer_cast(d_vec.data()), N, Batch);
-        thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
       }
+      thrust::copy(d_vec.begin(), d_vec.end(), h_vec.begin());
 
       for (int i = 0; i < Batch; i++) {
         thrust::inclusive_scan(

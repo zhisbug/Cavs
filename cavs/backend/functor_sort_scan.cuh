@@ -22,7 +22,7 @@ __device__ inline void Comparator(T& valA, T& valB, bool direction) {
 /*template <typename T, unsigned int SHARE_SIZE_LIMIT>*/
 template <typename T>
 __global__ void BatchedOddEvenSortInCache(T* out, const T* in,
-    unsigned int N, bool direction) {
+    bool direction, unsigned int N) {
   extern __shared__ T s_val[];
   const T* in_val = in + blockIdx.x*N+ threadIdx.x;
   T* out_val = out + blockIdx.x*N+ threadIdx.x;
@@ -65,8 +65,8 @@ __global__ void BatchedOddEvenSortInCache(T* out, const T* in,
 //The thread configuration is exactly the same with the aforementioned function
 template <typename T>
 __global__ void BatchedOddEvenSortStride(T* inout,
-    unsigned int N, bool direction) {
-  const SORTED_BLOCK = 2*blockDim.x;
+    bool direction, unsigned int N) {
+  const int SORTED_BLOCK = 2*blockDim.x;
 
   //SORTED_BLOCK is 2x larger than any threadIdx.x
   for (unsigned int outer_stride = SORTED_BLOCK; outer_stride < N;
@@ -92,6 +92,7 @@ __global__ void BatchedOddEvenSortStride(T* inout,
           for (unsigned int round = 0; round < outer_stride/blockDim.x; round++) {
             unsigned int virtual_id = threadIdx.x + round*blockDim.x;
             unsigned int offset_within_stride = virtual_id & (stride-1);
+            unsigned int pos = 2*virtual_id - offset_within_stride + offset_of_strip;
             if (pos+stride < N) {
               Comparator(inout[pos], inout[pos+stride], direction);
             }
@@ -104,7 +105,8 @@ __global__ void BatchedOddEvenSortStride(T* inout,
 }
 
 template <typename T>
-void BatchedOddEvenSort(T* out, const T* in, unsigned int N, unsigned int Batch) {
+void BatchedOddEvenSort(T* out, const T* in,
+    bool direction, unsigned int N, unsigned int Batch) {
   const int MAX_THREADS_IN_BLOCK = 1 << 10;
   unsigned int threadsPerBlock =
       (MAX_THREADS_IN_BLOCK > N)? N : MAX_THREADS_IN_BLOCK;
@@ -112,8 +114,9 @@ void BatchedOddEvenSort(T* out, const T* in, unsigned int N, unsigned int Batch)
   /*LOG(INFO) << blocksPerGrid << "\t" << threadsPerBlock;*/
 
   BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock,
-                       threadsPerBlock*sizeof(T)>>>(out, in, N);
-  BatchedOddEvenSortStride<T><<<blocksPerGrid, threadsPerBlock>>>(out, N);
+                       threadsPerBlock*sizeof(T)>>>(out, in, direction, N);
+  BatchedOddEvenSortStride<T><<<blocksPerGrid, threadsPerBlock>>>(
+                                                    out, direction, N);
   checkCudaError(cudaGetLastError());
 }
 

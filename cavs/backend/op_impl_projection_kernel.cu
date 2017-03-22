@@ -83,13 +83,15 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
     workspace_scan = alloc_->Allocate<T>(var_in.count());
 
   {
-    const int SHARE_SIZE_LIMIT = 1 << 13;
+    /*const int SHARE_SIZE_LIMIT = 1 << 13;*/
     int threadsPerBlock = 1;
     while (threadsPerBlock < N) { threadsPerBlock <<= 1; }
     threadsPerBlock >>= 1;
     int blocksPerGrid = batch;
-    BatchedMergeSort<T, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(
-        workspace_sort, var_in.data<T>(), N, false);
+    /*BatchedMergeSort<T, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(*/
+        /*workspace_sort, var_in.data<T>(), N, false);*/
+    BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock>>>(
+        workspace_sort, var_in.data<T>(), false, N);
   }
 
   {
