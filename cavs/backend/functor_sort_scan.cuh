@@ -26,36 +26,51 @@ __global__ void BatchedOddEvenSortInCache(T* out, const T* in,
   extern __shared__ T s_val[];
   const T* in_val = in + blockIdx.x*N+ threadIdx.x;
   T* out_val = out + blockIdx.x*N+ threadIdx.x;
-  s_val[threadIdx.x] = in_val[0];
-  if (threadIdx.x + blockDim.x < N)
-    s_val[threadIdx.x+blockDim.x] = in_val[blockDim.x];
 
-  /*for (unsigned size = 2; size <= N; size <<= 1) {*/
-  for (unsigned outer_stride = 1; outer_stride < N; outer_stride <<= 1) {
-    /*unsigned stride = size / 2; */
-    unsigned stride = outer_stride;
-    unsigned offset = threadIdx.x & (stride -1);
+  for (int round = 0;
+       round < (N+2*blockDim.x-1)/(2*blockDim.x); round++) {
+    int base_idx = round*2*blockDim.x;
+    if (threadIdx.x + base_idx < N) {
+      s_val[threadIdx.x] = in_val[base_idx];
+    }
+    if (threadIdx.x + base_idx + blockDim.x < N) {
+      s_val[threadIdx.x+blockDim.x] = in_val[base_idx+blockDim.x];
+    }
     __syncthreads();
-    {
-      unsigned pos = 2*threadIdx.x - offset; 
-      if (pos+stride < N) {
-        Comparator(s_val[pos], s_val[pos+stride], direction);
+    for (unsigned outer_stride = 1; outer_stride <= blockDim.x;
+         outer_stride <<= 1) {
+      unsigned stride = outer_stride;
+      unsigned offset = threadIdx.x & (stride -1);
+      {
+        unsigned int pos = 2*threadIdx.x - offset;
+        unsigned int global_pos = pos + base_idx;
+        if (global_pos+stride < N) {
+          Comparator(s_val[pos], s_val[pos+stride], direction);
+        }
+        stride >>= 1;
       }
-      stride >>= 1;
-    }
-    for (; stride > 0; stride >>= 1) {
       __syncthreads(); 
-      unsigned pos = 2*threadIdx.x - (threadIdx.x&(stride-1));
-      if (offset >= stride && pos < N) {
-        Comparator(s_val[pos-stride], s_val[pos], direction);
-        /*printf("%d\t%d\t%d\n", threadIdx.x, s_val[pos-stride], s_val[pos]);*/
+      for (; stride > 0; stride >>= 1) {
+        unsigned pos = 2*threadIdx.x - (threadIdx.x&(stride-1));
+        unsigned int global_pos = pos + base_idx;
+        if (offset >= stride && global_pos < N) {
+          Comparator(s_val[pos-stride], s_val[pos], direction);
+        }
+        __syncthreads(); 
       }
     }
+    if (threadIdx.x + base_idx < N) {
+      out_val[base_idx] = s_val[threadIdx.x];
+    }
+    if (threadIdx.x + base_idx+blockDim.x < N) {
+      out_val[base_idx+blockDim.x] = s_val[threadIdx.x+blockDim.x];
+    }
+    __syncthreads();
   }
-  __syncthreads();
-  out_val[0] = s_val[threadIdx.x];
-  if (threadIdx.x + blockDim.x < N)
-    out_val[blockDim.x] = s_val[threadIdx.x+blockDim.x];
+  /*if (threadIdx.x == 0) {*/
+    /*for (int i = 0; i < N; i++)*/
+    /*printf("1st Procedure: %d\t [%d] : %d\n", __LINE__, i, in_val[i]); */
+  /*}*/
 }
 
 //Assume each strip has been sorted with BatchedOddEvenSortInCache
@@ -67,34 +82,45 @@ template <typename T>
 __global__ void BatchedOddEvenSortStride(T* inout,
     bool direction, unsigned int N) {
   const int SORTED_BLOCK = 2*blockDim.x;
+  T* inout_slice = inout + blockIdx.x*N;
 
   //SORTED_BLOCK is 2x larger than any threadIdx.x
   for (unsigned int outer_stride = SORTED_BLOCK; outer_stride < N;
        outer_stride <<= 1) {
+    /*printf("%d\touter_stride: %d (id:%d, N:%d, blockDim:%d)\n",*/
+           /*__LINE__, outer_stride, threadIdx.x, N, blockDim.x);*/
     for (unsigned int strip = 0;
          strip < (N+2*outer_stride-1) / (2*outer_stride); strip++) {
       unsigned int offset_of_strip = strip*2*outer_stride;
       for (unsigned int stride = outer_stride; stride > 0; stride >>= 1) {
-        if (stride < (outer_stride / 2)) {
+        if (stride < outer_stride) {
           for (unsigned int round = 0; round < outer_stride/blockDim.x; round++) {
             //We don't have enough threads here,
             //so each thread has to do more and
             //pretend to behave as the virtual thread id(s);
             unsigned int virtual_id = threadIdx.x + round*blockDim.x;
-            unsigned int offset_within_stride = virtual_id & (stride-1);
-            unsigned int pos = 2*virtual_id - offset_within_stride + offset_of_strip;
-            if (offset_within_stride > stride && pos < N) {
-              Comparator(inout[pos-stride], inout[pos], direction);
+            unsigned int offset_within_stride = virtual_id & (outer_stride-1);
+            unsigned int pos = 2*virtual_id - (virtual_id & (stride-1)) + offset_of_strip;
+            /*printf("%d\t vid: %d, ows:%d, pos:%d (id:%d, stride:%d, round:%d, strip:%d)\n",*/
+                   /*__LINE__, virtual_id, offset_within_stride, pos, threadIdx.x, stride, round, strip);*/
+            if (offset_within_stride >= stride && pos < N) {
+              Comparator(inout_slice[pos-stride], inout_slice[pos], direction);
+              /*printf("%d\tCompare %d([%d]) with %d([%d]) (id:%d, stride:%d, round:%d, strip:%d)\n",*/
+                     /*__LINE__, inout[pos-stride], pos-stride, */
+                     /*inout[pos], pos, threadIdx.x, stride, round, strip);*/
             }
             __syncthreads();
           }
         }else {
           for (unsigned int round = 0; round < outer_stride/blockDim.x; round++) {
             unsigned int virtual_id = threadIdx.x + round*blockDim.x;
-            unsigned int offset_within_stride = virtual_id & (stride-1);
+            unsigned int offset_within_stride = virtual_id & (outer_stride-1);
             unsigned int pos = 2*virtual_id - offset_within_stride + offset_of_strip;
             if (pos+stride < N) {
-              Comparator(inout[pos], inout[pos+stride], direction);
+              Comparator(inout_slice[pos], inout_slice[pos+stride], direction);
+              /*printf("%d\tCompare %d([%d]) with %d([%d]) (id:%d, stride:%d, round:%d, strip:%d)\n",*/
+                     /*__LINE__, inout[pos], pos, */
+                     /*inout[pos+stride], pos+stride, threadIdx.x, stride, round, strip);*/
             }
             __syncthreads();
           }
@@ -108,15 +134,24 @@ template <typename T>
 void BatchedOddEvenSort(T* out, const T* in,
     bool direction, unsigned int N, unsigned int Batch) {
   const int MAX_THREADS_IN_BLOCK = 1 << 10;
-  unsigned int threadsPerBlock =
-      (MAX_THREADS_IN_BLOCK > N)? N : MAX_THREADS_IN_BLOCK;
+  unsigned int threadsPerBlock = 1;
+  while (threadsPerBlock < N) {
+    threadsPerBlock <<= 1;
+    if (threadsPerBlock == MAX_THREADS_IN_BLOCK)
+      break;
+  }
+  if (threadsPerBlock > N) 
+    threadsPerBlock = (threadsPerBlock >> 1) > 0 ? (threadsPerBlock >> 1) : 1;
   unsigned int blocksPerGrid = Batch;
   /*LOG(INFO) << blocksPerGrid << "\t" << threadsPerBlock;*/
 
   BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock,
-                       threadsPerBlock*sizeof(T)>>>(out, in, direction, N);
+                       2*threadsPerBlock*sizeof(T)>>>(out, in, direction, N);
+  checkCudaError(cudaDeviceSynchronize());
+  checkCudaError(cudaGetLastError());
   BatchedOddEvenSortStride<T><<<blocksPerGrid, threadsPerBlock>>>(
                                                     out, direction, N);
+  checkCudaError(cudaDeviceSynchronize());
   checkCudaError(cudaGetLastError());
 }
 
