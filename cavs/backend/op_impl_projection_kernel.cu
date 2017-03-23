@@ -44,25 +44,34 @@ ProjectionOpKernel<T>::~ProjectionOpKernel() {
 }
 
 template <typename T>
-__global__ void BatchedFindMax(T *out, const T* mu, const T* mu_scan, int n) {
-  int idx = threadIdx.x + blockIdx.x*n;
-  if (threadIdx.x < n) {  
-    if ((mu[idx] + (1.f - mu_scan[idx])/(idx+1)) > 0) {
-      if (idx == n-1 || mu[idx+1] + (1.f - mu_scan[idx+1]/(idx+2) < 0)) 
-        out[blockIdx.x] = (1-mu_scan[idx])/(idx+1);
+__global__ void BatchedFindMax(T *out, const T* mu, const T* mu_scan, int N) {
+  int offset = blockIdx.x*N;
+  for (int round = 0; round < (N+blockDim.x-1)/blockDim.x; round++) {
+    int offset_within_vec = threadIdx.x + round*blockDim.x;
+    int idx = offset + offset_within_vec;
+    if (offset_within_vec < N) {  
+      if ((mu[idx] + (1.f - mu_scan[idx])/(idx+1)) > 0) {
+        if (idx == N-1 || mu[idx+1] + (1.f - mu_scan[idx+1]/(idx+2) < 0)) {
+          out[blockIdx.x] = (1-mu_scan[idx])/(idx+1);
+        }
+      }
     }
   }
 }
 
 template <typename T>
-__global__ void BatchedGetOutput(T *x, const T* y, const T* lamda, int n) {
-  int idx = threadIdx.x + blockIdx.x*n;
-  if (threadIdx.x < n) {  
-    T tmp = y[idx] + lamda[blockIdx.x];
-    if (tmp > 0)
-      x[idx] = tmp;
-    else
-      x[idx] = 0;
+__global__ void BatchedGetOutput(T *x, const T* y, const T* lamda, int N) {
+  int offset = blockIdx.x*N;
+  for (int round = 0; round < (N+blockDim.x-1)/blockDim.x; round++) {
+    int offset_within_vec = threadIdx.x + round*blockDim.x;
+    int idx = offset + offset_within_vec;
+    if (offset_within_vec < N) {  
+      T tmp = y[idx] + lamda[blockIdx.x];
+      if (tmp > 0)
+        x[idx] = tmp;
+      else
+        x[idx] = 0;
+    }
   }
 }
 
@@ -83,23 +92,24 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
     workspace_scan = alloc_->Allocate<T>(var_in.count());
 
   {
-    /*const int SHARE_SIZE_LIMIT = 1 << 13;*/
-    int threadsPerBlock = 1;
-    while (threadsPerBlock < N) { threadsPerBlock <<= 1; }
-    threadsPerBlock >>= 1;
-    int blocksPerGrid = batch;
-    /*BatchedMergeSort<T, SHARE_SIZE_LIMIT><<<blocksPerGrid, threadsPerBlock>>>(*/
-        /*workspace_sort, var_in.data<T>(), N, false);*/
-    BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock>>>(
-        workspace_sort, var_in.data<T>(), false, N);
+    /*int threadsPerBlock = 1;*/
+    /*while (threadsPerBlock < N) { threadsPerBlock <<= 1; }*/
+    /*threadsPerBlock >>= 1;*/
+    /*int blocksPerGrid = batch;*/
+    /*BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock>>>(*/
+        /*workspace_sort, var_in.data<T>(), false, N);*/
+    BatchedOddEvenSort(
+        workspace_sort, var_in.data<T>(), false, N, batch);
   }
 
   {
-    int threadsPerBlock = N;
+    const int MAX_THREADS_IN_BLOCK = 1 << 10;
+    int threadsPerBlock = (MAX_THREADS_IN_BLOCK > N) ? N : MAX_THREADS_IN_BLOCK;
     int blocksPerGrid = batch;
-    BatchedScanInCache<float><<<blocksPerGrid, threadsPerBlock,
-                         threadsPerBlock*sizeof(T)>>>(
-        workspace_scan, workspace_sort, N);
+    /*BatchedScanInCache<float><<<blocksPerGrid, threadsPerBlock,*/
+                         /*threadsPerBlock*sizeof(T)>>>(*/
+        /*workspace_scan, workspace_sort, N);*/
+    BatchedScan(workspace_scan, workspace_sort, N, batch);
     BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
         lamda, workspace_sort, workspace_scan, N);
     BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(
