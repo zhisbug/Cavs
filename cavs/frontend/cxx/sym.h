@@ -24,13 +24,15 @@ class Sym {
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
   //non-arguments operation
-  static Sym Variable(C_Dtype type, std::vector<int> shape,
-    const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
-  static Sym Placeholder(C_Dtype type, std::vector<int> shape,
+  static Sym Variable(C_Dtype type, const std::vector<int>& shape,
+      const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
+  static Sym Placeholder(C_Dtype type, const std::vector<int>& shape,
       string device = "GPU");
   static Sym MnistInput(int batch, string source, string file, string device = "GPU");
-  static Sym Data(C_Dtype type, std::vector<int> shape, int batch, void* data, string device = "GPU");
-  static Sym DDV(C_Dtype type, std::vector<int> shape, const Sym& data, string device = "GPU");
+  static Sym Data(C_Dtype type, const std::vector<int>& shape, int batch,
+      const pair<string, OpDef::AttrDef>& reader, string device = "GPU");
+  static Sym DDV(C_Dtype type, const std::vector<int>& shape, int batch,
+      const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
   static Sym Square(const Sym& a, string device = "GPU");
@@ -54,6 +56,7 @@ class Sym {
   static std::pair<std::string, OpDef::AttrDef> Ones();
   static std::pair<std::string, OpDef::AttrDef> Zeros();
   static std::pair<std::string, OpDef::AttrDef> UniformRandom(int stride);
+  static std::pair<std::string, OpDef::AttrDef> BinaryReader(const string& filename);
   //debug operations
   static void DumpGraph();
   void print();

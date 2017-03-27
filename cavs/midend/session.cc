@@ -41,8 +41,10 @@ OpContext* SessionBase::GetContext(const Node* node) {
   for (auto* output : node->outputs()) {
     const Tensor* t = this->GetTensor(output->scoped_name());
     if (!t) {
-      bool shared_mem = GetSingleArg<bool>(op_def, "ShareMemory", false);
-      if (shared_mem) {
+      if (GetTensor(output->name())) {
+        Tensor out(output->scoped_name(), *GetTensor(output->name()));
+        InsertTensor(out);
+      }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
         CHECK(node->inputs_size() == 1); 
@@ -118,10 +120,11 @@ class SimpleSession : public SessionBase {
   //std::vector<std::pair<OpImpl*, OpContext*>> executors_;
   std::vector<Statement*> executors_;
   bool compiled_;
+  int round_;
 };
 
 SimpleSession::SimpleSession(const DepGraph* graph)
-    : SessionBase(graph), compiled_(false) {}
+    : SessionBase(graph), compiled_(false), round_(0) {}
 
 void DepthSearch(const Node* curr,
     vector<const Node*>* critical_path,
@@ -173,16 +176,19 @@ void SimpleSession::Run(const vector<string>& output_names,
   if (!compiled_) {
     Compile(output_names, input_names);
     compiled_ = true;
+    round_ = 0;
   }
   LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
   LOG(INFO) << "Executing...";
   for (auto* exe : executors_) {
+    exe->SetRound(round_);
     exe->Run();
   }
   LOG(INFO) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
   LOG(INFO) << "Execution completed";
+  round_++;
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,

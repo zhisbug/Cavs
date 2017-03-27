@@ -15,6 +15,11 @@ using ::backend::CreateOp;
 class Statement {
  public:
   virtual void Run() = 0;
+  inline void SetRound(int r) { round_ = r; }
+ protected:
+  inline int GetRound() const { return round_; }
+ private:
+  int round_;
 };
 
 class ExprStatement : public Statement {
@@ -26,10 +31,11 @@ class ExprStatement : public Statement {
     if (ctxt_) free(ctxt_);
   }
   inline void Run() override {
-    LOG(INFO) << "Running Operator " << op_->DebugInfo(1);
-    LOG(INFO) << "Context Info \n" << ctxt_->DebugInfo();
+    //LOG(INFO) << "Running Operator " << op_->DebugInfo(1);
+    //LOG(INFO) << "Context Info \n" << ctxt_->DebugInfo();
     CHECK(op_);
     CHECK(ctxt_);
+    ctxt_->SetRound(GetRound());
     op_->Compute(ctxt_);
   }
   inline void SetOp(OpImpl* op) { op_ = op; }
@@ -51,9 +57,7 @@ class BasicBlock : public Statement {
   inline void Run() override {
     //LOG(INFO) << "Run " << iter_ << " iterations";
     for (int i = 0; i < iter_; i++) {
-      int counter = 0;
       for (auto* stmt : stmts_) {
-        //LOG(INFO) << "Running" << i << "\t" << counter++;
         stmt->Run();
       }
     }

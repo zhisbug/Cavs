@@ -117,13 +117,13 @@ Sym::Sym<float> (float c) {
   new (this)Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
 }
 
-Sym Sym::Variable(C_Dtype type, vector<int> shape,
+Sym Sym::Variable(C_Dtype type, const vector<int>& shape,
     const pair<string, OpDef::AttrDef>& filler, string device) {
   CHECK(shape.size() > 0);
   return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
 }
 
-Sym Sym::Placeholder(C_Dtype type, vector<int> shape,
+Sym Sym::Placeholder(C_Dtype type, const vector<int>& shape,
     string device) {
   CHECK(shape.size() > 0);
   return Sym("Placeholder", {}, type, "", device, shape);
@@ -143,21 +143,26 @@ Sym Sym::MnistInput(int batch, string source, string file, string device) {
       {batch_attr, source_attr, file_attr}); 
 }
 
-Sym Sym::Data(C_Dtype type, vector<int> shape,
-    int batch, void* data, string device) {
+Sym Sym::Data(C_Dtype type, const vector<int>& shape,
+    int batch, const pair<string, OpDef::AttrDef>& reader, string device) {
   OpDef::AttrDef batch_attr;
   batch_attr.set_name("Batch");
   batch_attr.mutable_value()->set_i(batch);
-  OpDef::AttrDef data_attr;
-  data_attr.set_name("DataPtr");
-  data_attr.mutable_value()->set_i(reinterpret_cast<intptr_t>(data));
-  return Sym("Data", {}, C_FLOAT, "", device, {}, {batch_attr, data_attr});
+  OpDef::AttrDef shape_attr;
+  shape_attr.set_name("Shape");
+  OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
+  for (int s : shape) {
+    lv->add_i(s);
+  }
+  return Sym("Data", {}, C_FLOAT, reader.first, device, {}, {batch_attr, shape_attr, reader.second});
 }
 
-Sym Sym::DDV(C_Dtype type, vector<int> shape,
-    const Sym& data, string device) {
-  return Sym("DDV", {data.node_->output_[0]},
-      type, "", device);
+Sym Sym::DDV(C_Dtype type, const vector<int>& shape, int batch,
+    const pair<string, OpDef::AttrDef>& filler, string device) {
+  OpDef::AttrDef batch_attr;
+  batch_attr.set_name("Batch");
+  batch_attr.mutable_value()->set_i(batch);
+  return Sym("DDV", {}, type, filler.first, device, {}, {batch_attr, filler.second}); 
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
@@ -309,6 +314,13 @@ pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
   attr.set_name("stride");
   attr.mutable_value()->set_i(stride);
   return std::make_pair("UniformRandom", std::move(attr));
+}
+
+pair<string, OpDef::AttrDef> Sym::BinaryReader(const string& filename) {
+  OpDef::AttrDef attr;
+  attr.set_name("filename");
+  attr.mutable_value()->set_s(filename);
+  return std::make_pair("BinaryReader", std::move(attr));
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

@@ -26,32 +26,6 @@ class VariableOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     if (!initialized_) {
       Tensor* out = context->Output(0);
-      if (out->dims(0) == 5000) {
-        vector<float> buf(5000*100);
-        FILE *fp = fopen("/users/shizhenx/projects/tm_final/code/doc_tpc.init", "rb");
-        CHECK(fp);
-        fread(buf.data(), sizeof(float), 5000*100, fp);
-        checkCudaError(cudaMemcpy(out->mutable_data<T>(), buf.data(), 5000*100*sizeof(float),
-                                  cudaMemcpyHostToDevice));
-        fclose(fp);
-        LOG(INFO) << "doc_tpc.init...";
-        //out->DebugNumerical<float>();
-        initialized_ = true;
-        return;
-      }else if (out->dims(0) == 100) {
-        vector<float> buf(100*1000);
-        FILE *fp = fopen("/users/shizhenx/projects/tm_final/code/tpc_word.init", "rb");
-        CHECK(fp);
-        fread(buf.data(), sizeof(float), 100*1000, fp);
-
-        checkCudaError(cudaMemcpy(out->mutable_data<T>(), buf.data(), 100*1000*sizeof(float),
-                                  cudaMemcpyHostToDevice));
-        fclose(fp);
-        LOG(INFO) << "tpc_word.init...";
-        out->DebugNumerical<float>();
-        initialized_ = true;
-        return;
-      }
       FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
       out->DebugNumerical<T>();
       initialized_ = true;

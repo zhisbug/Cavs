@@ -20,6 +20,16 @@ class PlaceholderOpImpl : public OpImpl {
   }
 };
 
+template <typename FUNCTOR, typename T>//copyop, dtype
+class DataOpImpl : public OpImpl {
+ public:
+  explicit DataOpImpl(const OpDef& def) : OpImpl(def) {}
+
+  void Compute(OpContext* context) override {
+    //do nothing now
+  }
+};
+
 } //namespace cavs
 
 #endif

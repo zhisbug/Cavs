@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-DEFINE_int32(K, 100000,  "num_of-topics");
+DEFINE_int32(K, 100,  "num_of-topics");
 DEFINE_int32(V, 1000, "vocab_size");
 DEFINE_int32(D, 5000, "num_of_docs");
 DEFINE_int32(num_epochs, 2, "num_of_epochs");
@@ -23,8 +23,6 @@ void load(void** doc_word) {
   for(int i = 0; i < FLAGS_D; i++) {
     fread(d_w+i*FLAGS_V, sizeof(float), FLAGS_V, fp);
   }
-  //for (int i = 0; i < FLAGS_V; i++)
-    //LOG(INFO) << i << "\t" << d_w[i];
   fclose(fp);
 }
 
@@ -32,27 +30,24 @@ int main() {
   void* doc_word_buf;
   load(&doc_word_buf);
 
-  Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
-  //Sym doc_word  = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size, doc_word_buf);
-  Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K}, Sym::UniformRandom(FLAGS_K));
-  //Sym doc_tpc = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_V}, doc_tpc);
-  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
+  Sym doc_word = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size,
+                           Sym::BinaryReader(FLAGS_file_docs));
+  Sym doc_tpc  = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_mb_size,
+                           Sym::UniformRandom(FLAGS_V));
+  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V},
+                               Sym::UniformRandom(FLAGS_V));
 
-  Sym loss = 0.5f/FLAGS_D*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean());
-  //Sym loss = (doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean();
+  Sym loss  = 0.5f/FLAGS_D*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean());
   Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, 2, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, 2, "Simplex");
-  Sym::DumpGraph();
 
   Session sess;
   int iters = 100;
   for (int i = 0; i < iters; i++) {
-    sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
-    //sess.Run({loss, step1}, {{doc_word, doc_word_buf}});
+    //sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
+    sess.Run({loss, step1, step2});
     LOG(INFO) << "Iteration[" << i << "]:";
     loss.print();
-    //sleep(5);
-    //doc_tpc.print();
   }
 
   return 0;

@@ -92,12 +92,6 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
     workspace_scan = alloc_->Allocate<T>(var_in.count());
 
   {
-    /*int threadsPerBlock = 1;*/
-    /*while (threadsPerBlock < N) { threadsPerBlock <<= 1; }*/
-    /*threadsPerBlock >>= 1;*/
-    /*int blocksPerGrid = batch;*/
-    /*BatchedOddEvenSortInCache<T><<<blocksPerGrid, threadsPerBlock>>>(*/
-        /*workspace_sort, var_in.data<T>(), false, N);*/
     BatchedOddEvenSort(
         workspace_sort, var_in.data<T>(), false, N, batch);
   }
@@ -106,9 +100,6 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
     const int MAX_THREADS_IN_BLOCK = 1 << 10;
     int threadsPerBlock = (MAX_THREADS_IN_BLOCK > N) ? N : MAX_THREADS_IN_BLOCK;
     int blocksPerGrid = batch;
-    /*BatchedScanInCache<float><<<blocksPerGrid, threadsPerBlock,*/
-                         /*threadsPerBlock*sizeof(T)>>>(*/
-        /*workspace_scan, workspace_sort, N);*/
     BatchedScan(workspace_scan, workspace_sort, N, batch);
     BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
         lamda, workspace_sort, workspace_scan, N);
@@ -117,6 +108,7 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
         var_in.data<T>(),
         lamda, N);
   }
+
 
   /*var_out->DebugNumerical<T>();*/
   /*checkCudaError(cudaDeviceSynchronize());*/
