@@ -178,16 +178,16 @@ void SimpleSession::Run(const vector<string>& output_names,
     compiled_ = true;
     round_ = 0;
   }
-  LOG(INFO) << "Feeding inputs...";
+  //LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
-  LOG(INFO) << "Executing...";
+  //LOG(INFO) << "Executing...";
   for (auto* exe : executors_) {
     exe->SetRound(round_);
     exe->Run();
   }
-  LOG(INFO) << "Fetching output..";
+  //LOG(INFO) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
-  LOG(INFO) << "Execution completed";
+  //LOG(INFO) << "Execution completed";
   round_++;
 }
 

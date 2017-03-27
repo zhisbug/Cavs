@@ -3,14 +3,25 @@
 
 namespace backend {
 
-template <typename T> 
 struct CUDAMemCopy {
-  static void Compute(T* out, const T* in, size_t n) {
-    checkCudaError(cudaMemcpy(out, in, n*sizeof(T), cudaMemcpyHostToDevice));
+  static void Compute(void* out, void* in, size_t n) {
+    checkCudaError(cudaMemcpy(out, in, n, cudaMemcpyHostToDevice));
   }
 };
 
-REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy<float>, float>);
+struct BinaryReader {
+  static void Compute(void* buf, const char* filename, size_t n) {
+    CHECK(buf);
+    FILE *fp = fopen(filename,"rb");
+    if (!fp)
+      LOG(FATAL) << "file[" << filename << "] does not exists";
+    CHECK(fread(buf, sizeof(char), n, fp) == n);
+    fclose(fp);
+  }
+};
+
+REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy>);
+REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy>);
 
 } //namespace backend
 
