@@ -7,9 +7,9 @@ DEFINE_int32(K, 100,  "num_of-topics");
 DEFINE_int32(V, 1000, "vocab_size");
 DEFINE_int32(D, 5000, "num_of_docs");
 DEFINE_int32(epochs, 200, "num_of_epochs");
-DEFINE_int32(inner_iters, 1, "num_of_inner_num_iters");
+DEFINE_int32(inner_iters, 20, "num_of_inner_num_iters");
 DEFINE_double(lr, 0.2, "learning_rate");
-DEFINE_int32(batch, 1000, "size_of_minibatch");
+DEFINE_int32(batch, 5000, "size_of_minibatch");
 DEFINE_string(file_docs, "/users/shizhenx/projects/Cavs/apps/tm_cavs/data/docs.dat", "doc_file");
 DEFINE_int32(num_eval, 5000, "num_rand_smps_eval");
 

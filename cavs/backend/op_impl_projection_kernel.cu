@@ -84,29 +84,50 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
 
   int batch = var_in.dims(0);
   int N = var_in.count()/var_in.dims(0);
-  if (!lamda)
-    lamda = alloc_->Allocate<T>(var_in.dims(0));
-  if (!workspace_sort)
-    workspace_sort = alloc_->Allocate<T>(var_in.count());
-  if (!workspace_scan)
-    workspace_scan = alloc_->Allocate<T>(var_in.count());
 
-  {
-    BatchedOddEvenSort(
-        workspace_sort, var_in.data<T>(), false, N, batch);
+  //To further reduce the workspace of tpc_word, 
+  //we need to split the N dimension
+  const int MINI_BATCH = (batch < 1000) ? batch : 1000;
+  if (!lamda) {
+    /*lamda = alloc_->Allocate<T>(var_in.dims(0));*/
+    lamda = alloc_->Allocate<T>(MINI_BATCH);
   }
+  if (!workspace_sort) {
+    /*workspace_sort = alloc_->Allocate<T>(var_in.count());*/
+    workspace_sort = alloc_->Allocate<T>(MINI_BATCH*N);
+  }
+  if (!workspace_scan) {
+    /*workspace_scan = alloc_->Allocate<T>(var_in.count());*/
+    workspace_scan = alloc_->Allocate<T>(MINI_BATCH*N);
+  }
+  for (int offset = 0; offset < batch; offset += MINI_BATCH) {
+    int curr_batch_size = (offset + MINI_BATCH > batch) ?
+                          (batch - offset) : MINI_BATCH;
+    {
+      /*BatchedOddEvenSort(*/
+          /*workspace_sort, var_in.data<T>(), false, N, batch);*/
+      BatchedOddEvenSort(
+          workspace_sort, var_in.data<T>()+offset*N, false, N, curr_batch_size);
+    }
 
-  {
-    const int MAX_THREADS_IN_BLOCK = 1 << 10;
-    int threadsPerBlock = (MAX_THREADS_IN_BLOCK > N) ? N : MAX_THREADS_IN_BLOCK;
-    int blocksPerGrid = batch;
-    BatchedScan(workspace_scan, workspace_sort, N, batch);
-    BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
-        lamda, workspace_sort, workspace_scan, N);
-    BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(
-        var_out->mutable_data<T>(),
-        var_in.data<T>(),
-        lamda, N);
+    {
+      const int MAX_THREADS_IN_BLOCK = 1 << 10;
+      int threadsPerBlock = (MAX_THREADS_IN_BLOCK > N) ? N : MAX_THREADS_IN_BLOCK;
+      /*int blocksPerGrid = batch;*/
+      int blocksPerGrid = curr_batch_size;
+      /*BatchedScan(workspace_scan, workspace_sort, N, batch);*/
+      BatchedScan(workspace_scan, workspace_sort, N, curr_batch_size);
+      BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
+          lamda, workspace_sort, workspace_scan, N);
+      /*BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(*/
+          /*var_out->mutable_data<T>(),*/
+          /*var_in.data<T>(),*/
+          /*lamda, N);*/
+      BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(
+          var_out->mutable_data<T>() + offset*N,
+          var_in.data<T>() + offset*N,
+          lamda, N);
+    }
   }
 
   /*var_out->DebugNumerical<T>();*/

@@ -7,8 +7,6 @@
 DEFINE_int32(K, 10000,  "num_of-topics");
 DEFINE_int32(V, 10000, "vocab_size");
 DEFINE_int32(D, 400, "num_of_docs");
-//DEFINE_int32(num_epochs, 2, "num_of_epochs");
-//DEFINE_int32(inner_num_iters, 1, "num_of_inner_num_iters");
 DEFINE_double(lr, 10, "learning_rate");
 DEFINE_int32(mb_size, 400, "size_of_minibatch");
 DEFINE_string(file_docs,
@@ -55,7 +53,7 @@ int main() {
   load_20news(&doc_word_buf);
   LOG(INFO) << "Loading completes";
 
-  Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_mb_size, FLAGS_V});
+  Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_D, FLAGS_V});
   Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K}, Sym::UniformRandom(FLAGS_K));
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
 
