@@ -5,6 +5,8 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/proto/tensor_shape.pb.h"
 
+#include <string>
+
 namespace backend {
 
 using ::midend::OpContext;
@@ -30,11 +32,13 @@ class DataOpImpl : public OpImpl {
     CHECK(!shape.empty());
     CHECK(shape.size() >= 2);
     num_ = shape[0];
-    CHECK(batch_ < num_);
+    CHECK(batch_ <= num_) << def.DebugString();
     item_size_ = 1;
     for (int i = 1; i < shape.size(); i++)
       item_size_ *= shape[i];
     CHECK(item_size_ > 0);
+    filename_ = GetSingleArg<std::string>(def, "filename");
+    CHECK(filename_.length() > 0);
   }
   ~DataOpImpl() {
     if (buf_)  free(buf_); 

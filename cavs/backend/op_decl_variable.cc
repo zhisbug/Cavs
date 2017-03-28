@@ -33,7 +33,8 @@ void DDVOpDecl::ShapeInference(
     const vector<TensorShapeDef>& inputs) {
   CHECK(out_shape);
   CHECK(out_shape->empty());
-  CHECK(op_def_.shape_size() == 0);
+  CHECK(op_def_.shape_size() == 1);
+  CHECK(op_def_.shape(0).dim_size() == 0);
   int batch = GetSingleArg<int>(op_def_, "Batch");
   const std::vector<int>& shape = GetListArg<int>(op_def_, "Shape");
   CHECK(!shape.empty());

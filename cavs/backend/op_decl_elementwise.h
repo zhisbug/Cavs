@@ -41,7 +41,9 @@ class BinaryOpDecl : public OpDecl {
     CHECK(out_shape && out_shape->empty());
     if (inputs[0].dim_size() == inputs[1].dim_size()) {
       for (unsigned i = 0; i < inputs[0].dim_size(); i++)
-        CHECK(inputs[0].dim(i) == inputs[1].dim(i));
+        CHECK(inputs[0].dim(i) == inputs[1].dim(i)) 
+          << inputs[0].DebugString() << inputs[1].DebugString()
+          << op_def_.DebugString();
       out_shape->push_back(inputs[0]);
     }else if (inputs[0].dim_size() == 1 && inputs[0].dim(0) == 1) {
       out_shape->push_back(inputs[1]);

@@ -6,6 +6,7 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/op_context.h"
 #include "cavs/proto/tensor_shape.pb.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <vector>
 
@@ -61,13 +62,14 @@ class DDVOpImpl : public OpImpl {
     if (next_idx != curr_idx_) {
       Tensor* out = context->Output(0);
       if (curr_idx_ > 0) {
-        checkCudaErrors(cudaMemcpy(buf_+curr_idx_*batch_*item_size_,
+        checkCudaError(cudaMemcpy(buf_+curr_idx_*batch_*item_size_,
               out->mutable_data<T>(),
               out->count()*sizeof(T), 
               cudaMemcpyDeviceToHost));
       }
-      CHECK(next_idx > 0 && next_idx < num_/batch_);
-      checkCudaErrors(cudaMemcpy(out->mutable_data<T>(), 
+      CHECK(next_idx >= 0 && next_idx < num_/batch_)
+        << next_idx << "\t" << num_ << "\t" << batch_;
+      checkCudaError(cudaMemcpy(out->mutable_data<T>(), 
             buf_+next_idx*batch_*item_size_,
             out->count()*sizeof(T), 
             cudaMemcpyHostToDevice));

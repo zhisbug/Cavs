@@ -60,7 +60,7 @@ Sym::Sym(const string& op_name,
   for (int i = 0; i < dim_length; i++)
     node_->shape_.push_back(dim[i]);
   free(dim);
-  LOG(INFO) << op_def.DebugString();
+  //LOG(INFO) << op_def.DebugString();
 }
 
 Sym::Sym(const string& op_name,

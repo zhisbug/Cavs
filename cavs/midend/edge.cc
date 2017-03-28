@@ -23,7 +23,7 @@ void Edge::AddSource(Node* node) {
 }
 
 string Edge::DebugInfo() const {
-  return "\nname:\t" + name() + 
+  return "\nname:\t" + scoped_name() + 
          "\nshape:\t" + shape().DebugString() + 
          "scope:\t" + s_->name() +
          "\tsrcs_size:\t" + std::to_string(srcs_size()) + 

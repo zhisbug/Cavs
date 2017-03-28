@@ -91,7 +91,7 @@ class SingleNode : public Node {
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) const override;
   inline bool IsVariableOp() const {
-    return (op_def_.name() == "Variable");
+    return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
   }
   inline bool isSourceOp() const {
     return op_def_.input_size() == 0;

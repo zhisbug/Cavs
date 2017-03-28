@@ -109,7 +109,6 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
         lamda, N);
   }
 
-
   /*var_out->DebugNumerical<T>();*/
   /*checkCudaError(cudaDeviceSynchronize());*/
 }

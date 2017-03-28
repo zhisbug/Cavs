@@ -68,19 +68,6 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
         const vector<OpDef>& grads = 
           ::backend::MakeGradient(node->op_def()); 
         CHECK(grads.size()) << node->op_def().DebugString();
-        //for (auto& grad : grads) {
-          //if (std::find(grad.output().begin(), grad.output().end(),
-               //GetGradientName(curr->name())) == grad.output().end()) {
-            //continue;
-          //}
-          //Node* grad_node = loss_scope->AddNode(grad);
-          //vector<TensorShapeDef> inputs;
-          ////LOG(INFO) << grad.DebugString();
-          //grad_node->InputShapes(&inputs);
-          //const vector<TensorShapeDef>& shapes = 
-            //::backend::ShapeInference(grad, inputs);
-          //grad_node->SetShape(shapes);
-        //}
         DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
         in_path = true;
         (*fwd_path)[node] = true; 
