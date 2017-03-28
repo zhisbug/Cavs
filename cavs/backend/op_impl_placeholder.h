@@ -20,7 +20,7 @@ class PlaceholderOpImpl : public OpImpl {
   }
 };
 
-template <typename READFUNCTOR, typename COPYFUNCTOR>//read, copy
+template <typename READFUNCTOR, typename COPYFUNCTOR, typename T>//read, copy
 class DataOpImpl : public OpImpl {
  public:
   explicit DataOpImpl(const OpDef& def) :
@@ -43,11 +43,11 @@ class DataOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     Tensor* y = context->Output(0);
     if (!buf_) {
-      buf_ = malloc(num_*item_size_);
-      READFUNCTOR::Compute(buf_, filename_.c_str(), num_*item_size_);
+      buf_ = (T*)malloc(num_*item_size_*sizeof(T));
+      READFUNCTOR::Compute(buf_, filename_.c_str(), num_*item_size_*sizeof(T));
     }
     int offset = context->GetRound() % (num_/batch_);
-    COPYFUNCTOR::Compute(y->mutable_data<char>(), buf_, batch_*item_size_);
+    COPYFUNCTOR::Compute(y->mutable_data<T>(), buf_+offset, batch_*item_size_*sizeof(T));
   }
 
  private:
@@ -55,7 +55,7 @@ class DataOpImpl : public OpImpl {
   int num_;
   int item_size_;
   std::string filename_;
-  void* buf_;
+  T* buf_;
 };
 
 } //namespace cavs

@@ -25,7 +25,6 @@ APP_BIN=$(patsubst apps/%.cc, build/apps/%, $(APP_SRC))
 .PHONY: clean
 
 all: $(PROTO_SRCS) $(LIB) $(TEST_BIN) $(APP_BIN)
-		echo $(TEST_BIN) $(TEST_SRC)
 
 .PRECIOUS: $(PROTO_SRCS) $(PROTO_HEADERS)
 

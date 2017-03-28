@@ -162,7 +162,13 @@ Sym Sym::DDV(C_Dtype type, const vector<int>& shape, int batch,
   OpDef::AttrDef batch_attr;
   batch_attr.set_name("Batch");
   batch_attr.mutable_value()->set_i(batch);
-  return Sym("DDV", {}, type, filler.first, device, {}, {batch_attr, filler.second}); 
+  OpDef::AttrDef shape_attr;
+  shape_attr.set_name("Shape");
+  OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
+  for (int s : shape) {
+    lv->add_i(s);
+  }
+  return Sym("DDV", {}, type, filler.first, device, {}, {batch_attr, shape_attr, filler.second}); 
 }
 
 Sym Sym::Abs(const Sym& a, string device) {

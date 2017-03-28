@@ -24,6 +24,22 @@ struct UniformNormalizer {
   }
 };
 
+template <typename OP, typename T>
+struct Filler {
+  Filler(const OpDef& op_def) {
+    stride_ = GetSingleArg<int>(op_def, "stride");
+    CHECK(stride_ > 0);
+  }
+
+  FORCE_INLINE virtual void Compute(T* buf, int N) {
+    for (int i = 0; i < N; i+=stride_) {
+      OP::Compute(buf+i, (i+stride_>N) ? (N-i) : stride_);
+    }
+  }
+
+  int stride_;
+};
+
 } //namespace backend
 
 #endif

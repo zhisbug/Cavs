@@ -21,7 +21,7 @@ struct BinaryReader {
 };
 
 REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy>);
-REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy>);
+REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy, float>);
 
 } //namespace backend
 
