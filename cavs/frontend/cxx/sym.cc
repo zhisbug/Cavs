@@ -358,6 +358,18 @@ void Sym::print() {
   }
 }
 
+void* Sym::eval() {
+  //hack here
+  //currently, eval only support single element
+  int length = 1;
+  CHECK_NOTNULL(node_.get());
+  for (int dim : node_->shape_)
+    length *= dim;
+  CHECK(length == 1);
+  CHECK(node_->raw_data);
+  return node_->raw_data;
+}
+
 void Sym::DumpGraph() {
   C_DumpGraph(C_GetDefaultDG());
 }

@@ -60,6 +60,7 @@ class Sym {
   //debug operations
   static void DumpGraph();
   void print();
+  void* eval();
   ////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }

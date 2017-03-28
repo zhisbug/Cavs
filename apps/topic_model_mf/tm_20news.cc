@@ -37,11 +37,16 @@ int main() {
   for (int i = 0; i < FLAGS_epochs; i++) {
     for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
       sess.Run({loss, step1, step2});
-      LOG(INFO) << "iter[" << j << "]:";
-      loss.print();
+      //sess.Run({step1, step2});
+      LOG(INFO) << "iter[" << j << "]:\t" << *(float*)(loss.eval());
+      //loss.print();
     }
-    LOG(INFO) << "epoch[" << i << "]:";
-    loss.print();
+    float loss_sum = 0.f;
+    for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
+      sess.Run({loss});
+      loss_sum += *(float*)(loss.eval());
+    }
+    LOG(INFO) << "epoch[" << i << "]:\t" << loss_sum/(FLAGS_D/FLAGS_batch);
   }
 
   return 0;
