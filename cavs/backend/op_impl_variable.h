@@ -28,9 +28,38 @@ class VariableOpImpl : public OpImpl {
     if (!initialized_) {
       Tensor* out = context->Output(0);
       FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
-      out->DebugNumerical<T>();
+      //out->DebugNumerical<T>();
       initialized_ = true;
     }
+    //if (!initialized_) {
+      //Tensor* out = context->Output(0);
+      //if (out->dims(0) == 5000) {
+        //vector<float> buf(5000*100);
+        //FILE *fp = fopen("/users/shizhenx/projects/tm_final/code/doc_tpc.init", "rb");
+        //CHECK(fp);
+        //fread(buf.data(), sizeof(float), 5000*100, fp);
+        //checkCudaError(cudaMemcpy(out->mutable_data<T>(), buf.data(), 5000*100*sizeof(float),
+                                  //cudaMemcpyHostToDevice));
+        //fclose(fp);
+        //LOG(INFO) << "doc_tpc.init...";
+        ////out->DebugNumerical<float>();
+        //initialized_ = true;
+        //return;
+      //}else if (out->dims(0) == 100) {
+        //vector<float> buf(100*1000);
+        //FILE *fp = fopen("/users/shizhenx/projects/tm_final/code/tpc_word.init", "rb");
+        //CHECK(fp);
+        //fread(buf.data(), sizeof(float), 100*1000, fp);
+    
+        //checkCudaError(cudaMemcpy(out->mutable_data<T>(), buf.data(), 100*1000*sizeof(float),
+                                  //cudaMemcpyHostToDevice));
+        //fclose(fp);
+        //LOG(INFO) << "VARIABLE tpc_word.init...";
+        //out->DebugNumerical<float>();
+        //initialized_ = true;
+        //return;
+      //}
+    //}
   }
  private:
   bool initialized_;
@@ -57,11 +86,22 @@ class DDVOpImpl : public OpImpl {
     if (!buf_) {
       buf_ = (T*)malloc(num_*item_size_*sizeof(T));
       FILLFUNCTOR(op_def_).Compute(buf_, num_*item_size_);
+      //Tensor* out = context->Output(0);
+      //if (num_ == 5000) {
+        //vector<float> buf(5000*100);
+        //FILE *fp = fopen("/users/shizhenx/projects/tm_final/code/doc_tpc.init", "rb");
+        //CHECK(fp);
+        //fread(buf_, sizeof(float), 5000*100, fp);
+        //fclose(fp);
+        //LOG(INFO) << "DDV doc_tpc.init...";
+      //}
     }
     int next_idx = (context->GetRound() % (num_/batch_));
     if (next_idx != curr_idx_) {
+      //LOG(INFO) << "Next idx: " << next_idx << "\tCurr idx: " << curr_idx_;
+      //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;
       Tensor* out = context->Output(0);
-      if (curr_idx_ > 0) {
+      if (curr_idx_ >= 0) {
         checkCudaError(cudaMemcpy(buf_+curr_idx_*batch_*item_size_,
               out->mutable_data<T>(),
               out->count()*sizeof(T), 
@@ -69,13 +109,14 @@ class DDVOpImpl : public OpImpl {
       }
       CHECK(next_idx >= 0 && next_idx < num_/batch_)
         << next_idx << "\t" << num_ << "\t" << batch_;
+      CHECK(out->count() == batch_*item_size_);
       checkCudaError(cudaMemcpy(out->mutable_data<T>(), 
             buf_+next_idx*batch_*item_size_,
             out->count()*sizeof(T), 
             cudaMemcpyHostToDevice));
       curr_idx_ = next_idx;
+      //out->DebugNumerical<T>();
     }
-    //out->DebugNumerical<T>();
   }
  private:
   int curr_idx_;

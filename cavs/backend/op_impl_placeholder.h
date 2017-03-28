@@ -26,7 +26,7 @@ template <typename READFUNCTOR, typename COPYFUNCTOR, typename T>//read, copy
 class DataOpImpl : public OpImpl {
  public:
   explicit DataOpImpl(const OpDef& def) :
-    OpImpl(def), buf_(NULL) {
+    OpImpl(def), buf_(NULL), curr_idx_(-1) {
     batch_ = GetSingleArg<int>(def, "Batch");
     const std::vector<int>& shape = GetListArg<int>(def, "Shape");
     CHECK(!shape.empty());
@@ -45,16 +45,24 @@ class DataOpImpl : public OpImpl {
   }
 
   void Compute(OpContext* context) override {
-    Tensor* y = context->Output(0);
     if (!buf_) {
       buf_ = (T*)malloc(num_*item_size_*sizeof(T));
       READFUNCTOR::Compute(buf_, filename_.c_str(), num_*item_size_*sizeof(T));
     }
-    int offset = context->GetRound() % (num_/batch_);
-    COPYFUNCTOR::Compute(y->mutable_data<T>(), buf_+offset, batch_*item_size_*sizeof(T));
+    int next_idx = context->GetRound() % (num_/batch_);
+    if (next_idx != curr_idx_) {
+      //LOG(INFO) << "Next idx: " << next_idx << "\tCurr idx: " << curr_idx_;
+      //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;
+      Tensor* out = context->Output(0);
+      CHECK(out->count() == batch_*item_size_);
+      CHECK(next_idx >= 0 && next_idx < num_/batch_);
+      COPYFUNCTOR::Compute(out->mutable_data<T>(), buf_+next_idx*batch_*item_size_, batch_*item_size_*sizeof(T));
+      curr_idx_ = next_idx;
+    }
   }
 
  private:
+  int curr_idx_;
   int batch_;
   int num_;
   int item_size_;

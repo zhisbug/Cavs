@@ -7,7 +7,9 @@ DEFINE_int32(K, 100,  "num_of-topics");
 DEFINE_int32(V, 1000, "vocab_size");
 DEFINE_int32(D, 5000, "num_of_docs");
 DEFINE_double(lr, 10, "learning_rate");
-DEFINE_string(file_docs, "/users/shizhenx/projects/Cavs/apps/tm_cavs/data/docs.dat", "doc_file");
+DEFINE_string(file_docs,
+    "/users/shizhenx/projects/Cavs/apps/topic_model_mf/data/docs.dat",
+    "doc_file");
 
 void load(void** doc_word) {
   *doc_word = malloc(FLAGS_D*FLAGS_V*sizeof(float));
