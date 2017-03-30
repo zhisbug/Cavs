@@ -219,7 +219,9 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
   for (int i = 0; i < input_names.size(); i++) {
     const Edge* edge = graph_->FindEdge(input_names[i]);
     CHECK(edge) << "Edge: " << input_names[i];
-    Tensor* t = &(tensor_map_[edge->scoped_name()]);
+    //Tensor* t = &(tensor_map_[edge->scoped_name()]);
+    Tensor* t = const_cast<Tensor*>(GetTensor(edge->scoped_name()));
+    CHECK(t);
     if (t->device_type() == GPU)
       DeviceContext::MemcpyHostToDevice(t, input_tensors[i]);
     else
@@ -235,16 +237,18 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
       continue;
     const Edge* edge = graph_->FindEdge(output_names[i]);
     CHECK(edge);
-    CHECK(tensor_map_.find(edge->scoped_name()) !=
-          tensor_map_.end()) << "Getting " << edge->scoped_name()
-          << "\tin\n" << DebugInfo();
-    const Tensor& t = tensor_map_[edge->scoped_name()];
-    if (t.device_type() == GPU) {
-      (*output_tensors)[i].Rebase(GetAllocator(DeviceTypeToString(CPU)),
-          t);
-      DeviceContext::MemcpyDeviceToHost(&((*output_tensors)[i]), t);
+    //const Tensor& t = tensor_map_[edge->scoped_name()];
+    const Tensor* t = GetTensor(edge->scoped_name());
+    CHECK(t) << "Getting " << edge->scoped_name()
+             << "\tin\n"   << DebugInfo();
+    if (t->device_type() == GPU) {
+      output_tensors->at(i).Rebase(GetAllocator(DeviceTypeToString(CPU)),
+          *t);
+      DeviceContext::MemcpyDeviceToHost(&(output_tensors->at(i)), *t);
+      LOG(INFO) << t->count();
+      LOG(INFO) << (output_tensors->at(i).data<float>())[0];
     }else {
-      (*output_tensors)[i] = t;
+      output_tensors->at(i) = *t;
     }
   }
 }

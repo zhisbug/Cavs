@@ -33,8 +33,8 @@ void Session::Run(const std::initializer_list<Sym>& outputs,
         input_name.data(),
         input_tensor.data(),
         input_name.size());
+  int i = 0;
   for (auto& fetch: outputs) {
-    int i = 0;
     fetch.node_->raw_data = C_TensorData(output_tensor[i++]);
   }
   for (auto* t : output_tensor)

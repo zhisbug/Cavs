@@ -144,6 +144,8 @@ void C_Run(C_Session* s,
                   input_names, input_tensors);
   for (int i = 0; i < noutputs; i++) {
     c_output_tensors[i] = new C_Tensor{output_tensors[i]};
+    //if (C_TensorData(c_output_tensors[i]))
+      //LOG(INFO) << i << "\t" << *(float*)C_TensorData(c_output_tensors[i]);
   }
 }
 

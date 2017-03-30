@@ -351,10 +351,11 @@ void Sym::print() {
   for (int dim : node_->shape_)
     length *= dim;
   if (node_->type_ == C_FLOAT) {
-    for (int i = 0; i < std::min(length, 10); i++)
+    for (int i = 0; i < std::min(length, 10); i++) {
       LOG(INFO) << "[" << i << "]:\t"
                 << std::fixed << std::setprecision(15)
-                << (float)((float*)node_->raw_data)[i];
+                << ((float*)node_->raw_data)[i];
+    }
   }
 }
 
