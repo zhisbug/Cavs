@@ -25,13 +25,13 @@ class Node {
       Scope* s = GetGlobalScope());
 
   virtual Statement* Compile(SessionBase* sess) const {
-    return NULL; 
+    return NULL;
   }
   inline const OpDef& op_def() const {
-    return op_def_; 
+    return op_def_;
   }
   inline const Scope* scope() const {
-    return located_; 
+    return located_;
   }
   inline const std::string& name() const {
     return node_name_;
@@ -51,7 +51,7 @@ class Node {
     return outputs_[i];
   }
   inline const std::vector<Edge*>& outputs() const {
-    return outputs_; 
+    return outputs_;
   }
   inline int outputs_size() const {
     return outputs_.size();

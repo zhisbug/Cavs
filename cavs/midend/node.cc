@@ -35,7 +35,7 @@ string Node::DebugInfo() const {
 
 Statement* SingleNode::Compile(
     SessionBase* sess) const {
-  LOG(INFO) << "compiling\t" << op_def().name();
+  LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
   //LOG(INFO) << DebugInfo();
   OpImpl* op = CreateOp(op_def());
   OpContext* ctxt = sess->GetContext(this);
@@ -61,13 +61,16 @@ ScopedNode::ScopedNode(int iter,
 
 Statement* ScopedNode::Compile(
     SessionBase* sess) const {
-  LOG(INFO) << "compiling\t" << op_def().name();
+  LOG(INFO) << "Compiling ScopeNode:\t" << op_def().output(0);
+  LOG(INFO) << "It is located in scope " << scope()->name();
+  LOG(INFO) << "It contains a scope " << contained_->name();
   BasicBlock* bb = new BasicBlock(iter_);
   //for (auto* node : contained_->nodes_) {
     //LOG(INFO) << node->op_def().DebugString();
   //}
   for (auto* node : contained_->nodes_) {
-    LOG(INFO) << "\tcompiling\t" << node->op_def().name();
+    LOG(INFO) << "\tCompiling\t" << node->op_def().name()
+              << "\t in Scope: " << contained_->name();
     OpImpl* op = CreateOp(node->op_def());     
     OpContext* ctxt = sess->GetContext(node);
     CHECK(op) << node->op_def().DebugString();

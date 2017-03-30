@@ -9,10 +9,13 @@ using std::vector;
 namespace midend {
 
 Scope::Scope(const Scope* s, const std::string& n)
-    : father_(s), name_(n) {
+    : father_(s) {
   if (s) {
-    CHECK(s->children_.find(n) == s->children_.end());
-    const_cast<Scope*>(s)->children_[n] = const_cast<Scope*>(this);
+    name_ = s->name() + ":" + n;
+    CHECK(s->children_.find(name_) == s->children_.end());
+    const_cast<Scope*>(s)->children_[name_] = const_cast<Scope*>(this);
+  }else {
+    name_ = n;
   }
 }
 

@@ -16,11 +16,13 @@ DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/topic_model_mf/data/20news_large.bin",
     "file_name");
 
-int main() {
+int main(int argc, char* argv[]) {
 
   //Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_D, FLAGS_V});
   //Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K}, Sym::UniformRandom(FLAGS_K));
   //Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  LOG(INFO) << "DOC: " << FLAGS_D;
   Sym doc_word = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_V}, FLAGS_batch,
                            Sym::BinaryReader(FLAGS_file_docs));
   Sym doc_tpc  = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_batch,

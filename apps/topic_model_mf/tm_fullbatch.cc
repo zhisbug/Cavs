@@ -38,7 +38,7 @@ int main() {
   Sym::DumpGraph();
 
   Session sess;
-  int iters = 200;
+  int iters = 100;
   for (int i = 0; i < iters; i++) {
     sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
     //sess.Run({loss, step1}, {{doc_word, doc_word_buf}});

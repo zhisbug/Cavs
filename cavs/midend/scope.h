@@ -30,7 +30,7 @@ class Scope {
   friend class ScopedNode;
     
  private:
-  const std::string name_;
+  std::string name_;
   const Scope* father_;
   std::unordered_map<std::string, Scope*> children_;
   std::unordered_map<std::string, Edge*> edge_table_;

@@ -18,11 +18,26 @@ using std::unordered_map;
 
 namespace midend {
 
-const Tensor* SessionBase::GetTensor(const string& name) const {
-  if (tensor_map_.count(name) == 0)
-    return NULL;
-  else
-    return &(tensor_map_.at(name));
+const Tensor* SessionBase::GetTensor(
+    const string& name, bool recursive) const {
+  if (!recursive) {
+    //if (tensor_map_.count(name) == 0)
+      //return NULL;
+    //else
+      //return &(tensor_map_.at(name));
+    return (tensor_map_.find(name) == tensor_map_.end()) ?
+            NULL : &(tensor_map_.at(name));
+  }else {
+    CHECK(name.find_last_of(":") != string::npos);
+    string tensor_name = name.substr(name.find_last_of(":")+1);
+    string scope_name  = name.substr(0, name.find_last_of(":"));
+    while (tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end()
+        && scope_name.find_last_of(":") != string::npos) {
+      scope_name = scope_name.substr(0, scope_name.find_last_of(":")); 
+    }
+    return tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end() ?
+           NULL : &(tensor_map_.at(scope_name+":"+tensor_name));
+  }
 }
 
 void SessionBase::InsertTensor(const Tensor& t){
@@ -34,15 +49,22 @@ OpContext* SessionBase::GetContext(const Node* node) {
   OpContext* ctxt  = new OpContext();
   const OpDef& op_def = node->op_def();
   for (auto* input : node->inputs()) {
-    const Tensor* t = this->GetTensor(input->scoped_name()); 
+    const Tensor* t = GetTensor(input->scoped_name()); 
     CHECK(t) << "Getting " << input->scoped_name();
     ctxt->AppendInput(*t);
   }
   for (auto* output : node->outputs()) {
-    const Tensor* t = this->GetTensor(output->scoped_name());
+    const Tensor* t = GetTensor(output->scoped_name());
     if (!t) {
-      if (GetTensor(output->name())) {
-        Tensor out(output->scoped_name(), *GetTensor(output->name()));
+      //LOG(INFO) << output->name() << "???";
+      //LOG(INFO) << (GetTensor(output->name()) == NULL) << "???";
+      const Tensor* upper_t = GetTensor(output->scoped_name(), true);
+      if (upper_t) {
+        LOG(INFO) << "Found underlying tensor(" << upper_t->name()
+                  << "," << upper_t->count() << " elements"
+                  << ") for " << output->scoped_name()
+                  << " with shape info: " << output->shape().DebugString();
+        Tensor out(output->scoped_name(), *upper_t);
         InsertTensor(out);
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
@@ -61,7 +83,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
         LOG(INFO) << "allocating tensor for " << output->scoped_name()
                   << " with shape info: " << shape.DebugInfo();
         Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
-        LOG(INFO) << out.DebugInfo();
+        //LOG(INFO) << out.DebugInfo();
         InsertTensor(out);
       }
     }

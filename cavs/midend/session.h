@@ -15,7 +15,7 @@ class Node;
 class SessionBase {
  public:
   SessionBase(const DepGraph* graph) : graph_(graph) {}
-  const Tensor* GetTensor(const std::string& name) const;
+  const Tensor* GetTensor(const std::string& name, bool recursive = false) const;
   void InsertTensor(const Tensor& t);
   virtual void Run(const std::vector<std::string>& output_names, 
                    std::vector<Tensor>* output_tensors,
