@@ -2,7 +2,7 @@
 #define CAVS_BACKEND_OP_DECL_H_
 
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/session.h"
+#include "cavs/midend/session_base.h"
 #include "cavs/midend/op_context.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/proto/tensor_shape.pb.h"

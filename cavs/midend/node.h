@@ -3,7 +3,7 @@
 
 #include "cavs/midend/scope.h"
 #include "cavs/midend/edge.h"
-#include "cavs/midend/session.h"
+#include "cavs/midend/session_base.h"
 #include "cavs/midend/statement.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"

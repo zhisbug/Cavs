@@ -3,7 +3,7 @@
 
 #include "cavs/midend/allocator.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/session.h"
+#include "cavs/midend/session_base.h"
 #include "cavs/midend/tensor_test.h"
 #include "cavs/backend/op_impl.h"
 #include "cavs/util/types.h"

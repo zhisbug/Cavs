@@ -3,7 +3,7 @@
 #include "cavs/proto/types.pb.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/proto/devices.pb.h"
-#include "cavs/midend/session.h"
+#include "cavs/midend/session_base.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/dep_graph.h"
