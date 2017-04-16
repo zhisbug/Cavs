@@ -13,17 +13,32 @@ class SimpleSession : public SessionBase {
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
            const std::vector<Tensor>& input_tensors) override;
- private:
+ protected:
+  virtual void Compile(const std::vector<std::string>& output_names, 
+                       const std::vector<std::string>& input_names);
   void FeedInput(const std::vector<std::string>& input_names,
                  const std::vector<Tensor>& input_tensors);
   void FetchOutput(const std::vector<std::string>& output_names,
                    std::vector<Tensor>* output_tensors);
-  void Compile(const std::vector<std::string>& output_names, 
-               const std::vector<std::string>& input_names);
   //std::vector<std::pair<OpImpl*, OpContext*>> executors_;
   std::vector<Statement*> executors_;
   bool compiled_;
   int round_;//current batch id;
+};
+
+class MPISession: public SimpleSession {
+ public:
+  MPISession(const DepGraph* graph);
+  void Run(const std::vector<std::string>& output_names, 
+           std::vector<Tensor>* output_tensors,
+           const std::vector<std::string>& input_names,
+           const std::vector<Tensor>& input_tensors) override;
+ private:
+  void Compile(const std::vector<std::string>& output_names, 
+               const std::vector<std::string>& input_names) override;
+  std::vector<Statement*> executors_;
+  bool compiled_;
+  int round_;
 };
 
 } //namespace midend

@@ -1,7 +1,7 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/allocator.h"
+#include "cavs/backend/op_def_builder.h"
 #include "cavs/util/logging.h"
-//#include "cavs/util/op_util.h"
 
 #include <unordered_map>
 
@@ -45,6 +45,7 @@ void SimpleSession::Compile(
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
+
   for (auto* node : critical_path) {
     //LOG(INFO) << node->op_def().DebugString();
     //LOG(INFO) << node->scope()->name();
@@ -119,24 +120,53 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
   }
 }
 
-class MPISession: public SimpleSession {
- public:
-  MPISession(const DepGraph* graph);
-  void Run(const vector<string>& output_names, 
-           vector<Tensor>* output_tensors,
-           const vector<string>& input_names,
-           const vector<Tensor>& input_tensors) override;
- private:
-  void FeedInput(const vector<string>& input_names,
-                 const vector<Tensor>& input_tensors);
-  void FetchOutput(const vector<string>& output_names,
-                   vector<Tensor>* output_tensors);
-  void Compile(const vector<string>& output_names, 
-               const vector<string>& input_names);
-  std::vector<Statement*> executors_;
-  bool compiled_;
-  int round_;
-};
+
+void MPISession::Compile(
+    const vector<string>& output_names, 
+    const vector<string>& input_names) {
+  vector<const Node*> critical_path;
+  unordered_map<const Node*, bool> include;
+  for (auto& output : output_names) {
+    const Node* node = graph_->FindNode(output);
+    CHECK(node);
+    DepthSearch(node, &critical_path, &include);
+  }
+
+  for (auto* node : critical_path) {
+    //Here, we assumpt the gradient of variables
+    //should be communicated.
+    //If the node generates a variable gradient,
+    //it should be followed with a communication node.
+    string name = node->output(0)->name();
+    if (name.length() >= 13
+        && name.substr(0, 13) == "variable_grad") {
+      //we assume the output size of variable_grad node must equal 1
+      CHECK(node->outputs_size() == 1);
+      OpDef comm;
+      ::backend::OpDefBuilder("MPIAllGather")
+        .Input(name)
+        .Output(name)
+        .Shape(node->output(0)->shape())
+        .Device("CPU")
+        .Finalize(&comm);
+      Node* comm_node = new Node(comm, node->scope());
+      comm_node->AddInput(node->output(0));
+      comm_node->AddOutput(node->output(0));
+      
+    }
+  }
+
+  for (auto* node : critical_path) {
+    //LOG(INFO) << node->op_def().DebugString();
+    //LOG(INFO) << node->scope()->name();
+    //LOG(INFO) << "compiling\t" << node->op_def().name();
+    Statement* stmt = node->Compile(this);
+    CHECK(stmt);
+    executors_.push_back(stmt);
+  }
+
+  return;
+}
 
 REGISTER_SESSION_BUILDER("SimpleSession", SimpleSession);
 

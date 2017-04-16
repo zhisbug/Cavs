@@ -22,59 +22,27 @@ class SessionBase;
 class Node {
  public:
   explicit Node(const OpDef& op_def,
-      Scope* s = GetGlobalScope());
+      const Scope* s = GetGlobalScope());
 
   virtual Statement* Compile(SessionBase* sess) const {
     return NULL;
   }
-  inline const OpDef& op_def() const {
-    return op_def_;
-  }
-  inline const Scope* scope() const {
-    return located_;
-  }
-  inline const std::string& name() const {
-    return node_name_;
-  }
-  inline const Edge* input(int i) const {
-    CHECK(i < inputs_.size());
-    return inputs_[i];
-  }
-  inline const std::vector<Edge*>& inputs() const {
-    return inputs_; 
-  }
-  inline int inputs_size() const {
-    return inputs_.size();
-  }
-  inline const Edge* output(int i) const {
-    CHECK(i < outputs_.size());
-    return outputs_[i];
-  }
-  inline const std::vector<Edge*>& outputs() const {
-    return outputs_;
-  }
-  inline int outputs_size() const {
-    return outputs_.size();
-  }
-  inline void AddInput(const Edge* e) {
-    inputs_.push_back(const_cast<Edge*>(e));
-  }
-  inline void AddOutput(const Edge* e) {
-    outputs_.push_back(const_cast<Edge*>(e));
-  }
-  inline void RemoveInput(const Edge* e) {
-    std::remove(inputs_.begin(), inputs_.end(), e);  
-  }
-  inline void replaceInput(int i, Edge* edge) {
-    CHECK(i < inputs_.size());
-    inputs_[i] = edge; 
-  }
+  inline const OpDef& op_def() const;
+  inline const Scope* scope() const;
+  inline const std::string& name() const;
+  inline const Edge* input(int i) const;
+  inline const std::vector<Edge*>& inputs() const;
+  inline int inputs_size() const;
+  inline const Edge* output(int i) const;
+  inline const std::vector<Edge*>& outputs() const;
+  inline int outputs_size() const;
+  inline void AddInput(const Edge* e);
+  inline void AddOutput(const Edge* e);
+  inline void RemoveInput(const Edge* e);
+  inline void replaceInput(int i, Edge* edge);
   void SetShape(const std::vector<TensorShapeDef>& def);
   void InputShapes(std::vector<TensorShapeDef>* inputs);
   std::string DebugInfo() const;
-  //inline void set_id(int id) { id_ = id; }
-  //inline int id() const { return id_; }
-  //inline bool isSink() const { return id_ == 0; }
 
  protected:
   OpDef op_def_;
@@ -87,7 +55,7 @@ class Node {
 class SingleNode : public Node {
  public:
   explicit SingleNode(const OpDef& op_def,
-      Scope* s = GetGlobalScope())
+      const Scope* s = GetGlobalScope())
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) const override;
   inline bool IsVariableOp() const {
@@ -111,12 +79,57 @@ class ScopedNode : public Node {
       const OpDef& op_def = OpDef(),
       Scope* located = GetGlobalScope());
   Statement* Compile(SessionBase* sess) const override;
+  friend class MPISession;
 
  private:
+  std::vector<Node*> nodes_;
   int iter_;
   Scope* contained_;
   void Compress();
 };
+
+inline const OpDef& Node::op_def() const {
+  return op_def_;
+}
+inline const Scope* Node::scope() const {
+  return located_;
+}
+inline const std::string& Node::name() const {
+  return node_name_;
+}
+inline const Edge* Node::input(int i) const {
+  CHECK(i < inputs_.size());
+  return inputs_[i];
+}
+inline const std::vector<Edge*>& Node::inputs() const {
+  return inputs_; 
+}
+inline int Node::inputs_size() const {
+  return inputs_.size();
+}
+inline const Edge* Node::output(int i) const {
+  CHECK(i < outputs_.size());
+  return outputs_[i];
+}
+inline const std::vector<Edge*>& Node::outputs() const {
+  return outputs_;
+}
+inline int Node::outputs_size() const {
+  return outputs_.size();
+}
+inline void Node::AddInput(const Edge* e) {
+  inputs_.push_back(const_cast<Edge*>(e));
+}
+inline void Node::AddOutput(const Edge* e) {
+  outputs_.push_back(const_cast<Edge*>(e));
+}
+inline void Node::RemoveInput(const Edge* e) {
+  std::remove(inputs_.begin(), inputs_.end(), e);  
+}
+inline void Node::replaceInput(int i, Edge* edge) {
+  CHECK(i < inputs_.size());
+  inputs_[i] = edge; 
+}
 
 } //namespace midend
 

@@ -4,8 +4,8 @@ using std::string;
 
 namespace midend {
 
-Node::Node(const OpDef& op_def, Scope* s)
-  : op_def_(op_def), located_(s) {
+Node::Node(const OpDef& op_def, const Scope* s)
+  : op_def_(op_def), located_(const_cast<Scope*>(s)) {
   located_->AddNode(this);
   node_name_ = s->name() + ":" + op_def_.name();
 }
@@ -57,6 +57,7 @@ ScopedNode::ScopedNode(int iter,
   Edge* output =
     new Edge(op_def.output(0), false, located_);
   output->AddSource(this);
+  nodes_ = contained_->nodes_;
 }
 
 Statement* ScopedNode::Compile(
@@ -68,7 +69,8 @@ Statement* ScopedNode::Compile(
   //for (auto* node : contained_->nodes_) {
     //LOG(INFO) << node->op_def().DebugString();
   //}
-  for (auto* node : contained_->nodes_) {
+  //for (auto* node : contained_->nodes_) {
+  for (auto* node : nodes_) {
     LOG(INFO) << "\tCompiling\t" << node->op_def().name()
               << "\t in Scope: " << contained_->name();
     OpImpl* op = CreateOp(node->op_def());     
