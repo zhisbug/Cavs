@@ -150,6 +150,9 @@ void AddMPIOnPath(list<Node*>& critical_path) {
   }
 }
 
+MPISession::MPISession(const DepGraph* graph)
+    : SimpleSession(graph) {}
+
 void MPISession::Compile(
     const vector<string>& output_names, 
     const vector<string>& input_names) {
@@ -172,7 +175,7 @@ void MPISession::Compile(
       //we assume the output size of variable_grad node must equal 1
       CHECK(node->outputs_size() == 1);
       OpDef comm;
-      ::backend::OpDefBuilder("MPIAllGather")
+      ::backend::OpDefBuilder("MPIAllReduce")
         .Input(name)
         .Output(name)
         .Shape(node->output(0)->shape())
@@ -196,6 +199,14 @@ void MPISession::Compile(
   return;
 }
 
+void MPISession::Run(const vector<string>& output_names,
+    vector<Tensor>* output_tensors,
+    const vector<string>& input_names,
+    const vector<Tensor>& input_tensors) {
+  this->Run(output_names, output_tensors, input_names, input_tensors);
+}
+
 REGISTER_SESSION_BUILDER("SimpleSession", SimpleSession);
+REGISTER_SESSION_BUILDER("MPISession", MPISession);
 
 } //namespace midend

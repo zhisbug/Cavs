@@ -1,5 +1,6 @@
-CXX=g++
+CXX=mpicxx
 CXXFLAGS=-O2 -std=c++11 -I. -Ibuild/ -I/usr/local/cuda/include
+MPIFLAGS=-I
 PROTOCC=protoc
 PROTOFLAGS=--cpp_out=build/ -I. 
 NVCC=/usr/local/cuda/bin/nvcc
