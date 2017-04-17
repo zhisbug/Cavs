@@ -60,29 +60,23 @@ class Tensor {
   Tensor();
   Tensor(const std::string& name, Allocator *a, DataType type, const TensorShape& shape);
   Tensor(const std::string& name, Allocator *a, DataType type, TensorShape&& shape);
-  Tensor(const std::string& name, const Tensor& t)
-      : buf_(t.buf_), shape_(t.shape_), type_(t.type_), name_(name) {} 
+  Tensor(const std::string& name, const Tensor& t);
   Tensor(const Tensor& t) { *this = t; }
-  FORCE_INLINE Tensor& operator =(const Tensor& t) {
-    buf_   = t.buf_;
-    shape_ = t.shape_;
-    name_  = t.name_;
-    type_  = t.type_;
-    return *this;
-  }
-  FORCE_INLINE DeviceType device_type() const { return buf_->device_type(); }
-  FORCE_INLINE const std::string& name() const { return name_; }
+  Tensor& operator =(const Tensor& t);
+  inline DeviceType device_type() const { return buf_->device_type(); }
+  inline const std::string& name() const { return name_; }
   //for opeators
-  FORCE_INLINE size_t count() const { return buf_->count(); }
-  FORCE_INLINE int dims() const { return shape_->dims(); }
-  FORCE_INLINE int dims(int idx) const { return shape_->dims(idx); }
+  inline size_t count() const { return buf_->count(); }
+  inline int dims() const { return shape_->dims(); }
+  inline int dims(int idx) const { return shape_->dims(idx); }
 
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
   void Rebase(Allocator *a, DataType type, TensorShape&& shape);
   void Rebase(Allocator *a, const Tensor& t);
   void Reshape(const TensorShapeDef& shape);
   void Reshape(const std::vector<int>& dims);
-  void Reshape(const Tensor&t);
+  void Reshape(const Tensor& t);
+  void SyncWith(const Tensor& t);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
@@ -92,7 +86,6 @@ class Tensor {
   void DebugNumerical() const;
 
   friend class TensorCApi;
-  friend class DeviceContext;
 
  private:
   std::shared_ptr<TensorBufferBase> buf_;

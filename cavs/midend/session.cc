@@ -92,7 +92,7 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     Tensor* t = const_cast<Tensor*>(GetTensor(edge->scoped_name()));
     CHECK(t);
     if (t->device_type() == GPU)
-      DeviceContext::MemcpyHostToDevice(t, input_tensors[i]);
+      t->SyncWith(input_tensors[i]);
     else
       *t = input_tensors[i];
   }
@@ -113,7 +113,8 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     if (t->device_type() == GPU) {
       output_tensors->at(i).Rebase(GetAllocator(DeviceTypeToString(CPU)),
           *t);
-      DeviceContext::MemcpyDeviceToHost(&(output_tensors->at(i)), *t);
+      //DeviceContext::MemcpyDeviceToHost(&(output_tensors->at(i)), *t);
+      output_tensors->at(i).SyncWith(*t);
       //LOG(INFO) << t->count();
       //LOG(INFO) << (output_tensors->at(i).data<float>())[0];
     }else {
@@ -188,9 +189,9 @@ void MPISession::Compile(
   }
 
   for (auto* node : critical_path) {
-    //LOG(INFO) << node->op_def().DebugString();
-    //LOG(INFO) << node->scope()->name();
-    //LOG(INFO) << "compiling\t" << node->op_def().name();
+    LOG(INFO) << node->op_def().DebugString();
+    LOG(INFO) << node->scope()->name();
+    LOG(INFO) << "compiling\t" << node->op_def().name();
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
     executors_.push_back(stmt);
@@ -203,8 +204,9 @@ void MPISession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
-  this->Run(output_names, output_tensors, input_names, input_tensors);
+  SimpleSession::Run(output_names, output_tensors, input_names, input_tensors);
 }
+
 
 REGISTER_SESSION_BUILDER("SimpleSession", SimpleSession);
 REGISTER_SESSION_BUILDER("MPISession", MPISession);

@@ -9,7 +9,7 @@ namespace midend {
 class CPUAllocator : public Allocator {
  public:
   CPUAllocator() 
-      : Allocator(DeviceTypeToString(CPU), CPU) {}    
+      : Allocator(DeviceTypeToString(CPU), CPU) {}
   void* AllocateRaw(size_t nbytes) {
     return malloc(nbytes); 
   }

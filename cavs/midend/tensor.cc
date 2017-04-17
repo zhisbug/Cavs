@@ -92,6 +92,21 @@ Tensor::Tensor(const string& name, Allocator *a,
   Rebase(a, type, std::move(shape));
 }
 
+Tensor::Tensor(const std::string& name, const Tensor& t) {
+  *this = t;
+  name_ = name;
+  //: buf_(t.buf_), shape_(t.shape_), type_(t.type_), name_(name) {
+} 
+
+Tensor& Tensor::operator =(const Tensor& t) {
+  buf_   = t.buf_;
+  shape_ = t.shape_;
+  name_  = t.name_;
+  type_  = t.type_;
+  return *this;
+}
+
+
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
   shape_.reset(new TensorShape(shape));
@@ -127,6 +142,21 @@ void Tensor::Reshape(const vector<int>& dims) {
 void Tensor::Reshape(const Tensor& t) {
   CHECK(t.count() == count());
   shape_ = t.shape_;
+}
+
+void Tensor::SyncWith(const Tensor& t) {
+  //currently, syncwith function is used for
+  //cross-device data synchronization
+  CHECK(t.device_type() != device_type());
+  //cudaMemcpyDefault can remove such a complexity
+  //but for development, specified it clearly is better.
+  if (t.device_type() == CPU && device_type() == GPU) {
+    checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
+                   t.buf_->size(), cudaMemcpyHostToDevice));
+  }else if (t.device_type() == GPU && device_type() == CPU) {
+    checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
+                   t.buf_->size(), cudaMemcpyDeviceToHost));
+  }
 }
 
 } //namespace midend

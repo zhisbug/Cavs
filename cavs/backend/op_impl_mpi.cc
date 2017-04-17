@@ -1,6 +1,7 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/midend/devices.h"
+#include "cavs/midend/allocator.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/mpi_types.h"
@@ -37,8 +38,22 @@ template<typename T>
 void MPIAllReduceOpImpl<T>::Compute(OpContext* context) {
   const Tensor& inp = context->Input(0);
   Tensor* out = context->Output(0);
-  checkMPIError(MPI_Allreduce(inp.data<T>(), out->mutable_data<T>(), inp.count(),
-        DataTypeToMPIType<T>::value, MPI_SUM, MPI_COMM_WORLD));
+  //currently, we assume this
+  CHECK(inp.device_type() == out->device_type());
+  if (inp.device_type() != CPU) {
+    Tensor cpu_buffer; 
+    cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), inp);
+    cpu_buffer.SyncWith(inp);
+    checkMPIError(MPI_Allreduce(cpu_buffer.data<T>(),
+          cpu_buffer.mutable_data<T>(),
+          cpu_buffer.count(), DataTypeToMPIType<T>::value,
+          MPI_SUM, MPI_COMM_WORLD));
+    out->SyncWith(cpu_buffer);
+  }else {
+    checkMPIError(MPI_Allreduce(inp.data<T>(), out->mutable_data<T>(),
+          inp.count(), DataTypeToMPIType<T>::value,
+          MPI_SUM, MPI_COMM_WORLD));
+  }
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("MPIAllReduce").Device("CPU"), MPIAllReduceOpImpl<float>);
