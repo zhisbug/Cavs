@@ -29,4 +29,12 @@ class Session {
   std::unordered_map<string, C_Tensor*> feed_map_;
 };
 
+class MPISession : public Session {
+ public:
+  MPISession(std::string name = "MPISession") 
+    : Session(name) {}
+
+  int id;
+};
+
 #endif
