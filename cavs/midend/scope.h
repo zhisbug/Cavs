@@ -6,6 +6,7 @@
 
 #include <string>
 #include <set>
+#include <list>
 #include <unordered_map>
 
 namespace midend {
@@ -34,7 +35,7 @@ class Scope {
   const Scope* father_;
   std::unordered_map<std::string, Scope*> children_;
   std::unordered_map<std::string, Edge*> edge_table_;
-  std::vector<Node*> nodes_;
+  std::list<Node*> nodes_;
   std::unordered_map<std::string, Edge*> in_edges_;
   std::unordered_map<std::string, Edge*> out_edges_;
   std::set<size_t> hash_nodes_;

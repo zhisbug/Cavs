@@ -38,10 +38,10 @@ int main() {
   Sym::DumpGraph();
 
   Session sess;
-  int iters = 1;
+  int iters = 200;
   for (int i = 0; i < iters; i++) {
-    //sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
-    sess.Run({step1, loss}, {{doc_word, doc_word_buf}});
+    sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
+    //sess.Run({loss, step2}, {{doc_word, doc_word_buf}});
     LOG(INFO) << "Iteration[" << i << "]:";
     loss.print();
   }

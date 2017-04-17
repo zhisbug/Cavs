@@ -4,9 +4,11 @@
 #include "cavs/util/logging.h"
 
 #include <unordered_map>
+#include <list>
 
 using std::string;
 using std::vector;
+using std::list;
 using std::unordered_map;
 
 namespace midend {
@@ -15,7 +17,7 @@ SimpleSession::SimpleSession(const DepGraph* graph)
     : SessionBase(graph), compiled_(false), round_(0) {}
 
 void DepthSearch(const Node* curr,
-    vector<const Node*>* critical_path,
+    list<const Node*>* critical_path,
     unordered_map<const Node*, bool>* include) {
   bool isSource = (curr->inputs_size() == 0);
   bool accessed = (include->find(curr) != include->end());
@@ -38,7 +40,7 @@ void DepthSearch(const Node* curr,
 void SimpleSession::Compile(
     const vector<string>& output_names, 
     const vector<string>& input_names) {
-  vector<const Node*> critical_path;
+  list<const Node*> critical_path;
   unordered_map<const Node*, bool> include;
   for (auto& output : output_names) {
     const Node* node = graph_->FindNode(output);
@@ -120,11 +122,38 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
   }
 }
 
+void AddMPIOnPath(list<Node*>& critical_path) {
+  auto iter = critical_path.begin(); 
+  while (iter != critical_path.end()) {
+    if ((*iter)->IsSingleNode()) {
+      string name = (*iter)->output(0)->name();
+      if (name.length() >= 13
+          && name.substr(0, 13) == "variable_grad") {
+        //we assume the output size of variable_grad node must equal 1
+        CHECK((*iter)->outputs_size() == 1);
+        OpDef comm;
+        ::backend::OpDefBuilder("MPIAllGather")
+          .Input(name)
+          .Output(name)
+          .Shape((*iter)->output(0)->shape())
+          .Device("CPU")
+          .Finalize(&comm);
+        Node* comm_node = new Node(comm, (*iter)->scope());
+        comm_node->AddInput((*iter)->output(0));
+        comm_node->AddOutput((*iter)->output(0));
+        critical_path.insert(++iter, comm_node);
+      }
+    }else if ((*iter)->IsScopedNode()) {
+      AddMPIOnPath(static_cast<ScopedNode*>(*iter)->nodes_); 
+      ++iter;
+    }
+  }
+}
 
 void MPISession::Compile(
     const vector<string>& output_names, 
     const vector<string>& input_names) {
-  vector<const Node*> critical_path;
+  list<const Node*> critical_path;
   unordered_map<const Node*, bool> include;
   for (auto& output : output_names) {
     const Node* node = graph_->FindNode(output);
@@ -152,7 +181,6 @@ void MPISession::Compile(
       Node* comm_node = new Node(comm, node->scope());
       comm_node->AddInput(node->output(0));
       comm_node->AddOutput(node->output(0));
-      
     }
   }
 

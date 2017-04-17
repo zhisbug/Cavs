@@ -10,6 +10,7 @@
 
 #include <string>
 #include <vector>
+#include <list>
 #include <algorithm>
 
 namespace midend {
@@ -23,10 +24,11 @@ class Node {
  public:
   explicit Node(const OpDef& op_def,
       const Scope* s = GetGlobalScope());
-
   virtual Statement* Compile(SessionBase* sess) const {
     return NULL;
   }
+  virtual bool IsSingleNode() const { return false; }
+  virtual bool IsScopedNode() const { return false; }
   inline const OpDef& op_def() const;
   inline const Scope* scope() const;
   inline const std::string& name() const;
@@ -58,6 +60,7 @@ class SingleNode : public Node {
       const Scope* s = GetGlobalScope())
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) const override;
+  bool IsSingleNode() const override { return true; }
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
   }
@@ -79,10 +82,10 @@ class ScopedNode : public Node {
       const OpDef& op_def = OpDef(),
       Scope* located = GetGlobalScope());
   Statement* Compile(SessionBase* sess) const override;
-  friend class MPISession;
+  bool IsScopedNode() const override { return true; }
+  std::list<Node*> nodes_;
 
  private:
-  std::vector<Node*> nodes_;
   int iter_;
   Scope* contained_;
   void Compress();
