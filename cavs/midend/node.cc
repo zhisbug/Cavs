@@ -57,7 +57,8 @@ ScopedNode::ScopedNode(int iter,
   Edge* output =
     new Edge(op_def.output(0), false, located_);
   output->AddSource(this);
-  nodes_ = contained_->nodes_;
+  for (auto* node_ptr : contained_->nodes_)
+    nodes_.push_back(node_ptr);
 }
 
 Statement* ScopedNode::Compile(

@@ -29,6 +29,7 @@ class SimpleSession : public SessionBase {
 class MPISession: public SimpleSession {
  public:
   MPISession(const DepGraph* graph);
+  ~MPISession();
   void Run(const std::vector<std::string>& output_names, 
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
@@ -36,9 +37,6 @@ class MPISession: public SimpleSession {
  private:
   void Compile(const std::vector<std::string>& output_names, 
                const std::vector<std::string>& input_names) override;
-  std::vector<Statement*> executors_;
-  bool compiled_;
-  int round_;
 };
 
 } //namespace midend

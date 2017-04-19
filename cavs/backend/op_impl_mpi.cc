@@ -39,20 +39,29 @@ void MPIAllReduceOpImpl<T>::Compute(OpContext* context) {
   const Tensor& inp = context->Input(0);
   Tensor* out = context->Output(0);
   //currently, we assume this
+  LOG(INFO) << "here";
   CHECK(inp.device_type() == out->device_type());
   if (inp.device_type() != CPU) {
     Tensor cpu_buffer; 
     cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), inp);
     cpu_buffer.SyncWith(inp);
-    checkMPIError(MPI_Allreduce(cpu_buffer.data<T>(),
+    cpu_buffer.DebugNumerical<T>();
+    checkMPIError(MPI_Allreduce(MPI_IN_PLACE,
           cpu_buffer.mutable_data<T>(),
           cpu_buffer.count(), DataTypeToMPIType<T>::value,
           MPI_SUM, MPI_COMM_WORLD));
     out->SyncWith(cpu_buffer);
   }else {
-    checkMPIError(MPI_Allreduce(inp.data<T>(), out->mutable_data<T>(),
-          inp.count(), DataTypeToMPIType<T>::value,
-          MPI_SUM, MPI_COMM_WORLD));
+    if (reinterpret_cast<int64_t>(inp.data<T>()) == 
+        reinterpret_cast<int64_t>(out->mutable_data<T>())) {
+      checkMPIError(MPI_Allreduce(MPI_IN_PLACE, out->mutable_data<T>(),
+            inp.count(), DataTypeToMPIType<T>::value,
+            MPI_SUM, MPI_COMM_WORLD));
+    }else {
+      checkMPIError(MPI_Allreduce(inp.data<T>(), out->mutable_data<T>(),
+            inp.count(), DataTypeToMPIType<T>::value,
+            MPI_SUM, MPI_COMM_WORLD));
+    }
   }
 }
 

@@ -63,8 +63,13 @@ string Tensor::DebugInfo() const {
 template <>
 void Tensor::DebugNumerical<float>() const {
   vector<float> res(count());
-  checkCudaError(cudaMemcpy(res.data(), data<float>(),
-        count()*sizeof(float), cudaMemcpyDeviceToHost));
+  if (device_type() == GPU) {
+    checkCudaError(cudaMemcpy(res.data(), data<float>(),
+          count()*sizeof(float), cudaMemcpyDeviceToHost));
+  }else {
+    checkCudaError(cudaMemcpy(res.data(), data<float>(),
+          count()*sizeof(float), cudaMemcpyHostToHost));
+  }
   for (int i = 0; i < count(); i++)
     CHECK(!isnan(res[i])) << i;
   float sum = 0;

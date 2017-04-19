@@ -3,7 +3,9 @@
 #include "cavs/backend/op_def_builder.h"
 #include "cavs/util/logging.h"
 
+#include <mpi.h>
 #include <unordered_map>
+#include <iterator>
 #include <list>
 
 using std::string;
@@ -69,16 +71,16 @@ void SimpleSession::Run(const vector<string>& output_names,
     compiled_ = true;
     round_ = 0;
   }
-  //LOG(INFO) << "Feeding inputs...";
+  LOG(INFO) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
-  //LOG(INFO) << "Executing...";
+  LOG(INFO) << "Executing...";
   for (auto* exe : executors_) {
     exe->SetRound(round_);
     exe->Run();
   }
-  //LOG(INFO) << "Fetching output..";
+  LOG(INFO) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
-  //LOG(INFO) << "Execution completed";
+  LOG(INFO) << "Execution completed";
   round_++;
 }
 
@@ -123,17 +125,19 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
   }
 }
 
-void AddMPIOnPath(list<Node*>& critical_path) {
+void AddMPIOnPath(list<const Node*>& critical_path) {
   auto iter = critical_path.begin(); 
   while (iter != critical_path.end()) {
     if ((*iter)->IsSingleNode()) {
       string name = (*iter)->output(0)->name();
+      LOG(INFO) << name;
       if (name.length() >= 13
-          && name.substr(0, 13) == "variable_grad") {
+          && name.substr(0, 8) == "Variable"
+          && name.substr(name.length()-5, 5) == "_grad") {
         //we assume the output size of variable_grad node must equal 1
         CHECK((*iter)->outputs_size() == 1);
         OpDef comm;
-        ::backend::OpDefBuilder("MPIAllGather")
+        ::backend::OpDefBuilder("MPIAllReduce")
           .Input(name)
           .Output(name)
           .Shape((*iter)->output(0)->shape())
@@ -142,17 +146,23 @@ void AddMPIOnPath(list<Node*>& critical_path) {
         Node* comm_node = new Node(comm, (*iter)->scope());
         comm_node->AddInput((*iter)->output(0));
         comm_node->AddOutput((*iter)->output(0));
-        critical_path.insert(++iter, comm_node);
+        critical_path.insert(std::next(iter,1), comm_node);
       }
     }else if ((*iter)->IsScopedNode()) {
-      AddMPIOnPath(static_cast<ScopedNode*>(*iter)->nodes_); 
-      ++iter;
+      AddMPIOnPath(static_cast<ScopedNode*>(const_cast<Node*>(*iter))->nodes_); 
     }
+    iter++;
   }
 }
 
 MPISession::MPISession(const DepGraph* graph)
-    : SimpleSession(graph) {}
+    : SimpleSession(graph){
+  MPI_Init(NULL, NULL);
+}
+
+MPISession::~MPISession() {
+  MPI_Finalize();
+}
 
 void MPISession::Compile(
     const vector<string>& output_names, 
@@ -165,28 +175,11 @@ void MPISession::Compile(
     DepthSearch(node, &critical_path, &include);
   }
 
-  for (auto* node : critical_path) {
-    //Here, we assumpt the gradient of variables
-    //should be communicated.
-    //If the node generates a variable gradient,
-    //it should be followed with a communication node.
-    string name = node->output(0)->name();
-    if (name.length() >= 13
-        && name.substr(0, 13) == "variable_grad") {
-      //we assume the output size of variable_grad node must equal 1
-      CHECK(node->outputs_size() == 1);
-      OpDef comm;
-      ::backend::OpDefBuilder("MPIAllReduce")
-        .Input(name)
-        .Output(name)
-        .Shape(node->output(0)->shape())
-        .Device("CPU")
-        .Finalize(&comm);
-      Node* comm_node = new Node(comm, node->scope());
-      comm_node->AddInput(node->output(0));
-      comm_node->AddOutput(node->output(0));
-    }
-  }
+  //Here, we assumpt the gradient of variables
+  //should be communicated.
+  //If the node generates a variable gradient,
+  //it should be followed with a communication node.
+  AddMPIOnPath(critical_path);
 
   for (auto* node : critical_path) {
     LOG(INFO) << node->op_def().DebugString();
@@ -205,6 +198,7 @@ void MPISession::Run(const vector<string>& output_names,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   SimpleSession::Run(output_names, output_tensors, input_names, input_tensors);
+  LOG(INFO) << "Finished";
 }
 
 

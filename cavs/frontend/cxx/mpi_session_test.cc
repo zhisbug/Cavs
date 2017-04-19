@@ -9,12 +9,13 @@ int main() {
   Sym A = Sym::Variable(C_FLOAT, {2, 3}, Sym::Ones()); 
   Sym B = Sym::Placeholder(C_FLOAT, {2, 3});
   Sym C = A * B;
-  Sym D = C.Optimizer({A}, 5);
+  Sym D = C.Optimizer({A}, 0.1f, 2);
+  Sym::DumpGraph();
 
   MPISession sess;
-  vector<float> A_data = {1, 2, 3, 4, 5, 6};
-  vector<float> B_data = {6, 5, 4, 3, 2, 1};
-  sess.Run(C, {{A, A_data.data()}, {B, B_data.data()}});
-  C.print();
+  //Session sess;
+  vector<float> B_data = {1, 2, 3, 4, 5, 6};
+  sess.Run({A, D}, {{B, B_data.data()}});
+  A.print();
   return 0;
 }

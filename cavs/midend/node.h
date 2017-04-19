@@ -83,7 +83,7 @@ class ScopedNode : public Node {
       Scope* located = GetGlobalScope());
   Statement* Compile(SessionBase* sess) const override;
   bool IsScopedNode() const override { return true; }
-  std::list<Node*> nodes_;
+  std::list<const Node*> nodes_;
 
  private:
   int iter_;
@@ -111,7 +111,10 @@ inline int Node::inputs_size() const {
   return inputs_.size();
 }
 inline const Edge* Node::output(int i) const {
-  CHECK(i < outputs_.size());
+  CHECK(i < outputs_.size())
+    << DebugInfo()
+    << "\nAcquiring idx: " << i
+    << "\nSize: " << outputs_.size();
   return outputs_[i];
 }
 inline const std::vector<Edge*>& Node::outputs() const {

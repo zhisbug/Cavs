@@ -31,8 +31,8 @@ class ExprStatement : public Statement {
     if (ctxt_) free(ctxt_);
   }
   inline void Run() override {
-    //LOG(INFO) << "Running Operator " << op_->DebugInfo(1);
-    //LOG(INFO) << "Context Info \n" << ctxt_->DebugInfo();
+    LOG(INFO) << "Running Operator " << op_->DebugInfo(1);
+    LOG(INFO) << "Context Info \n" << ctxt_->DebugInfo();
     CHECK(op_);
     CHECK(ctxt_);
     ctxt_->SetRound(GetRound());
