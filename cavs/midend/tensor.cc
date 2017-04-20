@@ -2,6 +2,7 @@
 #include "cavs/util/types.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/mpi_types.h"
 
 #include <iomanip>
 
@@ -70,14 +71,17 @@ void Tensor::DebugNumerical<float>() const {
     checkCudaError(cudaMemcpy(res.data(), data<float>(),
           count()*sizeof(float), cudaMemcpyHostToHost));
   }
+  int rank_id;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank_id);
   for (int i = 0; i < count(); i++)
     CHECK(!isnan(res[i])) << i;
   float sum = 0;
   for (int i = 0; i < count(); i++)
     sum += res[i]*res[i];
-  LOG(INFO) << "L2 Norm: " << sum;
+  LOG(INFO) << "L2 Norm: (rank " << rank_id << "): "
+            << std::setprecision(15) << sum;
   for (int i = 0; i < 10 && i < count(); i++)
-    LOG(INFO) << name() << "[" << i << "]: "
+    LOG(INFO) << name() << "[" << i << "](rank " << rank_id << "): "
               << std::setprecision(15) << res[i];
 }
 

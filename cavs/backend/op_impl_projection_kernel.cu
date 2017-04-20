@@ -1,10 +1,17 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/functor_sort_scan.cuh"
+#include "cavs/backend/functor_elementwise.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/midend/devices.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/mpi_types.h"
+
+#include <vector>
+#include <iomanip>
+
+using std::vector;
 
 namespace backend {
 
@@ -44,18 +51,44 @@ ProjectionOpKernel<T>::~ProjectionOpKernel() {
 }
 
 template <typename T>
+__inline__ __device__
+T warpReduceMax(T val) {
+  const int warpSize = 32;
+  for (int offset = warpSize >> 1; offset > 0; offset >>= 1) {
+    val = math::Max<T>::Compute(__shfl_down(val, offset), val);
+  }
+  return val;
+}
+template <typename T>
 __global__ void BatchedFindMax(T *out, const T* mu, const T* mu_scan, int N) {
+  extern __shared__ int index_buf[];
+  const int warpSize = 32;
+  int lane = threadIdx.x%warpSize;
+  int warp_id = threadIdx.x/warpSize;
   int offset = blockIdx.x*N;
+  int max_index = 0;
   for (int round = 0; round < (N+blockDim.x-1)/blockDim.x; round++) {
     int offset_within_vec = threadIdx.x + round*blockDim.x;
     int idx = offset + offset_within_vec;
     if (offset_within_vec < N) {  
       if ((mu[idx] + (1.f - mu_scan[idx])/(idx+1)) > 0) {
-        if (idx == N-1 || mu[idx+1] + (1.f - mu_scan[idx+1]/(idx+2) < 0)) {
-          out[blockIdx.x] = (1-mu_scan[idx])/(idx+1);
-        }
+        max_index = offset_within_vec;
+        /*if (idx == N-1 || mu[idx+1] + (1.f - mu_scan[idx+1]/(idx+2) < 0)) {*/
+          /*out[blockIdx.x] = (1-mu_scan[idx])/(idx+1);*/
+        /*}*/
       }
     }
+  }
+
+  max_index = warpReduceMax<T>(max_index);
+  if (lane == 0) 
+    index_buf[warp_id] = max_index;
+  __syncthreads();
+  max_index = (threadIdx.x < blockDim.x / warpSize) ? index_buf[lane] : 0;
+  if (warp_id == 0)
+    max_index = warpReduceMax(max_index);
+  if (threadIdx.x == 0) {
+    out[blockIdx.x] = (1-mu_scan[max_index])/(max_index+1);
   }
 }
 
@@ -85,6 +118,7 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
   int batch = var_in.dims(0);
   int N = var_in.count()/var_in.dims(0);
 
+  /*var_in.DebugNumerical<T>();*/
   //To further reduce the workspace of tpc_word, 
   //we need to split the N dimension
   const int MINI_BATCH = (batch < 1000) ? batch : 1000;
@@ -117,12 +151,14 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
       int blocksPerGrid = curr_batch_size;
       /*BatchedScan(workspace_scan, workspace_sort, N, batch);*/
       BatchedScan(workspace_scan, workspace_sort, N, curr_batch_size);
-      BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock>>>(
+
+      BatchedFindMax<T><<<blocksPerGrid, threadsPerBlock,
+                          (threadsPerBlock+31)/32*sizeof(int)>>>(
           lamda, workspace_sort, workspace_scan, N);
-      /*BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(*/
-          /*var_out->mutable_data<T>(),*/
-          /*var_in.data<T>(),*/
-          /*lamda, N);*/
+      /*[>BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(<]*/
+          /*[>var_out->mutable_data<T>(),<]*/
+          /*[>var_in.data<T>(),<]*/
+          /*[>lamda, N);<]*/
       BatchedGetOutput<T><<<blocksPerGrid, threadsPerBlock>>>(
           var_out->mutable_data<T>() + offset*N,
           var_in.data<T>() + offset*N,
@@ -131,7 +167,6 @@ void ProjectionOpKernel<T>::Compute(OpContext* context) {
   }
 
   /*var_out->DebugNumerical<T>();*/
-  /*checkCudaError(cudaDeviceSynchronize());*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Simplex").Device("GPU"), ProjectionOpKernel<float>);

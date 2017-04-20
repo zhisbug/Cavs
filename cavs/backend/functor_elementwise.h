@@ -57,6 +57,20 @@ struct Div {
 };
 
 template <typename T>
+struct Max {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
+    return (inp0 > inp1) ? inp0 : inp1;
+  }
+};
+
+template <typename T>
+struct Min {
+  FORCE_INLINE __DEVICE__ static T Compute(T inp0, T inp1) {
+    return (inp0 < inp1) ? inp0 : inp1;
+  }
+};
+
+template <typename T>
 struct Assign {
   FORCE_INLINE __DEVICE__ static T Compute(T inp) {
     return (inp);
