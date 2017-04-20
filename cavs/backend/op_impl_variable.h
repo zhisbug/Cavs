@@ -16,7 +16,7 @@ namespace backend {
 using ::midend::OpContext;
 using ::midend::Tensor;
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR=bool>//fillop, dtype
 class VariableOpImpl : public OpImpl {
  public:
   explicit VariableOpImpl(const OpDef& def)
@@ -42,8 +42,51 @@ class DDVOpImpl : public OpImpl {
   int item_size_;
 };
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
-inline void VariableOpImpl<FILLFUNCTOR, T>::Compute(OpContext* context) {
+template <typename T>
+struct HasBcast {
+ private:
+  template<typename U, void (*)(void*, int, int)>
+  struct matcher;
+
+  template <typename U>
+  static char helper(matcher<U, &U::Compute>*);
+
+  template <typename U>
+  static int helper(...);
+
+ public:
+  enum {
+    value = (sizeof(helper<T>(NULL)) == 1)
+  };
+};
+
+template <bool>
+struct BcastWrapper {};
+
+template <>
+struct BcastWrapper<false> {
+  template <typename U>
+  static void Compute(void* buf, int count, int root) {
+    VLOG(V_DEBUG) << "Not Broadcasting...";
+  }
+};
+
+template <>
+struct BcastWrapper<true> {
+  template <typename U>
+  static void Compute(void* buf, int count, int root) {
+    VLOG(V_DEBUG) << "Broadcasting...";
+    U::Compute(buf, count, root);
+  }
+};
+
+template <typename T>
+void Bcast(void* buf, int count, int root) {
+  BcastWrapper<HasBcast<T>::value>::template Compute<T>(buf, count, root);
+}
+
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
+inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* context) {
   if (!initialized_) {
     Tensor* out = context->Output(0);
     FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
@@ -52,12 +95,14 @@ inline void VariableOpImpl<FILLFUNCTOR, T>::Compute(OpContext* context) {
       Tensor cpu_buffer; 
       cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), *out);
       cpu_buffer.SyncWith(*out);
-      MPIBcastFunctor<T>::Compute(cpu_buffer.mutable_data<T>(),
-          cpu_buffer.count(), 0);
+      //MPIBcastFunctor<T>::Compute(cpu_buffer.mutable_data<T>(),
+          //cpu_buffer.count(), 0);
+      Bcast<BCASTFUNCTOR>(cpu_buffer.mutable_data<T>(), cpu_buffer.count(), 0);
       out->SyncWith(cpu_buffer);
     }else {
-      MPIBcastFunctor<T>::Compute(out->mutable_data<T>(),
-          out->count(), 0);
+      //MPIBcastFunctor<T>::Compute(out->mutable_data<T>(),
+          //out->count(), 0);
+      Bcast<BCASTFUNCTOR>(out->mutable_data<T>(), out->count(), 0);
     }
   }
 };

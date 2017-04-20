@@ -20,7 +20,7 @@ namespace backend {
 
 template <typename T>
 struct MPIBcastFunctor {
-  inline static void Compute(T* buf, int count, int root) {
+  inline static void Compute(void* buf, int count, int root) {
     checkMPIError(MPI_Bcast(buf, count,
           DataTypeToMPIType<T>::value,
           root, MPI_COMM_WORLD));
@@ -33,8 +33,8 @@ struct MPIBcastFunctor {
 template <typename T>
 struct MPIAllReduceFunctor {
  public:
-  inline static void Compute(const T* sendbuf,
-      T* recvbuf, int count) {
+  inline static void Compute(const void* sendbuf,
+      void* recvbuf, int count) {
     if (reinterpret_cast<int64_t>(sendbuf) == 
         reinterpret_cast<int64_t>(recvbuf)) {
       checkMPIError(MPI_Allreduce(MPI_IN_PLACE, recvbuf,
