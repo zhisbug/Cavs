@@ -37,11 +37,22 @@ Statement* SingleNode::Compile(
     SessionBase* sess) const {
   LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
   //LOG(INFO) << DebugInfo();
-  OpImpl* op = CreateOp(op_def());
+  OpImpl* op = NULL;
+  if (sess->SessionType() == SessionBase::MPI &&
+      op_def().name() == "Variable") {
+    OpDef mpi_def = op_def();
+    mpi_def.set_name("VariableMPI");
+    op = CreateOp(mpi_def);
+    LOG(INFO) << mpi_def.DebugString();
+  }else {
+    op = CreateOp(op_def());
+  }
   OpContext* ctxt = sess->GetContext(this);
   CHECK(op) << op_def().DebugString();
   CHECK(ctxt) << op_def().DebugString();
-  return new ExprStatement(op, ctxt);
+  ExprStatement* expr_stmt =  new ExprStatement(op, ctxt);
+  CHECK(expr_stmt);
+  return expr_stmt;
 }
 
 ScopedNode::ScopedNode(int iter,
@@ -70,15 +81,12 @@ Statement* ScopedNode::Compile(
   //for (auto* node : contained_->nodes_) {
     //LOG(INFO) << node->op_def().DebugString();
   //}
-  //for (auto* node : contained_->nodes_) {
   for (auto* node : nodes_) {
-    LOG(INFO) << "\tCompiling\t" << node->op_def().name()
-              << "\t in Scope: " << contained_->name();
-    OpImpl* op = CreateOp(node->op_def());     
-    OpContext* ctxt = sess->GetContext(node);
-    CHECK(op) << node->op_def().DebugString();
-    CHECK(ctxt) << node->op_def().DebugString();
-    bb->AppendStmt(new ExprStatement(op, ctxt));
+    //LOG(INFO) << "\tCompiling\t" << node->op_def().name()
+              //<< "\t in Scope: " << contained_->name();
+    Statement* stmt = node->Compile(sess);
+    CHECK(stmt) << node->DebugInfo();
+    bb->AppendStmt(stmt);
   }
   return bb;
 }

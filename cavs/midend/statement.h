@@ -31,10 +31,10 @@ class ExprStatement : public Statement {
     if (ctxt_) free(ctxt_);
   }
   inline void Run() override {
-    VLOG(V_DEBUG) << "Running Operator " << op_->DebugInfo(1);
-    VLOG(V_DEBUG) << "Context Info \n" << ctxt_->DebugInfo();
     CHECK(op_);
     CHECK(ctxt_);
+    VLOG(V_DEBUG) << "Running Operator " << op_->DebugInfo();
+    VLOG(V_DEBUG) << "Context Info \n" << ctxt_->DebugInfo();
     ctxt_->SetRound(GetRound());
     op_->Compute(ctxt_);
   }
@@ -55,14 +55,16 @@ class BasicBlock : public Statement {
       free(stmt);
   }
   inline void Run() override {
-    //LOG(INFO) << "Run " << iter_ << " iterations";
+    VLOG(V_DEBUG) << "Run " << iter_ << " iterations";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
+        CHECK(stmt);
         stmt->Run();
       }
     }
   }
   inline void AppendStmt(Statement* stmt) {
+    CHECK(stmt);
     stmts_.push_back(stmt); 
   }
   inline void SetStmts(const std::vector<Statement*>& stmts) {

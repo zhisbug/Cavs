@@ -13,6 +13,7 @@ class SimpleSession : public SessionBase {
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
            const std::vector<Tensor>& input_tensors) override;
+  int SessionType() override { return SIMPLE; }
  protected:
   virtual void Compile(const std::vector<std::string>& output_names, 
                        const std::vector<std::string>& input_names);
@@ -34,6 +35,7 @@ class MPISession: public SimpleSession {
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
            const std::vector<Tensor>& input_tensors) override;
+  int SessionType() override { return MPI; }
  private:
   void Compile(const std::vector<std::string>& output_names, 
                const std::vector<std::string>& input_names) override;

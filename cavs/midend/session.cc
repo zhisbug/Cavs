@@ -71,16 +71,16 @@ void SimpleSession::Run(const vector<string>& output_names,
     compiled_ = true;
     round_ = 0;
   }
-  LOG(INFO) << "Feeding inputs...";
+  VLOG(V_RUN) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
-  LOG(INFO) << "Executing...";
+  VLOG(V_RUN) << "Executing...";
   for (auto* exe : executors_) {
     exe->SetRound(round_);
     exe->Run();
   }
-  LOG(INFO) << "Fetching output..";
+  VLOG(V_RUN) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
-  LOG(INFO) << "Execution completed";
+  VLOG(V_RUN) << "Execution completed";
   round_++;
 }
 
@@ -143,10 +143,11 @@ void AddMPIOnPath(list<const Node*>& critical_path) {
           .Shape((*iter)->output(0)->shape())
           .Device("CPU")
           .Finalize(&comm);
-        Node* comm_node = new Node(comm, (*iter)->scope());
+        Node* comm_node = new SingleNode(comm, (*iter)->scope());
         comm_node->AddInput((*iter)->output(0));
         comm_node->AddOutput((*iter)->output(0));
-        critical_path.insert(std::next(iter,1), comm_node);
+        critical_path.insert(++iter, comm_node);
+        continue;
       }
     }else if ((*iter)->IsScopedNode()) {
       AddMPIOnPath(static_cast<ScopedNode*>(const_cast<Node*>(*iter))->nodes_); 
