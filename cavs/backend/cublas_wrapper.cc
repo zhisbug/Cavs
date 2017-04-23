@@ -128,9 +128,65 @@ template <>
 void AsumCublasWrapper<double>(
     const int N, const double* x,
     double* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
   int incx = 1;
   checkCublasError(cublasDasum(CudaCommon::cublasHandle(),
       N, x, incx, y)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+}
+
+template <>
+void ArgminCublasWrapper<float>(
+    const int N, const float* x,
+    int* index) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasIsamin(CudaCommon::cublasHandle(),
+      N, x, incx, index)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+}
+
+template <>
+void ArgminCublasWrapper<double>(
+    const int N, const double* x,
+    int* index) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasIdamin(CudaCommon::cublasHandle(),
+      N, x, incx, index)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+}
+
+template <>
+void ArgmaxCublasWrapper<float>(
+    const int N, const float* x,
+    int* index) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasIsamax(CudaCommon::cublasHandle(),
+      N, x, incx, index)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+}
+
+template <>
+void ArgmaxCublasWrapper<double>(
+    const int N, const double* x,
+    int* index) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasIdamax(CudaCommon::cublasHandle(),
+      N, x, incx, index)); 
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
 }
 
 } //namespace backend

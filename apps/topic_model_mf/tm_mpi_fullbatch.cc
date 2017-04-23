@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
   Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K}, Sym::UniformRandom(FLAGS_K));
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
 
-  Sym loss = 0.5f/FLAGS_D*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean());
+  Sym loss = 0.5f/FLAGS_D*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_sum());
   Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
   Sym::DumpGraph();

@@ -73,7 +73,34 @@ void AsumOpCublas<T>::Compute(OpContext* context) {
   //y->DebugNumerical<T>();
 }
 
-REGISTER_OP_IMPL_BUILDER(Key("Reduce_mean").Device("GPU"),
+//absolute value argmax
+template <typename T>
+class ArgmaxOpCublas : public OpImpl {
+ public:
+  explicit ArgmaxOpCublas(const OpDef& def)
+    : OpImpl(def) {
+  }
+  void Compute(OpContext* context) override;
+
+ private:
+  T alpha;
+};
+
+template <typename T>
+void ArgmaxOpCublas<T>::Compute(OpContext* context) {
+  const Tensor& x = context->Input(0);
+  Tensor* y = context->Output(0);
+  CHECK(1 == y->count());
+  int N = x.count();
+  CHECK(N > 0);
+
+  //x.DebugNumerical<T>();
+  ArgmaxCublasWrapper<T>(
+      N, x.data<T>(), y->mutable_data<T>());
+  //y->DebugNumerical<T>();
+}
+
+REGISTER_OP_IMPL_BUILDER(Key("Reduce_sum").Device("GPU"),
     AsumOpCublas<float>);
 
 } //namespace backend

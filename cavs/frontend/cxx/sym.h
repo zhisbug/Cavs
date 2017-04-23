@@ -35,8 +35,10 @@ class Sym {
       const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
+  static Sym Argmax(const Sym& a, int axis, string device = "GPU");
   static Sym Square(const Sym& a, string device = "GPU");
   static Sym Reduce_mean(const Sym& a, string device = "GPU");
+  static Sym Reduce_sum(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
       float lr, int iters = 1, const string& projections = "");
@@ -50,12 +52,14 @@ class Sym {
   static Sym MatMul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym FullyConnected(const Sym& a, const Sym& b, string device = "GPU");
   static Sym SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device = "GPU");
+  static Sym Equal(const Sym& a, const Sym& b, string device = "GPU");
   //ternary operation
   static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
   //filler operation
   static std::pair<std::string, OpDef::AttrDef> Ones();
   static std::pair<std::string, OpDef::AttrDef> Zeros();
   static std::pair<std::string, OpDef::AttrDef> UniformRandom(int stride);
+  static std::pair<std::string, OpDef::AttrDef> NormalRandom();
   static std::pair<std::string, OpDef::AttrDef> BinaryReader(const string& filename);
   //debug operations
   static void DumpGraph();
@@ -64,8 +68,10 @@ class Sym {
   ////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }
+  Sym Argmax(int axis) { return Argmax(*this, axis); };
   Sym Square() { return Square(*this); }
   Sym Reduce_mean() { return Reduce_mean(*this); };
+  Sym Reduce_sum() { return Reduce_sum(*this); };
   Sym Optimizer() { return Optimizer(*this); }
   Sym Optimizer(vector<Sym> variables,
       float lr, int iters = 1, const string& projection = "") {

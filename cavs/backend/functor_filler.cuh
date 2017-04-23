@@ -15,9 +15,10 @@ struct CudaFiller : Filler<OP, T> {
   CudaFiller(const OpDef& op_def) : Filler<OP, T>(op_def) {}
   FORCE_INLINE void Compute(T* buf, int N) override {
     std::vector<T> cpu_buf(N);
-    for (int i = 0; i < N; i += this->stride_) {
-      OP::Compute(cpu_buf.data()+i, (i+this->stride_>N) ? (N-i) : this->stride_);
-    }
+    Filler<OP, T>::Compute(cpu_buf.data(), N);
+    /*for (int i = 0; i < N; i += this->stride_) {*/
+      /*OP::Compute(cpu_buf.data()+i, (i+this->stride_>N) ? (N-i) : this->stride_);*/
+    /*}*/
     checkCudaError(cudaMemcpy(buf, cpu_buf.data(), N*sizeof(T),
                               cudaMemcpyHostToDevice));
   }

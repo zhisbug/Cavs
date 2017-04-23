@@ -59,6 +59,7 @@ T warpReduceMax(T val) {
   }
   return val;
 }
+
 template <typename T>
 __global__ void BatchedFindMax(T *out, const T* mu, const T* mu_scan, int N) {
   extern __shared__ int index_buf[];
@@ -73,14 +74,11 @@ __global__ void BatchedFindMax(T *out, const T* mu, const T* mu_scan, int N) {
     if (offset_within_vec < N) {  
       if ((mu[idx] + (1.f - mu_scan[idx])/(idx+1)) > 0) {
         max_index = offset_within_vec;
-        /*if (idx == N-1 || mu[idx+1] + (1.f - mu_scan[idx+1]/(idx+2) < 0)) {*/
-          /*out[blockIdx.x] = (1-mu_scan[idx])/(idx+1);*/
-        /*}*/
       }
     }
   }
 
-  max_index = warpReduceMax<T>(max_index);
+  max_index = warpReduceMax(max_index);
   if (lane == 0) 
     index_buf[warp_id] = max_index;
   __syncthreads();

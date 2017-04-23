@@ -24,17 +24,31 @@ struct UniformNormalizer {
   }
 };
 
+template <typename T>
+struct NormalRandom {
+  FORCE_INLINE static void Compute(T* buf, int N) {
+    std::default_random_engine generator;
+    std::normal_distribution<T> distribution(0.f, 1.f);
+    for (unsigned i = 0; i < N; i++) {
+      buf[i] = distribution(generator);
+    }
+  }
+};
+
 template <typename OP, typename T>
 struct Filler {
   Filler(const OpDef& op_def) {
-    stride_ = GetSingleArg<int>(op_def, "stride");
-    CHECK(stride_ > 0);
+    stride_ = GetSingleArg<int>(op_def, "stride", 0);
+    CHECK(stride_ >= 0);
   }
 
   FORCE_INLINE virtual void Compute(T* buf, int N) {
-    for (int i = 0; i < N; i+=stride_) {
-      OP::Compute(buf+i, (i+stride_>N) ? (N-i) : stride_);
-    }
+    if (stride_ > 0) {
+      for (int i = 0; i < N; i+=stride_) {
+        OP::Compute(buf+i, (i+stride_>N) ? (N-i) : stride_);
+      }
+    }else 
+      OP::Compute(buf, N);
   }
 
   int stride_;

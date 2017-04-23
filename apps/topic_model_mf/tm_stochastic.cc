@@ -21,7 +21,7 @@ int main() {
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V},
                                Sym::UniformRandom(FLAGS_V));
 
-  Sym loss  = 0.5f/FLAGS_batch*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_mean());
+  Sym loss  = 0.5f/FLAGS_batch*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_sum());
   Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
 

@@ -178,6 +178,16 @@ Sym Sym::Abs(const Sym& a, string device) {
   return s;
 }
 
+Sym Sym::Argmax(const Sym& a, int axis, string device) {
+  CHECK(a.node_->output_.size() == 1);
+  OpDef::AttrDef attr;
+  attr.set_name("axis");
+  attr.mutable_value()->set_i(axis);
+  Sym s("Argmax", {a.node_->output_[0]},
+        a.node_->type_, "", device, {}, {attr});
+  return s;
+}
+
 Sym Sym::Square(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Square", {a.node_->output_[0]},
@@ -188,6 +198,13 @@ Sym Sym::Square(const Sym& a, string device) {
 Sym Sym::Reduce_mean(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
   Sym s("Reduce_mean", {a.node_->output_[0]},
+        a.node_->type_, "", device);
+  return s;
+}
+
+Sym Sym::Reduce_sum(const Sym& a, string device) {
+  CHECK(a.node_->output_.size() == 1);
+  Sym s("Reduce_sum", {a.node_->output_[0]},
         a.node_->type_, "", device);
   return s;
 }
@@ -233,6 +250,16 @@ Sym Sym::Flatten(const Sym& a) {
   attr.mutable_value()->set_b(true);
   return Sym("Flatten", { a.node_->output_[0] },
       a.node_->type_, "", a.node_->device_, {}, {attr});
+}
+
+Sym Sym::Equal(const Sym& a, const Sym& b, string device) {
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
+  //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
+  Sym s("Equal", {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, "", device);
+  return s;
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string device) {
@@ -320,6 +347,11 @@ pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
   attr.set_name("stride");
   attr.mutable_value()->set_i(stride);
   return std::make_pair("UniformRandom", std::move(attr));
+}
+
+pair<string, OpDef::AttrDef> Sym::NormalRandom() {
+  OpDef::AttrDef attr;
+  return std::make_pair("NormalRandom", std::move(attr));
 }
 
 pair<string, OpDef::AttrDef> Sym::BinaryReader(const string& filename) {

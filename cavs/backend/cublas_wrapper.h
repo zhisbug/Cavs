@@ -40,6 +40,18 @@ void AsumCublasWrapper(
     const int N, const T* x,
     T* y);
 
+//level1
+template <typename T>
+void ArgminCublasWrapper(
+    const int N, const T* x,
+    int* index);
+
+//level1
+template <typename T>
+void ArgmaxCublasWrapper(
+    const int N, const T* x,
+    int* index);
+
 } //namespace backend
 
 #endif

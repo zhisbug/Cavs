@@ -41,15 +41,6 @@ struct CUDAUnaryFunctor {
   }
 };
 
-/*template <typename OP, typename T> */
-/*struct CUDAUnaryScalarFunctor {*/
-  /*static void Compute(T* out, const T* value, size_t n) {*/
-    /*UnaryScalarKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(*/
-        /*out, value, n);*/
-    /*checkCudaError(cudaGetLastError());*/
-  /*}*/
-/*};*/
-
 template <typename OP, typename T> 
 struct CUDAUnaryConstScalarFunctor {
   static void Compute(T* out, const T value, size_t n) {
@@ -73,6 +64,13 @@ __global__ void BinaryScalarKernel(T* out, const T* inp0, const T *inp1, size_t 
   } 
 }
 
+template <typename OP, typename T> 
+__global__ void BinaryConstScalarKernel(T* out, const T* inp0, const T inp1, size_t n) {
+  CUDA_1D_KERNEL_LOOP(i, n) { 
+    out[i] = OP::Compute(inp0[i], inp1); 
+  } 
+}
+
 template <typename OP, typename T>
 struct CUDABinaryFunctor {
   static void Compute(T* out, size_t n_out,
@@ -86,20 +84,23 @@ struct CUDABinaryFunctor {
     }else if (n_inp0 == 1 && n_out == n_inp1) {
       BinaryScalarKernel<OP, T><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
           out, inp1, inp0, n_out);
+    }else {
+      LOG(FATAL) << "Unrecognized Pattern";
     }
     checkCudaError(cudaGetLastError());
   }
 };
 
-/*template <typename OP, typename T>*/
-/*struct CUDABinaryScalarFunctor {*/
-  /*static void Compute(T* out, const T* inp0, const T* inp1, size_t n) {*/
-    /*checkCudaError(cudaGetLastError());*/
-    /*BinaryKernel<OP, T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(*/
-        /*out, inp0, inp1, n);*/
-    /*checkCudaError(cudaGetLastError());*/
-  /*}*/
-/*};*/
+template <typename OP, typename T>
+struct CUDABinaryConstScalarFunctor {
+  static void Compute(T* out, size_t n_out, const T* inp0, size_t n_inp0,
+      const T inp1) {
+    CHECK(n_out == n_inp0);
+    BinaryConstScalarKernel<OP, T><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
+        out, inp0, inp1, n_out);
+    checkCudaError(cudaGetLastError());
+  }
+};
 
 #define CudaUnaryOpInstance(math, dtype)    \
     UnaryOp<CUDAUnaryFunctor<math<dtype>, dtype>, dtype>

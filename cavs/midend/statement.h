@@ -33,8 +33,11 @@ class ExprStatement : public Statement {
   inline void Run() override {
     CHECK(op_);
     CHECK(ctxt_);
+    VLOG(V_DEBUG) << "======================================";
     VLOG(V_DEBUG) << "Running Operator " << op_->DebugInfo();
+    VLOG(V_DEBUG) << "--------------------------------------";
     VLOG(V_DEBUG) << "Context Info \n" << ctxt_->DebugInfo();
+    VLOG(V_DEBUG) << "======================================";
     ctxt_->SetRound(GetRound());
     op_->Compute(ctxt_);
   }

@@ -95,13 +95,9 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
       Tensor cpu_buffer; 
       cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), *out);
       cpu_buffer.SyncWith(*out);
-      //MPIBcastFunctor<T>::Compute(cpu_buffer.mutable_data<T>(),
-          //cpu_buffer.count(), 0);
       Bcast<BCASTFUNCTOR>(cpu_buffer.mutable_data<T>(), cpu_buffer.count(), 0);
       out->SyncWith(cpu_buffer);
     }else {
-      //MPIBcastFunctor<T>::Compute(out->mutable_data<T>(),
-          //out->count(), 0);
       Bcast<BCASTFUNCTOR>(out->mutable_data<T>(), out->count(), 0);
     }
   }
