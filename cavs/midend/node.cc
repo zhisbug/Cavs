@@ -5,7 +5,7 @@ using std::string;
 namespace midend {
 
 Node::Node(const OpDef& op_def, const Scope* s)
-  : op_def_(op_def), located_(const_cast<Scope*>(s)) {
+  : op_def_(op_def), located_(const_cast<Scope*>(s)), stmt_(NULL){
   located_->AddNode(this);
   node_name_ = s->name() + ":" + op_def_.name();
 }
@@ -34,25 +34,28 @@ string Node::DebugInfo() const {
 }
 
 Statement* SingleNode::Compile(
-    SessionBase* sess) const {
-  LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
-  //LOG(INFO) << DebugInfo();
-  OpImpl* op = NULL;
-  if (sess->SessionType() == SessionBase::MPI &&
-      op_def().name() == "Variable") {
-    OpDef mpi_def = op_def();
-    mpi_def.set_name("VariableMPI");
-    op = CreateOp(mpi_def);
-    LOG(INFO) << mpi_def.DebugString();
-  }else {
-    op = CreateOp(op_def());
+    SessionBase* sess) {
+  if (!stmt_) {
+    LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
+    //LOG(INFO) << DebugInfo();
+    OpImpl* op = NULL;
+    if (sess->SessionType() == SessionBase::MPI &&
+        op_def().name() == "Variable") {
+      OpDef mpi_def = op_def();
+      mpi_def.set_name("VariableMPI");
+      op = CreateOp(mpi_def);
+      LOG(INFO) << mpi_def.DebugString();
+    }else {
+      op = CreateOp(op_def());
+    }
+    OpContext* ctxt = sess->GetContext(this);
+    CHECK(op) << op_def().DebugString();
+    CHECK(ctxt) << op_def().DebugString();
+    ExprStatement* expr_stmt =  new ExprStatement(op, ctxt);
+    CHECK(expr_stmt);
+    stmt_ = expr_stmt;
   }
-  OpContext* ctxt = sess->GetContext(this);
-  CHECK(op) << op_def().DebugString();
-  CHECK(ctxt) << op_def().DebugString();
-  ExprStatement* expr_stmt =  new ExprStatement(op, ctxt);
-  CHECK(expr_stmt);
-  return expr_stmt;
+  return stmt_;
 }
 
 ScopedNode::ScopedNode(int iter,
@@ -68,27 +71,28 @@ ScopedNode::ScopedNode(int iter,
   Edge* output =
     new Edge(op_def.output(0), false, located_);
   output->AddSource(this);
-  for (auto* node_ptr : contained_->nodes_)
-    nodes_.push_back(node_ptr);
+  //for (auto* node_ptr : contained_->nodes_)
+    //nodes_.push_back(node_ptr);
+  nodes_ = contained_->nodes_;
 }
 
 Statement* ScopedNode::Compile(
-    SessionBase* sess) const {
-  LOG(INFO) << "Compiling ScopeNode:\t" << op_def().output(0);
-  LOG(INFO) << "It is located in scope " << scope()->name();
-  LOG(INFO) << "It contains a scope " << contained_->name();
-  BasicBlock* bb = new BasicBlock(iter_);
-  //for (auto* node : contained_->nodes_) {
-    //LOG(INFO) << node->op_def().DebugString();
-  //}
-  for (auto* node : nodes_) {
-    //LOG(INFO) << "\tCompiling\t" << node->op_def().name()
-              //<< "\t in Scope: " << contained_->name();
-    Statement* stmt = node->Compile(sess);
-    CHECK(stmt) << node->DebugInfo();
-    bb->AppendStmt(stmt);
+    SessionBase* sess) {
+  if (!stmt_) {
+    VLOG(V_DEBUG) << "Compiling ScopeNode:\t" << op_def().output(0);
+    VLOG(V_DEBUG) << "It is located in scope " << scope()->name();
+    VLOG(V_DEBUG) << "It contains a scope " << contained_->name();
+    BasicBlock* bb = new BasicBlock(iter_);
+    for (auto* node : nodes_) {
+      VLOG(V_DEBUG) << "\tCompiling\t" << node->op_def().name()
+                    << "\t in Scope: " << contained_->name();
+      Statement* stmt = node->Compile(sess);
+      CHECK(stmt) << node->DebugInfo();
+      bb->AppendStmt(stmt);
+    }
+    stmt_ = bb;
   }
-  return bb;
+  return stmt_;
 }
 
 } //namespace midend

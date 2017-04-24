@@ -23,7 +23,7 @@ class SessionBase {
                    const std::vector<Tensor>& input_tensors) {}
   virtual OpContext* GetContext(const Node* node);
   virtual int SessionType() { return BASE; }
-  enum { BASE=1, SIMPLE=2, MPI=3};
+  enum { BASE=1, SIMPLE=2, MPI=3, PARTIALEXECUTION=4 };
   std::string DebugInfo();
  protected:
   SessionBase() {}

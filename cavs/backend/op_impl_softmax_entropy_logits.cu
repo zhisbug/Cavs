@@ -63,9 +63,9 @@ void SoftmaxEntropyLogitsOpCudnn<T>::Compute(OpContext* context) {
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
                   YN, YC, YH, YW));
   checkCUDNNError(cudnnSoftmaxForward(CudaCommon::cudnnHandle(),
-                                      CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
-                                      &alpha, x_desc_, x.data<T>(),
-                                      &beta, y_desc_, y->mutable_data<T>()));
+                  CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+                  &alpha, x_desc_, x.data<T>(),
+                  &beta, y_desc_, y->mutable_data<T>()));
 }
 
 template <typename T>

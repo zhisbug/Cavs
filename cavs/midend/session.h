@@ -15,15 +15,13 @@ class SimpleSession : public SessionBase {
            const std::vector<Tensor>& input_tensors) override;
   int SessionType() override { return SIMPLE; }
  protected:
-  virtual void Compile(const std::vector<std::string>& output_names, 
-                       const std::vector<std::string>& input_names);
+  virtual void Compile(const std::vector<std::string>& output_names);
   void FeedInput(const std::vector<std::string>& input_names,
                  const std::vector<Tensor>& input_tensors);
   void FetchOutput(const std::vector<std::string>& output_names,
                    std::vector<Tensor>* output_tensors);
-  //std::vector<std::pair<OpImpl*, OpContext*>> executors_;
-  std::vector<Statement*> executors_;
-  bool compiled_;
+  //std::vector<Statement*> executors_;
+  std::unordered_map<std::string, std::vector<Statement*>> executors_;
   int round_;//current batch id;
 };
 
@@ -37,8 +35,7 @@ class MPISession: public SimpleSession {
            const std::vector<Tensor>& input_tensors) override;
   int SessionType() override { return MPI; }
  private:
-  void Compile(const std::vector<std::string>& output_names, 
-               const std::vector<std::string>& input_names) override;
+  void Compile(const std::vector<std::string>& output_names) override;
 };
 
 } //namespace midend

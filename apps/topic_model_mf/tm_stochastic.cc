@@ -28,8 +28,8 @@ int main() {
   Session sess;
   for (int i = 0; i < FLAGS_epochs; i++) {
     for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
-      sess.Run({loss, step1, step2});
-      //sess.Run({step1, step2});
+      //sess.Run({loss, step1, step2});
+      sess.Run({step1, step2});
       //LOG(INFO) << "Iteration[" << j << "]:";
       //loss.print();
     }

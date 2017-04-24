@@ -1,6 +1,11 @@
+#ifndef CAVS_BACKEND_FUNCTOR_FUNCTOR_REDUCTION_CUH_
+#define CAVS_BACKEND_FUNCTOR_FUNCTOR_REDUCTION_CUH_
+
 #include "cavs/util/macros_gpu.h"
 
 #include <limits>
+
+namespace backend {
 
 template <typename T>
 __inline__ __device__
@@ -55,3 +60,7 @@ __global__ void BatchedArgmax(T *out, int *index, const T* inp, int N) {
     index[blockIdx.x] = curr_index;
   }
 }
+
+}
+
+#endif

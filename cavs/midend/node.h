@@ -24,7 +24,7 @@ class Node {
  public:
   explicit Node(const OpDef& op_def,
       const Scope* s = GetGlobalScope());
-  virtual Statement* Compile(SessionBase* sess) const {
+  virtual Statement* Compile(SessionBase* sess) {
     return NULL;
   }
   virtual bool IsSingleNode() const { return false; }
@@ -52,6 +52,7 @@ class Node {
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
   std::string node_name_;
+  Statement* stmt_;
 };
 
 class SingleNode : public Node {
@@ -59,7 +60,7 @@ class SingleNode : public Node {
   explicit SingleNode(const OpDef& op_def,
       const Scope* s = GetGlobalScope())
     : Node(op_def, s) {}
-  Statement* Compile(SessionBase* sess) const override;
+  Statement* Compile(SessionBase* sess) override;
   bool IsSingleNode() const override { return true; }
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
@@ -81,9 +82,9 @@ class ScopedNode : public Node {
       Scope* contained,
       const OpDef& op_def = OpDef(),
       Scope* located = GetGlobalScope());
-  Statement* Compile(SessionBase* sess) const override;
+  Statement* Compile(SessionBase* sess) override;
   bool IsScopedNode() const override { return true; }
-  std::list<const Node*> nodes_;
+  std::list<Node*> nodes_;
 
  private:
   int iter_;

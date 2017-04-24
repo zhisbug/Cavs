@@ -27,7 +27,7 @@ class VariableOpImpl : public OpImpl {
   bool initialized_;
 };
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR=bool>//fillop, dtype
 class DDVOpImpl : public OpImpl {
  public:
   explicit DDVOpImpl(const OpDef& def);
@@ -103,8 +103,8 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
   }
 };
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
-inline DDVOpImpl<FILLFUNCTOR, T>::DDVOpImpl(const OpDef& def)
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
+inline DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::DDVOpImpl(const OpDef& def)
     : OpImpl(def), buf_(NULL), curr_idx_(-1) {
   batch_ = GetSingleArg<int>(def, "Batch");
   const std::vector<int>& shape = GetListArg<int>(def, "Shape");
@@ -117,17 +117,18 @@ inline DDVOpImpl<FILLFUNCTOR, T>::DDVOpImpl(const OpDef& def)
   CHECK(item_size_ > 0);
 }
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
-inline DDVOpImpl<FILLFUNCTOR, T>::~DDVOpImpl() {
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
+inline DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::~DDVOpImpl() {
   if (buf_) free(buf_);
 }
 
-template <typename FILLFUNCTOR, typename T>//fillop, dtype
-void DDVOpImpl<FILLFUNCTOR, T>::Compute(OpContext* context) {
+template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
+void DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* context) {
   if (!buf_) {
     buf_ = (T*)malloc(num_*item_size_*sizeof(T));
     FILLFUNCTOR(op_def_).Compute(buf_, num_*item_size_);
-    MPIBcastFunctor<T>::Compute(buf_, num_*item_size_, 0);
+    //MPIBcastFunctor<T>::Compute(buf_, num_*item_size_, 0);
+    Bcast<BCASTFUNCTOR>(buf_, num_*item_size_, 0);
   }
   int next_idx = (context->GetRound() % (num_/batch_));
   if (next_idx != curr_idx_) {

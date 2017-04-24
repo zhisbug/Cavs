@@ -16,11 +16,11 @@ using std::unordered_map;
 namespace midend {
 
 SimpleSession::SimpleSession(const DepGraph* graph)
-    : SessionBase(graph), compiled_(false), round_(0) {}
+    : SessionBase(graph), round_(0) {}
 
-void DepthSearch(const Node* curr,
-    list<const Node*>* critical_path,
-    unordered_map<const Node*, bool>* include) {
+void DepthSearch(Node* curr,
+    list<Node*>* critical_path,
+    unordered_map<Node*, bool>* include) {
   bool isSource = (curr->inputs_size() == 0);
   bool accessed = (include->find(curr) != include->end());
 
@@ -30,7 +30,7 @@ void DepthSearch(const Node* curr,
       for (auto* edge : curr->inputs()) {
         CHECK(edge->srcs_size() == 1 || edge->isStateful());
         //for (auto* node : edge->srcs()) {
-        DepthSearch(edge->src(0), critical_path, include);
+        DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
         //}
       }
     }
@@ -39,24 +39,39 @@ void DepthSearch(const Node* curr,
   return;
 }
 
+string HashString(const vector<string>& input) {
+  string str;
+  for (auto& s : input)
+    str += s;
+  return str;
+}
+
 void SimpleSession::Compile(
-    const vector<string>& output_names, 
-    const vector<string>& input_names) {
-  list<const Node*> critical_path;
-  unordered_map<const Node*, bool> include;
+    const vector<string>& output_names) {
+  list<Node*> critical_path;
+  unordered_map<Node*, bool> include;
   for (auto& output : output_names) {
-    const Node* node = graph_->FindNode(output);
+    Node* node = const_cast<Node*>(graph_->FindNode(output));
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
 
+  VLOG(V_DEBUG) << "============In Critical Path============";
   for (auto* node : critical_path) {
-    //LOG(INFO) << node->op_def().DebugString();
-    //LOG(INFO) << node->scope()->name();
-    //LOG(INFO) << "compiling\t" << node->op_def().name();
+    VLOG(V_DEBUG) << "-------compiling\t"
+                  << node->scope()->name() 
+                  << ":" << node->op_def().name()
+                  << "------";
+    VLOG(V_DEBUG) << node->op_def().DebugString();
+  }
+  VLOG(V_DEBUG) << "============End Critical Path============";
+
+  CHECK(executors_.find(HashString(output_names)) == executors_.end());
+  vector<Statement*>* executor = &executors_[HashString(output_names)];
+  for (auto* node : critical_path) {
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
-    executors_.push_back(stmt);
+    executor->push_back(stmt);
   }
 
   return;
@@ -66,15 +81,13 @@ void SimpleSession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
-  if (!compiled_) {
-    Compile(output_names, input_names);
-    compiled_ = true;
-    round_ = 0;
+  if (executors_.find(HashString(output_names)) == executors_.end()) {
+    Compile(output_names);
   }
   VLOG(V_RUN) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
   VLOG(V_RUN) << "Executing...";
-  for (auto* exe : executors_) {
+  for (auto* exe : executors_[HashString(output_names)]) {
     exe->SetRound(round_);
     exe->Run();
   }
@@ -108,31 +121,27 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
       continue;
     const Edge* edge = graph_->FindEdge(output_names[i]);
     CHECK(edge);
-    //const Tensor& t = tensor_map_[edge->scoped_name()];
     const Tensor* t = GetTensor(edge->scoped_name());
     CHECK(t) << "Getting " << edge->scoped_name()
              << "\tin\n"   << DebugInfo();
     if (t->device_type() == GPU) {
       output_tensors->at(i).Rebase(GetAllocator(DeviceTypeToString(CPU)),
           *t);
-      //DeviceContext::MemcpyDeviceToHost(&(output_tensors->at(i)), *t);
       output_tensors->at(i).SyncWith(*t);
-      //LOG(INFO) << t->count();
-      //LOG(INFO) << (output_tensors->at(i).data<float>())[0];
     }else {
       output_tensors->at(i) = *t;
     }
   }
 }
 
-void AddMPIOnPath(list<const Node*>& critical_path) {
+void AddMPIOnPath(list<Node*>& critical_path) {
   auto iter = critical_path.begin(); 
   while (iter != critical_path.end()) {
     if ((*iter)->IsSingleNode()) {
       string name = (*iter)->output(0)->name();
       LOG(INFO) << name;
-      if (name.length() >= 13
-          && name.substr(0, 8) == "Variable"
+      if (((name.length() >= 13 && name.substr(0, 8) == "Variable") ||
+          (name.length() >= 8 && name.substr(0, 3) == "DDV"))
           && name.substr(name.length()-5, 5) == "_grad") {
         //we assume the output size of variable_grad node must equal 1
         CHECK((*iter)->outputs_size() == 1);
@@ -166,12 +175,11 @@ MPISession::~MPISession() {
 }
 
 void MPISession::Compile(
-    const vector<string>& output_names, 
-    const vector<string>& input_names) {
-  list<const Node*> critical_path;
-  unordered_map<const Node*, bool> include;
+    const vector<string>& output_names) {
+  list<Node*> critical_path;
+  unordered_map<Node*, bool> include;
   for (auto& output : output_names) {
-    const Node* node = graph_->FindNode(output);
+    Node* node = const_cast<Node*>(graph_->FindNode(output));
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
@@ -182,13 +190,15 @@ void MPISession::Compile(
   //it should be followed with a communication node.
   AddMPIOnPath(critical_path);
 
+  CHECK(executors_.find(HashString(output_names)) == executors_.end());
+  vector<Statement*>* executor = &executors_[HashString(output_names)];
   for (auto* node : critical_path) {
     LOG(INFO) << node->op_def().DebugString();
     LOG(INFO) << node->scope()->name();
     LOG(INFO) << "compiling\t" << node->op_def().name();
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
-    executors_.push_back(stmt);
+    executor->push_back(stmt);
   }
 
   return;

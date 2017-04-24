@@ -17,12 +17,12 @@ int main(int argc, char* argv[]) {
               Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2);
   Sym loss  = y.SoftmaxEntropyLogits(label);
   Sym train = loss.Optimizer();
-  Sym correct_prediction = Sym::Equal(y.Argmax(1), label.Argmax(1)).Reduce_mean();
+  Sym correct_prediction = Sym::Equal(y.Argmax(1), label).Reduce_mean();
   Sym::DumpGraph();
 
   Session sess;
   for (int i = 0; i < 1; i++) {
     sess.Run({train, correct_prediction});
-    loss.print();
+    correct_prediction.print();
   }
 }

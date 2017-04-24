@@ -6,8 +6,8 @@
 
 DEFINE_int32 (K          , 20000, "num_of-topics"         );
 DEFINE_int32 (V          , 61188, "vocab_size"            );
-//DEFINE_int32 (D          , 18774, "num_of_docs"           );
-DEFINE_int32 (D          , 4000, "num_of_docs"           );
+DEFINE_int32 (D          , 18774, "num_of_docs"           );
+//DEFINE_int32 (D          , 4000, "num_of_docs"           );
 DEFINE_int32 (epochs     , 200  , "num_of_epochs"         );
 DEFINE_int32 (inner_iters, 20   , "num_of_inner_num_iters");
 DEFINE_int32 (batch      , 400  , "size_of_minibatch"     );
@@ -18,9 +18,6 @@ DEFINE_string(file_docs,
 
 int main(int argc, char* argv[]) {
 
-  //Sym doc_word = Sym::Placeholder(C_FLOAT, {FLAGS_D, FLAGS_V});
-  //Sym doc_tpc  = Sym::Variable(C_FLOAT, {FLAGS_D, FLAGS_K}, Sym::UniformRandom(FLAGS_K));
-  //Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   LOG(INFO) << "DOC: " << FLAGS_D;
   Sym doc_word = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_V}, FLAGS_batch,
@@ -38,9 +35,9 @@ int main(int argc, char* argv[]) {
   Session sess;
   for (int i = 0; i < FLAGS_epochs; i++) {
     for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
-      sess.Run({loss, step1, step2});
-      //sess.Run({step1, step2});
-      LOG(INFO) << "iter[" << j << "]:\t" << *(float*)(loss.eval());
+      //sess.Run({loss, step1, step2});
+      sess.Run({step1, step2});
+      //LOG(INFO) << "iter[" << j << "]:\t" << *(float*)(loss.eval());
       //loss.print();
     }
     float loss_sum = 0.f;

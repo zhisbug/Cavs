@@ -5,9 +5,9 @@ using std::vector;
 
 namespace backend {
 
-class ReduceMeanOp: public OpDecl {
+class ReduceSumOp: public OpDecl {
  public:
-  explicit ReduceMeanOp(const OpDef& def) : OpDecl(def) {}
+  explicit ReduceSumOp(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 1);
@@ -28,6 +28,6 @@ class ReduceMeanOp: public OpDecl {
   }
 };
 
-REGISTER_OP_DECL_BUILDER("Reduce_mean", ReduceMeanOp);
+REGISTER_OP_DECL_BUILDER("Reduce_sum", ReduceSumOp);
 
 } //namespace backend

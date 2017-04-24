@@ -7,6 +7,8 @@ DEFINE_int32(K, 100,  "num_of-topics");
 DEFINE_int32(V, 1000, "vocab_size");
 DEFINE_int32(D, 5000, "num_of_docs");
 DEFINE_double(lr, 10, "learning_rate");
+DEFINE_int32 (inner_iters, 20, "num_of_inner_num_iters");
+DEFINE_int32 (iters, 200, "iterations");
 DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/topic_model_mf/data/docs.dat",
     "doc_file");
@@ -24,7 +26,10 @@ void load(void** doc_word) {
   fclose(fp);
 }
 
-int main() {
+int main(int argc, char* argv[]) {
+  gflags::ParseCommandLineFlags(&argc, &argv, true);
+  FLAGS_log_dir =  "./";
+
   void* doc_word_buf;
   load(&doc_word_buf);
 
@@ -33,15 +38,15 @@ int main() {
   Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V}, Sym::UniformRandom(FLAGS_V));
 
   Sym loss = 0.5f/FLAGS_D*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_sum());
-  Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, 20, "Simplex");
-  Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, 20, "Simplex");
+  Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
+  Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
   Sym::DumpGraph();
 
   Session sess;
-  int iters = 200;
-  for (int i = 0; i < iters; i++) {
-    sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
-    //sess.Run({loss, step2}, {{doc_word, doc_word_buf}});
+  for (int i = 0; i < FLAGS_iters; i++) {
+    //sess.Run({loss, step1, step2}, {{doc_word, doc_word_buf}});
+    sess.Run({step1, step2}, {{doc_word, doc_word_buf}});
+    sess.Run({loss}, {{doc_word, doc_word_buf}});
     LOG(INFO) << "Iteration[" << i << "]:";
     loss.print();
   }
