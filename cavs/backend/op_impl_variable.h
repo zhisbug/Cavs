@@ -27,7 +27,7 @@ class VariableOpImpl : public OpImpl {
   bool initialized_;
 };
 
-template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR=bool>//fillop, dtype
+template <typename FILLFUNCTOR, typename T, bool MPIEnable>//fillop, dtype
 class DDVOpImpl : public OpImpl {
  public:
   explicit DDVOpImpl(const OpDef& def);
@@ -103,8 +103,8 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
   }
 };
 
-template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
-inline DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::DDVOpImpl(const OpDef& def)
+template <typename FILLFUNCTOR, typename T, bool MPIEnable>//fillop, dtype
+inline DDVOpImpl<FILLFUNCTOR, T, MPIEnable>::DDVOpImpl(const OpDef& def)
     : OpImpl(def), buf_(NULL), curr_idx_(-1) {
   batch_ = GetSingleArg<int>(def, "Batch");
   const std::vector<int>& shape = GetListArg<int>(def, "Shape");
@@ -115,25 +115,31 @@ inline DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::DDVOpImpl(const OpDef& def)
   for (int i = 1; i < shape.size(); i++)
     item_size_ *= shape[i];
   CHECK(item_size_ > 0);
+  if (MPIEnable) {
+    int size;
+    MPI_Comm_size(MPI_COMM_WORLD, &size); 
+    num_ /= size;
+  }
 }
 
-template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
-inline DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::~DDVOpImpl() {
+template <typename FILLFUNCTOR, typename T, bool MPIEnable>//fillop, dtype
+inline DDVOpImpl<FILLFUNCTOR, T, MPIEnable>::~DDVOpImpl() {
   if (buf_) free(buf_);
 }
 
-template <typename FILLFUNCTOR, typename T, typename BCASTFUNCTOR>//fillop, dtype
-void DDVOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* context) {
+template <typename FILLFUNCTOR, typename T, bool MPIEnable>//fillop, dtype
+void DDVOpImpl<FILLFUNCTOR, T, MPIEnable>::Compute(OpContext* context) {
   if (!buf_) {
     buf_ = (T*)malloc(num_*item_size_*sizeof(T));
     FILLFUNCTOR(op_def_).Compute(buf_, num_*item_size_);
-    //MPIBcastFunctor<T>::Compute(buf_, num_*item_size_, 0);
-    Bcast<BCASTFUNCTOR>(buf_, num_*item_size_, 0);
   }
   int next_idx = (context->GetRound() % (num_/batch_));
   if (next_idx != curr_idx_) {
     //LOG(INFO) << "Next idx: " << next_idx << "\tCurr idx: " << curr_idx_;
     //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;
+    //LOG(INFO) << "Next idx: " << next_idx
+              //<< "\tCurr idx: " << curr_idx_
+              //<< "\tRound: " << context->GetRound();
     Tensor* out = context->Output(0);
     if (curr_idx_ >= 0) {
       checkCudaError(cudaMemcpy(buf_+curr_idx_*batch_*item_size_,

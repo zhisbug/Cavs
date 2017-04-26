@@ -6,6 +6,7 @@
 #include "cavs/proto/tensor_shape.pb.h"
 
 #include <string>
+#include <mpi.h>
 
 namespace backend {
 
@@ -22,7 +23,7 @@ class PlaceholderOpImpl : public OpImpl {
   }
 };
 
-template <typename READFUNCTOR, typename COPYFUNCTOR, typename T>//read, copy
+template <typename READFUNCTOR, typename COPYFUNCTOR, typename T, bool MPIEnable>//read, copy
 class DataOpImpl : public OpImpl {
  public:
   explicit DataOpImpl(const OpDef& def) :
@@ -39,6 +40,11 @@ class DataOpImpl : public OpImpl {
     CHECK(item_size_ > 0);
     filename_ = GetSingleArg<std::string>(def, "filename");
     CHECK(filename_.length() > 0);
+    if (MPIEnable) {
+      int size;
+      MPI_Comm_size(MPI_COMM_WORLD, &size); 
+      num_ /= size;
+    }
   }
   ~DataOpImpl() {
     if (buf_)  free(buf_); 
@@ -51,7 +57,9 @@ class DataOpImpl : public OpImpl {
     }
     int next_idx = context->GetRound() % (num_/batch_);
     if (next_idx != curr_idx_) {
-      //LOG(INFO) << "Next idx: " << next_idx << "\tCurr idx: " << curr_idx_;
+      //LOG(INFO) << "Next idx: " << next_idx
+                //<< "\tCurr idx: " << curr_idx_
+                //<< "\tRound: " << context->GetRound();
       //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;
       Tensor* out = context->Output(0);
       CHECK(out->count() == batch_*item_size_);

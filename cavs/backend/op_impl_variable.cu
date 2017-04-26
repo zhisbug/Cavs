@@ -26,8 +26,8 @@ REGISTER_OP_IMPL_BUILDER(Key("VariableMPI").Device("GPU").Label("UniformRandom")
 REGISTER_OP_IMPL_BUILDER(Key("VariableMPI").Device("GPU").Label("NormalRandom"),
     VariableOpImpl<CudaFiller<NormalRandom<float>, float>, float, MPIBcastFunctor<float>>);
 REGISTER_OP_IMPL_BUILDER(Key("DDV").Device("GPU").Label("UniformRandom"),
-    DDVOpImpl<Filler<UniformNormalizer<float>, float>, float>);
+    DDVOpImpl<Filler<UniformNormalizer<float>, float>, float, false>);
 REGISTER_OP_IMPL_BUILDER(Key("DDVMPI").Device("GPU").Label("UniformRandom"),
-    DDVOpImpl<Filler<UniformNormalizer<float>, float>, float, MPIBcastFunctor<float>>);
+    DDVOpImpl<Filler<UniformNormalizer<float>, float>, float, true>);
 
 } //namespace backend

@@ -64,7 +64,9 @@ class Tensor {
   Tensor(const Tensor& t) { *this = t; }
   Tensor& operator =(const Tensor& t);
   inline DeviceType device_type() const { return buf_->device_type(); }
+  inline DataType data_type() const { return type_; }
   inline const std::string& name() const { return name_; }
+  inline bool Empty() { return buf_ == nullptr; }
   //for opeators
   inline size_t count() const { return buf_->count(); }
   inline int dims() const { return shape_->dims(); }

@@ -33,25 +33,11 @@ void MPIAllReduceOpImpl<T>::Compute(OpContext* context) {
     Tensor cpu_buffer; 
     cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), inp);
     cpu_buffer.SyncWith(inp);
-    //checkMPIError(MPI_Allreduce(MPI_IN_PLACE,
-          //cpu_buffer.mutable_data<T>(),
-          //cpu_buffer.count(), DataTypeToMPIType<T>::value,
-          //MPI_SUM, MPI_COMM_WORLD));
     MPIAllReduceFunctor<T>::Compute(cpu_buffer.data<T>(), 
           cpu_buffer.mutable_data<T>(), 
           cpu_buffer.count());
     out->SyncWith(cpu_buffer);
   }else {
-    //if (reinterpret_cast<int64_t>(inp.data<T>()) == 
-        //reinterpret_cast<int64_t>(out->mutable_data<T>())) {
-      //checkMPIError(MPI_Allreduce(MPI_IN_PLACE, out->mutable_data<T>(),
-            //inp.count(), DataTypeToMPIType<T>::value,
-            //MPI_SUM, MPI_COMM_WORLD));
-    //}else {
-      //checkMPIError(MPI_Allreduce(inp.data<T>(), out->mutable_data<T>(),
-            //inp.count(), DataTypeToMPIType<T>::value,
-            //MPI_SUM, MPI_COMM_WORLD));
-    //}
     MPIAllReduceFunctor<T>::Compute(inp.data<T>(), 
           out->mutable_data<T>(), 
           inp.count());
@@ -74,16 +60,10 @@ void MPIBcastOpImpl<T>::Compute(OpContext* context) {
     cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), *out);
     cpu_buffer.SyncWith(*out);
     //currently, we assume process0 executes the broadcast
-    //checkMPIError(MPI_Bcast(cpu_buffer.mutable_data<T>(),
-          //cpu_buffer.count(), DataTypeToMPIType<T>::value,
-          //0, MPI_COMM_WORLD));
     MPIBcastFunctor<T>::Compute(cpu_buffer.mutable_data<T>(),
           cpu_buffer.count(), 0);
     out->SyncWith(cpu_buffer);
   }else {
-    //checkMPIError(MPI_Bcast(out->mutable_data<T>(),
-          //out->count(), DataTypeToMPIType<T>::value,
-          //0, MPI_COMM_WORLD));
     MPIBcastFunctor<T>::Compute(out->mutable_data<T>(),
           out->count(), 0);
   }

@@ -21,10 +21,10 @@ class IOOpBase: public OpImpl {
 #define TRAINING_LABEL_MAGIC 0x0801
 #define TRAINING_IMAGE_MAGIC 0x0803
 #define bswap(x) __builtin_bswap32(x)
-struct LabelFileDescriptor{
+struct LabelFileDescriptor {
   int magic;
   int N;
-  void b2l(){
+  void b2l() {
     magic = bswap(magic);
     N = bswap(N);
   }
@@ -37,7 +37,7 @@ struct LabelFileDescriptor{
   }
 };
 
-struct ImageFileDescriptor{
+struct ImageFileDescriptor {
   int magic;
   int N;
   int H;
@@ -55,7 +55,7 @@ struct ImageFileDescriptor{
     return "magic: "       + std::to_string(magic)
           + "\timages: "   + std::to_string(N)
           + "\trows: "     + std::to_string(H)
-          + "\t columns: " + std::to_string(W);
+          + "\tcolumns: "  + std::to_string(W);
   }
 };
 

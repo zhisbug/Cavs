@@ -7,8 +7,8 @@ DEFINE_int32 (D          , 5000, "num_of_docs"           );
 DEFINE_int32 (epochs     , 100 , "num_of_epochs"         );
 DEFINE_int32 (inner_iters, 20  , "num_of_inner_num_iters");
 DEFINE_int32 (batch      , 200 , "size_of_minibatch"     );
-DEFINE_int32 (num_eval   , 5000, "num_rand_smps_eval"    );
 DEFINE_double(lr         , 1   , "learning_rate"         );
+DEFINE_int32 (np         , 1   , "num of processes"      );
 DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/topic_model_mf/data/docs.dat",
     "file_name");
@@ -29,9 +29,9 @@ int main(int argc, char* argv[]) {
   Sym step1 = loss.Optimizer({doc_tpc}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
   Sym step2 = loss.Optimizer({tpc_word}, FLAGS_lr, FLAGS_inner_iters, "Simplex");
 
-  Session sess;
+  MPISession sess;
   for (int i = 0; i < FLAGS_epochs; i++) {
-    for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
+    for (int j = 0; j < FLAGS_D/(FLAGS_batch*FLAGS_np); j++) {
       sess.Run({loss, step1, step2});
       //sess.Run({step1, step2});
       //LOG(INFO) << "Epoch[" << i << "]\t"
@@ -39,11 +39,11 @@ int main(int argc, char* argv[]) {
                 //<< *(float*)(loss.eval());
     }
     float loss_sum = 0.f;
-    for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
+    for (int j = 0; j < FLAGS_D/(FLAGS_batch*FLAGS_np); j++) {
       sess.Run({loss});
       loss_sum += *(float*)(loss.eval());
     }
-    LOG(INFO) << "[Test] Epoch[" << i << "]:\t" << loss_sum/(FLAGS_D/FLAGS_batch);
+    LOG(INFO) << "[Test] Epoch[" << i << "]:\t" << loss_sum/(FLAGS_D/(FLAGS_batch));
   }
 
   return 0;

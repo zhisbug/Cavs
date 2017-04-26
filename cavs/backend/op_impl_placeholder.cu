@@ -20,8 +20,23 @@ struct BinaryReader {
   }
 };
 
+struct MPIBinaryReader {
+  static void Compute(void* buf, const char* filename, size_t n) {
+    int rank;
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+    CHECK(buf);
+    FILE *fp = fopen(filename,"rb");
+    if (!fp)
+      LOG(FATAL) << "file[" << filename << "] does not exists";
+    CHECK(fseek(fp, rank*n, SEEK_SET) == 0);
+    CHECK(fread(buf, sizeof(char), n, fp) == n);
+    fclose(fp);
+  }
+};
+
 REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy>);
-REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy, float>);
+REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy, float, false>);
+REGISTER_OP_IMPL_BUILDER(Key("DataMPI").Label("BinaryReader").Device("GPU"), DataOpImpl<MPIBinaryReader, CUDAMemCopy, float, true>);
 
 } //namespace backend
 

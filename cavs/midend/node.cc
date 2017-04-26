@@ -36,16 +36,20 @@ string Node::DebugInfo() const {
 Statement* SingleNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
     //LOG(INFO) << DebugInfo();
     OpImpl* op = NULL;
     if (sess->SessionType() == SessionBase::MPI &&
-        op_def().name() == "Variable") {
+        (op_def().name() == "Variable" ||
+         op_def().name() == "DDV" ||
+         op_def().name() == "Data")) {
       OpDef mpi_def = op_def();
-      mpi_def.set_name("VariableMPI");
+      mpi_def.set_name(op_def().name()+"MPI");
+      LOG(INFO) << "Compiling SingleNode:\t" << mpi_def.name();
+      VLOG(V_DEBUG) << mpi_def.DebugString();
       op = CreateOp(mpi_def);
-      LOG(INFO) << mpi_def.DebugString();
     }else {
+      LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
+      VLOG(V_DEBUG) << op_def().DebugString();
       op = CreateOp(op_def());
     }
     OpContext* ctxt = sess->GetContext(this);

@@ -1,6 +1,7 @@
 #include "cavs/midend/session.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/backend/op_def_builder.h"
+#include "cavs/backend/op_impl_mpi_functor.h"
 #include "cavs/util/logging.h"
 
 #include <mpi.h>
@@ -12,6 +13,8 @@ using std::string;
 using std::vector;
 using std::list;
 using std::unordered_map;
+
+using ::backend::MPIAllReduceFunctor;
 
 namespace midend {
 
@@ -140,8 +143,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
     if ((*iter)->IsSingleNode()) {
       string name = (*iter)->output(0)->name();
       LOG(INFO) << name;
-      if (((name.length() >= 13 && name.substr(0, 8) == "Variable") ||
-          (name.length() >= 8 && name.substr(0, 3) == "DDV"))
+      if ((name.length() >= 13 && name.substr(0, 8) == "Variable")
           && name.substr(name.length()-5, 5) == "_grad") {
         //we assume the output size of variable_grad node must equal 1
         CHECK((*iter)->outputs_size() == 1);
@@ -209,7 +211,18 @@ void MPISession::Run(const vector<string>& output_names,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   SimpleSession::Run(output_names, output_tensors, input_names, input_tensors);
-  LOG(INFO) << "Finished";
+  //LOG(INFO) << "round: " << round_;
+}
+
+void MPISession::FetchOutput(const vector<string>& output_names,
+    vector<Tensor>* output_tensors) {
+  SimpleSession::FetchOutput(output_names, output_tensors);
+  for (auto& t : *output_tensors) {
+    if (!t.Empty()) {
+      MPIAllReduceFunctor<float>::Compute(t.data<float>(),
+          t.mutable_data<float>(), t.count());
+    }
+  }
 }
 
 

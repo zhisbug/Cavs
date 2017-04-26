@@ -29,7 +29,6 @@ void load(void** doc_word) {
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   FLAGS_log_dir =  "./";
-  google::InitGoogleLogging(argv[0]);
 
   void* doc_word_buf;
   load(&doc_word_buf);
