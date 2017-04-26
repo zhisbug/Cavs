@@ -4,15 +4,15 @@
 #include <iostream>
 #include <fstream>
 
-DEFINE_int32 (K          , 1000, "num_of-topics"         );
+DEFINE_int32 (K          , 20000, "num_of-topics"         );
 DEFINE_int32 (V          , 61188, "vocab_size"            );
 DEFINE_int32 (D          , 18774, "num_of_docs"           );
 //DEFINE_int32 (D          , 4000, "num_of_docs"           );
 DEFINE_int32 (epochs     , 200  , "num_of_epochs"         );
 DEFINE_int32 (inner_iters, 20   , "num_of_inner_num_iters");
 DEFINE_int32 (batch      , 400  , "size_of_minibatch"     );
-DEFINE_double(lr         , 1    , "learning_rate"         );
-DEFINE_int32 (np         , 1   , "num of processes"      );
+DEFINE_double(lr         , 0.01 , "learning_rate"         );
+DEFINE_int32 (np         , 1    , "num of processes"      );
 DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/topic_model_mf/data/20news_large.bin",
     "file_name");

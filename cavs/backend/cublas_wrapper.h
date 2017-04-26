@@ -47,6 +47,7 @@ void ArgminCublasWrapper(
     int* index);
 
 //level1
+//ALERT: the index is 1 to N, not 0 to N-1
 template <typename T>
 void ArgmaxCublasWrapper(
     const int N, const T* x,

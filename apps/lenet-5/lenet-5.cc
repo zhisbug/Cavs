@@ -1,6 +1,10 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/session.h"
 
+DEFINE_int32 (iterations, 1   , "num_of_iterations");
+DEFINE_int32 (batch     , 100 , "size_of_minibatch");
+DEFINE_double(lr        , 0.01, "learning_rate"    );
+
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
@@ -11,17 +15,16 @@ int main(int argc, char* argv[]) {
   Sym fc1     = Sym::Variable(C_FLOAT, {500, 800    }, Sym::NormalRandom());
   Sym fc2     = Sym::Variable(C_FLOAT, {10, 500     }, Sym::NormalRandom());
 
-  Sym image = Sym::MnistInput(100, "Image", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
-  Sym label = Sym::MnistInput(100, "Label", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
+  Sym image = Sym::MnistInput(FLAGS_batch, "Image", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
+  Sym label = Sym::MnistInput(FLAGS_batch, "Label", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
   Sym y     = image.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2).
-              Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2);
-  Sym loss  = y.SoftmaxEntropyLogits(label);
-  Sym train = loss.Optimizer();
+              Flatten().FullyConnected(fc1).Relu().FullyConnected(fc2).SoftmaxEntropyLogits(label);
+  Sym train = y.Optimizer();
   Sym correct_prediction = Sym::Equal(y.Argmax(1), label).Reduce_mean();
   Sym::DumpGraph();
 
   Session sess;
-  for (int i = 0; i < 1; i++) {
+  for (int i = 0; i < FLAGS_iterations; i++) {
     sess.Run({train, correct_prediction});
     correct_prediction.print();
   }
