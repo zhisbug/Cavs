@@ -37,6 +37,8 @@ void ReshapeLikeOp::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
   CHECK(x.count() == y->count());
+  //x.DebugNumerical<float>();
+  //y->DebugNumerical<float>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Flatten").Device("GPU"), FlattenOp);

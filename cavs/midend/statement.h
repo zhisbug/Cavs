@@ -33,13 +33,14 @@ class ExprStatement : public Statement {
   inline void Run() override {
     CHECK(op_);
     CHECK(ctxt_);
-    VLOG(V_DEBUG) << "======================================";
-    VLOG(V_DEBUG) << "Running Operator " << op_->DebugInfo();
-    VLOG(V_DEBUG) << "--------------------------------------";
-    VLOG(V_DEBUG) << "Context Info \n" << ctxt_->DebugInfo();
-    VLOG(V_DEBUG) << "======================================";
+    VLOG(V_TIMING) << "======================================";
+    VLOG(V_TIMING) << "Running Operator " << op_->DebugInfo(V_TIMING);
+    VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
+    VLOG(V_TIMING) << "--------------------------------------";
+    VLOG(V_TIMING) << "Context Info \n" << ctxt_->DebugInfo();
     ctxt_->SetRound(GetRound());
     op_->Compute(ctxt_);
+    VLOG(V_TIMING) << "======================================";
   }
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
@@ -58,7 +59,7 @@ class BasicBlock : public Statement {
       free(stmt);
   }
   inline void Run() override {
-    VLOG(V_DEBUG) << "Run " << iter_ << " iterations";
+    VLOG(V_DEBUG) << "This Basic Block will Run " << iter_ << " iterations ";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
         CHECK(stmt);

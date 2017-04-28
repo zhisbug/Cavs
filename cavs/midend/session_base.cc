@@ -57,7 +57,8 @@ OpContext* SessionBase::GetContext(const Node* node) {
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
-        CHECK(node->inputs_size() == 1); 
+        //and only share output(0) with input(0)
+        //CHECK(node->inputs_size() == 1); //reshape need two inputs
         CHECK(node->outputs_size() == 1); 
         Tensor out(output->scoped_name(),
             *GetTensor(node->input(0)->scoped_name()));

@@ -90,6 +90,37 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
   if (!initialized_) {
     Tensor* out = context->Output(0);
     FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
+    //{
+      //vector<float> buf;
+      //buf.resize(out->count());
+      //FILE *fp = NULL;
+      //if (op_def_.output(0) == "Variable0") {
+        //fp = fopen("/users/shizhenx/projects/swCaffe/conv1", "r");  
+        //CHECK(fp);
+        //LOG(INFO) << "v0";
+      //}
+      //if (op_def_.output(0) == "Variable2") {
+        //fp = fopen("/users/shizhenx/projects/swCaffe/conv2", "r");  
+        //CHECK(fp);
+        //LOG(INFO) << "v1";
+      //}
+      //if (op_def_.output(0) == "Variable4") {
+        //fp = fopen("/users/shizhenx/projects/swCaffe/fc1", "r");  
+        //CHECK(fp);
+        //LOG(INFO) << "v2";
+      //}
+      //if (op_def_.output(0) == "Variable5") {
+        //fp = fopen("/users/shizhenx/projects/swCaffe/fc2", "r");  
+        //CHECK(fp);
+        //LOG(INFO) << "v3";
+      //}
+      //if (fp) {
+        //fread(buf.data(), out->count(), sizeof(float), fp);
+        //fclose(fp);
+        //checkCudaError(cudaMemcpy(out->mutable_data<float>(), buf.data(), out->count()*sizeof(float),
+                                  //cudaMemcpyHostToDevice));
+      //}
+    //}
     initialized_ = true;
     if (out->device_type() == GPU) {
       Tensor cpu_buffer; 

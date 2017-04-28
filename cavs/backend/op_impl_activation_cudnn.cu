@@ -71,6 +71,8 @@ void ActivationOpCudnn<T>::Compute(OpContext* context) {
                   activation_desc_,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, y_desc_, y->mutable_data<T>()));
+  /*x.DebugNumerical<T>();*/
+  /*y->DebugNumerical<T>();*/
 }
 
 template <typename T>
@@ -112,6 +114,10 @@ void ActivationOpCudnnGrad<T>::Compute(OpContext* context) {
                   x_desc_, x.data<T>(),
                   &beta,
                   x_desc_, dx->mutable_data<T>()));
+  /*dy.DebugNumerical<T>();*/
+  /*y.DebugNumerical<T>();*/
+  /*x.DebugNumerical<T>();*/
+  /*dx->DebugNumerical<T>();*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Relu").Device("GPU"), ActivationOpCudnn<float>);

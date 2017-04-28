@@ -71,17 +71,11 @@ void Tensor::DebugNumerical<float>() const {
     checkCudaError(cudaMemcpy(res.data(), data<float>(),
           count()*sizeof(float), cudaMemcpyHostToHost));
   }
-  int rank_id;
-  MPI_Comm_rank(MPI_COMM_WORLD, &rank_id);
+  LOG(INFO) << DebugInfo();
   for (int i = 0; i < count(); i++)
     CHECK(!isnan(res[i])) << i;
-  float sum = 0;
-  for (int i = 0; i < count(); i++)
-    sum += res[i]*res[i];
-  LOG(INFO) << "L2 Norm: (rank " << rank_id << "): "
-            << std::setprecision(15) << sum;
-  for (int i = 0; i < 10 && i < count(); i++)
-    LOG(INFO) << name() << "[" << i << "](rank " << rank_id << "): "
+  for (int i = 0; i < 20 && i < count(); i++)
+    LOG(INFO) << name() << "[" << i << "]: "
               << std::setprecision(15) << res[i];
 }
 
@@ -118,12 +112,14 @@ Tensor& Tensor::operator =(const Tensor& t) {
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
+  type_ = type;
   shape_.reset(new TensorShape(shape));
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
 }
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, TensorShape&& shape) {
+  type_ = type;
   shape_.reset(new TensorShape(std::move(shape)));
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
 }

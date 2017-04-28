@@ -7,7 +7,9 @@ namespace backend {
 
 class ReshapeOpDecl : public OpDecl {
  public:
-  ReshapeOpDecl(const OpDef& def) : OpDecl(def) {}
+  ReshapeOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
+  }
   void MakeGradient(vector<OpDef>* grad) override;
 };
 
@@ -19,6 +21,7 @@ void ReshapeOpDecl::MakeGradient(
     .Input(GetGradientName(op_def_.output(0)))
     .Input(op_def_.input(0))
     .Output(GetGradientName(op_def_.input(0)))
+    .AttrSingle<bool>("ShareMemory", true)
     .Device(op_def_)
     .Finalize(&reshape);
   grad->push_back(std::move(reshape));
@@ -26,7 +29,9 @@ void ReshapeOpDecl::MakeGradient(
 
 class ReshapeLikeOpDecl : public ReshapeOpDecl {
  public:
-  ReshapeLikeOpDecl(const OpDef& def) : ReshapeOpDecl(def) {}
+  ReshapeLikeOpDecl(const OpDef& def) : ReshapeOpDecl(def) {
+    CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
+  }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2);

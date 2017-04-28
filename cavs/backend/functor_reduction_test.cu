@@ -12,8 +12,6 @@
 
 using namespace backend;
 
-const int MAX_THREADS_IN_BLOCK = 1 << 10;
-
 int main() {
   /*
   thrust::host_vector<float> h_vec(10);

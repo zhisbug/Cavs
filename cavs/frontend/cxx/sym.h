@@ -58,7 +58,9 @@ class Sym {
   //filler operation
   static std::pair<std::string, OpDef::AttrDef> Ones();
   static std::pair<std::string, OpDef::AttrDef> Zeros();
-  static std::pair<std::string, OpDef::AttrDef> UniformRandom(int stride);
+  static std::pair<std::string, OpDef::AttrDef> Const(float c);
+  static std::pair<std::string, OpDef::AttrDef> UniformNormalizer(int stride);
+  static std::pair<std::string, OpDef::AttrDef> Xavier();
   static std::pair<std::string, OpDef::AttrDef> NormalRandom();
   static std::pair<std::string, OpDef::AttrDef> BinaryReader(const string& filename);
   //debug operations

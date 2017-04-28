@@ -72,6 +72,8 @@ void PoolingOpCudnn<T>::Compute(OpContext* context) {
       CudaCommon::cudnnHandle(), pooling_desc_,
       &alpha, x_desc_, x.data<T>(),
       &beta, y_desc_, y->mutable_data<T>()));
+  /*x.DebugNumerical<T>();*/
+  /*y->DebugNumerical<T>();*/
 }
 
 template <typename T>
@@ -137,6 +139,10 @@ void PoolingOpCudnnGrad<T>::Compute(OpContext* context) {
       x_desc_, x.data<T>(),
       &beta,
       x_desc_, dx->mutable_data<T>()));
+  /*y.DebugNumerical<T>();*/
+  /*dy.DebugNumerical<T>();*/
+  /*x.DebugNumerical<T>();*/
+  /*dx->DebugNumerical<T>();*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Pooling").Device("GPU"),

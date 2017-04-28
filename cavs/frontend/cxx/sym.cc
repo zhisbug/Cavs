@@ -342,16 +342,28 @@ pair<string, OpDef::AttrDef> Sym::Zeros() {
   return std::make_pair("ConstantFiller", std::move(attr));
 }
 
-pair<string, OpDef::AttrDef> Sym::UniformRandom(int stride) {
+pair<string, OpDef::AttrDef> Sym::Const(float c) {
+  OpDef::AttrDef attr;
+  attr.set_name("const_value");
+  attr.mutable_value()->set_f(c);
+  return std::make_pair("ConstantFiller", std::move(attr));
+}
+
+pair<string, OpDef::AttrDef> Sym::UniformNormalizer(int stride) {
   OpDef::AttrDef attr;
   attr.set_name("stride");
   attr.mutable_value()->set_i(stride);
-  return std::make_pair("UniformRandom", std::move(attr));
+  return std::make_pair("UniformNormalizer", std::move(attr));
+}
+
+pair<string, OpDef::AttrDef> Sym::Xavier() {
+  OpDef::AttrDef attr;
+  return std::make_pair("Xavier", std::move(attr));
 }
 
 pair<string, OpDef::AttrDef> Sym::NormalRandom() {
   OpDef::AttrDef attr;
-  return std::make_pair("NormalRandom", std::move(attr));
+  return std::make_pair("Normal", std::move(attr));
 }
 
 pair<string, OpDef::AttrDef> Sym::BinaryReader(const string& filename) {
@@ -363,7 +375,7 @@ pair<string, OpDef::AttrDef> Sym::BinaryReader(const string& filename) {
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
     float lr, int iters, const string& projection) {
-  CHECK(variables.size() > 0);
+  //CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0],

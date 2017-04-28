@@ -71,9 +71,23 @@ struct Min {
 };
 
 template <typename T>
+struct Equal {
+  FORCE_INLINE __DEVICE__ static bool Compute(T inp0, T inp1) {
+    return (inp0 == inp1);
+  }
+};
+
+template <typename T>
 struct Assign {
   FORCE_INLINE __DEVICE__ static T Compute(T inp) {
     return (inp);
+  }
+};
+
+template <typename T, typename U>
+struct Cast {
+  FORCE_INLINE __DEVICE__ static T Compute(U inp) {
+    return (T)(inp);
   }
 };
 

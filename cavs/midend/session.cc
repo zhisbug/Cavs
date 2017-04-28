@@ -87,16 +87,16 @@ void SimpleSession::Run(const vector<string>& output_names,
   if (executors_.find(HashString(output_names)) == executors_.end()) {
     Compile(output_names);
   }
-  VLOG(V_RUN) << "Feeding inputs...";
+  VLOG(V_TIMING) << "Feeding inputs...";
   FeedInput(input_names, input_tensors);
-  VLOG(V_RUN) << "Executing...";
+  VLOG(V_TIMING) << "Executing...";
   for (auto* exe : executors_[HashString(output_names)]) {
     exe->SetRound(round_);
     exe->Run();
   }
-  VLOG(V_RUN) << "Fetching output..";
+  VLOG(V_TIMING) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
-  VLOG(V_RUN) << "Execution completed";
+  VLOG(V_TIMING) << "Execution completed";
   round_++;
 }
 
@@ -120,6 +120,7 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
+    VLOG(V_DEBUG) << "Fetching" << output_names[i];
     if (graph_->FindEdge(output_names[i])->isVirtual())
       continue;
     const Edge* edge = graph_->FindEdge(output_names[i]);
@@ -202,7 +203,6 @@ void MPISession::Compile(
     CHECK(stmt);
     executor->push_back(stmt);
   }
-
   return;
 }
 
@@ -224,7 +224,6 @@ void MPISession::FetchOutput(const vector<string>& output_names,
     }
   }
 }
-
 
 REGISTER_SESSION_BUILDER("SimpleSession", SimpleSession);
 REGISTER_SESSION_BUILDER("MPISession", MPISession);

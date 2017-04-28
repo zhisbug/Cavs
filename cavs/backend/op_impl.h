@@ -16,8 +16,11 @@ class OpImpl {
   explicit OpImpl(const OpDef& def) : op_def_(def) {}
   //explicit Op(const OpDef& def): name_(def.name()) {}
   virtual void Compute(OpContext* context) = 0;
-  std::string DebugInfo() const {
-    return op_def_.DebugString(); 
+  std::string DebugInfo(int level=V_DEBUG) const {
+    if (level == V_DEBUG)
+      return op_def_.DebugString(); 
+    else
+      return op_def_.name();
   }
  protected:
   OpDef op_def_;

@@ -6,6 +6,6 @@
 #include <gflags/gflags.h>
 
 #define V_DEBUG 2
-#define V_RUN 1
+#define V_TIMING 1
 
 #endif

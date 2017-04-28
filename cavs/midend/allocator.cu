@@ -9,7 +9,7 @@ class GPUAllocator : public Allocator {
   GPUAllocator() 
       : Allocator(DeviceTypeToString(GPU), GPU) {}    
   void* AllocateRaw(size_t nbytes) override {
-    LOG(INFO) << "allocating " << nbytes << " bytes";
+    VLOG(V_DEBUG) << "allocating " << nbytes << " bytes";
     void* ptr = NULL;
     checkCudaError(cudaMalloc(&ptr, nbytes)); 
     return ptr;

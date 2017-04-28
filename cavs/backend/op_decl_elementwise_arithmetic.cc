@@ -187,6 +187,7 @@ class SquareGradOpDecl : public BinaryOpDecl {
 
 REGISTER_OP_DECL_BUILDER("Assign", AssignOpDecl);
 REGISTER_OP_DECL_BUILDER("Add", AddOpDecl);
+REGISTER_OP_DECL_BUILDER("Equal", BinaryOpDecl);
 REGISTER_OP_DECL_BUILDER("Sub", SubOpDecl);
 REGISTER_OP_DECL_BUILDER("Mul", MulOpDecl);
 REGISTER_OP_DECL_BUILDER("Scal", ScalOpDecl);

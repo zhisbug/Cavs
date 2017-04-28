@@ -23,4 +23,7 @@ REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
 REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),
     CudaUnaryOpInstance(math::Assign, float));
 
+REGISTER_OP_IMPL_BUILDER(Key("Equal").Device("GPU"),
+    CudaBinaryOpInstance(math::Equal, float));
+
 } //namespace backend

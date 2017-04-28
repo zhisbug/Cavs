@@ -65,7 +65,8 @@ const static string train_label_name = "train-labels.idx1-ubyte";
 class MnistInputOp : public IOOpBase {
  public:
   explicit MnistInputOp(const OpDef& def) :
-    IOOpBase(def), image_buf_(NULL), label_buf_(NULL) {
+    IOOpBase(def), image_buf_(NULL), label_buf_(NULL),
+    image_curr_idx_(-1), label_curr_idx_(-1) {
     batch_ = GetSingleArg<int>(def, "Batch");
     dir_ = GetSingleArg<string>(def, "ImageDir");
     string source = GetSingleArg<string>(def, "Source");
@@ -75,7 +76,7 @@ class MnistInputOp : public IOOpBase {
       image_ = false;
     else
       LOG(FATAL) << "Image or Label not specified";
-    LOG(INFO) << op_def_.DebugString();
+    VLOG(V_DEBUG) << op_def_.DebugString();
   }
   void Compute(OpContext* context) override;
 
@@ -87,10 +88,12 @@ class MnistInputOp : public IOOpBase {
   float* label_buf_;
   ImageFileDescriptor image_desc_;
   LabelFileDescriptor label_desc_;
+  int image_curr_idx_;
+  int label_curr_idx_;
 };
 
 void MnistInputOp::Compute(OpContext* context) {
-  static int steps = 0;
+  //static int steps = 0;
   if (image_) {
     Tensor* image = context->Output(0);
     if (!image_buf_) {
@@ -114,11 +117,14 @@ void MnistInputOp::Compute(OpContext* context) {
       free(image_raw_buf);
       fclose(image_fp);
     }
-    size_t offset = (steps++) % (image_desc_.N/batch_);
-    checkCudaError(cudaMemcpy(image->mutable_data<float>(),
-          image_buf_+offset*image_desc_.H*image_desc_.W, 
-          batch_*image_desc_.H*image_desc_.W*sizeof(float),
-          cudaMemcpyHostToDevice));
+    int next_idx = context->GetRound() % (image_desc_.N/batch_);
+    if (image_curr_idx_ != next_idx) {
+      checkCudaError(cudaMemcpy(image->mutable_data<float>(),
+            image_buf_+next_idx*batch_*image_desc_.H*image_desc_.W, 
+            batch_*image_desc_.H*image_desc_.W*sizeof(float),
+            cudaMemcpyHostToDevice));
+      image_curr_idx_ = next_idx;
+    }
   }else {
     Tensor* label = context->Output(0);
     if (!label_buf_) {
@@ -142,11 +148,15 @@ void MnistInputOp::Compute(OpContext* context) {
       free(label_raw_buf);
       fclose(label_fp);
     }
-    size_t offset = (steps++) % (label_desc_.N/batch_);
-    checkCudaError(cudaMemcpy(label->mutable_data<float>(),
-          label_buf_+offset, 
-          batch_*sizeof(float),
-          cudaMemcpyHostToDevice));
+    int next_idx = context->GetRound() % (label_desc_.N/batch_);
+    if (label_curr_idx_ != next_idx) {
+      checkCudaError(cudaMemcpy(label->mutable_data<float>(),
+            label_buf_+next_idx*batch_, 
+            batch_*sizeof(float),
+            cudaMemcpyHostToDevice));
+      label_curr_idx_ = next_idx;
+    }
+    //label->DebugNumerical<float>();
   }
 }
 

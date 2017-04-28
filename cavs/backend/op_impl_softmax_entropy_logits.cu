@@ -1,5 +1,6 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/cuda_common.h"
+#include "cavs/backend/cublas_wrapper.h"
 #include "cavs/midend/devices.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
@@ -66,6 +67,8 @@ void SoftmaxEntropyLogitsOpCudnn<T>::Compute(OpContext* context) {
                   CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, y_desc_, y->mutable_data<T>()));
+  /*x.DebugNumerical<T>();*/
+  /*y->DebugNumerical<T>();*/
 }
 
 template <typename T>
@@ -101,8 +104,6 @@ void SoftmaxEntropyLogitsOpCudnnGrad<T>::Compute(OpContext* context) {
   CHECK(dx->dims() == y.dims());
   CHECK(dx->dims() == label.dims());
   CHECK(dx->dims() == 2);
-  CHECK(dx->dims(0) == y.dims(0));
-  CHECK(dx->dims(1) == y.dims(1));
 
   int NY = y.dims(0);
   int CY = y.dims(1);
@@ -111,12 +112,17 @@ void SoftmaxEntropyLogitsOpCudnnGrad<T>::Compute(OpContext* context) {
   int NX = dx->dims(0);
   int CX = dx->dims(1);
   CHECK(CLabel == 1);
-  //I don't know why cudnn has this bug(in NdTensor support)...
-
+  CHECK(NX == NY);
+  CHECK(CX == CY);
   int n = y.count();
   SoftmaxEntropyLogitsBackwardKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         dx->mutable_data<T>(), y.data<T>(), label.data<T>(), n, CY);
+  T scale_gradient = 1.f/NX;
+  ScalCublasWrapper(dx->count(), &scale_gradient, dx->mutable_data<T>());
   checkCudaError(cudaDeviceSynchronize());
+  /*y.DebugNumerical<T>();*/
+  /*label.DebugNumerical<T>();*/
+  /*dx->DebugNumerical<T>();*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("SoftmaxEntropyLogits").Device("GPU"),

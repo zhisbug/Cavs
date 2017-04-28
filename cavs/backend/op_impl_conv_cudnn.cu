@@ -130,6 +130,11 @@ void ConvOpCudnn<T>::Compute(OpContext* context) {
                   &alpha, bias_desc_,
                   bias.data<T>(), &alpha, 
                   y_desc_, y->mutable_data<T>()));
+
+  /*x.DebugNumerical<T>();*/
+  /*filter.DebugNumerical<T>();*/
+  /*bias.DebugNumerical<T>();*/
+  /*y->DebugNumerical<T>();*/
 }
 
 template <typename T>
@@ -224,10 +229,17 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
                   &alpha, filter_desc_, filter.data<T>(), 
                   y_desc_, dy.data<T>(),
                   conv_desc_, bwd_d_algo_, data_workspace, data_workspaceSizeInBytes,
-                  &beta, x_desc_, x.mutable_data<T>()));
+                  &beta, x_desc_, dx->mutable_data<T>()));
   checkCUDNNError(cudnnConvolutionBackwardBias(CudaCommon::cudnnHandle(), 
                   &alpha, y_desc_, dy.data<T>(),
                   &beta, bias_desc_, db->mutable_data<T>()));
+
+  /*dy.DebugNumerical<T>();*/
+  /*x.DebugNumerical<T>();*/
+  /*filter.DebugNumerical<T>();*/
+  /*df->DebugNumerical<T>();*/
+  /*db->DebugNumerical<T>();*/
+  /*dx->DebugNumerical<T>();*/
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Conv").Device("GPU"), ConvOpCudnn<float>);

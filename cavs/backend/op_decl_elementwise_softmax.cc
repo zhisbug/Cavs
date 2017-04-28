@@ -27,7 +27,7 @@ class SoftmaxOpDecl : public OpDecl {
     CHECK(op_def_.output_size() == 1);
     OpDef grad_def;
     OpDefBuilder(GetGradientName(op_def_.name()))
-      .Input(GetGradientName(op_def_.output(0)))
+      .Input(op_def_.output(0))
       .Input(op_def_.input(1))
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)

@@ -58,8 +58,10 @@ __global__ void BatchedArgmaxKernel(T *out, int *index, const T* inp, int N) {
     warpReduceMax(curr_max, curr_index);
   }
   if (threadIdx.x == 0) {
-    out[blockIdx.x] = curr_max;
-    index[blockIdx.x] = curr_index;
+    if (out)
+      out[blockIdx.x] = curr_max;
+    if (index)
+      index[blockIdx.x] = curr_index;
     /*printf("%f\t%d\n", curr_max, curr_index);*/
   }
 }

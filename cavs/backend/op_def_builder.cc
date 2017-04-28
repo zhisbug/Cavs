@@ -111,7 +111,7 @@ OpDefBuilder& OpDefBuilder::Attr(const OpDef& def) {
       if (attr.name() == key) {                     \
         auto* l = attr.mutable_value()->            \
           mutable_list();                           \
-        for (auto& t : value)                       \
+        for (auto t : value)                        \
           l->add_##fieldname(t);                    \
         return *this;                               \
       }                                             \
@@ -120,13 +120,14 @@ OpDefBuilder& OpDefBuilder::Attr(const OpDef& def) {
     attr->set_name(key);                            \
     auto* l = attr->mutable_value()->               \
       mutable_list();                               \
-    for (auto& t : value)                           \
+    for (auto t : value)                            \
       l->add_##fieldname(t);                        \
     return *this;                                   \
   }
 
 INSTANTIATE_SETATTR(float, f)
 INSTANTIATE_SETATTR(int, i)
+INSTANTIATE_SETATTR(bool, b)
 
 void BuildConstantOpDef(OpDef* op_def, 
     const string& output,

@@ -53,6 +53,12 @@ void ArgmaxCublasWrapper(
     const int N, const T* x,
     int* index);
 
+//level1
+template <typename T>
+void ScalCublasWrapper(
+    int N, const T* alpha,
+    T* x);
+
 } //namespace backend
 
 #endif
