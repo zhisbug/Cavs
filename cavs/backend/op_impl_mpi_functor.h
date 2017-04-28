@@ -27,6 +27,17 @@ struct MPIBcastFunctor {
   }
 };
 
+template <typename T>
+struct MPIAllgatherFunctor {
+  inline static void Compute(const void* sendbuf, int sendcount, 
+      void* recvbuf, int recvcount) {
+    checkMPIError(MPI_Allgather(
+          sendbuf, sendcount, DataTypeToMPIType<T>::value,
+          recvbuf, recvcount, DataTypeToMPIType<T>::value,
+          MPI_COMM_WORLD));
+  }
+};
+
 //MPI is currently run on CPU and the communication is global
 //CUDA-aware MPI will be supported later
 //For MPI_Allreduce operator, only MPI_SUM is supported.

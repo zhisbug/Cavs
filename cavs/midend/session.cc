@@ -153,7 +153,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           .Input(name)
           .Output(name)
           .Shape((*iter)->output(0)->shape())
-          .Device("CPU")
+          .Device("GPU")
           .Finalize(&comm);
         Node* comm_node = new SingleNode(comm, (*iter)->scope());
         comm_node->AddInput((*iter)->output(0));
