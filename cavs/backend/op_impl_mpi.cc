@@ -114,6 +114,10 @@ void MPISFBOpImpl<T>::Compute(OpContext* context) {
   CHECK(C->dims(0) == MA);
   CHECK(C->dims(1) == NB);
 
+  //MatMulMatCublasWrapper<T>(TransA_, TransB_,
+      //MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
+      //0, C->mutable_data<T>());
+
   int size = 0;
   checkMPIError(MPI_Comm_size(MPI_COMM_WORLD, &size));
   vector<T> recvbufA(A.count()*size);
@@ -123,14 +127,12 @@ void MPISFBOpImpl<T>::Compute(OpContext* context) {
     Tensor cpubufA;
     cpubufA.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), A);
     cpubufA.SyncWith(A);
-    //currently, we assume process0 executes the broadcast
     MPIAllgatherFunctor<T>::Compute(cpubufA.data<T>(), A.count(),
         recvbufA.data(), A.count());
     Tensor cpubufB;
     cpubufB.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), B);
     cpubufB.SyncWith(B);
-    //currently, we assume process0 executes the broadcast
-    MPIAllgatherFunctor<T>::Compute(cpubufA.data<T>(), B.count(),
+    MPIAllgatherFunctor<T>::Compute(cpubufB.data<T>(), B.count(),
         recvbufB.data(), B.count());
   }else {
     MPIAllgatherFunctor<T>::Compute(A.data<T>(), A.count(),

@@ -146,20 +146,41 @@ void AddMPIOnPath(list<Node*>& critical_path) {
       LOG(INFO) << name;
       if ((name.length() >= 13 && name.substr(0, 8) == "Variable")
           && name.substr(name.length()-5, 5) == "_grad") {
-        //we assume the output size of variable_grad node must equal 1
-        CHECK((*iter)->outputs_size() == 1);
-        OpDef comm;
-        ::backend::OpDefBuilder("MPIAllReduce")
-          .Input(name)
-          .Output(name)
-          .Shape((*iter)->output(0)->shape())
-          .Device("GPU")
-          .Finalize(&comm);
-        Node* comm_node = new SingleNode(comm, (*iter)->scope());
-        comm_node->AddInput((*iter)->output(0));
-        comm_node->AddOutput((*iter)->output(0));
-        critical_path.insert(++iter, comm_node);
-        continue;
+        if ((*iter)->op_def().name() == "MatMul") {
+          LOG(INFO) << "SFB mechanism ENABLing...";
+          CHECK((*iter)->outputs_size() == 1);
+          CHECK((*iter)->inputs_size() == 2);
+          OpDef comm;
+          ::backend::OpDefBuilder("MPISFB")
+            .Input((*iter)->input(0)->name())
+            .Input((*iter)->input(1)->name())
+            .Output((*iter)->output(0)->name())
+            .Shape((*iter)->output(0)->shape())
+            .Attr((*iter)->op_def())
+            .Device("GPU")
+            .Finalize(&comm);
+          Node* comm_node = new SingleNode(comm, (*iter)->scope());
+          comm_node->AddInput((*iter)->input(0));
+          comm_node->AddInput((*iter)->input(1));
+          comm_node->AddOutput((*iter)->output(0));
+          *iter = comm_node;
+          sleep(3);
+        }else {
+          //we assume the output size of variable_grad node must equal 1
+          CHECK((*iter)->outputs_size() == 1);
+          OpDef comm;
+          ::backend::OpDefBuilder("MPIAllReduce")
+            .Input(name)
+            .Output(name)
+            .Shape((*iter)->output(0)->shape())
+            .Device("GPU")
+            .Finalize(&comm);
+          Node* comm_node = new SingleNode(comm, (*iter)->scope());
+          comm_node->AddInput((*iter)->output(0));
+          comm_node->AddOutput((*iter)->output(0));
+          critical_path.insert(++iter, comm_node);
+          continue;
+        }
       }
     }else if ((*iter)->IsScopedNode()) {
       AddMPIOnPath(static_cast<ScopedNode*>(const_cast<Node*>(*iter))->nodes_); 
