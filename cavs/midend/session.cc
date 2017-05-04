@@ -164,7 +164,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           comm_node->AddInput((*iter)->input(1));
           comm_node->AddOutput((*iter)->output(0));
           *iter = comm_node;
-          sleep(3);
+          //sleep(3);
         }else {
           //we assume the output size of variable_grad node must equal 1
           CHECK((*iter)->outputs_size() == 1);
