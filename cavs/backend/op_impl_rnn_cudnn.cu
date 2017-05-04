@@ -24,6 +24,8 @@ class RNNOpCudnnBase : public OpImpl {
   explicit RNNOpCudnnBase(const OpDef& def);
   ~RNNOpCudnnBase(); 
 
+  virtual void InitCUDNN(int seq_length, int batch, int input_size);
+
  protected:
   vector<cudnnTensorDescriptor_t> x_desc_ , y_desc_ ;
   cudnnTensorDescriptor_t  hx_desc_, hy_desc_;
@@ -33,17 +35,28 @@ class RNNOpCudnnBase : public OpImpl {
   cudnnRNNDescriptor_t     rnn_desc_    ;
 
   Allocator* alloc_;
+  int hidden_size_;
+  int num_layers_;
+  const int num_directions_;
+  string rnn_mode_ ;
+  size_t rnn_workspace_sizeInBytes_;
+  void* rnn_workspace_;
+  size_t rnn_trainingreserve_sizeInBytes_;
+  void* rnn_trainningreserve_;
  private:
   void* dropout_workspace_;
+  size_t dropout_stateSizeInBytes_;
 };
 
 RNNOpCudnnBase::RNNOpCudnnBase(const OpDef& def) :
     OpImpl(def),
-    dropout_workspace(NULL),
-    dropout_workspaceSizeInBytes(0) {
+    dropout_workspace_(NULL),
+    dropout_stateSizeInBytes_(0),
+    num_directions_(1),
+    rnn_workspace_sizeInBytes_(0),
+    rnn_trainingreserve_sizeInBytes_(0),
+    rnn_workspace_(NULL), rnn_trainningreserve_(NULL) {
 
-  /*checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));*/
-  /*checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));*/
   checkCUDNNError(cudnnCreateTensorDescriptor(&hx_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&hy_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&cx_desc_));
@@ -51,59 +64,22 @@ RNNOpCudnnBase::RNNOpCudnnBase(const OpDef& def) :
   checkCUDNNError(cudnnCreateFilterDescriptor(&w_desc_));
   checkCUDNNError(cudnnCreateDropoutDescriptor(&dropout_desc_));
   checkCUDNNError(cudnnCreateRNNDescriptor(&rnn_desc_));
-
   alloc_ = GetAllocator(DeviceTypeToString(GPU));
-
-  size_t dropout_stateSizeInBytes;
   checkCUDNNError(cudnnDropoutGetStatesSize(
-          CudaCommon::cudnnHandle(), &dropout_stateSizeInBytes));
-  dropout_workspace_ = alloc_->Allocate<char>(dropout_stateSizeInBytes);
+          CudaCommon::cudnnHandle(), &dropout_stateSizeInBytes_));
+  dropout_workspace_ = alloc_->Allocate<char>(dropout_stateSizeInBytes_);
   unsigned long long SEED = 1337;
   checkCUDNNError(cudnnSetDropoutDescriptor(
         dropout_desc_,
         CudaCommon::cudnnHandle(),
         GetSingleArg<float>(def, "dropout", 1.f),
         dropout_workspace_,
-        dropout_stateSizeInBytes,
+        dropout_stateSizeInBytes_,
         SEED));
-}
 
-RNNOpCudnnBase::~RNNOpCudnnBase() {
-  checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(hx_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(hy_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(cx_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(cy_desc_));
-  checkCUDNNError(cudnnDestroyFilterDescriptor(w_desc_));
-  if (dropout_workspace_)
-    alloc_->Deallocate<char>((char*)dropout_workspace_); 
-  checkCUDNNError(cudnnDestroyDropoutDescriptor(dropout_desc_));
-  checkCUDNNError(cudnnDestroyRNNDescriptor(rnn_desc_));
-
-}
-
-template <typename T>
-class RNNOpCudnn: public RNNOpCudnnBase {
- public:
-  explicit RNNOpCudnn(const OpDef& def);
-  ~RNNOpCudnn();
-  void Compute(OpContext* context) override;
-  /*static void inference_shape*/
-
- private:
-  int hidden_size_;
-  int num_layers_;
-  const int num_directions_;
-  string rnn_mode_ ;
-};
-
-template <typename T>
-RNNOpCudnn<T>::RNNOpCudnn() :
-    RNNOpCudnnBase(def), num_directions_(1) {
   hidden_size_ = GetSingleArg<int>(def, "hidden_size");
-  rnn_mode_ = GetSingleArg<string>("rnn_mode", "lstm");
-  num_layers_ = OperatorBase::GetSingleArgument<int>("num_layers", 0);
+  rnn_mode_ = GetSingleArg<string>(def, "rnn_mode", "lstm");
+  num_layers_ = GetSingleArg<int>(def, "num_layers", 0);
   CHECK(rnn_mode_ == "lstm") << "Currently, we only support LSTM";
   cudnnRNNMode_t mode = CUDNN_LSTM;
   CHECK(hidden_size_ > 0);
@@ -119,10 +95,18 @@ RNNOpCudnn<T>::RNNOpCudnn() :
         DataTypeToCudnnType<T>::value));
 }
 
-template <typename T>
-RNNOpCudnn<T>::~RNNOpCudnn() { 
-  if (workspace)
-    alloc_->Deallocate<char>((char*)workspace); 
+RNNOpCudnnBase::~RNNOpCudnnBase() {
+  checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));
+  checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));
+  checkCUDNNError(cudnnDestroyTensorDescriptor(hx_desc_));
+  checkCUDNNError(cudnnDestroyTensorDescriptor(hy_desc_));
+  checkCUDNNError(cudnnDestroyTensorDescriptor(cx_desc_));
+  checkCUDNNError(cudnnDestroyTensorDescriptor(cy_desc_));
+  checkCUDNNError(cudnnDestroyFilterDescriptor(w_desc_));
+  if (dropout_workspace_)
+    alloc_->Deallocate<char>((char*)dropout_workspace_); 
+  checkCUDNNError(cudnnDestroyDropoutDescriptor(dropout_desc_));
+  checkCUDNNError(cudnnDestroyRNNDescriptor(rnn_desc_));
   if (!x_desc_.empty()) {
     for (auto& des : x_desc_)
       checkCUDNNError(cudnnDestroyTensorDescriptor(des));
@@ -131,16 +115,15 @@ RNNOpCudnn<T>::~RNNOpCudnn() {
     for (auto& des : y_desc_)
       checkCUDNNError(cudnnDestroyTensorDescriptor(des));
   }
+  if (rnn_workspace_)
+    alloc_->Deallocate<char>((char*)rnn_workspace_); 
+  if (rnn_trainningreserve_)
+    alloc_->Deallocate<char>((char*)rnn_trainningreserve_); 
 }
 
-template <typename T>
-void RNNOpCudnn<T>::Compute(OpContext* context) {
-  const Tensor& x = context->Input(0);
-  const Tensor& w = context->Input(1);
-
-  const int seq_length = x.dims(0);
-  const int batch      = x.dims(1);
-  const int input_size = x.dims(2);
+void RNNOpCudnnBase::InitCUDNN(
+    int seq_length, int batch, int input_size,
+    int rnn_params_count) {
   CHECK(x_desc_.empty() || x_desc_.size() == seq_length)
        << "only support fixed size corpus during iterations";
   CHECK(y_desc_.empty() || y_desc_.size() == seq_length)
@@ -189,6 +172,7 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
           x_desc_[0],
           &rnn_params_sizeInBytes,
           DataTypeToCudnnType<T>::value));
+    CHECK(rnn_params_count == rnn_params_sizeInBytes/sizeof(T));
     const std::array<int, 3> dim = {rnn_params_sizeInBytes/sizeof(T), 1, 1};
     checkCUDNNError(cudnnSetFilterNdDescriptor(
           w_desc_,
@@ -196,7 +180,165 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
           CUDNN_TENSOR_NCHW,
           3,
           dim.data()));
-    CHECK(w.count() == rnn_params_sizeInBytes/sizeof(T));
   }
+
+  {
+    size_t workspace_size;
+    checkCUDNNError(cudnnGetRNNWorkspaceSize(
+          CudaCommon::cudnnHandle(),
+          rnn_desc_,
+          seq_length,
+          x_desc_.data(),
+          &workspace_size)); 
+    if (workspace_size != rnn_workspace_sizeInBytes_) {
+      rnn_workspace_sizeInBytes_ = workspace_size; 
+      if (rnn_workspace_)
+        alloc_->Deallocate<char>((char*)rnn_workspace_); 
+      rnn_workspace_ = alloc_->Allocate<char>(rnn_workspace_sizeInBytes_);
+    }
+  }
+
+  {
+    size_t workspace_size;
+    checkCUDNNError(cudnnGetRNNTrainingReserveSize(
+          CudaCommon::cudnnHandle(),
+          rnn_desc_,
+          seq_length,
+          x_desc_.data(),
+          &workspace_size)); 
+    if (workspace_size != rnn_trainingreserve_sizeInBytes_) {
+      rnn_trainingreserve_sizeInBytes_ = workspace_size; 
+      if (rnn_trainningreserve_)
+        alloc_->Deallocate<char>((char*)rnn_trainningreserve_); 
+      rnn_trainningreserve_ = alloc_->Allocate<char>(rnn_trainingreserve_sizeInBytes_);
+    }
+  }
+}
+
+template <typename T>
+class RNNOpCudnn: public RNNOpCudnnBase {
+ public:
+  explicit RNNOpCudnn(const OpDef& def);
+  void Compute(OpContext* context) override;
+};
+
+template <typename T>
+RNNOpCudnn<T>::RNNOpCudnn() : RNNOpCudnnBase(def) {}
+
+template <typename T>
+void RNNOpCudnn<T>::Compute(OpContext* context) {
+  const Tensor& X = context->Input(0);
+  const Tensor& W = context->Input(1);
+  const Tensor& HX = context->Input(2);
+  const Tensor& CX = context->Input(3);
+  Tensor* Y = context->output(0);
+  Tensor* HY = context->output(1);
+  Tensor* CY = context->output(2);
+
+  const int seq_length = X.dims(0);
+  const int batch      = X.dims(1);
+  const int input_size = X.dims(2);
+  const int rnn_params_count = W.count();
+
+  InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+
+  checkCUDNNError(cudnnRNNForwardTraining(
+        CudaCommon::cudnnHandle(),
+        seq_length,
+        x_desc_.data(),
+        X.data<T>(),
+        hx_desc_,
+        HX.data<T>(),
+        cx_desc_,
+        CX.data<T>(),
+        w_desc_,
+        W.data<T>(),
+        y_desc_,
+        y->mutable_data<T>(),
+        hy_desc_,
+        hy->mutable_data<T>(),
+        cy_desc_,
+        CY->mutable_data<T>(),
+        rnn_workspace_,
+        rnn_workspace_sizeInBytes_,
+        rnn_trainningreserve_,
+        rnn_trainingreserve_sizeInBytes_));
+}
+
+template <typename T>
+class RNNOpCudnnGrad: public RNNOpCudnnBase {
+ public:
+  explicit RNNOpCudnn(const OpDef& def);
+  void Compute(OpContext* context) override;
+};
+
+template <typename T>
+RNNOpCudnnGrad<T>::RNNOpCudnn() : RNNOpCudnnBase(def) {}
+
+template <typename T>
+void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
+  const Tensor& Y  = context->Input(0);
+  const Tensor& dY = context->Input(1);
+  const Tensor& X  = context->Input(2);
+  const Tensor& W  = context->Input(3);
+  const Tensor& HX = context->Input(4);
+  const Tensor& CX = context->Input(5);
+
+  Tensor* dX  = context->output(0);
+  Tensor* dW  = context->output(1);
+  Tensor* dHX = context->output(2);
+  Tensor* dCX = context->output(3);
+
+  const int seq_length = X.dims(0);
+  const int batch      = X.dims(1);
+  const int input_size = X.dims(2);
+  const int rnn_params_count = W.count();
+
+  InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+
+  checkCUDNNError(cudnnRNNBackwardData(
+        CudaCommon::cudnnHandle(),
+        rnn_desc_,
+        seq_length,
+        y_desc_.data(),
+        Y.data<T>(),
+        y_desc_.data(),
+        dY.data<T>(),
+        hy_desc_,
+        nullptr,//dhy can be nullptr, that means 0 according to cudnn manual
+        cy_desc_,
+        nullptr,//dcy can be nullptr, that means 0 according to cudnn manual
+        w_desc_,
+        W.data<T>(),
+        hx_desc_,
+        HX.data<T>(),
+        cx_desc_,
+        CX.data<T>(),
+        x_desc_.data(),
+        dX->mutable_data<T>(),
+        hx_desc_,
+        dHX->mutable_data<T>(),
+        cx_desc_,
+        dCX->mutable_data<T>(),
+        rnn_workspace_,
+        rnn_workspace_sizeInBytes_,
+        rnn_trainningreserve_,
+        rnn_trainingreserve_sizeInBytes_));
+  checkCUDNNError(cudnnRNNBackwardWeights(
+        CudaCommon::cudnnHandle(),
+        rnn_desc_,
+        seq_length,
+        x_desc_.data(),
+        X.data<T>(),
+        hx_desc_,
+        hX.data<T>(),
+        y_desc_.data(),
+        Y.data<T>(),
+        rnn_workspace_,
+        rnn_workspace_sizeInBytes_,
+        w_desc_,
+        dW->mutable_data<T>(),
+        rnn_trainningreserve_,
+        rnn_trainingreserve_sizeInBytes_));
 }
 
