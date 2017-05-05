@@ -19,12 +19,14 @@ using ::midend::GetAllocator;
 using ::midend::DeviceTypeToString;
 using ::midend::Tensor;
 
+template <typename T>
 class RNNOpCudnnBase : public OpImpl {
  public:
   explicit RNNOpCudnnBase(const OpDef& def);
   ~RNNOpCudnnBase(); 
 
-  virtual void InitCUDNN(int seq_length, int batch, int input_size);
+  virtual void InitCUDNN(int seq_length, int batch,
+      int input_size, int rnn_params_count);
 
  protected:
   vector<cudnnTensorDescriptor_t> x_desc_ , y_desc_ ;
@@ -48,7 +50,8 @@ class RNNOpCudnnBase : public OpImpl {
   size_t dropout_stateSizeInBytes_;
 };
 
-RNNOpCudnnBase::RNNOpCudnnBase(const OpDef& def) :
+template <typename T>
+RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
     OpImpl(def),
     dropout_workspace_(NULL),
     dropout_stateSizeInBytes_(0),
@@ -95,9 +98,10 @@ RNNOpCudnnBase::RNNOpCudnnBase(const OpDef& def) :
         DataTypeToCudnnType<T>::value));
 }
 
-RNNOpCudnnBase::~RNNOpCudnnBase() {
-  checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));
-  checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));
+template <typename T>
+RNNOpCudnnBase<T>::~RNNOpCudnnBase() {
+  /*checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));*/
+  /*checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));*/
   checkCUDNNError(cudnnDestroyTensorDescriptor(hx_desc_));
   checkCUDNNError(cudnnDestroyTensorDescriptor(hy_desc_));
   checkCUDNNError(cudnnDestroyTensorDescriptor(cx_desc_));
@@ -121,7 +125,8 @@ RNNOpCudnnBase::~RNNOpCudnnBase() {
     alloc_->Deallocate<char>((char*)rnn_trainningreserve_); 
 }
 
-void RNNOpCudnnBase::InitCUDNN(
+template <typename T>
+void RNNOpCudnnBase<T>::InitCUDNN(
     int seq_length, int batch, int input_size,
     int rnn_params_count) {
   CHECK(x_desc_.empty() || x_desc_.size() == seq_length)
@@ -216,14 +221,15 @@ void RNNOpCudnnBase::InitCUDNN(
 }
 
 template <typename T>
-class RNNOpCudnn: public RNNOpCudnnBase {
+class RNNOpCudnn: public RNNOpCudnnBase<T> {
  public:
   explicit RNNOpCudnn(const OpDef& def);
   void Compute(OpContext* context) override;
 };
 
 template <typename T>
-RNNOpCudnn<T>::RNNOpCudnn() : RNNOpCudnnBase(def) {}
+RNNOpCudnn<T>::RNNOpCudnn(const OpDef& def)
+  : RNNOpCudnnBase<T>(def) {}
 
 template <typename T>
 void RNNOpCudnn<T>::Compute(OpContext* context) {
@@ -231,49 +237,50 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& W = context->Input(1);
   const Tensor& HX = context->Input(2);
   const Tensor& CX = context->Input(3);
-  Tensor* Y = context->output(0);
-  Tensor* HY = context->output(1);
-  Tensor* CY = context->output(2);
+  Tensor* Y = context->Output(0);
+  Tensor* HY = context->Output(1);
+  Tensor* CY = context->Output(2);
 
   const int seq_length = X.dims(0);
   const int batch      = X.dims(1);
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
 
   checkCUDNNError(cudnnRNNForwardTraining(
         CudaCommon::cudnnHandle(),
         seq_length,
-        x_desc_.data(),
+        this->x_desc_.data(),
         X.data<T>(),
-        hx_desc_,
+        this->hx_desc_,
         HX.data<T>(),
-        cx_desc_,
+        this->cx_desc_,
         CX.data<T>(),
-        w_desc_,
+        this->w_desc_,
         W.data<T>(),
-        y_desc_,
-        y->mutable_data<T>(),
-        hy_desc_,
-        hy->mutable_data<T>(),
-        cy_desc_,
+        this->y_desc_,
+        Y->mutable_data<T>(),
+        this->hy_desc_,
+        HY->mutable_data<T>(),
+        this->cy_desc_,
         CY->mutable_data<T>(),
-        rnn_workspace_,
-        rnn_workspace_sizeInBytes_,
-        rnn_trainningreserve_,
-        rnn_trainingreserve_sizeInBytes_));
+        this->rnn_workspace_,
+        this->rnn_workspace_sizeInBytes_,
+        this->rnn_trainningreserve_,
+        this->rnn_trainingreserve_sizeInBytes_));
 }
 
 template <typename T>
-class RNNOpCudnnGrad: public RNNOpCudnnBase {
+class RNNOpCudnnGrad: public RNNOpCudnnBase<T> {
  public:
-  explicit RNNOpCudnn(const OpDef& def);
+  explicit RNNOpCudnnGrad(const OpDef& def);
   void Compute(OpContext* context) override;
 };
 
 template <typename T>
-RNNOpCudnnGrad<T>::RNNOpCudnn() : RNNOpCudnnBase(def) {}
+RNNOpCudnnGrad<T>::RNNOpCudnnGrad(const OpDef& def)
+  : RNNOpCudnnBase<T>(def) {}
 
 template <typename T>
 void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
@@ -284,61 +291,62 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& HX = context->Input(4);
   const Tensor& CX = context->Input(5);
 
-  Tensor* dX  = context->output(0);
-  Tensor* dW  = context->output(1);
-  Tensor* dHX = context->output(2);
-  Tensor* dCX = context->output(3);
+  Tensor* dX  = context->Output(0);
+  Tensor* dW  = context->Output(1);
+  Tensor* dHX = context->Output(2);
+  Tensor* dCX = context->Output(3);
 
   const int seq_length = X.dims(0);
   const int batch      = X.dims(1);
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
 
   checkCUDNNError(cudnnRNNBackwardData(
         CudaCommon::cudnnHandle(),
-        rnn_desc_,
+        this->rnn_desc_,
         seq_length,
-        y_desc_.data(),
+        this->y_desc_.data(),
         Y.data<T>(),
-        y_desc_.data(),
+        this->y_desc_.data(),
         dY.data<T>(),
-        hy_desc_,
+        this->hy_desc_,
         nullptr,//dhy can be nullptr, that means 0 according to cudnn manual
-        cy_desc_,
+        this->cy_desc_,
         nullptr,//dcy can be nullptr, that means 0 according to cudnn manual
-        w_desc_,
+        this->w_desc_,
         W.data<T>(),
-        hx_desc_,
+        this->hx_desc_,
         HX.data<T>(),
-        cx_desc_,
+        this->cx_desc_,
         CX.data<T>(),
-        x_desc_.data(),
+        this->x_desc_.data(),
         dX->mutable_data<T>(),
-        hx_desc_,
+        this->hx_desc_,
         dHX->mutable_data<T>(),
-        cx_desc_,
+        this->cx_desc_,
         dCX->mutable_data<T>(),
-        rnn_workspace_,
-        rnn_workspace_sizeInBytes_,
-        rnn_trainningreserve_,
-        rnn_trainingreserve_sizeInBytes_));
+        this->rnn_workspace_,
+        this->rnn_workspace_sizeInBytes_,
+        this->rnn_trainningreserve_,
+        this->rnn_trainingreserve_sizeInBytes_));
   checkCUDNNError(cudnnRNNBackwardWeights(
         CudaCommon::cudnnHandle(),
-        rnn_desc_,
+        this->rnn_desc_,
         seq_length,
-        x_desc_.data(),
+        this->x_desc_.data(),
         X.data<T>(),
-        hx_desc_,
-        hX.data<T>(),
-        y_desc_.data(),
+        this->hx_desc_,
+        HX.data<T>(),
+        this->y_desc_.data(),
         Y.data<T>(),
-        rnn_workspace_,
-        rnn_workspace_sizeInBytes_,
-        w_desc_,
+        this->rnn_workspace_,
+        this->rnn_workspace_sizeInBytes_,
+        this->w_desc_,
         dW->mutable_data<T>(),
-        rnn_trainningreserve_,
-        rnn_trainingreserve_sizeInBytes_));
+        this->rnn_trainningreserve_,
+        this->rnn_trainingreserve_sizeInBytes_));
 }
 
+} //namespace backend
