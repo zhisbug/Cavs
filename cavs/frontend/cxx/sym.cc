@@ -252,6 +252,14 @@ Sym Sym::Flatten(const Sym& a) {
       a.node_->type_, "", a.node_->device_, {}, {attr});
 }
 
+Sym Sym::Reshape(const Sym& a, const std::vector<int>& shape) {
+  OpDef::AttrDef attr;
+  attr.set_name("ShareMemory");
+  attr.mutable_value()->set_b(true);
+  return Sym("Reshape", { a.node_->output_[0] },
+      a.node_->type_, "", a.node_->device_, shape, {attr});
+}
+
 Sym Sym::Equal(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
@@ -307,6 +315,20 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
   return Sym("Conv",
       {a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
       a.node_->type_, "", device);
+}
+
+Sym Sym::LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device) {
+  CHECK(b.op_name() == "Variable");
+  CHECK(a.node_->type_ == b.node_->type_);
+  OpDef::AttrDef layer_attr;
+  layer_attr.set_name("num_layers");
+  layer_attr.mutable_value()->set_i(layer);
+  OpDef::AttrDef hidden_attr;
+  hidden_attr.set_name("hidden_size");
+  hidden_attr.mutable_value()->set_i(hidden);
+  return Sym("LSTM",
+      {a.node_->output_[0], b.node_->output_[0]},
+      a.node_->type_, "", device, {}, {layer_attr, hidden_attr});
 }
 
 Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {

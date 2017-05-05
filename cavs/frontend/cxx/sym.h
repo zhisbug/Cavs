@@ -53,8 +53,11 @@ class Sym {
   static Sym FullyConnected(const Sym& a, const Sym& b, string device = "GPU");
   static Sym SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device = "GPU");
   static Sym Equal(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym Reshape(const Sym& a, const std::vector<int>& shape);
   //ternary operation
   static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
+  //quaternary operation
+  static Sym LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device = "GPU");
   //filler operation
   static std::pair<std::string, OpDef::AttrDef> Ones();
   static std::pair<std::string, OpDef::AttrDef> Zeros();
@@ -83,12 +86,15 @@ class Sym {
     return Maxpooling(*this, HightWindow, WidthWindow);
   }
   Sym Relu() { return Relu(*this); }
-  Sym Flatten() { return Flatten(*this); };
+  Sym Flatten() { return Flatten(*this); }
   //binary operation
   Sym FullyConnected(const Sym& b) { return FullyConnected(*this, b); }
   Sym SoftmaxEntropyLogits(const Sym& b) { return SoftmaxEntropyLogits(*this, b); }
+  Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape); }
   //ternary operation
   Sym Conv(const Sym& b, const Sym& c) { return Conv(*this, b, c); }
+  //quaternary operation
+  Sym LSTM(const Sym& b, int layer, int hidden) { return LSTM(*this, b, layer, hidden); }
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }

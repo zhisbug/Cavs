@@ -81,8 +81,8 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
         SEED));
 
   hidden_size_ = GetSingleArg<int>(def, "hidden_size");
+  num_layers_ = GetSingleArg<int>(def, "num_layers");
   rnn_mode_ = GetSingleArg<string>(def, "rnn_mode", "lstm");
-  num_layers_ = GetSingleArg<int>(def, "num_layers", 0);
   CHECK(rnn_mode_ == "lstm") << "Currently, we only support LSTM";
   cudnnRNNMode_t mode = CUDNN_LSTM;
   CHECK(hidden_size_ > 0);
@@ -157,6 +157,8 @@ void RNNOpCudnnBase<T>::InitCUDNN(
   }
   
   {
+    //I think there is a problem in the first dimension of dim
+    //Should it be num_layers? and the third dimension is hidden*directions?
     const std::array<int, 3> dim = {num_layers_*num_directions_, batch, hidden_size_};
     const std::array<int, 3> stride = {batch*hidden_size_, hidden_size_, 1};
     checkCUDNNError(cudnnSetTensorNdDescriptor(
