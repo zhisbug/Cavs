@@ -50,13 +50,13 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < sample_len/FLAGS_timestep; i++) {
     input_ph.resize(i+1); 
     label_ph.resize(i+1); 
+    input_ph[i].resize(FLAGS_timestep*FLAGS_batch*FLAGS_input_size, 0);
     for (int j = 0; j < FLAGS_timestep; j++) {
       for (int k = 0; k < FLAGS_batch; k++) {
-        for (int l = 0; l < FLAGS_input_size; l++) {
-          input_ph[i].push_back(input_data[k*sample_len+i*FLAGS_timestep+j] == l? l : 0); 
-        }
+        int offset = input_data[k*sample_len+i*FLAGS_timestep+j];
+        input_ph[i][(j*FLAGS_batch+k)*FLAGS_input_size+offset] = 1;
         label_ph[i].push_back(label_data[k*sample_len+i*FLAGS_timestep+j]); 
-      } 
+      }
     }
   }
 

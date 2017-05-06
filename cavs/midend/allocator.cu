@@ -12,6 +12,7 @@ class GPUAllocator : public Allocator {
     VLOG(V_DEBUG) << "allocating " << nbytes << " bytes";
     void* ptr = NULL;
     checkCudaError(cudaMalloc(&ptr, nbytes)); 
+    checkCudaError(cudaMemset(ptr, 0, nbytes)); 
     return ptr;
   }
   void DeallocateRaw(void* buf) override {

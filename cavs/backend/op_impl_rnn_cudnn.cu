@@ -45,6 +45,14 @@ class RNNOpCudnnBase : public OpImpl {
   void* rnn_workspace_;
   size_t rnn_trainingreserve_sizeInBytes_;
   void* rnn_trainningreserve_;
+  size_t rnn_hx_sizeInBytes_;
+  void* rnn_hx_;
+  size_t rnn_cx_sizeInBytes_;
+  void* rnn_cx_;
+  size_t rnn_hy_sizeInBytes_;
+  void* rnn_hy_;
+  size_t rnn_cy_sizeInBytes_;
+  void* rnn_cy_;
  private:
   void* dropout_workspace_;
   size_t dropout_stateSizeInBytes_;
@@ -58,7 +66,11 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
     num_directions_(1),
     rnn_workspace_sizeInBytes_(0),
     rnn_trainingreserve_sizeInBytes_(0),
-    rnn_workspace_(NULL), rnn_trainningreserve_(NULL) {
+    rnn_workspace_(NULL), rnn_trainningreserve_(NULL),
+    rnn_hx_sizeInBytes_(0), rnn_cx_sizeInBytes_(0),
+    rnn_hx_(NULL), rnn_cx_(NULL),
+    rnn_hy_sizeInBytes_(0), rnn_cy_sizeInBytes_(0),
+    rnn_hy_(NULL), rnn_cy_(NULL) {
 
   checkCUDNNError(cudnnCreateTensorDescriptor(&hx_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&hy_desc_));
@@ -91,7 +103,6 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
         hidden_size_,
         num_layers_,
         dropout_desc_,
-        CUDNN_LSTM, //hard-coded now
         CUDNN_LINEAR_INPUT, //hard-coded now
         CUDNN_UNIDIRECTIONAL, //hard-coded now
         CUDNN_LSTM, //hard-coded now
@@ -123,6 +134,14 @@ RNNOpCudnnBase<T>::~RNNOpCudnnBase() {
     alloc_->Deallocate<char>((char*)rnn_workspace_); 
   if (rnn_trainningreserve_)
     alloc_->Deallocate<char>((char*)rnn_trainningreserve_); 
+  if (rnn_hx_)
+    alloc_->Deallocate<char>((char*)rnn_hx_); 
+  if (rnn_cx_)
+    alloc_->Deallocate<char>((char*)rnn_cx_); 
+  if (rnn_hy_)
+    alloc_->Deallocate<char>((char*)rnn_hy_); 
+  if (rnn_cy_)
+    alloc_->Deallocate<char>((char*)rnn_cy_); 
 }
 
 template <typename T>
@@ -135,7 +154,7 @@ void RNNOpCudnnBase<T>::InitCUDNN(
        << "only support fixed size corpus during iterations";
   CHECK(seq_length > 0);
   if (x_desc_.empty()) {
-    x_desc_.resize(seq_length); 
+    x_desc_.resize(seq_length);
     const std::array<int, 3> dim = {batch, input_size, 1};
     const std::array<int, 3> stride = {input_size, 1, 1};
     for (int i = 0; i < seq_length; i++) {
@@ -169,6 +188,32 @@ void RNNOpCudnnBase<T>::InitCUDNN(
           cx_desc_, DataTypeToCudnnType<T>::value, 3, dim.data(), stride.data()));
     checkCUDNNError(cudnnSetTensorNdDescriptor(
           cy_desc_, DataTypeToCudnnType<T>::value, 3, dim.data(), stride.data()));
+
+    size_t internal_size = num_layers_*num_directions_*batch*hidden_size_*sizeof(T);
+    if (rnn_hx_sizeInBytes_ != internal_size) {
+      if (rnn_hx_) 
+        alloc_->Deallocate<char>((char*)rnn_hx_); 
+      rnn_hx_ = alloc_->Allocate<char>(internal_size);
+      rnn_hx_sizeInBytes_ = internal_size; 
+    }
+    if (rnn_cx_sizeInBytes_ != internal_size) {
+      if (rnn_cx_) 
+        alloc_->Deallocate<char>((char*)rnn_cx_); 
+      rnn_cx_ = alloc_->Allocate<char>(internal_size);
+      rnn_cx_sizeInBytes_ = internal_size; 
+    }
+    if (rnn_hy_sizeInBytes_ != internal_size) {
+      if (rnn_hy_) 
+        alloc_->Deallocate<char>((char*)rnn_hy_); 
+      rnn_hy_ = alloc_->Allocate<char>(internal_size);
+      rnn_hy_sizeInBytes_ = internal_size; 
+    }
+    if (rnn_cy_sizeInBytes_ != internal_size) {
+      if (rnn_cy_) 
+        alloc_->Deallocate<char>((char*)rnn_cy_); 
+      rnn_cy_ = alloc_->Allocate<char>(internal_size);
+      rnn_cy_sizeInBytes_ = internal_size; 
+    }
   }
 
   {
@@ -180,7 +225,7 @@ void RNNOpCudnnBase<T>::InitCUDNN(
           &rnn_params_sizeInBytes,
           DataTypeToCudnnType<T>::value));
     CHECK(rnn_params_count == rnn_params_sizeInBytes/sizeof(T));
-    const std::array<int, 3> dim = {rnn_params_sizeInBytes/sizeof(T), 1, 1};
+    const std::array<int, 3> dim = {(int)(rnn_params_sizeInBytes/sizeof(T)), 1, 1};
     checkCUDNNError(cudnnSetFilterNdDescriptor(
           w_desc_,
           DataTypeToCudnnType<T>::value,
@@ -237,11 +282,11 @@ template <typename T>
 void RNNOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& X = context->Input(0);
   const Tensor& W = context->Input(1);
-  const Tensor& HX = context->Input(2);
-  const Tensor& CX = context->Input(3);
+  /*const Tensor& HX = context->Input(2);*/
+  /*const Tensor& CX = context->Input(3);*/
   Tensor* Y = context->Output(0);
-  Tensor* HY = context->Output(1);
-  Tensor* CY = context->Output(2);
+  /*Tensor* HY = context->Output(1);*/
+  /*Tensor* CY = context->Output(2);*/
 
   const int seq_length = X.dims(0);
   const int batch      = X.dims(1);
@@ -252,21 +297,22 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
 
   checkCUDNNError(cudnnRNNForwardTraining(
         CudaCommon::cudnnHandle(),
+        this->rnn_desc_,
         seq_length,
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        HX.data<T>(),
+        this->rnn_hx_, //HX.data<T>(),
         this->cx_desc_,
-        CX.data<T>(),
+        this->rnn_cx_, //CX.data<T>(),
         this->w_desc_,
         W.data<T>(),
-        this->y_desc_,
+        this->y_desc_.data(),
         Y->mutable_data<T>(),
         this->hy_desc_,
-        HY->mutable_data<T>(),
+        this->rnn_hy_, //HY->mutable_data<T>(),
         this->cy_desc_,
-        CY->mutable_data<T>(),
+        this->rnn_cy_, //CY->mutable_data<T>(),
         this->rnn_workspace_,
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,
@@ -290,13 +336,13 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
   const Tensor& dY = context->Input(1);
   const Tensor& X  = context->Input(2);
   const Tensor& W  = context->Input(3);
-  const Tensor& HX = context->Input(4);
-  const Tensor& CX = context->Input(5);
+  /*const Tensor& HX = context->Input(4);*/
+  /*const Tensor& CX = context->Input(5);*/
 
   Tensor* dX  = context->Output(0);
   Tensor* dW  = context->Output(1);
-  Tensor* dHX = context->Output(2);
-  Tensor* dCX = context->Output(3);
+  /*Tensor* dHX = context->Output(2);*/
+  /*Tensor* dCX = context->Output(3);*/
 
   const int seq_length = X.dims(0);
   const int batch      = X.dims(1);
@@ -320,15 +366,15 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->w_desc_,
         W.data<T>(),
         this->hx_desc_,
-        HX.data<T>(),
+        this->rnn_hx_, //HX.data<T>(),
         this->cx_desc_,
-        CX.data<T>(),
+        this->rnn_cx_, //CX.data<T>(),
         this->x_desc_.data(),
         dX->mutable_data<T>(),
         this->hx_desc_,
-        dHX->mutable_data<T>(),
+        this->rnn_hy_, //hacked here //dHX->mutable_data<T>(),
         this->cx_desc_,
-        dCX->mutable_data<T>(),
+        this->rnn_cy_, //hacked here //dCX->mutable_data<T>(),
         this->rnn_workspace_,
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,
@@ -340,7 +386,7 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        HX.data<T>(),
+        this->rnn_hx_, //HX.data<T>(),
         this->y_desc_.data(),
         Y.data<T>(),
         this->rnn_workspace_,
@@ -350,5 +396,8 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->rnn_trainningreserve_,
         this->rnn_trainingreserve_sizeInBytes_));
 }
+
+REGISTER_OP_IMPL_BUILDER(Key("LSTM").Device("GPU"), RNNOpCudnn<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("LSTM")).Device("GPU"), RNNOpCudnnGrad<float>);
 
 } //namespace backend
