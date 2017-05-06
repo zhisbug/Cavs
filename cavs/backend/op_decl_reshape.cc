@@ -10,22 +10,27 @@ class ReshapeOpDecl : public OpDecl {
   ReshapeOpDecl(const OpDef& def) : OpDecl(def) {
     CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
   }
-  void MakeGradient(vector<OpDef>* grad) override;
-};
+  
+  void MakeGradient(vector<OpDef>* grad) override {
+    CHECK(grad->size() == 0);
+    OpDef reshape;
+    OpDefBuilder("ReshapeLike")
+      .Input(GetGradientName(op_def_.output(0)))
+      .Input(op_def_.input(0))
+      .Output(GetGradientName(op_def_.input(0)))
+      .AttrSingle<bool>("ShareMemory", true)
+      .Device(op_def_)
+      .Finalize(&reshape);
+    grad->push_back(std::move(reshape));
+  }
 
-void ReshapeOpDecl::MakeGradient(
-    vector<OpDef>* grad) {
-  CHECK(grad->size() == 0);
-  OpDef reshape;
-  OpDefBuilder("ReshapeLike")
-    .Input(GetGradientName(op_def_.output(0)))
-    .Input(op_def_.input(0))
-    .Output(GetGradientName(op_def_.input(0)))
-    .AttrSingle<bool>("ShareMemory", true)
-    .Device(op_def_)
-    .Finalize(&reshape);
-  grad->push_back(std::move(reshape));
-}
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 1); 
+    CHECK(out_shape->empty());
+    out_shape->push_back(inputs[0]);
+  }
+};
 
 class ReshapeLikeOpDecl : public ReshapeOpDecl {
  public:
@@ -59,6 +64,7 @@ class FlattenOpDecl : public ReshapeOpDecl {
   }
 };
 
+REGISTER_OP_DECL_BUILDER("Reshape", ReshapeOpDecl);
 REGISTER_OP_DECL_BUILDER("Flatten", FlattenOpDecl);
 REGISTER_OP_DECL_BUILDER("ReshapeLike", ReshapeLikeOpDecl);
 

@@ -12,7 +12,7 @@ class LSTMOpDecl : public OpDecl{
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK_NOTNULL(grad);
     CHECK(grad->size() == 0);
-    CHECK(op_def_.input_size() == 3);
+    CHECK(op_def_.input_size() == 2);
     CHECK(op_def_.output_size() == 1);
     OpDef LSTM_grad;
     OpDefBuilder(GetGradientName("LSTM"))
