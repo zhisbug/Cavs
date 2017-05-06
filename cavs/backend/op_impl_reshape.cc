@@ -10,10 +10,21 @@ namespace backend {
 
 using ::midend::Tensor;
 
-class FlattenOp: public OpImpl {
+class ReshapeOpImpl : public OpImpl {
+ public:
+  explicit ReshapeOpImpl(const OpDef& def) :
+    OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    const Tensor& x = context->Input(0);
+    Tensor* y = context->Output(0);
+    CHECK(x.count() == y->count());
+  }
+};
+
+class FlattenOp : public ReshapeOpImpl {
  public:
   explicit FlattenOp(const OpDef& def) :
-    OpImpl(def) {}
+    ReshapeOpImpl(def) {}
   void Compute(OpContext* context) override;
 };
 
@@ -26,21 +37,29 @@ void FlattenOp::Compute(OpContext* context) {
   CHECK(x.count() == y->count());
 }
 
-class ReshapeLikeOp: public OpImpl {
+class ReshapeLikeOp : public ReshapeOpImpl {
  public:
   explicit ReshapeLikeOp(const OpDef& def) :
-    OpImpl(def) {}
+    ReshapeOpImpl(def) {}
   void Compute(OpContext* context) override;
 };
 
 void ReshapeLikeOp::Compute(OpContext* context) {
-  const Tensor& x = context->Input(0);
-  Tensor* y = context->Output(0);
-  CHECK(x.count() == y->count());
+  const Tensor& dy = context->Input(0);
+  const Tensor& x  = context->Input(1);
+  Tensor* dx = context->Output(0);
+  CHECK(x.count() == dx->count());
+  CHECK(x.count() == dy.count());
+  CHECK(x.dims() == dx->dims());
+  for (int i = 0; i < x.dims(); i++)
+    CHECK(x.dims(i) == dx->dims(i));
+
   //x.DebugNumerical<float>();
   //y->DebugNumerical<float>();
 }
 
+REGISTER_OP_IMPL_BUILDER(Key("Reshape").Device("GPU"), ReshapeOpImpl);
+REGISTER_OP_IMPL_BUILDER(Key("Reshape").Device("CPU"), ReshapeOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Flatten").Device("GPU"), FlattenOp);
 REGISTER_OP_IMPL_BUILDER(Key("Flatten").Device("CPU"), FlattenOp);
 REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("GPU"), ReshapeLikeOp);

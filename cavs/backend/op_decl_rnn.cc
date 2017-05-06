@@ -22,6 +22,7 @@ class LSTMOpDecl : public OpDecl{
       .Input(op_def_.input(1))//W
       .Output(GetGradientName(op_def_.input(0)))//dX
       .Output(GetGradientName(op_def_.input(1)))//dW
+      .Attr(op_def_)
       .Device(op_def_)
       .Finalize(&LSTM_grad);
     grad->push_back(std::move(LSTM_grad));

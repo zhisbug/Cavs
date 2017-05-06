@@ -224,7 +224,9 @@ void RNNOpCudnnBase<T>::InitCUDNN(
           x_desc_[0],
           &rnn_params_sizeInBytes,
           DataTypeToCudnnType<T>::value));
-    CHECK(rnn_params_count == rnn_params_sizeInBytes/sizeof(T));
+    CHECK(rnn_params_count == rnn_params_sizeInBytes/sizeof(T))
+        << "Input variable count : " << rnn_params_count
+        << "\t CUDNN needs : " << rnn_params_sizeInBytes/sizeof(T);
     const std::array<int, 3> dim = {(int)(rnn_params_sizeInBytes/sizeof(T)), 1, 1};
     checkCUDNNError(cudnnSetFilterNdDescriptor(
           w_desc_,

@@ -28,7 +28,7 @@ class ReshapeOpDecl : public OpDecl {
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 1); 
     CHECK(out_shape->empty());
-    out_shape->push_back(inputs[0]);
+    out_shape->push_back(op_def_.shape(0));
   }
 };
 
