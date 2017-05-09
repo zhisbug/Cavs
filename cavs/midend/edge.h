@@ -94,7 +94,9 @@ inline int Edge::srcs_size() const {
 }
 
 inline const Node* Edge::dst(size_t i) const {
-  CHECK(i < dsts_.size());
+  CHECK(i < dsts_.size())
+       << i << "\t" << dsts_size()
+       << DebugInfo();
   return dsts_[i];
 }
 

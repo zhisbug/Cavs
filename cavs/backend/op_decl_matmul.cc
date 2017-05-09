@@ -69,16 +69,9 @@ class MatMulOpDecl : public OpDecl {
   }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
-    CHECK(inputs.size() == 2) << inputs.size();
+    CHECK(inputs.size() >= 2) << inputs.size();
     CHECK(inputs[0].dim_size() == 2);
     CHECK(inputs[1].dim_size() == 2);
-    //bool TransA = false;
-    //bool TransB = false;
-    ////LOG(INFO) << op_def_.DebugString();
-    //for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
-      //if (t == 0) TransA = true;
-      //if (t == 1) TransB = true;
-    //}
     int MA = (TransA_ == false)? inputs[0].dim(0) : inputs[0].dim(1);
     int KA = (TransA_ == false)? inputs[0].dim(1) : inputs[0].dim(0);
     int KB = (TransB_ == false)? inputs[1].dim(0) : inputs[1].dim(1);
@@ -94,17 +87,6 @@ class MatMulOpDecl : public OpDecl {
  private:
   bool TransA_;
   bool TransB_;
-  //vector<int> TransMask(const vector<std::pair<int, bool>>& trans) {
-    //vector<int> input = GetListArg<int>(op_def_, "Transpose");
-    //vector<int> output;
-    //for (auto& one_pair : trans) {
-      //bool trans_input =
-        //std::find(input.begin(), input.end(), one_pair.first) != input.end();
-      //if (trans_input ^ one_pair.second)
-        //output.push_back(one_pair.first);
-    //}
-    //return output;
-  //}
 };
 
 REGISTER_OP_DECL_BUILDER("MatMul", MatMulOpDecl);

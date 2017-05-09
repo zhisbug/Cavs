@@ -319,6 +319,10 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,
         this->rnn_trainingreserve_sizeInBytes_));
+
+  X.DebugNumerical<T>();
+  W.DebugNumerical<T>();
+  Y->DebugNumerical<T>();
 }
 
 template <typename T>
@@ -397,6 +401,12 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         dW->mutable_data<T>(),
         this->rnn_trainningreserve_,
         this->rnn_trainingreserve_sizeInBytes_));
+  Y.DebugNumerical<T>();
+  dY.DebugNumerical<T>();
+  X.DebugNumerical<T>();
+  W.DebugNumerical<T>();
+  dX->DebugNumerical<T>();
+  dW->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("LSTM").Device("GPU"), RNNOpCudnn<float>);

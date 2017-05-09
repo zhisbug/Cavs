@@ -67,8 +67,8 @@ void SoftmaxEntropyLogitsOpCudnn<T>::Compute(OpContext* context) {
                   CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, y_desc_, y->mutable_data<T>()));
-  /*x.DebugNumerical<T>();*/
-  /*y->DebugNumerical<T>();*/
+  x.DebugNumerical<T>();
+  y->DebugNumerical<T>();
 }
 
 template <typename T>
@@ -120,9 +120,9 @@ void SoftmaxEntropyLogitsOpCudnnGrad<T>::Compute(OpContext* context) {
   T scale_gradient = 1.f/NX;
   ScalCublasWrapper(dx->count(), &scale_gradient, dx->mutable_data<T>());
   checkCudaError(cudaDeviceSynchronize());
-  /*y.DebugNumerical<T>();*/
-  /*label.DebugNumerical<T>();*/
-  /*dx->DebugNumerical<T>();*/
+  y.DebugNumerical<T>();
+  label.DebugNumerical<T>();
+  dx->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("SoftmaxEntropyLogits").Device("GPU"),

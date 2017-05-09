@@ -317,6 +317,18 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
       a.node_->type_, "", device);
 }
 
+Sym Sym::FullyConnected(const Sym& x, const Sym& w, const Sym& b, string device) {
+  CHECK(w.op_name() == "Variable");
+  CHECK(b.op_name() == "Variable");
+  CHECK(x.node_->type_ == w.node_->type_ &&
+        x.node_->type_ == b.node_->type_);
+  CHECK(x.node_->output_.size() == 1 &&
+        w.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
+  return Sym("FullyConnected", {x.node_->output_[0], w.node_->output_[0], b.node_->output_[0]},
+             x.node_->type_, "", device, {}, {});
+}
+
 Sym Sym::LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device) {
   CHECK(b.op_name() == "Variable");
   CHECK(a.node_->type_ == b.node_->type_);
@@ -329,18 +341,6 @@ Sym Sym::LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device) 
   return Sym("LSTM",
       {a.node_->output_[0], b.node_->output_[0]},
       a.node_->type_, "", device, {}, {layer_attr, hidden_attr});
-}
-
-Sym Sym::FullyConnected(const Sym& a, const Sym& b, string device) {
-  CHECK(b.op_name() == "Variable");
-  CHECK(a.node_->type_ == b.node_->type_);
-  CHECK(a.node_->output_.size() == 1 &&
-        b.node_->output_.size() == 1);
-  OpDef::AttrDef attr;
-  attr.set_name("Transpose");
-  attr.mutable_value()->mutable_list()->add_i(1);
-  return Sym("MatMul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device, {}, {attr});
 }
 
 Sym Sym::Optimizer(const Sym& a) {

@@ -60,17 +60,20 @@ int main(int argc, char* argv[]) {
     }
   }
 
+  int var_size = 4*(FLAGS_hidden*(FLAGS_input_size+(2*FLAGS_lstm_layers-1)*FLAGS_hidden))
+                  + 4*2*FLAGS_lstm_layers*FLAGS_hidden;
   Sym input = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch, FLAGS_input_size});
   Sym label = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym var   = Sym::Variable(C_FLOAT, {4*(FLAGS_hidden*(FLAGS_input_size+(2*FLAGS_lstm_layers-1)*FLAGS_hidden))});
+  Sym var   = Sym::Variable(C_FLOAT, {var_size});
   Sym loss  = input.LSTM(var, FLAGS_lstm_layers, FLAGS_hidden)
-              .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden}).SoftmaxEntropyLogits(label);
+              .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
+              .SoftmaxEntropyLogits(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
   Sym train = loss.Optimizer({}, FLAGS_lr);
 
   Session sess;
   for (int i = 0; i < FLAGS_iters; i++)
-    sess.Run({loss, train}, {{input,input_ph[i%input_ph.size()].data()},
-                             {label,label_ph[i%label_ph.size()].data()}});
+    sess.Run({train}, {{input,input_ph[i%input_ph.size()].data()},
+                       {label,label_ph[i%label_ph.size()].data()}});
 
   return 0;
 }

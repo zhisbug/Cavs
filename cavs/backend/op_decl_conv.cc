@@ -8,7 +8,7 @@ namespace backend {
 
 class ConvOpDecl : public OpDecl{
  public:
-  ConvOpDecl(const OpDef& def) : OpDecl(def) {};
+  ConvOpDecl(const OpDef& def) : OpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK_NOTNULL(grad);
     CHECK(grad->size() == 0);
@@ -58,7 +58,7 @@ class ConvOpDecl : public OpDecl{
 
 class ConvGradOpDecl : public OpDecl{
  public:
-  ConvGradOpDecl(const OpDef& def) : OpDecl(def) {};
+  ConvGradOpDecl(const OpDef& def) : OpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
