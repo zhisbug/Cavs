@@ -25,8 +25,8 @@ struct Filler {
 
   void Compute(T* buf, int N) {
     int stride  = (stride_ == 0)? N : stride_;
-      for (int i = 0; i < N; i += stride_) {
-        FillRaw(buf+i, (i+stride_>N) ? (N-i) : stride_);
+      for (int i = 0; i < N; i += stride) {
+        FillRaw(buf+i, (i+stride>N) ? (N-i) : stride);
       }
   }
 
@@ -36,8 +36,8 @@ struct Filler {
 
 template <typename T>
 struct ConstantFiller : Filler<T> {
-  ConstantFiller(const OpDef& op_def) : Filler(op_def) {
-    T value_ = GetSingleArg<T>(op_def, "const_value");
+  ConstantFiller(const OpDef& op_def) : Filler<T>(op_def) {
+    value_ = GetSingleArg<T>(op_def, "const_value");
   }
   virtual void FillRaw(T* buf, int N) override {
     for (unsigned i = 0; i < N; i++) {
@@ -52,7 +52,7 @@ struct ConstantFiller : Filler<T> {
 
 template <typename T>
 struct Xavier : Filler<T> {
-  Xavier(const OpDef& op_def) : Filler(op_def) {}
+  Xavier(const OpDef& op_def) : Filler<T>(op_def) {}
   virtual void FillRaw(T* buf, int N) override {
     float scale = sqrt(3.f/N);
     std::default_random_engine generator;
@@ -77,27 +77,27 @@ struct Xavier : Filler<T> {
 
 template <typename T>
 struct UniformRandom : Filler<T> {
-  UniformRandom(const OpDef& op_def) : Filler(op_def) {
-    float minval_ = GetSingleArg<float>(op_def, "minval", 0.f);
-    float maxval_ = GetSingleArg<float>(op_def, "maxval", 1.f);
+  UniformRandom(const OpDef& op_def) : Filler<T>(op_def) {
+    minval_ = GetSingleArg<float>(op_def, "minval", 0.f);
+    maxval_ = GetSingleArg<float>(op_def, "maxval", 1.f);
     CHECK(minval_ < maxval_);
   }
   virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(min_val_, maxval_);
+    std::uniform_real_distribution<T> distribution(minval_, maxval_);
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);
     }
   }
 
- private:
+ protected:
   float minval_;
   float maxval_;
 };
 
 template <typename T>
 struct NormalRandom : Filler<T> {
-  NormalRandom(const OpDef& op_def) : Filler(op_def) {}
+  NormalRandom(const OpDef& op_def) : Filler<T>(op_def) {}
   virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
     std::normal_distribution<T> distribution(0.f, 1.f);
@@ -109,10 +109,10 @@ struct NormalRandom : Filler<T> {
 
 template <typename T>
 struct UniformRandomNormalized : UniformRandom<T> {
-  UniformRandomNormalized(const OpDef& op_def) : UniformRandom(op_def) {}
+  UniformRandomNormalized(const OpDef& op_def) : UniformRandom<T>(op_def) {}
   virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(min_val_, maxval_);
+    std::uniform_real_distribution<T> distribution(0.f, 1.f);
     T sum = 0;
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);

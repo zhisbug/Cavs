@@ -13,7 +13,7 @@ namespace backend {
 template <typename FILLER, typename T>
 struct CudaFiller {
   CudaFiller(const OpDef& op_def) : filler_(op_def) {}
-  FORCE_INLINE void Compute(T* buf, int N) override {
+  FORCE_INLINE void Compute(T* buf, int N) {
     std::vector<T> cpu_buf(N);
     filler_.Compute(cpu_buf.data(), N);
     checkCudaError(cudaMemcpy(buf, cpu_buf.data(), N*sizeof(T),

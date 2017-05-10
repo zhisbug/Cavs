@@ -131,6 +131,7 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     }else {
       Bcast<BCASTFUNCTOR>(out->mutable_data<T>(), out->count(), 0);
     }
+    out->DebugNumerical<T>();
   }
 };
 
