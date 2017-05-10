@@ -19,20 +19,21 @@ using std::pair;
 
 class Sym {
  public:
+  typedef pair<string, vector<OpDef::AttrDef>> ATTRIBUTE;
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
   void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
 
   //non-arguments operation
   static Sym Variable(C_Dtype type, const std::vector<int>& shape,
-      const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
+      const ATTRIBUTE& filler = Ones(), string device = "GPU");
   static Sym Placeholder(C_Dtype type, const std::vector<int>& shape,
       string device = "GPU");
   static Sym MnistInput(int batch, string source, string file, string device = "GPU");
   static Sym Data(C_Dtype type, const std::vector<int>& shape, int batch,
-      const pair<string, OpDef::AttrDef>& reader, string device = "GPU");
+      const ATTRIBUTE& reader, string device = "GPU");
   static Sym DDV(C_Dtype type, const std::vector<int>& shape, int batch,
-      const pair<string, OpDef::AttrDef>& filler = Ones(), string device = "GPU");
+      const ATTRIBUTE& filler = Ones(), string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
   static Sym Argmax(const Sym& a, int axis, string device = "GPU");
@@ -59,13 +60,14 @@ class Sym {
   //quaternary operation
   static Sym LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device = "GPU");
   //filler operation
-  static std::pair<std::string, OpDef::AttrDef> Ones();
-  static std::pair<std::string, OpDef::AttrDef> Zeros();
-  static std::pair<std::string, OpDef::AttrDef> Const(float c);
-  static std::pair<std::string, OpDef::AttrDef> UniformNormalizer(int stride);
-  static std::pair<std::string, OpDef::AttrDef> Xavier();
-  static std::pair<std::string, OpDef::AttrDef> NormalRandom();
-  static std::pair<std::string, OpDef::AttrDef> BinaryReader(const string& filename);
+  static ATTRIBUTE Ones();
+  static ATTRIBUTE Zeros();
+  static ATTRIBUTE Const(float c);
+  static ATTRIBUTE UniformNormalizer(int stride);
+  static ATTRIBUTE Uniform(float minval, float maxval);
+  static ATTRIBUTE Xavier();
+  static ATTRIBUTE NormalRandom();
+  static ATTRIBUTE BinaryReader(const string& filename);
   //debug operations
   static void DumpGraph();
   void print();

@@ -11,8 +11,49 @@
 namespace backend {
 
 template <typename T>
-struct Xavier {
-  FORCE_INLINE static void Compute(T* buf, int N) {
+struct Filler {
+  Filler(const OpDef& op_def) {
+    CHECK(op_def.output_size() == 1);
+    CHECK(op_def.shape(0).dim_size() >= 1);
+    int default_stride = 1;
+    for (int i = 1; i < op_def.shape(0).dim_size(); i++)
+      default_stride *= op_def.shape(0).dim(i);
+    stride_ = GetSingleArg<int>(op_def, "stride", default_stride);
+    CHECK(stride_ >= 0);
+  }
+  virtual void FillRaw(T* buf, int N) = 0;
+
+  void Compute(T* buf, int N) {
+    int stride  = (stride_ == 0)? N : stride_;
+      for (int i = 0; i < N; i += stride_) {
+        FillRaw(buf+i, (i+stride_>N) ? (N-i) : stride_);
+      }
+  }
+
+ private:
+  int stride_;
+};
+
+template <typename T>
+struct ConstantFiller : Filler<T> {
+  ConstantFiller(const OpDef& op_def) : Filler(op_def) {
+    T value_ = GetSingleArg<T>(op_def, "const_value");
+  }
+  virtual void FillRaw(T* buf, int N) override {
+    for (unsigned i = 0; i < N; i++) {
+      buf[i] = value_;
+    }
+  }
+
+ private:
+  T value_;
+};
+
+
+template <typename T>
+struct Xavier : Filler<T> {
+  Xavier(const OpDef& op_def) : Filler(op_def) {}
+  virtual void FillRaw(T* buf, int N) override {
     float scale = sqrt(3.f/N);
     std::default_random_engine generator;
     std::uniform_real_distribution<T> distribution(-scale, scale);
@@ -35,10 +76,43 @@ struct Xavier {
 };
 
 template <typename T>
-struct UniformNormalizer {
-  FORCE_INLINE static void Compute(T* buf, int N) {
+struct UniformRandom : Filler<T> {
+  UniformRandom(const OpDef& op_def) : Filler(op_def) {
+    float minval_ = GetSingleArg<float>(op_def, "minval", 0.f);
+    float maxval_ = GetSingleArg<float>(op_def, "maxval", 1.f);
+    CHECK(minval_ < maxval_);
+  }
+  virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(0.f, 1.f);
+    std::uniform_real_distribution<T> distribution(min_val_, maxval_);
+    for (unsigned i = 0; i < N; i++) {
+      buf[i] = distribution(generator);
+    }
+  }
+
+ private:
+  float minval_;
+  float maxval_;
+};
+
+template <typename T>
+struct NormalRandom : Filler<T> {
+  NormalRandom(const OpDef& op_def) : Filler(op_def) {}
+  virtual void FillRaw(T* buf, int N) override {
+    std::default_random_engine generator;
+    std::normal_distribution<T> distribution(0.f, 1.f);
+    for (unsigned i = 0; i < N; i++) {
+      buf[i] = distribution(generator);
+    }
+  }
+};
+
+template <typename T>
+struct UniformRandomNormalized : UniformRandom<T> {
+  UniformRandomNormalized(const OpDef& op_def) : UniformRandom(op_def) {}
+  virtual void FillRaw(T* buf, int N) override {
+    std::default_random_engine generator;
+    std::uniform_real_distribution<T> distribution(min_val_, maxval_);
     T sum = 0;
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);
@@ -48,39 +122,6 @@ struct UniformNormalizer {
       buf[i] /= sum;
     }
   }
-};
-
-template <typename T>
-struct NormalRandom {
-  FORCE_INLINE static void Compute(T* buf, int N) {
-    std::default_random_engine generator;
-    std::normal_distribution<T> distribution(0.f, 1.f);
-    for (unsigned i = 0; i < N; i++) {
-      buf[i] = distribution(generator);
-    }
-  }
-};
-
-template <typename OP, typename T>
-struct Filler {
-  Filler(const OpDef& op_def) {
-    CHECK(op_def.output_size() == 1);
-    CHECK(op_def.shape(0).dim_size() >= 1);
-    int default_stride = 1;
-    for (int i = 1; i < op_def.shape(0).dim_size(); i++)
-      default_stride *= op_def.shape(0).dim(i);
-    stride_ = GetSingleArg<int>(op_def, "stride", default_stride);
-    CHECK(stride_ >= 0);
-  }
-  FORCE_INLINE virtual void Compute(T* buf, int N) {
-    if (stride_ > 0) {
-      for (int i = 0; i < N; i += stride_) {
-        OP::Compute(buf+i, (i+stride_>N) ? (N-i) : stride_);
-      }
-    }else 
-      OP::Compute(buf, N);
-  }
-  int stride_;
 };
 
 } //namespace backend

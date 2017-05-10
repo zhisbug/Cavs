@@ -32,17 +32,14 @@ class SGDOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     const Tensor& inp0 = context->Input(0);
     const Tensor& inp1 = context->Input(1);
-    /*inp0.DebugNumerical<T>();*/
-    /*LOG(INFO) << "\n\n";*/
-    /*inp1.DebugNumerical<T>();*/
-    /*LOG(INFO) << "\n\n";*/
+    inp0.DebugNumerical<T>();
+    inp1.DebugNumerical<T>();
     Tensor* out = context->Output(0);
     int n = out->count();
     SGDKernel<T><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>> (
         out->mutable_data<T>(),
         inp0.data<T>(), inp1.data<T>(), lr_, n);
-    /*out->DebugNumerical<T>();*/
-    /*LOG(INFO) << "\n\n";*/
+    out->DebugNumerical<T>();
   }
 
  private:

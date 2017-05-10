@@ -73,11 +73,11 @@ void Tensor::DebugNumerical<float>() const {
             count()*sizeof(float), cudaMemcpyHostToHost));
     }
     VLOG(V_EXHAUSTIVE_DEBUG) << DebugInfo();
-    for (int i = 0; i < count(); i++)
-      CHECK(!isnan(res[i])) << i;
     for (int i = 0; i < 20 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
+    for (int i = 0; i < count(); i++)
+      CHECK(!isnan(res[i])) << name() << ":\t" << i << "\t" << res[i];
   }
 }
 

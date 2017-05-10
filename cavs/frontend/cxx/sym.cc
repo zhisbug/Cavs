@@ -118,7 +118,7 @@ Sym::Sym<float> (float c) {
 }
 
 Sym Sym::Variable(C_Dtype type, const vector<int>& shape,
-    const pair<string, OpDef::AttrDef>& filler, string device) {
+    const ATTRIBUTE& filler, string device) {
   CHECK(shape.size() > 0);
   return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
 }
@@ -144,7 +144,7 @@ Sym Sym::MnistInput(int batch, string source, string file, string device) {
 }
 
 Sym Sym::Data(C_Dtype type, const vector<int>& shape,
-    int batch, const pair<string, OpDef::AttrDef>& reader, string device) {
+    int batch, const ATTRIBUTE& reader, string device) {
   OpDef::AttrDef batch_attr;
   batch_attr.set_name("Batch");
   batch_attr.mutable_value()->set_i(batch);
@@ -154,11 +154,14 @@ Sym Sym::Data(C_Dtype type, const vector<int>& shape,
   for (int s : shape) {
     lv->add_i(s);
   }
-  return Sym("Data", {}, C_FLOAT, reader.first, device, {}, {batch_attr, shape_attr, reader.second});
+  vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
+  for (auto& attr : reader.second)
+    attrs.push_back(attr);
+  return Sym("Data", {}, C_FLOAT, reader.first, device, {}, attrs);
 }
 
 Sym Sym::DDV(C_Dtype type, const vector<int>& shape, int batch,
-    const pair<string, OpDef::AttrDef>& filler, string device) {
+    const ATTRIBUTE& filler, string device) {
   OpDef::AttrDef batch_attr;
   batch_attr.set_name("Batch");
   batch_attr.mutable_value()->set_i(batch);
@@ -168,7 +171,10 @@ Sym Sym::DDV(C_Dtype type, const vector<int>& shape, int batch,
   for (int s : shape) {
     lv->add_i(s);
   }
-  return Sym("DDV", {}, type, filler.first, device, {}, {batch_attr, shape_attr, filler.second}); 
+  vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
+  for (auto& attr : filler.second)
+    attrs.push_back(attr);
+  return Sym("DDV", {}, type, filler.first, device, {}, attrs); 
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
@@ -350,49 +356,58 @@ Sym Sym::Optimizer(const Sym& a) {
 }
 
 //filler operation
-pair<string, OpDef::AttrDef> Sym::Ones() {
-  OpDef::AttrDef attr;
-  attr.set_name("const_value");
-  attr.mutable_value()->set_f(1.f);
-  return std::make_pair("ConstantFiller", std::move(attr));
+Sym::ATTRIBUTE Sym::Ones() {
+  vector<OpDef::AttrDef> vec(1);
+  vec[0].set_name("const_value");
+  vec[0].mutable_value()->set_f(1.f);
+  return std::make_pair("ConstantFiller", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::Zeros() {
-  OpDef::AttrDef attr;
-  attr.set_name("const_value");
-  attr.mutable_value()->set_f(0.f);
-  return std::make_pair("ConstantFiller", std::move(attr));
+Sym::ATTRIBUTE Sym::Zeros() {
+  vector<OpDef::AttrDef> vec(1);
+  vec[0].set_name("const_value");
+  vec[0].mutable_value()->set_f(0.f);
+  return std::make_pair("ConstantFiller", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::Const(float c) {
-  OpDef::AttrDef attr;
-  attr.set_name("const_value");
-  attr.mutable_value()->set_f(c);
-  return std::make_pair("ConstantFiller", std::move(attr));
+Sym::ATTRIBUTE Sym::Const(float c) {
+  vector<OpDef::AttrDef> vec(1);
+  vec[0].set_name("const_value");
+  vec[0].mutable_value()->set_f(c);
+  return std::make_pair("ConstantFiller", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::UniformNormalizer(int stride) {
-  OpDef::AttrDef attr;
-  attr.set_name("stride");
-  attr.mutable_value()->set_i(stride);
-  return std::make_pair("UniformNormalizer", std::move(attr));
+Sym::ATTRIBUTE Sym::UniformNormalizer(int stride) {
+  vector<OpDef::AttrDef> vec(1);
+  vec[0].set_name("stride");
+  vec[0].mutable_value()->set_i(stride);
+  return std::make_pair("UniformNormalizer", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::Xavier() {
-  OpDef::AttrDef attr;
-  return std::make_pair("Xavier", std::move(attr));
+Sym::ATTRIBUTE Sym::Uniform(float minval, float maxval) {
+  vector<OpDef::AttrDef> vec(2);
+  vec[0].set_name("minval");
+  vec[0].mutable_value()->set_f(minval);
+  vec[1].set_name("maxval");
+  vec[1].mutable_value()->set_f(maxval);
+  return std::make_pair("Uniform", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::NormalRandom() {
-  OpDef::AttrDef attr;
-  return std::make_pair("Normal", std::move(attr));
+Sym::ATTRIBUTE Sym::Xavier() {
+  vector<OpDef::AttrDef> vec;
+  return std::make_pair("Xavier", vec);
 }
 
-pair<string, OpDef::AttrDef> Sym::BinaryReader(const string& filename) {
-  OpDef::AttrDef attr;
-  attr.set_name("filename");
-  attr.mutable_value()->set_s(filename);
-  return std::make_pair("BinaryReader", std::move(attr));
+Sym::ATTRIBUTE Sym::NormalRandom() {
+  vector<OpDef::AttrDef> vec;
+  return std::make_pair("Normal", vec);
+}
+
+Sym::ATTRIBUTE Sym::BinaryReader(const string& filename) {
+  vector<OpDef::AttrDef> vec(1);
+  vec[0].set_name("filename");
+  vec[0].mutable_value()->set_s(filename);
+  return std::make_pair("BinaryReader", vec);
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,

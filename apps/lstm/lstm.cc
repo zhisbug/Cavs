@@ -6,7 +6,7 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       32,    "batch");
+DEFINE_int32 (batch,       20,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
@@ -26,7 +26,6 @@ void load(float** input_data, float** target, size_t* len) {
     float id;
     file >> id;
     inputs.push_back(id);
-    //cout << id << "\t";
   }
   file.close();
   *len = inputs.size();
@@ -64,16 +63,24 @@ int main(int argc, char* argv[]) {
                   + 4*2*FLAGS_lstm_layers*FLAGS_hidden;
   Sym input = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch, FLAGS_input_size});
   Sym label = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym var   = Sym::Variable(C_FLOAT, {var_size});
-  Sym loss  = input.LSTM(var, FLAGS_lstm_layers, FLAGS_hidden)
+  Sym LSTM_var = Sym::Variable(C_FLOAT, {1, var_size}, Sym::Xavier());
+  Sym FC_var   = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden});
+  Sym FC_bias  = Sym::Variable(C_FLOAT, {1, FLAGS_input_size});
+  Sym loss  = input.LSTM(LSTM_var, FLAGS_lstm_layers, FLAGS_hidden)
               .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
+              .FullyConnected(FC_var, FC_bias)
               .SoftmaxEntropyLogits(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
   Sym train = loss.Optimizer({}, FLAGS_lr);
 
   Session sess;
-  for (int i = 0; i < FLAGS_iters; i++)
+  for (int i = 0; i < FLAGS_iters; i++) {
     sess.Run({train}, {{input,input_ph[i%input_ph.size()].data()},
                        {label,label_ph[i%label_ph.size()].data()}});
+    //sess.Run({train}, {{input,input_ph[0].data()},
+                       //{label,label_ph[0].data()}});
+    LOG(INFO) << "Iteration: " << i;
+  }
+
 
   return 0;
 }
