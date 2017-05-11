@@ -143,13 +143,13 @@ class ConvOpCudnnGrad: public ConvOpCudnnBase {
   explicit ConvOpCudnnGrad(const OpDef& def) 
       : ConvOpCudnnBase(def), 
       filter_workspace(NULL), data_workspace(NULL),
-      filter_workspaceSizeInBytes(0), data_workspaceSizeInBytes(0) {}
+      filter_workspaceSizeInBytes_(0), data_workspaceSizeInBytes_(0) {}
   ~ConvOpCudnnGrad(); 
   void Compute(OpContext* context) override;
 
  private:
-  size_t filter_workspaceSizeInBytes;
-  size_t data_workspaceSizeInBytes;
+  size_t filter_workspaceSizeInBytes_;
+  size_t data_workspaceSizeInBytes_;
   void* filter_workspace;
   void* data_workspace;
 };
@@ -200,35 +200,47 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
                   FYC, FXC, FH, FW));
   checkCUDNNError(cudnnSetConvolution2dDescriptor(conv_desc_,
                   0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION));
-  checkCUDNNError(cudnnGetConvolutionBackwardFilterAlgorithm(CudaCommon::cudnnHandle(),
-                  x_desc_, y_desc_, conv_desc_, filter_desc_, 
-                  CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &bwd_f_algo_));
-  checkCUDNNError(cudnnGetConvolutionBackwardFilterWorkspaceSize(CudaCommon::cudnnHandle(),
-                  x_desc_, y_desc_, conv_desc_, filter_desc_,
-                  bwd_f_algo_, &filter_workspaceSizeInBytes));
-  checkCUDNNError(cudnnGetConvolutionBackwardDataAlgorithm(CudaCommon::cudnnHandle(),
-                  filter_desc_, y_desc_, conv_desc_, x_desc_,
-                  CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &bwd_d_algo_));
-  checkCUDNNError(cudnnGetConvolutionBackwardDataWorkspaceSize(CudaCommon::cudnnHandle(),
-                  filter_desc_, y_desc_, conv_desc_, x_desc_,
-                  bwd_d_algo_, &data_workspaceSizeInBytes));
-  if (filter_workspace)
-    alloc_->Deallocate<char>((char*)filter_workspace);
-  filter_workspace = alloc_->Allocate<char>(filter_workspaceSizeInBytes);
-  if (data_workspace)
-    alloc_->Deallocate<char>((char*)data_workspace);
-  data_workspace = alloc_->Allocate<char>(data_workspaceSizeInBytes);
+  {
+    size_t filter_worksize = 0;
+    size_t data_worksize = 0;
+    checkCUDNNError(cudnnGetConvolutionBackwardFilterAlgorithm(CudaCommon::cudnnHandle(),
+                    x_desc_, y_desc_, conv_desc_, filter_desc_, 
+                    CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST, 0, &bwd_f_algo_));
+    checkCUDNNError(cudnnGetConvolutionBackwardFilterWorkspaceSize(CudaCommon::cudnnHandle(),
+                    x_desc_, y_desc_, conv_desc_, filter_desc_,
+                    bwd_f_algo_, &filter_worksize));
+    checkCUDNNError(cudnnGetConvolutionBackwardDataAlgorithm(CudaCommon::cudnnHandle(),
+                    filter_desc_, y_desc_, conv_desc_, x_desc_,
+                    CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST, 0, &bwd_d_algo_));
+    checkCUDNNError(cudnnGetConvolutionBackwardDataWorkspaceSize(CudaCommon::cudnnHandle(),
+                    filter_desc_, y_desc_, conv_desc_, x_desc_,
+                    bwd_d_algo_, &data_worksize));
+    VLOG(V_DEBUG) << "allocating workspace";
+    if (filter_worksize != filter_workspaceSizeInBytes_) {
+      filter_workspaceSizeInBytes_ = filter_worksize;
+      if (filter_workspace)
+        alloc_->Deallocate<char>((char*)filter_workspace);
+      filter_workspace = alloc_->Allocate<char>(filter_workspaceSizeInBytes_);
+    }
+    if (data_worksize != data_workspaceSizeInBytes_) {
+      data_workspaceSizeInBytes_ = data_worksize;
+      if (data_workspace)
+        alloc_->Deallocate<char>((char*)data_workspace);
+      data_workspace = alloc_->Allocate<char>(data_workspaceSizeInBytes_);
+    }
+    VLOG(V_DEBUG) << "allocating workspace";
+  }
 
   float alpha = 1.f, beta = 0.f;
   checkCUDNNError(cudnnConvolutionBackwardFilter(CudaCommon::cudnnHandle(), 
                   &alpha, x_desc_, x.data<T>(),
                   y_desc_, dy.data<T>(),
-                  conv_desc_, bwd_f_algo_, filter_workspace, filter_workspaceSizeInBytes,
+                  conv_desc_, bwd_f_algo_, filter_workspace, filter_workspaceSizeInBytes_,
                   &beta, filter_desc_, df->mutable_data<T>()));
   checkCUDNNError(cudnnConvolutionBackwardData(CudaCommon::cudnnHandle(),
                   &alpha, filter_desc_, filter.data<T>(), 
                   y_desc_, dy.data<T>(),
-                  conv_desc_, bwd_d_algo_, data_workspace, data_workspaceSizeInBytes,
+                  conv_desc_, bwd_d_algo_, data_workspace, data_workspaceSizeInBytes_,
                   &beta, x_desc_, dx->mutable_data<T>()));
   checkCUDNNError(cudnnConvolutionBackwardBias(CudaCommon::cudnnHandle(), 
                   &alpha, y_desc_, dy.data<T>(),

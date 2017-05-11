@@ -15,10 +15,7 @@ struct Filler {
   Filler(const OpDef& op_def) {
     CHECK(op_def.output_size() == 1);
     CHECK(op_def.shape(0).dim_size() >= 1);
-    int default_stride = 1;
-    for (int i = 1; i < op_def.shape(0).dim_size(); i++)
-      default_stride *= op_def.shape(0).dim(i);
-    stride_ = GetSingleArg<int>(op_def, "stride", default_stride);
+    stride_ = GetSingleArg<int>(op_def, "stride", 0);
     CHECK(stride_ >= 0);
   }
   virtual void FillRaw(T* buf, int N) = 0;
@@ -30,7 +27,7 @@ struct Filler {
       }
   }
 
- private:
+ protected:
   int stride_;
 };
 
@@ -52,7 +49,14 @@ struct ConstantFiller : Filler<T> {
 
 template <typename T>
 struct Xavier : Filler<T> {
-  Xavier(const OpDef& op_def) : Filler<T>(op_def) {}
+  Xavier(const OpDef& op_def) : Filler<T>(op_def) {
+    CHECK(op_def.output_size() == 1);
+    CHECK(op_def.shape(0).dim_size() >= 1);
+    int default_stride = 1;
+    for (int i = 1; i < op_def.shape(0).dim_size(); i++)
+      default_stride *= op_def.shape(0).dim(i);
+    this->stride_ = default_stride;
+  }
   virtual void FillRaw(T* buf, int N) override {
     float scale = sqrt(3.f/N);
     std::default_random_engine generator;
@@ -112,12 +116,13 @@ struct UniformRandomNormalized : UniformRandom<T> {
   UniformRandomNormalized(const OpDef& op_def) : UniformRandom<T>(op_def) {}
   virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(0.f, 1.f);
+    std::uniform_real_distribution<T> distribution(this->minval_, this->maxval_);
     T sum = 0;
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);
       sum += buf[i];
     }
+    CHECK(sum != 0);
     for (unsigned i = 0; i < N; i++) {
       buf[i] /= sum;
     }

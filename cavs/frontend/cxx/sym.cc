@@ -67,6 +67,7 @@ Sym::Sym(const string& op_name,
     const string& loss,
     const vector<Sym>& variables,
     const float lr,
+    const float clip,
     const int iters,
     const string& projection) {
   CHECK(op_name == "Optimizer");
@@ -98,6 +99,13 @@ Sym::Sym(const string& op_name,
   OpDef::AttrDef* lr_attr = op_def.add_attr();
   lr_attr->set_name("learning_rate");
   lr_attr->mutable_value()->set_f(lr);
+
+  if (clip != 0) {
+    OpDef::AttrDef* clip_attr = op_def.add_attr();
+    clip_attr->set_name("clip");
+    clip_attr->mutable_value()->set_f(clip);
+  }
+
 
   OpDef::AttrDef* iters_attr = op_def.add_attr();
   iters_attr->set_name("Iters");
@@ -411,12 +419,12 @@ Sym::ATTRIBUTE Sym::BinaryReader(const string& filename) {
 }
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
-    float lr, int iters, const string& projection) {
+    float lr, float clip, int iters, const string& projection) {
   //CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.node_->output_.size() == 1);
   Sym s("Optimizer", a.node_->output_[0],
-      variables, lr, iters, projection);
+      variables, lr, clip, iters, projection);
   return s;
 }
 

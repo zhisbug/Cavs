@@ -12,6 +12,12 @@ OpDefBuilder& OpDefBuilder::Input(const string& input) {
   return *this;
 }
 
+OpDefBuilder& OpDefBuilder::Input(const vector<string>& inputs) {
+  for (auto& s : inputs)
+    op_def_.add_input(s);
+  return *this;
+}
+
 OpDefBuilder& OpDefBuilder::Input(const OpDef& def) {
   for (auto& inp : def.input())
     op_def_.add_input(inp);
@@ -20,6 +26,12 @@ OpDefBuilder& OpDefBuilder::Input(const OpDef& def) {
 
 OpDefBuilder& OpDefBuilder::Output(const string& output) {
   op_def_.add_output(output);
+  return *this;
+}
+
+OpDefBuilder& OpDefBuilder::Output(const vector<string>& outputs) {
+  for (auto& s : outputs)
+    op_def_.add_output(s);
   return *this;
 }
 
@@ -43,6 +55,7 @@ OpDefBuilder& OpDefBuilder::Device(const OpDef& def) {
 }
 
 void OpDefBuilder::Finalize(OpDef* op_def) {
+  CHECK(op_def_.output_size() == op_def_.shape_size());
   *op_def = op_def_;
 }
 
@@ -57,6 +70,13 @@ OpDefBuilder& OpDefBuilder::Shape(initializer_list<int> shape) {
 OpDefBuilder& OpDefBuilder::Shape(const TensorShapeDef& shape) {
   op_def_.clear_shape();
   *(op_def_.add_shape()) = shape;
+  return *this;
+}
+
+OpDefBuilder& OpDefBuilder::Shape(const vector<TensorShapeDef>& shapes) {
+  op_def_.clear_shape();
+  for (auto& s : shapes)
+    *(op_def_.add_shape()) = s;
   return *this;
 }
 

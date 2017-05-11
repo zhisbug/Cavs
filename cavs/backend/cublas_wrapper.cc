@@ -138,6 +138,72 @@ void AsumCublasWrapper<double>(
 }
 
 template <>
+void AsumCublasWrapperHost<float>(
+    const int N, const float* x,
+    float* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_HOST));
+  int incx = 1;
+  checkCublasError(cublasSasum(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void AsumCublasWrapperHost<double>(
+    const int N, const double* x,
+    double* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_HOST));
+  int incx = 1;
+  checkCublasError(cublasDasum(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void Nrm2CublasWrapper<float>(
+    const int N, const float* x,
+    float* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasSnrm2(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void Nrm2CublasWrapper<double>(
+    const int N, const double* x,
+    double* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_DEVICE));
+  int incx = 1;
+  checkCublasError(cublasDnrm2(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void Nrm2CublasWrapperHost<float>(
+    const int N, const float* x,
+    float* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_HOST));
+  int incx = 1;
+  checkCublasError(cublasSnrm2(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
+void Nrm2CublasWrapperHost<double>(
+    const int N, const double* x,
+    double* y) {
+  checkCublasError(cublasSetPointerMode(CudaCommon::cublasHandle(), 
+        CUBLAS_POINTER_MODE_HOST));
+  int incx = 1;
+  checkCublasError(cublasDnrm2(CudaCommon::cublasHandle(),
+      N, x, incx, y)); 
+}
+
+template <>
 void ArgminCublasWrapper<float>(
     const int N, const float* x,
     int* index) {

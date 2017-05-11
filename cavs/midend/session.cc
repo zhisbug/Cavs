@@ -61,7 +61,7 @@ void SimpleSession::Compile(
 
   VLOG(V_DEBUG) << "============In Critical Path============";
   for (auto* node : critical_path) {
-    VLOG(V_DEBUG) << "-------compiling\t"
+    VLOG(V_DEBUG) << "-------Node INFO\t"
                   << node->scope()->name() 
                   << ":" << node->op_def().name()
                   << "------";

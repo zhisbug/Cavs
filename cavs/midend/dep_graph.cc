@@ -116,6 +116,7 @@ void DepGraph::GroupClosedSet(
     const Edge* loss,
     const string& solver,
     const float lr,
+    const float clip,
     const string& proj,
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
@@ -125,6 +126,28 @@ void DepGraph::GroupClosedSet(
     list<const Node*> newly_traversed;
     TraverseCriticalPath(loss_scope, loss, var,
         &recalculate, &newly_traversed);
+  }
+
+  if (clip > 0) {
+    vector<string> outputs;
+    vector<TensorShapeDef> outputs_shape;
+    for (auto& var_name : vars) {
+      outputs.emplace_back(GetGradientName(var_name));
+      const Edge* var = loss_scope->FindEdge(var_name);
+      outputs_shape.emplace_back(var->shape());
+    }
+    OpDef update;  
+    ::backend::OpDefBuilder("Clipper")
+       .Input(outputs)
+        .Output(outputs)
+        .Shape(outputs_shape)
+        .Device("GPU")
+        .Finalize(&update);
+    loss_scope->AddNode(update);
+  }
+
+  for (auto& var_name : vars) {
+    const Edge* var = loss_scope->FindEdge(var_name);
     OpDef update;  
     ::backend::OpDefBuilder(solver)
         .Input(var_name)
@@ -135,6 +158,7 @@ void DepGraph::GroupClosedSet(
         .Device("GPU")
         .Finalize(&update);
     loss_scope->AddNode(update);
+
     if (proj.length() > 0) {
       //LOG(FATAL) << proj;
       OpDef projection;  
@@ -166,7 +190,8 @@ void DepGraph::OptimizeWithLoss(
   int iters = 0;
   string proj;
   string solver;
-  float lr;
+  float lr = 0;
+  float clip = 0;
   for (auto& attr : def.attr()) {
     if (attr.name() == "Vars") {
       auto& vars = attr.value().list().s();
@@ -180,8 +205,12 @@ void DepGraph::OptimizeWithLoss(
       iters = attr.value().i(); 
     }else if (attr.name() == "learning_rate") {
       lr = attr.value().f(); 
+    }else if (attr.name() == "clip") {
+      clip = attr.value().f(); 
     }
   }
+  CHECK(lr > 0);
+  CHECK(clip >= 0);
   CHECK(var_names.size());
   CHECK(solver.length());
   //LOG(INFO) << "Projection Method: " << proj;
@@ -194,7 +223,7 @@ void DepGraph::OptimizeWithLoss(
       GetGradientName(loss),
       loss_edge->shape(), 1.f);
   loss_scope->AddNode(const_op);
-  GroupClosedSet(var_names, loss_edge, solver, lr, proj, loss_scope);
+  GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
   ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
   //s_->PrintSymbolTable();
 }

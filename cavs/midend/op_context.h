@@ -11,6 +11,8 @@ class OpContext {
   //OpContext();
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
+  inline int InputSize() const;
+  inline int OutputSize() const;
   inline void AppendInput(const Tensor& t);
   inline void AppendOutput(const Tensor& t);
   std::string DebugInfo();
@@ -31,6 +33,14 @@ inline const Tensor& OpContext::Input(int idx) const {
 inline Tensor* OpContext::Output(int idx) { 
   CHECK(idx < outputs_.size());
   return &(outputs_.at(idx)); 
+}
+
+inline int OpContext::InputSize() const {
+  return inputs_.size();
+}
+
+inline int OpContext::OutputSize() const {
+  return outputs_.size();
 }
 
 inline void OpContext::AppendInput(const Tensor& t) {

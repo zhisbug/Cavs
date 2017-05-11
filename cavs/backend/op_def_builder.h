@@ -15,13 +15,16 @@ class OpDefBuilder {
     op_def_.set_name(op_name);
   }
   OpDefBuilder& Input(const std::string& input);
+  OpDefBuilder& Input(const std::vector<std::string>& inputs);
   OpDefBuilder& Input(const OpDef& def);
-  OpDefBuilder& Output(const std::string& value);
+  OpDefBuilder& Output(const std::string& output);
+  OpDefBuilder& Output(const std::vector<std::string>& outputs);
   OpDefBuilder& Output(const OpDef& def);
   OpDefBuilder& Device(const std::string& dev);
   OpDefBuilder& Device(const OpDef& def);
   OpDefBuilder& Shape(std::initializer_list<int> shape);
   OpDefBuilder& Shape(const TensorShapeDef& shape);
+  OpDefBuilder& Shape(const std::vector<TensorShapeDef>& shapes);
   OpDefBuilder& Shape(const OpDef& def);
   OpDefBuilder& Attr(const OpDef& def);
   template <typename T>

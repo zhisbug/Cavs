@@ -40,6 +40,21 @@ void AsumCublasWrapper(
     const int N, const T* x,
     T* y);
 
+template <typename T>
+void AsumCublasWrapperHost(
+    const int N, const T* x,
+    T* y);
+
+template <typename T>
+void Nrm2CublasWrapper(
+    const int N, const T* x,
+    T* y);
+
+template <typename T>
+void Nrm2CublasWrapperHost(
+    const int N, const T* x,
+    T* y);
+
 //level1
 template <typename T>
 void ArgminCublasWrapper(

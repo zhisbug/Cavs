@@ -42,7 +42,7 @@ class Sym {
   static Sym Reduce_sum(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, vector<Sym> variables,
-      float lr, int iters = 1, const string& projections = "");
+      float lr, float clip = 0.f, int iters = 1, const string& projections = "");
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
   static Sym Flatten(const Sym& a);
@@ -81,8 +81,8 @@ class Sym {
   Sym Reduce_sum() { return Reduce_sum(*this); };
   Sym Optimizer() { return Optimizer(*this); }
   Sym Optimizer(vector<Sym> variables,
-      float lr, int iters = 1, const string& projection = "") {
-    return Optimizer(*this, variables, lr, iters, projection); 
+      float lr, float clip = 0.f, int iters = 1, const string& projection = "") {
+    return Optimizer(*this, variables, lr, clip, iters, projection); 
   }
   Sym Maxpooling(int HightWindow, int WidthWindow) {
     return Maxpooling(*this, HightWindow, WidthWindow);
@@ -128,6 +128,7 @@ class Sym {
   Sym(const string& op_name, const string& input,
       const vector<Sym>& variables = {},
       const float lr = 1,
+      const float clip = 0,
       const int iters = 1,
       const string& projections = "");
   inline const std::vector<string>& outputs() const { 

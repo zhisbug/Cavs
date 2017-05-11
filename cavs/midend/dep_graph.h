@@ -36,6 +36,7 @@ class DepGraph {
       const Edge* loss,
       const std::string& solver,
       const float lr,
+      const float clip,
       const std::string& proj,
       Scope* s);
   void DeduceAndApplyOneGradNode(
