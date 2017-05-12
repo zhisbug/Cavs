@@ -8,6 +8,7 @@
 
 #include <string>
 #include <vector>
+#include <iomanip>
 
 using std::string;
 using std::vector;
@@ -25,8 +26,10 @@ class RNNOpCudnnBase : public OpImpl {
   explicit RNNOpCudnnBase(const OpDef& def);
   ~RNNOpCudnnBase(); 
 
-  virtual void InitCUDNN(int seq_length, int batch,
-      int input_size, int rnn_params_count);
+  virtual void InitCUDNN(const int seq_length,
+      const int batch,
+      const int input_size,
+      const int rnn_params_count);
 
  protected:
   vector<cudnnTensorDescriptor_t> x_desc_ , y_desc_ ;
@@ -146,8 +149,10 @@ RNNOpCudnnBase<T>::~RNNOpCudnnBase() {
 
 template <typename T>
 void RNNOpCudnnBase<T>::InitCUDNN(
-    int seq_length, int batch, int input_size,
-    int rnn_params_count) {
+    const int seq_length,
+    const int batch,
+    const int input_size,
+    const int rnn_params_count) {
   CHECK(x_desc_.empty() || x_desc_.size() == seq_length)
        << "only support fixed size corpus during iterations";
   CHECK(y_desc_.empty() || y_desc_.size() == seq_length)
@@ -274,11 +279,14 @@ class RNNOpCudnn: public RNNOpCudnnBase<T> {
  public:
   explicit RNNOpCudnn(const OpDef& def);
   void Compute(OpContext* context) override;
+
+ private:
+  bool init_;
 };
 
 template <typename T>
 RNNOpCudnn<T>::RNNOpCudnn(const OpDef& def)
-  : RNNOpCudnnBase<T>(def) {}
+  : RNNOpCudnnBase<T>(def), init_(false) {}
 
 template <typename T>
 void RNNOpCudnn<T>::Compute(OpContext* context) {
@@ -295,7 +303,10 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  if (!init_) {
+    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+    init_ = true;
+  }
 
   checkCUDNNError(cudnnRNNForwardTraining(
         CudaCommon::cudnnHandle(),
@@ -330,11 +341,13 @@ class RNNOpCudnnGrad: public RNNOpCudnnBase<T> {
  public:
   explicit RNNOpCudnnGrad(const OpDef& def);
   void Compute(OpContext* context) override;
+ private:
+  bool init_;
 };
 
 template <typename T>
 RNNOpCudnnGrad<T>::RNNOpCudnnGrad(const OpDef& def)
-  : RNNOpCudnnBase<T>(def) {}
+  : RNNOpCudnnBase<T>(def), init_(false) {}
 
 template <typename T>
 void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
@@ -355,7 +368,10 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  if (!init_) {
+    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+    init_ = true;
+  }
 
   checkCUDNNError(cudnnRNNBackwardData(
         CudaCommon::cudnnHandle(),
@@ -372,19 +388,22 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->w_desc_,
         W.data<T>(),
         this->hx_desc_,
-        this->rnn_hx_, //HX.data<T>(),
+        nullptr, //this->rnn_hx_, //HX.data<T>(),
         this->cx_desc_,
-        this->rnn_cx_, //CX.data<T>(),
+        nullptr, //this->rnn_cx_, //CX.data<T>(),
         this->x_desc_.data(),
         dX->mutable_data<T>(),
         this->hx_desc_,
-        this->rnn_hy_, //hacked here //dHX->mutable_data<T>(),
+        nullptr,//this->rnn_hy_, //hacked here //dHX->mutable_data<T>(),
         this->cx_desc_,
-        this->rnn_cy_, //hacked here //dCX->mutable_data<T>(),
+        nullptr,//this->rnn_cy_, //hacked here //dCX->mutable_data<T>(),
         this->rnn_workspace_,
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,
         this->rnn_trainingreserve_sizeInBytes_));
+
+  checkCudaError(cudaMemset(dW->mutable_data<T>(), 0, dW->count()*sizeof(T)));
+
   checkCUDNNError(cudnnRNNBackwardWeights(
         CudaCommon::cudnnHandle(),
         this->rnn_desc_,
@@ -392,7 +411,7 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        this->rnn_hx_, //HX.data<T>(),
+        nullptr,//this->rnn_hx_, //HX.data<T>(),
         this->y_desc_.data(),
         Y.data<T>(),
         this->rnn_workspace_,
@@ -401,6 +420,41 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         dW->mutable_data<T>(),
         this->rnn_trainningreserve_,
         this->rnn_trainingreserve_sizeInBytes_));
+
+  if (false && VLOG_IS_ON(V_EXHAUSTIVE_DEBUG)) {
+    cudnnFilterDescriptor_t  desc;
+    void* buf;
+    VLOG(V_DEBUG)  << "address of dW:" << std::dec << dW->mutable_data<T>();
+    for (int i = 0; i < 8; i++) {
+      checkCUDNNError(cudnnCreateFilterDescriptor(&desc));
+      checkCUDNNError(cudnnGetRNNLinLayerMatrixParams(
+            CudaCommon::cudnnHandle(),
+            this->rnn_desc_,
+            1,
+            this->x_desc_[0],
+            this->w_desc_,
+            dW->mutable_data<T>(),
+            i,
+            desc,
+            &buf));
+      VLOG(V_DEBUG)  << "address of matrix layer[" << i << "]: " << std::dec << buf;
+    }
+
+    for (int j = 0; j < 2; j++)
+      for (int i = 0; i < 8; i++) {
+        checkCUDNNError(cudnnGetRNNLinLayerBiasParams(
+              CudaCommon::cudnnHandle(),
+              this->rnn_desc_,
+              j,
+              this->x_desc_[0],
+              this->w_desc_,
+              dW->mutable_data<T>(),
+              i,
+              desc,
+              &buf));
+        VLOG(V_DEBUG)  << "address of bias layer[" << j << "][" << i << "]: " << std::dec << buf;
+      }
+  }
   Y.DebugNumerical<T>();
   dY.DebugNumerical<T>();
   X.DebugNumerical<T>();

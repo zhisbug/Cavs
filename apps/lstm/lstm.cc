@@ -1,5 +1,6 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/session.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <iostream>
 #include <fstream>
@@ -10,7 +11,7 @@ DEFINE_int32 (batch,       20,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
-DEFINE_int32 (lstm_layers, 3,     "stacked lstm layers");
+DEFINE_int32 (lstm_layers, 1,     "stacked lstm layers");
 DEFINE_int32 (iters,       200,   "iterations");
 DEFINE_double(init_scale,  .1f,   "init random scale of variables");
 DEFINE_double(lr,          1.f,   "learning rate");
@@ -23,7 +24,7 @@ void load(float** input_data, float** target, size_t* len) {
   ifstream file;
   file.open(FLAGS_file_docs);
   CHECK(file.is_open());
-  while (!file.eof()) {
+  while (!(file.eof())) {
     float id;
     file >> id;
     inputs.push_back(id);
@@ -54,6 +55,8 @@ int main(int argc, char* argv[]) {
     for (int j = 0; j < FLAGS_timestep; j++) {
       for (int k = 0; k < FLAGS_batch; k++) {
         int offset = input_data[k*sample_len+i*FLAGS_timestep+j];
+        CHECK((j*FLAGS_batch+k)*FLAGS_input_size+offset <
+               FLAGS_timestep*FLAGS_batch*FLAGS_input_size);
         input_ph[i][(j*FLAGS_batch+k)*FLAGS_input_size+offset] = 1;
         label_ph[i].push_back(label_data[k*sample_len+i*FLAGS_timestep+j]); 
       }
@@ -66,19 +69,19 @@ int main(int argc, char* argv[]) {
   Sym label    = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch});
   Sym LSTM_var = Sym::Variable(C_FLOAT, {var_size}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym FC_var   = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym FC_bias  = Sym::Variable(C_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
+  Sym FC_bias  = Sym::Variable(C_FLOAT, {1, FLAGS_input_size}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym loss     = input.LSTM(LSTM_var, FLAGS_lstm_layers, FLAGS_hidden)
                  .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                  .FullyConnected(FC_var, FC_bias)
                  .SoftmaxEntropyLogits(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
-  Sym train    = loss.Optimizer({}, FLAGS_lr);
+  Sym train    = loss.Optimizer({}, FLAGS_lr, 5);
 
   Session sess;
   for (int i = 0; i < FLAGS_iters; i++) {
-    sess.Run({train}, {{input,input_ph[i%input_ph.size()].data()},
-                       {label,label_ph[i%label_ph.size()].data()}});
-    //sess.Run({train}, {{input,input_ph[0].data()},
-                       //{label,label_ph[0].data()}});
+    //sess.Run({train}, {{input,input_ph[i%input_ph.size()].data()},
+                       //{label,label_ph[i%label_ph.size()].data()}});
+    sess.Run({train}, {{input,input_ph[0].data()},
+                       {label,label_ph[0].data()}});
     LOG(INFO) << "Iteration: " << i;
   }
 

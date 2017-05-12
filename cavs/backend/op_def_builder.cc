@@ -55,7 +55,9 @@ OpDefBuilder& OpDefBuilder::Device(const OpDef& def) {
 }
 
 void OpDefBuilder::Finalize(OpDef* op_def) {
-  CHECK(op_def_.output_size() == op_def_.shape_size());
+  CHECK(op_def_.output_size() == op_def_.shape_size() ||
+        op_def_.shape_size() == 0)
+        << op_def_.DebugString();
   *op_def = op_def_;
 }
 

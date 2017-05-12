@@ -18,6 +18,8 @@ class ReshapeOpImpl : public OpImpl {
     const Tensor& x = context->Input(0);
     Tensor* y = context->Output(0);
     CHECK(x.count() == y->count());
+    x.DebugNumerical<float>();
+    y->DebugNumerical<float>();
   }
 };
 
@@ -54,8 +56,8 @@ void ReshapeLikeOp::Compute(OpContext* context) {
   for (int i = 0; i < x.dims(); i++)
     CHECK(x.dims(i) == dx->dims(i));
 
-  //x.DebugNumerical<float>();
-  //y->DebugNumerical<float>();
+  dy.DebugNumerical<float>();
+  dx->DebugNumerical<float>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Reshape").Device("GPU"), ReshapeOpImpl);

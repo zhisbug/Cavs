@@ -4,9 +4,8 @@ using std::string;
 
 namespace midend {
 
-Edge::Edge(const string& name, bool stateful, Scope* s)
-  : stateful_(stateful), s_(s),
-    name_(name),
+Edge::Edge(const string& name, Scope* s)
+  : name_(name), s_(s), 
     scoped_name_(s->name() + ":" + name) {
   s_->AddEdge(this);
 }
@@ -16,7 +15,7 @@ void Edge::AddDst(Node* node) {
 }
 
 void Edge::AddSource(Node* node) {
-  CHECK(stateful_ || srcs_.empty())
+  CHECK(isStateful() || srcs_.empty())
     << node->DebugInfo()
     << DebugInfo();
   srcs_.push_back(node); 

@@ -37,10 +37,14 @@ void ClipOpImpl<T>::Compute(OpContext* context) {
   for (int i = 0; i < context->OutputSize(); i++) {
     const Tensor& in = context->Input(i);
     Tensor* out = context->Output(i);
-    CUDABinaryConstScalarFunctor<math::Div<T>, T>::Compute(
+    CUDABinaryConstScalarFunctor<math::Mul<T>, T>::Compute(
         out->mutable_data<T>(), out->count(),
         in.data<T>(), in.count(), 
         clip_/std::max(sum, clip_));
+    VLOG(V_EXHAUSTIVE_DEBUG) << "clip: " << clip_ << "\tsum: " << sum
+                             << "\tscale: " << clip_/std::max(sum, clip_);
+    in.DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 }
 

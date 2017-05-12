@@ -62,7 +62,7 @@ Node* Scope::AddNode(const OpDef& op_def) {
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
-    bool stateful = node->IsVariableOp();
+    //bool stateful = node->IsVariableOp();
     //currently, only the source nodes can cross scopes
     if (node->isSourceOp()) {
       //CHECK(op_def.shape_size() == 1) 
@@ -71,7 +71,7 @@ Node* Scope::AddNode(const OpDef& op_def) {
           << op_def.DebugString();
       if (!upper_out_edge) {
         //CHECK(!father_);
-        out_edge = new Edge(out, stateful, this);
+        out_edge = new Edge(out, this);
         out_edge->AddSource(node);
         out_edge->SetShape(op_def.shape(0));
         node->AddOutput(out_edge);
@@ -86,12 +86,12 @@ Node* Scope::AddNode(const OpDef& op_def) {
           if (upper_out_edge->isStateful()) {
             out_edge = upper_out_edge;
           }else {
-            out_edge = new Edge(out, stateful, this);
+            out_edge = new Edge(out, this);
             out_edge->SetShape(upper_out_edge->shape());
           }
         }else {
           //LOG(INFO) << "No shape currently";
-          out_edge = new Edge(out, stateful, this);
+          out_edge = new Edge(out, this);
         }
       }
       out_edge->AddSource(node);

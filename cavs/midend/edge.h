@@ -5,6 +5,7 @@
 #include "cavs/midend/node.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/op_util.h"
 
 #include <string>
 #include <vector>
@@ -18,7 +19,7 @@ extern Scope* GetGlobalScope();
 
 class Edge {
  public:
-  explicit Edge(const std::string& name, bool stateful, 
+  explicit Edge(const std::string& name, 
       Scope* s = GetGlobalScope());
   inline bool isStateful() const;
   inline bool isVirtual() const;
@@ -44,12 +45,11 @@ class Edge {
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> dsts_;
-  bool stateful_;
   Scope* s_;
 };
 
 inline bool Edge::isStateful() const {
-  return stateful_; 
+  return IsVariable(name_); 
 }
 
 inline bool Edge::isVirtual() const {

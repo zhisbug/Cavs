@@ -67,9 +67,11 @@ void FullyConnectedOpCublas<T>::Compute(OpContext* context) {
   MatMulMatCublasWrapper<T>(false, false,
       batchN, Out, 1, 1.f, bias_one_, B.data<T>(),
       1, Y->mutable_data<T>());
-  //A.DebugNumerical<T>();
-  //B.DebugNumerical<T>();
-  //C->DebugNumerical<T>();
+
+  X.DebugNumerical<T>();
+  W.DebugNumerical<T>();
+  B.DebugNumerical<T>();
+  Y->DebugNumerical<T>();
 }
 
 template <typename T>

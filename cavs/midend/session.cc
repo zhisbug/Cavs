@@ -3,6 +3,7 @@
 #include "cavs/backend/op_def_builder.h"
 #include "cavs/backend/op_impl_mpi_functor.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <mpi.h>
 #include <unordered_map>

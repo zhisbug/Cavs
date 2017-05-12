@@ -26,6 +26,11 @@ size_t GetHash(const OpDef& op_def) {
   return hash_fn(s);
 }
 
+bool IsVariable(const std::string& edge) {
+  return (edge.length() >= 8 && edge.substr(0, 8) == "Variable")
+      || (edge.length() >= 3 && edge.substr(0, 3) == "DDV" );
+}
+
 #define INSTANTIATE_GETSINGLEARG(T, fieldname)      \
   template<>                                        \
   T GetSingleArg<T>(const OpDef& op_def,            \

@@ -1,8 +1,9 @@
 #include "cavs/midend/dep_graph.h"
 #include "cavs/midend/statement_builder.h"
-#include "cavs/util/logging.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_def_builder.h"
+#include "cavs/util/logging.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <string>
 #include <algorithm>
@@ -15,6 +16,7 @@ using ::backend::BuildConstantOpDef;
 namespace midend {
 
 Node* DepGraph::AddNode(const OpDef& op_def) { 
+  checkCudaError(cudaGetLastError()); 
   return s_->AddNode(op_def); 
 }
 
@@ -136,14 +138,15 @@ void DepGraph::GroupClosedSet(
       const Edge* var = loss_scope->FindEdge(var_name);
       outputs_shape.emplace_back(var->shape());
     }
-    OpDef update;  
-    ::backend::OpDefBuilder("Clipper")
-       .Input(outputs)
+    OpDef clipper;  
+    ::backend::OpDefBuilder("Clip")
+        .Input(outputs)
         .Output(outputs)
         .Shape(outputs_shape)
         .Device("GPU")
-        .Finalize(&update);
-    loss_scope->AddNode(update);
+        .AttrSingle<float>("clip", clip)
+        .Finalize(&clipper);
+    loss_scope->AddNode(clipper);
   }
 
   for (auto& var_name : vars) {
