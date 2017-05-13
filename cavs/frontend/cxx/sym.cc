@@ -258,6 +258,12 @@ Sym Sym::SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device) {
         a.node_->type_, "", device);
 }
 
+Sym Sym::SoftmaxEntropyLoss(const Sym&a, const Sym& b, string device) {
+  return Sym("SoftmaxEntropyLoss",
+      { a.node_->output_[0], b.node_->output_[0] },
+        a.node_->type_, "", device);
+}
+
 Sym Sym::Flatten(const Sym& a) {
   OpDef::AttrDef attr;
   attr.set_name("ShareMemory");

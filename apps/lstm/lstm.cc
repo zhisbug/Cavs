@@ -73,7 +73,7 @@ int main(int argc, char* argv[]) {
   Sym loss     = input.LSTM(LSTM_var, FLAGS_lstm_layers, FLAGS_hidden)
                  .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                  .FullyConnected(FC_var, FC_bias)
-                 .SoftmaxEntropyLogits(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
+                 .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
   Sym train    = loss.Optimizer({}, FLAGS_lr, 5);
 
   Session sess;

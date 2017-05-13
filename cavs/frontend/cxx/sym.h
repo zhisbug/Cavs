@@ -52,6 +52,7 @@ class Sym {
   static Sym Mul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym MatMul(const Sym& a, const Sym& b, string device = "GPU");
   static Sym SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device = "GPU");
+  static Sym SoftmaxEntropyLoss(const Sym&a, const Sym& b, string device = "GPU");
   static Sym Equal(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Reshape(const Sym& a, const std::vector<int>& shape);
   //ternary operation
@@ -91,6 +92,7 @@ class Sym {
   Sym Flatten() { return Flatten(*this); }
   //binary operation
   Sym SoftmaxEntropyLogits(const Sym& b) { return SoftmaxEntropyLogits(*this, b); }
+  Sym SoftmaxEntropyLoss(const Sym& b) { return SoftmaxEntropyLoss(*this, b); }
   Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape); }
   //ternary operation
   Sym Conv(const Sym& b, const Sym& c) { return Conv(*this, b, c); }
