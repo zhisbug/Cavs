@@ -6,6 +6,8 @@ using std::string;
 
 namespace midend {
 
+std::unordered_map<std::string, void*> OpContext::repo_;
+
 string OpContext::DebugInfo() {
   string info;
   for (unsigned i = 0; i < inputs_.size(); i++) {

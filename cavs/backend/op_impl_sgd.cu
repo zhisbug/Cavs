@@ -27,9 +27,14 @@ class SGDOpImpl : public OpImpl {
       lr_ = GetSingleArg<float>(def, "learning_rate");
       /*CHECK(lr > 0);*/
       LOG(INFO) << "learning_rate = " << lr_;
+      count_ = 0;
   }
 
   void Compute(OpContext* context) override {
+    if (count_++ > 200*3 && count_ % 200 == 0) {
+        /*lr_ /= 2;*/
+        LOG(INFO) << "Lr Changed to " << lr_;
+    }
     const Tensor& inp0 = context->Input(0);
     const Tensor& inp1 = context->Input(1);
     inp0.DebugNumerical<T>();
@@ -44,6 +49,7 @@ class SGDOpImpl : public OpImpl {
 
  private:
   float lr_;
+  int count_;
 };
 
 REGISTER_OP_IMPL_BUILDER(Key("SGD").Device("GPU"), SGDOpImpl<float>);

@@ -106,7 +106,7 @@ template <typename T>
 void SoftmaxEntropyLossOpCudnn<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   const Tensor& label = context->Input(1);
-  Tensor* y = context->Output(1);
+  Tensor* y = context->Output(0);
 
   CHECK(x.dims() == 2 && label.dims() == 2 && y->dims() == 2);
   CHECK(x.dims(0) == label.dims(0) && label.dims(0) == y->dims(0));

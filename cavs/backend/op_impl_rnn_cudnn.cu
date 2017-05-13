@@ -56,6 +56,7 @@ class RNNOpCudnnBase : public OpImpl {
   void* rnn_hy_;
   size_t rnn_cy_sizeInBytes_;
   void* rnn_cy_;
+
  private:
   void* dropout_workspace_;
   size_t dropout_stateSizeInBytes_;
@@ -256,22 +257,6 @@ void RNNOpCudnnBase<T>::InitCUDNN(
       rnn_workspace_ = alloc_->Allocate<char>(rnn_workspace_sizeInBytes_);
     }
   }
-
-  {
-    size_t workspace_size;
-    checkCUDNNError(cudnnGetRNNTrainingReserveSize(
-          CudaCommon::cudnnHandle(),
-          rnn_desc_,
-          seq_length,
-          x_desc_.data(),
-          &workspace_size)); 
-    if (workspace_size != rnn_trainingreserve_sizeInBytes_) {
-      rnn_trainingreserve_sizeInBytes_ = workspace_size; 
-      if (rnn_trainningreserve_)
-        alloc_->Deallocate<char>((char*)rnn_trainningreserve_); 
-      rnn_trainningreserve_ = alloc_->Allocate<char>(rnn_trainingreserve_sizeInBytes_);
-    }
-  }
 }
 
 template <typename T>
@@ -279,14 +264,11 @@ class RNNOpCudnn: public RNNOpCudnnBase<T> {
  public:
   explicit RNNOpCudnn(const OpDef& def);
   void Compute(OpContext* context) override;
-
- private:
-  bool init_;
 };
 
 template <typename T>
 RNNOpCudnn<T>::RNNOpCudnn(const OpDef& def)
-  : RNNOpCudnnBase<T>(def), init_(false) {}
+  : RNNOpCudnnBase<T>(def) {}
 
 template <typename T>
 void RNNOpCudnn<T>::Compute(OpContext* context) {
@@ -303,9 +285,23 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  if (!init_) {
-    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
-    init_ = true;
+  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+
+  {
+    size_t workspace_size;
+    checkCUDNNError(cudnnGetRNNTrainingReserveSize(
+          CudaCommon::cudnnHandle(),
+          this->rnn_desc_,
+          seq_length,
+          this->x_desc_.data(),
+          &workspace_size)); 
+    if (workspace_size != this->rnn_trainingreserve_sizeInBytes_) {
+      this->rnn_trainingreserve_sizeInBytes_ = workspace_size; 
+      if (this->rnn_trainningreserve_)
+        this->alloc_->template Deallocate<char>((char*)(this->rnn_trainningreserve_)); 
+      this->rnn_trainningreserve_ = (this->alloc_)->template Allocate<char>(this->rnn_trainingreserve_sizeInBytes_);
+      context->repo_[Y->name()] = this->rnn_trainningreserve_;
+    }
   }
 
   checkCUDNNError(cudnnRNNForwardTraining(
@@ -315,17 +311,17 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        this->rnn_hx_, //HX.data<T>(),
+        nullptr, //this->rnn_hx_, //HX.data<T>(),
         this->cx_desc_,
-        this->rnn_cx_, //CX.data<T>(),
+        nullptr, //this->rnn_cx_, //CX.data<T>(),
         this->w_desc_,
         W.data<T>(),
         this->y_desc_.data(),
         Y->mutable_data<T>(),
         this->hy_desc_,
-        this->rnn_hy_, //HY->mutable_data<T>(),
+        nullptr, //this->rnn_hy_, //HY->mutable_data<T>(),
         this->cy_desc_,
-        this->rnn_cy_, //CY->mutable_data<T>(),
+        nullptr, //this->rnn_cy_, //CY->mutable_data<T>(),
         this->rnn_workspace_,
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,
@@ -341,13 +337,11 @@ class RNNOpCudnnGrad: public RNNOpCudnnBase<T> {
  public:
   explicit RNNOpCudnnGrad(const OpDef& def);
   void Compute(OpContext* context) override;
- private:
-  bool init_;
 };
 
 template <typename T>
 RNNOpCudnnGrad<T>::RNNOpCudnnGrad(const OpDef& def)
-  : RNNOpCudnnBase<T>(def), init_(false) {}
+  : RNNOpCudnnBase<T>(def) {}
 
 template <typename T>
 void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
@@ -368,9 +362,21 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  if (!init_) {
-    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
-    init_ = true;
+  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  {
+    size_t workspace_size;
+    checkCUDNNError(cudnnGetRNNTrainingReserveSize(
+          CudaCommon::cudnnHandle(),
+          this->rnn_desc_,
+          seq_length,
+          this->x_desc_.data(),
+          &workspace_size)); 
+    if (workspace_size != this->rnn_trainingreserve_sizeInBytes_) {
+      this->rnn_trainingreserve_sizeInBytes_ = workspace_size; 
+      CHECK(context->repo_.find(Y.name()) != context->repo_.end());
+      this->rnn_trainningreserve_ = context->repo_[Y.name()];
+      CHECK(this->rnn_trainningreserve_);
+    }
   }
 
   checkCUDNNError(cudnnRNNBackwardData(

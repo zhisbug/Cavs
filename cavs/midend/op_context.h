@@ -4,6 +4,9 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/proto/op_def.pb.h"
 
+#include <unordered_map>
+#include <string>
+
 namespace midend {
 
 class OpContext {
@@ -18,6 +21,7 @@ class OpContext {
   std::string DebugInfo();
   inline void SetRound(int r) { round_ = r; }
   inline int GetRound() const { return round_; }
+  static std::unordered_map<std::string, void*> repo_;
  private:
   std::vector<Tensor> inputs_;
   std::vector<Tensor> outputs_;

@@ -16,7 +16,7 @@ using ::backend::BuildConstantOpDef;
 namespace midend {
 
 Node* DepGraph::AddNode(const OpDef& op_def) { 
-  checkCudaError(cudaGetLastError()); 
+  //checkCudaError(cudaGetLastError()); 
   return s_->AddNode(op_def); 
 }
 
