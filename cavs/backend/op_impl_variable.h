@@ -8,6 +8,7 @@
 #include "cavs/midend/tensor.h"
 
 #include <vector>
+#include <random>
 
 using std::vector;
 
@@ -92,30 +93,49 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
     //{
       //vector<float> buf;
-      //buf.resize(out->count());
+      //buf.resize(out->count(), 1);
       //FILE *fp = NULL;
       //if (op_def_.output(0) == "Variable0") {
-        //fp = fopen("/users/shizhenx/projects/swCaffe/conv1", "r");  
+        //fp = fopen("/users/shizhenx/projects/swCaffe/conv1", "rb");  
         //CHECK(fp);
         //LOG(INFO) << "v0";
       //}
       //if (op_def_.output(0) == "Variable2") {
-        //fp = fopen("/users/shizhenx/projects/swCaffe/conv2", "r");  
-        //CHECK(fp);
-        //LOG(INFO) << "v1";
-      //}
-      //if (op_def_.output(0) == "Variable4") {
-        //fp = fopen("/users/shizhenx/projects/swCaffe/fc1", "r");  
+        //fp = fopen("/users/shizhenx/projects/swCaffe/conv2", "rb");  
         //CHECK(fp);
         //LOG(INFO) << "v2";
       //}
-      //if (op_def_.output(0) == "Variable5") {
-        //fp = fopen("/users/shizhenx/projects/swCaffe/fc2", "r");  
-        //CHECK(fp);
-        //LOG(INFO) << "v3";
+      //if (op_def_.output(0) == "Variable4") {
+        ////fp = fopen("/users/shizhenx/projects/swCaffe/fc1", "rb");  
+        ////CHECK(fp);
+        //CHECK(buf.size() == 500*800);
+        //float scale = sqrt(3.f/800);
+        //std::default_random_engine generator;
+        //std::uniform_real_distribution<float> distribution(-scale, scale);
+        //for (int i = 0; i < 500*800; i++)
+          //buf[i] = distribution(generator);
+        //LOG(INFO) << "v4";
+        //checkCudaError(cudaMemcpy(out->mutable_data<float>(), buf.data(), out->count()*sizeof(float),
+                                  //cudaMemcpyHostToDevice));
+      //}
+      //if (op_def_.output(0) == "Variable6") {
+        ////fp = fopen("/users/shizhenx/projects/swCaffe/fc2", "rb");  
+        ////CHECK(fp);
+        ////LOG(INFO) << "v3";
+        //CHECK(buf.size() == 10*500);
+        //float scale = sqrt(3.f/500);
+        //std::default_random_engine generator;
+        //std::uniform_real_distribution<float> distribution(-scale, scale);
+        //for (int i = 0; i < 10*500; i++)
+          //buf[i] = distribution(generator);
+        //LOG(INFO) << "v6";
+        //checkCudaError(cudaMemcpy(out->mutable_data<float>(), buf.data(), out->count()*sizeof(float),
+                                  //cudaMemcpyHostToDevice));
       //}
       //if (fp) {
-        //fread(buf.data(), out->count(), sizeof(float), fp);
+        //CHECK(fread(buf.data(), out->count(), sizeof(float), fp));
+        //LOG(INFO) << op_def_.output(0) << " CHECKING:\t"
+                  //<< buf[0] << "\t" << buf[buf.size()-1];
         //fclose(fp);
         //checkCudaError(cudaMemcpy(out->mutable_data<float>(), buf.data(), out->count()*sizeof(float),
                                   //cudaMemcpyHostToDevice));
@@ -131,7 +151,7 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     }else {
       Bcast<BCASTFUNCTOR>(out->mutable_data<T>(), out->count(), 0);
     }
-    out->DebugNumerical<T>();
+    //out->DebugNumerical<T>();
   }
 };
 

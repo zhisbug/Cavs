@@ -1,9 +1,9 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/session.h"
 
-DEFINE_int32 (iterations, 1     , "num_of_iterations");
-DEFINE_int32 (batch     , 100   , "size_of_minibatch");
-DEFINE_double(lr        , 0.05, "learning_rate"    );
+DEFINE_int32 (iter,  1,    "num_of_iterations");
+DEFINE_int32 (batch, 100,  "size_of_minibatch");
+DEFINE_double(lr,    0.01, "learning_rate"    );
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -27,7 +27,7 @@ int main(int argc, char* argv[]) {
   Sym::DumpGraph();
 
   Session sess;
-  for (int i = 0; i < FLAGS_iterations; i++) {
+  for (int i = 0; i < FLAGS_iter; i++) {
     sess.Run({train, correct_prediction});
     //sess.Run({train});
     LOG(INFO) << "Iteration[ " << i << "]: "

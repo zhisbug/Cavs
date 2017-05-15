@@ -3,7 +3,7 @@ CXXFLAGS=-O2 -std=c++11 -I. -Ibuild/ -I/usr/local/cuda/include -I/users/shizhenx
 PROTOCC=protoc
 PROTOFLAGS=--cpp_out=build/ -I. 
 NVCC=/usr/local/cuda/bin/nvcc
-NVFLAGS=$(CXXFLAGS) -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 --default-stream per-thread
+NVFLAGS=$(CXXFLAGS) -gencode arch=compute_50,code=sm_50 -gencode arch=compute_52,code=sm_52 #--default-stream per-thread
 LDFLAGS=-L/usr/local/lib -lprotobuf -lglog -lgflags -L/usr/local/cuda/lib64 -lcudart  -lcublas -lcudnn -pthread
 
 C_SRC=$(filter-out %_test.cc, $(wildcard cavs/*/*.cc cavs/*/*/*.cc))

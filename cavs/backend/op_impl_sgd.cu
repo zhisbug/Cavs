@@ -31,8 +31,8 @@ class SGDOpImpl : public OpImpl {
   }
 
   void Compute(OpContext* context) override {
-    if (count_++ > 200*3 && count_ % 200 == 0) {
-        /*lr_ /= 2;*/
+    if (count_++ > 2293*30 && count_ % 2293 == 0) {
+        lr_ /= 2;
         LOG(INFO) << "Lr Changed to " << lr_;
     }
     const Tensor& inp0 = context->Input(0);

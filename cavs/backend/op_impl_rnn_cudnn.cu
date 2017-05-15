@@ -56,6 +56,7 @@ class RNNOpCudnnBase : public OpImpl {
   void* rnn_hy_;
   size_t rnn_cy_sizeInBytes_;
   void* rnn_cy_;
+  bool initialized_;
 
  private:
   void* dropout_workspace_;
@@ -74,7 +75,8 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
     rnn_hx_sizeInBytes_(0), rnn_cx_sizeInBytes_(0),
     rnn_hx_(NULL), rnn_cx_(NULL),
     rnn_hy_sizeInBytes_(0), rnn_cy_sizeInBytes_(0),
-    rnn_hy_(NULL), rnn_cy_(NULL) {
+    rnn_hy_(NULL), rnn_cy_(NULL),
+    initialized_(false) {
 
   checkCUDNNError(cudnnCreateTensorDescriptor(&hx_desc_));
   checkCUDNNError(cudnnCreateTensorDescriptor(&hy_desc_));
@@ -285,7 +287,43 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  if (!this->initialized_) {
+    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+    cudnnFilterDescriptor_t  desc;
+    checkCUDNNError(cudnnCreateFilterDescriptor(&desc));
+    for (int l = 0; l < this->num_layers_; l++) {
+      for (int g = 0; g < 8; g++) {
+        void *buf = NULL;
+        checkCUDNNError(cudnnGetRNNLinLayerBiasParams(
+              CudaCommon::cudnnHandle(),
+              this->rnn_desc_,
+              l,
+              this->x_desc_[0],
+              this->w_desc_,
+              context->Input(1).mutable_data<T>(),
+              g,
+              desc,
+              &buf));
+        cudnnDataType_t dt;
+        cudnnTensorFormat_t tf;
+        vector<int> dims(3);
+        int nbDims;
+        checkCUDNNError(cudnnGetFilterNdDescriptor(desc,
+              3, &dt, &tf, &nbDims, dims.data()));
+        LOG(INFO) << "Init bias...";
+        int count = 1;
+        for (auto i : dims) {
+          count *= i;
+          LOG(INFO) << i;
+        }
+        CHECK(buf);
+        if (false && (g == 1 || g == 5))
+          checkCudaError(cudaMemset(buf, 0, count*sizeof(T)));
+      }
+    }
+    checkCUDNNError(cudnnDestroyFilterDescriptor(desc));
+    this->initialized_ = true;
+  }
 
   {
     size_t workspace_size;
@@ -362,7 +400,11 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
   const int input_size = X.dims(2);
   const int rnn_params_count = W.count();
 
-  this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+  if (!this->initialized_) {
+    this->InitCUDNN(seq_length, batch, input_size, rnn_params_count);
+    this->initialized_ = true;
+  }
+
   {
     size_t workspace_size;
     checkCUDNNError(cudnnGetRNNTrainingReserveSize(

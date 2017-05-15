@@ -12,7 +12,7 @@ namespace backend {
 
 template <typename T>
 struct Filler {
-  Filler(const OpDef& op_def) {
+  Filler(const OpDef& op_def) : op_def_(op_def) {
     CHECK(op_def.output_size() == 1);
     CHECK(op_def.shape(0).dim_size() >= 1);
     stride_ = GetSingleArg<int>(op_def, "stride", 0);
@@ -29,6 +29,7 @@ struct Filler {
 
  protected:
   int stride_;
+  OpDef op_def_;//debug
 };
 
 template <typename T>
@@ -52,15 +53,14 @@ struct Xavier : Filler<T> {
   Xavier(const OpDef& op_def) : Filler<T>(op_def) {
     CHECK(op_def.output_size() == 1);
     CHECK(op_def.shape(0).dim_size() >= 1);
-    int default_stride = 1;
+    int N = 1;
     for (int i = 1; i < op_def.shape(0).dim_size(); i++)
-      default_stride *= op_def.shape(0).dim(i);
-    this->stride_ = default_stride;
+      N *= op_def.shape(0).dim(i);
+    scale_ = sqrt(3.f/N);
   }
   virtual void FillRaw(T* buf, int N) override {
-    float scale = sqrt(3.f/N);
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(-scale, scale);
+    std::uniform_real_distribution<float> distribution(-scale_, scale_);
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);
     }
@@ -77,13 +77,16 @@ struct Xavier : Filler<T> {
       //buf[i] = variate_generator();
     //}
   }
+
+ private:
+  T scale_;
 };
 
 template <typename T>
 struct UniformRandom : Filler<T> {
   UniformRandom(const OpDef& op_def) : Filler<T>(op_def) {
-    minval_ = GetSingleArg<float>(op_def, "minval", 0.f);
-    maxval_ = GetSingleArg<float>(op_def, "maxval", 1.f);
+    minval_ = GetSingleArg<float>(op_def, "minval");
+    maxval_ = GetSingleArg<float>(op_def, "maxval");
     CHECK(minval_ < maxval_);
   }
   virtual void FillRaw(T* buf, int N) override {
@@ -92,6 +95,13 @@ struct UniformRandom : Filler<T> {
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);
     }
+    //typedef boost::mt19937 rng_t;
+    //boost::uniform_real<float> random_distribution(minval_, maxval_);
+    //boost::variate_generator<rng_t*, boost::uniform_real<float> >
+        //variate_generator(new rng_t(1), random_distribution);
+    //for (unsigned i = 0; i < N; i++) {
+      //buf[i] = variate_generator();
+    //}
   }
 
  protected:
