@@ -77,7 +77,7 @@ int main(int argc, char* argv[]) {
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias      = Sym::Variable(C_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
   Sym loss      = input.EmbeddingLookup(embedding)
-                       .LSTM(LSTM_var, FLAGS_lstm_layers, FLAGS_hidden)
+                       .LSTM(LSTM_w, FLAGS_lstm_layers, FLAGS_hidden)
                        .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                        .FullyConnected(weight, bias)
                        .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));

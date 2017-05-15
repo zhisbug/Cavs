@@ -327,6 +327,15 @@ Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   return s;
 }
 
+Sym Sym::EmbeddingLookup(const Sym& a, const Sym& b, string device) {
+  CHECK(a.node_->type_ == b.node_->type_);
+  CHECK(a.node_->output_.size() == 1 &&
+        b.node_->output_.size() == 1);
+  Sym s("EmbeddingLookup", {a.node_->output_[0], b.node_->output_[0]},
+        a.node_->type_, "", device);
+  return s;
+}
+
 Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
   CHECK(b.op_name() == "Variable");
   CHECK(c.op_name() == "Variable");

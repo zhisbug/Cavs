@@ -12,19 +12,9 @@ using ::midend::Tensor;
 template <typename T>
 class EmbeddingLookupOp: public OpImpl {
  public:
-  explicit EmbeddingLookupOp(const OpDef& def);
+  explicit EmbeddingLookupOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override;
 };
-
-template <typename T>
-EmbeddingLookupOp<T>::EmbeddingLookupOp(const OpDef& def)
-    : OpImpl(def) {
-  for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
-    LOG(INFO) << "Transpose: " << t;
-    if (t == 0) TransA = true;
-    if (t == 1) TransB = true;
-  }
-}
 
 template <typename T>
 __global__ void BatchedCopy(T *embedding,
@@ -54,15 +44,14 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
   CHECK(embedding->dims() == input.dims()+1);
   for (int i = 0; i < input.dims(); i++)
     CHECK(embedding->dims(i) == input.dims(i));
-  CHECK(embedding->dims(embedding.dims()-1) == embedding_size);
-
+  CHECK(embedding->dims(embedding->dims()-1) == embedding_size);
 
   int slices = input.count();
   const int MAX_THREADS_IN_BLOCK = 1 << 10;
   int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
                          embedding_size : MAX_THREADS_IN_BLOCK;
   int blocksPerGrid = slices;
-  BatchedCopy<T><<<blocksPerGrid, threadsPerBlock>>>(
+  BatchedCopy<<<blocksPerGrid, threadsPerBlock>>>(
       embedding->mutable_data<T>(),
       input.data<T>(), embedding_matrix.data<T>(),
       embedding_size);
@@ -72,7 +61,62 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
   //C->DebugNumerical<T>();
 }
 
+template <typename T>
+class EmbeddingLookupGradOp: public OpImpl {
+ public:
+  explicit EmbeddingLookupGradOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override;
+};
+
+template <typename T>
+__global__ void BatchedSparseUpdate(T *dMatrix,
+    const T* data, const T* dY,
+    int embedding_size) {
+  int dY_offset = blockIdx.x*embedding_size;
+  int dMatrix_offset = data[blockIdx.x]*embedding_size;
+  for (int round = 0; round < (embedding_size+blockDim.x-1)/blockDim.x; round++) {
+    int offset_within_vec = threadIdx.x + round*blockDim.x;
+    if (offset_within_vec < embedding_size) {  
+      atomicAdd(&(dMatrix[dMatrix_offset+offset_within_vec]), 
+        dY[dY_offset+offset_within_vec]);
+    }
+  }
+}
+
+template <typename T>
+void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
+  const Tensor& dY = context->Input(0);
+  const Tensor& input = context->Input(1);
+  Tensor* dMatrix= context->Output(0);
+
+  CHECK(dMatrix->dims() == 2);
+  int vocabulary_size = dMatrix->dims(0);
+  int embedding_size  = dMatrix->dims(1);
+  CHECK(vocabulary_size >= embedding_size);
+  CHECK(dY.dims() == input.dims()+1);
+  for (int i = 0; i < input.dims(); i++)
+    CHECK(dY.dims(i) == input.dims(i));
+  CHECK(dY.dims(dY.dims()-1) == embedding_size);
+
+  checkCudaError(cudaMemset(dMatrix->mutable_data<T>(), 0, 
+                            dMatrix->count()*sizeof(T)));
+  int slices = input.count();
+  const int MAX_THREADS_IN_BLOCK = 1 << 10;
+  int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
+                         embedding_size : MAX_THREADS_IN_BLOCK;
+  int blocksPerGrid = slices;
+  BatchedSparseUpdate<<<blocksPerGrid, threadsPerBlock>>>(
+      dMatrix->mutable_data<T>(),
+      input.data<T>(), dY.data<T>(),
+      embedding_size);
+
+  //A.DebugNumerical<T>();
+  //B.DebugNumerical<T>();
+  //C->DebugNumerical<T>();
+}
+
 REGISTER_OP_IMPL_BUILDER(Key("EmbeddingLookup").Device("GPU"), EmbeddingLookupOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("EmbeddingLookup")).Device("GPU"), EmbeddingLookupGradOp<float>);
 
 } //namespace backend
 
