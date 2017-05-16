@@ -26,14 +26,14 @@ void AmeanOpCublas<T>::Compute(OpContext* context) {
   int N = x.count();
   CHECK(N > 0);
 
-  //x.DebugNumerical<T>();
+  x.DebugNumerical<T>();
   AsumCublasWrapper<T>(
       N, x.data<T>(), y->mutable_data<T>());
   CUDABinaryConstScalarFunctor<math::Div<T>, T>:: Compute(
       y->mutable_data<T>(), y->count(), 
       y->mutable_data<T>(), y->count(), 
-      x.count());
-  //y->DebugNumerical<T>();
+      N);
+  y->DebugNumerical<T>();
 }
 
 //absolute value argmax

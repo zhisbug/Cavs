@@ -3,7 +3,7 @@
 
 DEFINE_int32 (iterations, 1     , "num_of_iterations");
 DEFINE_int32 (batch     , 100   , "size_of_minibatch");
-DEFINE_double(lr        , 0.05, "learning_rate"    );
+DEFINE_double(lr        , 0.01, "learning_rate"    );
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
@@ -19,20 +19,23 @@ int main(int argc, char* argv[]) {
 
   Sym image = Sym::MnistInput(FLAGS_batch, "Image", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
   Sym label = Sym::MnistInput(FLAGS_batch, "Label", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
-  Sym fc     = image.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2)
+  Sym fc    = image.Conv(kernel1, bias1).Maxpooling(2, 2).Conv(kernel2, bias2).Maxpooling(2, 2)
               .Flatten().FullyConnected(fc1, bias_fc1).Relu()
               .FullyConnected(fc2, bias_fc2);
-  Sym train = fc.SoftmaxEntropyLoss(label).Optimizer({}, FLAGS_lr);
-  Sym y = fc.SoftmaxEntropyLogits(fc);
+  Sym loss  = fc.SoftmaxEntropyLoss(label);
+  Sym train = loss.Optimizer({}, FLAGS_lr);
+  Sym y = fc.SoftmaxEntropyLogits(label);
   Sym correct_prediction = Sym::Equal(y.Argmax(1), label).Reduce_mean();
+  Sym ppx = loss.Reduce_mean();
   Sym::DumpGraph();
 
   Session sess;
   for (int i = 0; i < FLAGS_iterations; i++) {
-    sess.Run({train, correct_prediction});
+    sess.Run({train, correct_prediction, ppx});
     //sess.Run({train});
     LOG(INFO) << "Iteration[ " << i << "]: "
-              << *(float*)correct_prediction.eval();
+              << *(float*)correct_prediction.eval()
+              << "\tPPX: " << exp(*(float*)ppx.eval());
     //correct_prediction.print();
   }
 }

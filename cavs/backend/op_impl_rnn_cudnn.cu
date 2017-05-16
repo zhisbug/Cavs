@@ -93,7 +93,7 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
   checkCUDNNError(cudnnSetDropoutDescriptor(
         dropout_desc_,
         CudaCommon::cudnnHandle(),
-        GetSingleArg<float>(def, "dropout", 1.f),
+        GetSingleArg<float>(def, "dropout", 0.f),
         dropout_workspace_,
         dropout_stateSizeInBytes_,
         SEED));
@@ -104,6 +104,7 @@ RNNOpCudnnBase<T>::RNNOpCudnnBase(const OpDef& def) :
   CHECK(rnn_mode_ == "lstm") << "Currently, we only support LSTM";
   cudnnRNNMode_t mode = CUDNN_LSTM;
   CHECK(hidden_size_ > 0);
+  CHECK(num_layers_ > 0);
   checkCUDNNError(cudnnSetRNNDescriptor(
         rnn_desc_,
         hidden_size_,
@@ -199,15 +200,21 @@ void RNNOpCudnnBase<T>::InitCUDNN(
 
     size_t internal_size = num_layers_*num_directions_*batch*hidden_size_*sizeof(T);
     if (rnn_hx_sizeInBytes_ != internal_size) {
+      vector<T> test;
+      /*test.resize(internal_size/sizeof(T), 1);*/
       if (rnn_hx_) 
         alloc_->Deallocate<char>((char*)rnn_hx_); 
       rnn_hx_ = alloc_->Allocate<char>(internal_size);
+      /*checkCudaError(cudaMemcpy(rnn_hx_, test.data(), internal_size, cudaMemcpyHostToDevice));*/
       rnn_hx_sizeInBytes_ = internal_size; 
     }
     if (rnn_cx_sizeInBytes_ != internal_size) {
+      vector<T> test;
+      /*test.resize(internal_size/sizeof(T), 1);*/
       if (rnn_cx_) 
         alloc_->Deallocate<char>((char*)rnn_cx_); 
       rnn_cx_ = alloc_->Allocate<char>(internal_size);
+      /*checkCudaError(cudaMemcpy(rnn_cx_, test.data(), internal_size, cudaMemcpyHostToDevice));*/
       rnn_cx_sizeInBytes_ = internal_size; 
     }
     if (rnn_hy_sizeInBytes_ != internal_size) {
@@ -342,6 +349,15 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
     }
   }
 
+  /*{*/
+    /*vector<float> testW;*/
+    /*testW.resize(W.count(), 0.01f);*/
+    /*checkCudaError(cudaMemcpy(context->Input(1).mutable_data<T>(), testW.data(), W.count()*sizeof(float), cudaMemcpyHostToDevice));*/
+    /*vector<float> testX;*/
+    /*testX.resize(X.count(), 1.f);*/
+    /*checkCudaError(cudaMemcpy(context->Input(0).mutable_data<T>(), testX.data(), X.count()*sizeof(float), cudaMemcpyHostToDevice));*/
+  /*}*/
+
   checkCUDNNError(cudnnRNNForwardTraining(
         CudaCommon::cudnnHandle(),
         this->rnn_desc_,
@@ -349,9 +365,9 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        nullptr, //this->rnn_hx_, //HX.data<T>(),
+        nullptr,// this->rnn_hx_, //HX.data<T>(),
         this->cx_desc_,
-        nullptr, //this->rnn_cx_, //CX.data<T>(),
+        nullptr,// this->rnn_cx_, //CX.data<T>(),
         this->w_desc_,
         W.data<T>(),
         this->y_desc_.data(),
@@ -421,6 +437,12 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
     }
   }
 
+  /*{*/
+    /*vector<float> testdY;*/
+    /*testdY.resize(dY.count(), .3f);*/
+    /*checkCudaError(cudaMemcpy(context->Input(1).mutable_data<T>(), testdY.data(), dY.count()*sizeof(float), cudaMemcpyHostToDevice));*/
+  /*}*/
+
   checkCUDNNError(cudnnRNNBackwardData(
         CudaCommon::cudnnHandle(),
         this->rnn_desc_,
@@ -459,7 +481,7 @@ void RNNOpCudnnGrad<T>::Compute(OpContext* context) {
         this->x_desc_.data(),
         X.data<T>(),
         this->hx_desc_,
-        nullptr,//this->rnn_hx_, //HX.data<T>(),
+        nullptr, //this->rnn_hx_, //HX.data<T>(),
         this->y_desc_.data(),
         Y.data<T>(),
         this->rnn_workspace_,

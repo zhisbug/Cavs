@@ -15,7 +15,7 @@ DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
 DEFINE_int32 (lstm_layers, 2,     "stacked lstm layers");
 DEFINE_int32 (epoch,       10,    "epochs");
-//DEFINE_int32 (iters,       200,   "iterations");
+DEFINE_int32 (iters,       99999, "iterations");
 DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
 DEFINE_double(lr,          1.f,   "learning rate");
 DEFINE_string(file_docs,
@@ -24,14 +24,14 @@ DEFINE_string(file_docs,
 
 void load(float** input_data, float** target, size_t* len) {
   vector<float> inputs;
-  ifstream file;
-  file.open(FLAGS_file_docs);
-  CHECK(file.is_open());
-  while (!(file.eof())) {
-    float id;
-    file >> id;
+  fstream file(FLAGS_file_docs);
+  int id;
+  int i = 0; 
+  while (file >> id) {
     inputs.push_back(id);
+    i++;
   }
+  cout <<  i << endl;
   file.close();
   *len = inputs.size();
   cout << "Length:\t"<< *len << endl;
@@ -51,6 +51,7 @@ int main(int argc, char* argv[]) {
   vector<vector<float>> input_ph;
   vector<vector<float>> label_ph;
   const int sample_len = data_len/FLAGS_batch;
+  cout << "sample_len = " << sample_len << endl;;
   input_ph.resize(sample_len/FLAGS_timestep); 
   label_ph.resize(sample_len/FLAGS_timestep); 
   for (int i = 0; i < sample_len/FLAGS_timestep; i++) {
@@ -63,6 +64,12 @@ int main(int argc, char* argv[]) {
       }
     }
   }
+  //for (int i = 0; i < FLAGS_batch; i++) {
+    //cout << "[";
+    //for (int j = 0; j < FLAGS_timestep; j++)
+      //cout << input_data[i*sample_len+j] << "\t";
+    //cout << "]\n";
+  //}
 
   //int var_size = 4*(FLAGS_hidden*(FLAGS_input_size+(2*FLAGS_lstm_layers-1)*FLAGS_hidden))
                   //+ 4*2*FLAGS_lstm_layers*FLAGS_hidden;
@@ -81,11 +88,12 @@ int main(int argc, char* argv[]) {
                        .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                        .FullyConnected(weight, bias)
                        .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
-  Sym train    = loss.Optimizer({}, FLAGS_lr, 5);
+  Sym train     = loss.Optimizer({}, FLAGS_lr, 5);
   Sym perplexity = loss.Reduce_mean();
 
   Session sess;
-  int iterations = sample_len/FLAGS_timestep;
+  int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
+  //int iterations = 20;
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       sess.Run({train}, {{input,input_ph[j%input_ph.size()].data()},

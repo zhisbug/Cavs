@@ -74,13 +74,17 @@ void Tensor::DebugNumerical<float>() const {
     }
     VLOG(V_EXHAUSTIVE_DEBUG) << DebugInfo();
     float L2_norm = 0;
+    float checksum = 0;
     for (int i = 0; i < count(); i++) {
       L2_norm += res[i]*res[i]; 
+      checksum += res[i];
     }
-    VLOG(V_EXHAUSTIVE_DEBUG) << name() << " L2 Norm: " << L2_norm;
-    //for (int i = 0; i < 20 && i < count(); i++)
-      //VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
-                //<< std::setprecision(15) << res[i];
+    VLOG(V_EXHAUSTIVE_DEBUG) << name()
+      << "\tL2 Norm:\t" << L2_norm
+      << "\t checksum:\t" << checksum;
+    for (int i = 0; i < 20 && i < count(); i++)
+      VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
+                << std::setprecision(15) << res[i];
     for (int i = 0; i < count(); i++) {
       if (isnan(res[i]) || res[i] > 1.f) {
         //if (name() == "global:Optimizer0:Variable2_grad") {
