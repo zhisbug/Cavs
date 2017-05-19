@@ -1,9 +1,9 @@
-#SET(cxx_srcs)
-
 ADD_SUBDIRECTORY(proto)
-#ADD_SUBDIRECTORY(midend)
-message(STATUS, ${cxx_srcs})
+ADD_SUBDIRECTORY(midend)
+ADD_SUBDIRECTORY(frontend)
 
-message(STATUS, ${proto_srcs})
+MESSAGE(STATUS ${cxx_srcs})
+MESSAGE(STATUS ${cuda_srcs})
 
-#add_library(Cavs $<TARGET_OBJECTS:proto_srcs>)
+ADD_LIBRARY(cavs_cxx ${cxx_srcs} $<TARGET_OBJECTS:proto_def>)
+ADD_LIBRARY(cavs_cuda ${cuda_srcs} $<TARGET_OBJECTS:proto_def>)

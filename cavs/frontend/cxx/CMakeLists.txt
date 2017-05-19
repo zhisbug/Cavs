@@ -1,14 +1,8 @@
 FILE(GLOB cxx_srcs *.cc)
 FILE(GLOB test_srcs *_test.cc)
+
 FOREACH(test ${test_srcs})
   LIST(REMOVE_ITEM cxx_srcs ${test})
 ENDFOREACH()
 
-FILE(GLOB cuda_srcs *.cu)
-FILE(GLOB test_cuda *.cu)
-FOREACH(test ${test_cuda})
-  LIST(REMOVE_ITEM cuda_srcs ${test})
-ENDFOREACH()
-
 SET(cxx_srcs ${cxx_srcs} PARENT_SCOPE)
-SET(cuda_srcs ${cuda_srcs} PARENT_SCOPE)

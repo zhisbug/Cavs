@@ -1,6 +1,6 @@
 FILE(GLOB proto_files "*.proto")
 
-IF (true)
+IF (FALSE)
   MESSAGE(STATUS ${proto_files})
 ENDIF()
 
@@ -10,7 +10,6 @@ FUNCTION(protobuf_gen_cpp gen_header_files gen_cpp_files)
     RETURN()
   ENDIF()
 
-  MESSAGE(STATUS ${proto_files})
   SET(${gen_header_files})
   SET(${gen_cpp_files})
   SET(PROTOC_COMMAND "protoc")
@@ -42,4 +41,4 @@ FUNCTION(protobuf_gen_cpp gen_header_files gen_cpp_files)
 ENDFUNCTION()
 
 protobuf_gen_cpp(gen_headers gen_cpps ${proto_files})
-ADD_LIBRARY(proto_srcs OBJECT ${gen_cpps} ${gen_headers})
+ADD_LIBRARY(proto_def OBJECT ${gen_cpps} ${gen_headers})
