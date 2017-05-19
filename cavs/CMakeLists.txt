@@ -1,7 +1,8 @@
 ADD_SUBDIRECTORY(proto)
+ADD_SUBDIRECTORY(util)
 ADD_SUBDIRECTORY(frontend)
 ADD_SUBDIRECTORY(midend)
-#ADD_SUBDIRECTORY(backend)
+ADD_SUBDIRECTORY(backend)
 
 IF(TRUE)
   MESSAGE(STATUS ${cxx_srcs}  "[CXX]")
@@ -9,4 +10,11 @@ IF(TRUE)
 ENDIF()
 
 ADD_LIBRARY(cavs_cxx ${cxx_srcs} $<TARGET_OBJECTS:proto_def>)
-CUDA_ADD_LIBRARY(cavs_cuda ${cuda_srcs} $<TARGET_OBJECTS:proto_def>)
+CUDA_ADD_LIBRARY(cavs_cuda ${cuda_srcs})
+
+MESSAGE(STATUS ${test_cxx_srcs} "[TEST]")
+FOREACH(f ${test_cxx_srcs})
+  GET_FILENAME_COMPONENT(f_name ${f} NAME_WE)
+  ADD_EXECUTABLE(${f_name} "${f}")
+  TARGET_LINK_LIBRARIES(${f_name} "-Wl,--whole-archive" cavs_cxx cavs_cuda "-Wl,--no-whole-archive" ${EXTERNAL_LIBS})
+ENDFOREACH()

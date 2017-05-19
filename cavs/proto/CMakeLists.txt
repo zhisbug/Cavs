@@ -12,8 +12,6 @@ FUNCTION(protobuf_gen_cpp gen_header_files gen_cpp_files)
 
   SET(${gen_header_files})
   SET(${gen_cpp_files})
-  SET(PROTOC_COMMAND "protoc")
-  SET(CMAKE_COMMAND "cmake")
   FOREACH(f ${ARGN})
     GET_FILENAME_COMPONENT(f      ${f} ABSOLUTE)
     GET_FILENAME_COMPONENT(f_name ${f} NAME_WE)
@@ -28,11 +26,10 @@ FUNCTION(protobuf_gen_cpp gen_header_files gen_cpp_files)
       OUTPUT ${header} ${cpp} 
       WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
       COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_CURRENT_BINARY_DIR}
-      COMMAND ${PROTOC_COMMAND} -I${PROJECT_SOURCE_DIR} --cpp_out ${PROJECT_BINARY_DIR} ${f}
+      COMMAND ${PROTOBUF_PROTOC_EXECUTABLE} -I${PROJECT_SOURCE_DIR} --cpp_out ${PROJECT_BINARY_DIR} ${f}
       COMMENT "Compiling Protobuf files into header and cc files"
       DEPENDS ${f}
-      VERBATIM
-      )
+      VERBATIM)
   ENDFOREACH()
 
   SET_SOURCE_FILES_PROPERTIES(${headers} ${cpps} PROPERTIES GENERATED TRUE)
