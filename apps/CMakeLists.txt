@@ -1,0 +1,3 @@
+ADD_SUBDIRECTORY(topic_model_mf)
+ADD_SUBDIRECTORY(lenet-5)
+ADD_SUBDIRECTORY(lstm)

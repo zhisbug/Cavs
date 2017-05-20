@@ -38,4 +38,5 @@ FUNCTION(protobuf_gen_cpp gen_header_files gen_cpp_files)
 ENDFUNCTION()
 
 protobuf_gen_cpp(gen_headers gen_cpps ${proto_files})
+SET(gen_proto_headers ${gen_headers} PARENT_SCOPE)
 ADD_LIBRARY(proto_def OBJECT ${gen_cpps} ${gen_headers})
