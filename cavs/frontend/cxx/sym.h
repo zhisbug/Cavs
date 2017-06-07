@@ -22,17 +22,18 @@ class Sym {
   typedef pair<string, vector<OpDef::AttrDef>> ATTRIBUTE;
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
-  void Finalize(OpDef* op_def) const { return node_->Finalize(op_def); }
+  void Finalize(OpDef* op_def) const { *op_def = node_->op_def; }
+  const OpDef& Finalize() const { return node_->op_def; }
 
   //non-arguments operation
-  static Sym Variable(C_Dtype type, const std::vector<int>& shape,
+  static Sym Variable(DataType type, const std::vector<int>& shape,
       const ATTRIBUTE& filler = Ones(), string device = "GPU");
-  static Sym Placeholder(C_Dtype type, const std::vector<int>& shape,
+  static Sym Placeholder(DataType type, const std::vector<int>& shape,
       string device = "GPU");
   static Sym MnistInput(int batch, string source, string file, string device = "GPU");
-  static Sym Data(C_Dtype type, const std::vector<int>& shape, int batch,
+  static Sym Data(DataType type, const std::vector<int>& shape, int batch,
       const ATTRIBUTE& reader, string device = "GPU");
-  static Sym DDV(C_Dtype type, const std::vector<int>& shape, int batch,
+  static Sym DDV(DataType type, const std::vector<int>& shape, int batch,
       const ATTRIBUTE& filler = Ones(), string device = "GPU");
   //unary operation
   static Sym Abs(const Sym& a, string device = "GPU");
@@ -74,7 +75,8 @@ class Sym {
   static void DumpGraph();
   void print();
   void* eval();
-  ////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }
   Sym Argmax(int axis) { return Argmax(*this, axis); };
@@ -110,42 +112,62 @@ class Sym {
   friend class Session;
 
  private:
-  typedef struct node {
-    string op_name_;
-    C_Dtype type_;
-    std::string label_;
-    std::vector<int> shape_;
-    string device_;
-    vector<string> output_;
-    vector<string> input_;
-    void Finalize(OpDef* op_def) const;
+  //typedef struct node {
+    //string op_name_;
+    //C_Dtype type_;
+    //std::string label_;
+    //std::vector<int> shape_;
+    //string device_;
+    //vector<string> output_;
+    //vector<string> input_;
+    //void Finalize(OpDef* op_def) const;
+    //void* raw_data = NULL;
+  //} node;
+  typedef struct node_t {
+    OpDef op_def;
     void* raw_data = NULL;
-  } node;
+  } node_t;
+    
 
-  Sym(const string& op_name,
-      const vector<string>& inputs, 
-      const C_Dtype type,
-      const string& label,
-      const string& device,
-      const std::vector<int>& shape = {},
-      const vector<OpDef::AttrDef>& attrs = {});
-  Sym(const string& op_name, const string& input,
-      const vector<Sym>& variables = {},
-      const float lr = 1,
-      const float clip = 0,
-      const int iters = 1,
-      const string& projections = "");
+  //Sym(const string& op_name,
+      //const vector<string>& inputs, 
+      //const C_Dtype type,
+      //const string& label,
+      //const string& device,
+      //const std::vector<int>& shape = {},
+      //const vector<OpDef::AttrDef>& attrs = {});
+  //Sym(const string& op_name, const string& input,
+      //const vector<Sym>& variables = {},
+      //const float lr = 1,
+      //const float clip = 0,
+      //const int iters = 1,
+      //const string& projections = "");
+  Sym(const OpDef& op_def) {
+    node_.reset(new node_t());
+    node_->op_def = op_def;
+  }
+  //inline const std::vector<string>& outputs() const { 
+    //return node_->output_;
+  //}
   inline const std::vector<string>& outputs() const { 
-    return node_->output_;
+    return node_->op_def.output();
   }
+  //inline const std::string& output(int idx) const { 
+    //return node_->output_.at(idx);
+  //}
   inline const std::string& output(int idx) const { 
-    return node_->output_.at(idx);
+    return node_->op_def.output(idx);
   }
-  inline string& op_name() const { return node_->op_name_; }
-  inline C_Dtype type() const { return node_->type_; }
-  inline std::vector<int> shape() const { return node_->shape_; }
-  inline string& device() const { return node_->device_; }
-  shared_ptr<node> node_;
+  //inline string& op_name() const { return node_->op_name_; }
+  inline const string& op_name() const { return node_->op_def.name(); }
+  //inline C_Dtype type() const { return node_->type_; }
+  inline DataType type() const { return node_->op_def.dtype(); }
+  //inline std::vector<int> shape() const { return node_->shape_; }
+  //inline string& device() const { return node_->device_; }
+  inline DeviceType device() const { return node_->op_def.device(); }
+  //shared_ptr<node> node_;
+  shared_ptr<node_t> node_;
+  static int id_;
 };
 
 #endif

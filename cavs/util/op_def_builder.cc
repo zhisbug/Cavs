@@ -1,11 +1,9 @@
-#include "cavs/backend/op_def_builder.h"
+#include "cavs/util/op_def_builder.h"
 #include "cavs/util/logging.h"
 
 using std::string;
 using std::vector;
 using std::initializer_list;
-
-namespace backend {
 
 OpDefBuilder& OpDefBuilder::Input(const string& input) {
   op_def_.add_input(input);
@@ -54,14 +52,14 @@ OpDefBuilder& OpDefBuilder::Device(const OpDef& def) {
   return *this;
 }
 
-void OpDefBuilder::Finalize(OpDef* op_def) {
+bool OpDefBuilder::CheckValid() {
   CHECK(op_def_.output_size() == op_def_.shape_size() ||
         op_def_.shape_size() == 0)
         << op_def_.DebugString();
-  *op_def = op_def_;
+  return true;
 }
 
-OpDefBuilder& OpDefBuilder::Shape(initializer_list<int> shape) {
+OpDefBuilder& OpDefBuilder::Shape(const initializer_list<int>& shape) {
   op_def_.clear_shape();
   TensorShapeDef* shape_def = op_def_.add_shape();
   for (int dim : shape)
@@ -87,8 +85,29 @@ OpDefBuilder& OpDefBuilder::Shape(const OpDef& def) {
   return *this;
 }
 
+OpDefBuilder& OpDefBuilder::Dtype(const DataType type) {
+  op_def_.set_dtype(type);
+}
+
+OpDefBuilder& OpDefBuilder::Label(const string& label) {
+  op_def_.set_label(label);
+  return *this;
+}
+
 OpDefBuilder& OpDefBuilder::Attr(const OpDef& def) {
   *(op_def_.mutable_attr()) = def.attr();
+  return *this;
+}
+
+OpDefBuilder& OpDefBuilder::Attr(const OpDef::AttrDef& def) {
+  *(op_def_.add_attr()) = def;
+  return *this;
+}
+
+OpDefBuilder& OpDefBuilder::Attr(const vector<OpDef::AttrDef>& def) {
+  for (auto& d : def) {
+    *(op_def_.add_attr()) = d;
+  }
   return *this;
 }
 
@@ -151,24 +170,22 @@ INSTANTIATE_SETATTR(float, f)
 INSTANTIATE_SETATTR(int, i)
 INSTANTIATE_SETATTR(bool, b)
 
-void BuildConstantOpDef(OpDef* op_def, 
-    const string& output,
-    const TensorShapeDef& shape,
-    float val) {
-  OpDefBuilder("ConstOp")
-    .Output(output)
-    .Shape(shape)
-    .AttrSingle("init", val)
-    .Device("GPU")
-    .Finalize(op_def);
-}
+//void BuildConstantOpDef(OpDef* op_def, 
+    //const string& output,
+    //const TensorShapeDef& shape,
+    //float val) {
+  //OpDefBuilder("ConstOp")
+    //.Output(output)
+    //.Shape(shape)
+    //.AttrSingle("init", val)
+    //.Device("GPU")
+    //.Finalize(op_def);
+//}
 
-float GetConstFromConstantOp(const OpDef& def) {
-  for (auto& attr : def.attr()) {
-    if (attr.name() == "init") 
-      return attr.value().f();
-  }
-  LOG(FATAL) << "init value not found";
-}
-
-} //namespace backend
+//float GetConstFromConstantOp(const OpDef& def) {
+  //for (auto& attr : def.attr()) {
+    //if (attr.name() == "init") 
+      //return attr.value().f();
+  //}
+  //LOG(FATAL) << "init value not found";
+//}

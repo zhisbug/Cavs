@@ -1,6 +1,7 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/proto/devices.pb.h"
+#include "cavs/util/op_def_builder.h"
 #include "cavs/util/logging.h"
 
 #include <algorithm>
@@ -8,25 +9,34 @@
 
 using std::vector;
 
-void Sym::node::Finalize(OpDef* op_def) const {
-  op_def->set_name(op_name_);
-  for (const string& str: input_)
-    op_def->add_input(str);
-  for (const string& str: output_)
-    op_def->add_output(str);
-  op_def->set_dtype(DataType((int)type_));
-  op_def->set_label(label_);
-  //device
-  if (device_ == "GPU")
-    op_def->set_device(GPU);
-  else
-    op_def->set_device(CPU);
-  //shape
-  op_def->clear_shape();
-  TensorShapeDef* shape_def = op_def->add_shape();
-  for (auto dim : shape_)
-    shape_def->add_dim(dim);
-}
+#define _genOutputName(ret, op_name)                    \
+    do {                                                \
+      static int id = 0;                                \
+      ret = op_name + std::to_string(id_++) + "_"       \
+                    + std::to_string(idv++);            \
+    } while(0)
+
+//void Sym::node::Finalize(OpDef* op_def) const {
+  //op_def->set_name(op_name_);
+  //for (const string& str: input_)
+    //op_def->add_input(str);
+  //for (const string& str: output_)
+    //op_def->add_output(str);
+  //op_def->set_dtype(DataType((int)type_));
+  //op_def->set_label(label_);
+  ////device
+  //if (device_ == "GPU")
+    //op_def->set_device(GPU);
+  //else
+    //op_def->set_device(CPU);
+  ////shape
+  //op_def->clear_shape();
+  //TensorShapeDef* shape_def = op_def->add_shape();
+  //for (auto dim : shape_)
+    //shape_def->add_dim(dim);
+//}
+
+Sym::id_ = 0;
 
 Sym::Sym(const string& op_name,
          const vector<string>& inputs, 
@@ -106,7 +116,6 @@ Sym::Sym(const string& op_name,
     clip_attr->mutable_value()->set_f(clip);
   }
 
-
   OpDef::AttrDef* iters_attr = op_def.add_attr();
   iters_attr->set_name("Iters");
   iters_attr->mutable_value()->set_i(iters);
@@ -125,215 +134,436 @@ Sym::Sym<float> (float c) {
   new (this)Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
 }
 
-Sym Sym::Variable(C_Dtype type, const vector<int>& shape,
+Sym Sym::Variable(DataType type, const vector<int>& shape,
     const ATTRIBUTE& filler, string device) {
   CHECK(shape.size() > 0);
-  return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
+  string out;
+  _genOutputName(out, "Variable");
+  OpDef def = OpDefBuilder("Variable")
+                .Output(out)
+                .Dtype(type)
+                .Label(filler.first)
+                .Device(device)
+                .Shape(shape)
+                .Attr(filler.second)
+                .Finalize();
+  //return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
+  return Sym(def);
 }
 
 Sym Sym::Placeholder(C_Dtype type, const vector<int>& shape,
     string device) {
   CHECK(shape.size() > 0);
-  return Sym("Placeholder", {}, type, "", device, shape);
+  string out;
+  _genOutputName(out, "Placeholder");
+  OpDef def = OpDefBuilder("Placeholder")
+                .Output(out)
+                .Dtype(type)
+                .Device(device)
+                .Shape(shape)
+                .Finalize();
+  //return Sym("Placeholder", {}, type, "", device, shape);
+  return Sym(def);
 }
 
 Sym Sym::MnistInput(int batch, string source, string file, string device) {
-  OpDef::AttrDef batch_attr;
-  batch_attr.set_name("Batch");
-  batch_attr.mutable_value()->set_i(batch);
-  OpDef::AttrDef source_attr;
-  source_attr.set_name("Source");
-  source_attr.mutable_value()->set_s(source);
-  OpDef::AttrDef file_attr;
-  file_attr.set_name("ImageDir");
-  file_attr.mutable_value()->set_s(file);
-  return Sym("MnistInput", {}, C_FLOAT, "", device, {},
-      {batch_attr, source_attr, file_attr}); 
+  //OpDef::AttrDef batch_attr;
+  //batch_attr.set_name("Batch");
+  //batch_attr.mutable_value()->set_i(batch);
+  //OpDef::AttrDef source_attr;
+  //source_attr.set_name("Source");
+  //source_attr.mutable_value()->set_s(source);
+  //OpDef::AttrDef file_attr;
+  //file_attr.set_name("ImageDir");
+  //file_attr.mutable_value()->set_s(file);
+  //return Sym("MnistInput", {}, C_FLOAT, "", device, {},
+      //{batch_attr, source_attr, file_attr}); 
+  string out;
+  _genOutputName(out, "MnistInput");
+  OpDef def = OpDefBuilder("MnistInput")
+                .Output(out)
+                .Dtype(DT_FLOAT)
+                .Device(device)
+                .Attr("Batch", batch)
+                .Attr("Source", source)
+                .Attr("ImageDir", file)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Data(C_Dtype type, const vector<int>& shape,
     int batch, const ATTRIBUTE& reader, string device) {
-  OpDef::AttrDef batch_attr;
-  batch_attr.set_name("Batch");
-  batch_attr.mutable_value()->set_i(batch);
-  OpDef::AttrDef shape_attr;
-  shape_attr.set_name("Shape");
-  OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
-  for (int s : shape) {
-    lv->add_i(s);
-  }
-  vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
-  for (auto& attr : reader.second)
-    attrs.push_back(attr);
-  return Sym("Data", {}, C_FLOAT, reader.first, device, {}, attrs);
+  //OpDef::AttrDef batch_attr;
+  //batch_attr.set_name("Batch");
+  //batch_attr.mutable_value()->set_i(batch);
+  //OpDef::AttrDef shape_attr;
+  //shape_attr.set_name("Shape");
+  //OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
+  //for (int s : shape) {
+    //lv->add_i(s);
+  //}
+  //vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
+  //for (auto& attr : reader.second)
+    //attrs.push_back(attr);
+  //return Sym("Data", {}, C_FLOAT, reader.first, device, {}, attrs);
+  string out;
+  _genOutputName(out, "Data");
+  OpDef def = OpDefBuilder("Data")
+                .Output(out)
+                .Dtype(DT_FLOAT)
+                .Label(reader.first)
+                .Device(device)
+                .Attr("Batch", batch)
+                .Attr("Shape", shape)
+                .Attr(reader.second)
+                .Finalize();
+  return Sym(def);
 }
 
-Sym Sym::DDV(C_Dtype type, const vector<int>& shape, int batch,
+Sym Sym::DDV(DataType type, const vector<int>& shape, int batch,
     const ATTRIBUTE& filler, string device) {
-  OpDef::AttrDef batch_attr;
-  batch_attr.set_name("Batch");
-  batch_attr.mutable_value()->set_i(batch);
-  OpDef::AttrDef shape_attr;
-  shape_attr.set_name("Shape");
-  OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
-  for (int s : shape) {
-    lv->add_i(s);
-  }
-  vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
-  for (auto& attr : filler.second)
-    attrs.push_back(attr);
-  return Sym("DDV", {}, type, filler.first, device, {}, attrs); 
+  //OpDef::AttrDef batch_attr;
+  //batch_attr.set_name("Batch");
+  //batch_attr.mutable_value()->set_i(batch);
+  //OpDef::AttrDef shape_attr;
+  //shape_attr.set_name("Shape");
+  //OpDef::AttrType::ListValue* lv = shape_attr.mutable_value()->mutable_list();
+  //for (int s : shape) {
+    //lv->add_i(s);
+  //}
+  //vector<OpDef::AttrDef> attrs = {batch_attr, shape_attr};
+  //for (auto& attr : filler.second)
+    //attrs.push_back(attr);
+  //return Sym("DDV", {}, type, filler.first, device, {}, attrs); 
+  string out;
+  _genOutputName(out, "DDV");
+  OpDef def = OpDefBuilder("DDV")
+                .Output(out)
+                .Dtype(type)
+                .Label(filler.first)
+                .Device(device)
+                .Attr("Batch", batch)
+                .Attr("Shape", shape)
+                .Attr(filler.second)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Abs(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Abs", {a.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Abs", {a.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Abs");
+  OpDef def = OpDefBuilder("Abs")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Argmax(const Sym& a, int axis, string device) {
   CHECK(a.node_->output_.size() == 1);
-  OpDef::AttrDef attr;
-  attr.set_name("axis");
-  attr.mutable_value()->set_i(axis);
-  Sym s("Argmax", {a.node_->output_[0]},
-        a.node_->type_, "", device, {}, {attr});
-  return s;
+  //OpDef::AttrDef attr;
+  //attr.set_name("axis");
+  //attr.mutable_value()->set_i(axis);
+  //Sym s("Argmax", {a.node_->output_[0]},
+        //a.node_->type_, "", device, {}, {attr});
+  //return s;
+  string out;
+  _genOutputName(out, "Argmax");
+  OpDef def = OpDefBuilder("Argmax")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Square(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Square", {a.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Square", {a.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Square");
+  OpDef def = OpDefBuilder("Square")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Reduce_mean(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Reduce_mean", {a.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Reduce_mean", {a.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Reduce_mean");
+  OpDef def = OpDefBuilder("Reduce_mean")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Reduce_sum(const Sym& a, string device) {
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Reduce_sum", {a.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Reduce_sum", {a.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Reduce_sum");
+  OpDef def = OpDefBuilder("Reduce_sum")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Maxpooling(const Sym&a,
     int HightWindow, int WidthWindow, string device) {
-  vector<OpDef::AttrDef> attrs;
-  {
-    OpDef::AttrDef attr;
-    attr.set_name("HightWindow");
-    attr.mutable_value()->set_i(HightWindow);
-    attrs.push_back(std::move(attr));
-  }
-  {
-    OpDef::AttrDef attr;
-    attr.set_name("WidthWindow");
-    attr.mutable_value()->set_i(HightWindow);
-    attrs.push_back(std::move(attr));
-  }
-  {
-    OpDef::AttrDef attr;
-    attr.set_name("PoolingMode");
-    attr.mutable_value()->set_s("Max");
-    attrs.push_back(std::move(attr));
-  }
-  return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_, "",
-         device, {}, attrs);
+  //vector<OpDef::AttrDef> attrs;
+  //{
+    //OpDef::AttrDef attr;
+    //attr.set_name("HightWindow");
+    //attr.mutable_value()->set_i(HightWindow);
+    //attrs.push_back(std::move(attr));
+  //}
+  //{
+    //OpDef::AttrDef attr;
+    //attr.set_name("WidthWindow");
+    //attr.mutable_value()->set_i(HightWindow);
+    //attrs.push_back(std::move(attr));
+  //}
+  //{
+    //OpDef::AttrDef attr;
+    //attr.set_name("PoolingMode");
+    //attr.mutable_value()->set_s("Max");
+    //attrs.push_back(std::move(attr));
+  //}
+  //return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_, "",
+         //device, {}, attrs);
+  string out;
+  _genOutputName(out, "Maxpooling");
+  OpDef def = OpDefBuilder("Maxpooling")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Attr("HightWindow", HightWindow)
+                .Attr("WidthWindow", WidthWindow)
+                .Attr("PoolingMode", "Max")
+                .Finalize();
+  return Sym(def);
 }
 
-Sym Sym::Relu(const Sym&a, string device) {
-  return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, "", device);
+Sym Sym::Relu(const Sym& a, string device) {
+  //return Sym("Relu", {a.node_->output_[0]}, a.node_->type_, "", device);
+  string out;
+  _genOutputName(out, "Relu");
+  OpDef def = OpDefBuilder("Relu")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
-Sym Sym::SoftmaxEntropyLogits(const Sym&a, const Sym& b, string device) {
-  return Sym("SoftmaxEntropyLogits",
-      { a.node_->output_[0], b.node_->output_[0] },
-        a.node_->type_, "", device);
-}
-
-Sym Sym::SoftmaxEntropyLoss(const Sym&a, const Sym& b, string device) {
-  return Sym("SoftmaxEntropyLoss",
-      { a.node_->output_[0], b.node_->output_[0] },
-        a.node_->type_, "", device);
-}
 
 Sym Sym::Flatten(const Sym& a) {
-  OpDef::AttrDef attr;
-  attr.set_name("ShareMemory");
-  attr.mutable_value()->set_b(true);
-  return Sym("Flatten", { a.node_->output_[0] },
-      a.node_->type_, "", a.node_->device_, {}, {attr});
+  //OpDef::AttrDef attr;
+  //attr.set_name("ShareMemory");
+  //attr.mutable_value()->set_b(true);
+  //return Sym("Flatten", { a.node_->output_[0] },
+      //a.node_->type_, "", a.node_->device_, {}, {attr});
+  string out;
+  _genOutputName(out, "Flatten");
+  OpDef def = OpDefBuilder("Flatten")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(a.node_->op_def.device())
+                .Attr("ShareMemory", true)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Reshape(const Sym& a, const std::vector<int>& shape) {
-  OpDef::AttrDef attr;
-  attr.set_name("ShareMemory");
-  attr.mutable_value()->set_b(true);
-  return Sym("Reshape", { a.node_->output_[0] },
-      a.node_->type_, "", a.node_->device_, shape, {attr});
+  //OpDef::AttrDef attr;
+  //attr.set_name("ShareMemory");
+  //attr.mutable_value()->set_b(true);
+  //return Sym("Reshape", { a.node_->output_[0] },
+      //a.node_->type_, "", a.node_->device_, shape, {attr});
+  string out;
+  _genOutputName(out, "Reshape");
+  OpDef def = OpDefBuilder("Reshape")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(a.node_->op_def.device())
+                .Shape(shape)
+                .Attr("ShareMemory", true)
+                .Finalize();
+  return Sym(def);
+}
+
+Sym Sym::SoftmaxEntropyLogits(const Sym& a, const Sym& b, string device) {
+  //return Sym("SoftmaxEntropyLogits",
+      //{ a.node_->output_[0], b.node_->output_[0] },
+        //a.node_->type_, "", device);
+  string out;
+  _genOutputName(out, "SoftmaxEntropyLogits");
+  OpDef def = OpDefBuilder("SoftmaxEntropyLogits")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
+}
+
+Sym Sym::SoftmaxEntropyLoss(const Sym&a, const Sym& b, string device) {
+  //return Sym("SoftmaxEntropyLoss",
+      //{ a.node_->output_[0], b.node_->output_[0] },
+        //a.node_->type_, "", device);
+  string out;
+  _genOutputName(out, "SoftmaxEntropyLoss");
+  OpDef def = OpDefBuilder("SoftmaxEntropyLoss")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Equal(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
-  Sym s("Equal", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Equal", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Equal");
+  OpDef def = OpDefBuilder("Equal")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Add(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  //Sym s("Add", output, {a.output(), b.output()}, a.type(), device, a.shape());
-  Sym s("Add", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Add", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Add");
+  OpDef def = OpDefBuilder("Add")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Sub(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  Sym s("Sub", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Sub", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Sub");
+  OpDef def = OpDefBuilder("Sub")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == b.node_->output_.size());
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Mul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("Mul", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "Mul");
+  OpDef def = OpDefBuilder("Mul")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::MatMul(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("MatMul", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "MatMul");
+  OpDef def = OpDefBuilder("MatMul")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::EmbeddingLookup(const Sym& a, const Sym& b, string device) {
   CHECK(a.node_->type_ == b.node_->type_);
   CHECK(a.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  Sym s("EmbeddingLookup", {a.node_->output_[0], b.node_->output_[0]},
-        a.node_->type_, "", device);
-  return s;
+  //Sym s("EmbeddingLookup", {a.node_->output_[0], b.node_->output_[0]},
+        //a.node_->type_, "", device);
+  //return s;
+  string out;
+  _genOutputName(out, "EmbeddingLookup");
+  OpDef def = OpDefBuilder("EmbeddingLookup")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
@@ -341,9 +571,20 @@ Sym Sym::Conv(const Sym& a, const Sym& b, const Sym& c, string device) {
   CHECK(c.op_name() == "Variable");
   CHECK(a.node_->type_ == b.node_->type_ &&
         b.node_->type_ == c.node_->type_);
-  return Sym("Conv",
-      {a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
-      a.node_->type_, "", device);
+  //return Sym("Conv",
+      //{a.node_->output_[0], b.node_->output_[0], c.node_->output_[0]},
+      //a.node_->type_, "", device);
+  string out;
+  _genOutputName(out, "Conv");
+  OpDef def = OpDefBuilder("Conv")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Input(c.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::FullyConnected(const Sym& x, const Sym& w, const Sym& b, string device) {
@@ -354,28 +595,68 @@ Sym Sym::FullyConnected(const Sym& x, const Sym& w, const Sym& b, string device)
   CHECK(x.node_->output_.size() == 1 &&
         w.node_->output_.size() == 1 &&
         b.node_->output_.size() == 1);
-  return Sym("FullyConnected", {x.node_->output_[0], w.node_->output_[0], b.node_->output_[0]},
-             x.node_->type_, "", device, {}, {});
+  //return Sym("FullyConnected", {x.node_->output_[0], w.node_->output_[0], b.node_->output_[0]},
+             //x.node_->type_, "", device, {}, {});
+  string out;
+  _genOutputName(out, "FullyConnected");
+  OpDef def = OpDefBuilder("FullyConnected")
+                .Input(x.node_->op_def.output(0))
+                .Input(w.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(x.node_->op_def.dtype())
+                .Device(device)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym Sym::LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device) {
   CHECK(b.op_name() == "Variable");
   CHECK(a.node_->type_ == b.node_->type_);
-  OpDef::AttrDef layer_attr;
-  layer_attr.set_name("num_layers");
-  layer_attr.mutable_value()->set_i(layer);
-  OpDef::AttrDef hidden_attr;
-  hidden_attr.set_name("hidden_size");
-  hidden_attr.mutable_value()->set_i(hidden);
-  return Sym("LSTM",
-      {a.node_->output_[0], b.node_->output_[0]},
-      a.node_->type_, "", device, {}, {layer_attr, hidden_attr});
+  //OpDef::AttrDef layer_attr;
+  //layer_attr.set_name("num_layers");
+  //layer_attr.mutable_value()->set_i(layer);
+  //OpDef::AttrDef hidden_attr;
+  //hidden_attr.set_name("hidden_size");
+  //hidden_attr.mutable_value()->set_i(hidden);
+  //return Sym("LSTM",
+      //{a.node_->output_[0], b.node_->output_[0]},
+      //a.node_->type_, "", device, {}, {layer_attr, hidden_attr});
+  string out;
+  _genOutputName(out, "LSTM");
+  OpDef def = OpDefBuilder("LSTM")
+                .Input(a.node_->op_def.output(0))
+                .Input(b.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Attr("num_layers", layer)
+                .Attr("hidden_size", hidden)
+                .Finalize();
+  return Sym(def);
 }
+  //Sym(const string& op_name, const string& input,
+      //const vector<Sym>& variables = {},
+      //const float lr = 1,
+      //const float clip = 0,
+      //const int iters = 1,
+      //const string& projections = "");
 
 Sym Sym::Optimizer(const Sym& a) {
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Optimizer", a.node_->output_[0]);
-  return s;
+  //Sym s("Optimizer", a.node_->output_[0]);
+  //return s;
+  string out;
+  _genOutputName(out, "Optimizer");
+  OpDef def = OpDefBuilder("Optimizer")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Attr("learning_rate", 1)
+                .Attr("Iters", 1)
+                .Finalize();
+  return Sym(def);
 }
 
 //filler operation
@@ -438,9 +719,26 @@ Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
   //CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.node_->output_.size() == 1);
-  Sym s("Optimizer", a.node_->output_[0],
-      variables, lr, clip, iters, projection);
-  return s;
+  //Sym s("Optimizer", a.node_->output_[0],
+      //variables, lr, clip, iters, projection);
+  //return s;
+  vector<string> vars;
+  for (auto& v : variables)
+    vars.push_back(v.node_->op_def.output(0));
+  string out;
+  _genOutputName(out, "Optimizer");
+  OpDef def = OpDefBuilder("Optimizer")
+                .Input(a.node_->op_def.output(0))
+                .Output(out)
+                .Dtype(a.node_->op_def.dtype())
+                .Device(device)
+                .Attr("Vars", vars)
+                .Attr("learning_rate", lr)
+                .Attr("clip", clip)
+                .Attr("Iters", iters)
+                .Attr("Projection", projection)
+                .Finalize();
+  return Sym(def);
 }
 
 Sym& Sym::operator= (const Sym& sym) {
@@ -454,7 +752,7 @@ void Sym::print() {
   CHECK_NOTNULL(node_.get());
   for (int dim : node_->shape_)
     length *= dim;
-  if (node_->type_ == C_FLOAT) {
+  if (node_->op_def.dtype() == DT_FLOAT) {
     for (int i = 0; i < std::min(length, 10); i++) {
       LOG(INFO) << "[" << i << "]:\t"
                 << std::fixed << std::setprecision(15)
