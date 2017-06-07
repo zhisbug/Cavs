@@ -1,7 +1,7 @@
 #include "cavs/midend/simple_session.h"
 #include "cavs/midend/statement.h"
-#include "cavs/backend/op_def_builder.h"
 #include "cavs/backend/op_impl_mpi_functor.h"
+#include "cavs/util/op_def_builder.h"
 
 #include <mpi.h>
 #include <unordered_map>
@@ -44,7 +44,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           CHECK((*iter)->outputs_size() == 1);
           CHECK((*iter)->inputs_size() == 2);
           OpDef comm;
-          ::backend::OpDefBuilder("MPISFB")
+          OpDefBuilder("MPISFB")
             .Input((*iter)->input(0)->name())
             .Input((*iter)->input(1)->name())
             .Output((*iter)->output(0)->name())
@@ -62,7 +62,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           //we assume the output size of variable_grad node must equal 1
           CHECK((*iter)->outputs_size() == 1);
           OpDef comm;
-          ::backend::OpDefBuilder("MPIAllReduce")
+          OpDefBuilder("MPIAllReduce")
             .Input(name)
             .Output(name)
             .Shape((*iter)->output(0)->shape())

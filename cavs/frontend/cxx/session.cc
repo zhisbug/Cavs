@@ -11,8 +11,8 @@ void Session::Run(const std::initializer_list<Sym>& outputs,
     if (feed_map_.count(sym.output(0)) == 0) {
       feed_map_[sym.output(0)] = 
         C_NewTensor(sym.output(0).c_str(), sym.output(0).length(), 
-                    sym.shape().data(), sym.shape().size(),
-                    sym.type());
+                    sym.shape(0).data(), sym.shape(0).size(),
+                    (C_Dtype)sym.type());
     }
     C_Tensor* ft = feed_map_[sym.output(0)];
     memcpy(C_TensorData(ft), data, C_TensorSize(ft));

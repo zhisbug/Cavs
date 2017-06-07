@@ -1,8 +1,8 @@
 #include "cavs/midend/simple_session.h"
 #include "cavs/midend/allocator.h"
-#include "cavs/backend/op_def_builder.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/op_def_builder.h"
 
 #include <iterator>
 

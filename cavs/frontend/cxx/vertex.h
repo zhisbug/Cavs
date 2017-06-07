@@ -7,8 +7,8 @@ namespace _detail {
   class Edge {
    public:
     Sym Data(int i);
-  }
-};
+  };
+} //namespace _detail
 
 class Vertex {
  public:
@@ -20,7 +20,7 @@ class Vertex {
 
  protected:
   Sym InData(int i);
-  Edge InEdge(int i);
+  _detail::Edge InEdge(int i);
 };
 
 #endif

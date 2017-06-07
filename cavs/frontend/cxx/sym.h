@@ -22,8 +22,9 @@ class Sym {
   typedef pair<string, vector<OpDef::AttrDef>> ATTRIBUTE;
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
-  void Finalize(OpDef* op_def) const { *op_def = node_->op_def; }
-  const OpDef& Finalize() const { return node_->op_def; }
+  //void Finalize(OpDef* op_def) const { *op_def = node_->op_def; }
+  //const OpDef& Finalize() const { return node_->op_def; }
+  inline const OpDef& def() const { return node_->op_def; }
 
   //non-arguments operation
   static Sym Variable(DataType type, const std::vector<int>& shape,
@@ -149,22 +150,30 @@ class Sym {
   //inline const std::vector<string>& outputs() const { 
     //return node_->output_;
   //}
-  inline const std::vector<string>& outputs() const { 
-    return node_->op_def.output();
+  inline std::vector<string> outputs() const { 
+    std::vector<string> out;
+    for (auto& o : def().output())
+      out.push_back(o);
+    return out;
   }
   //inline const std::string& output(int idx) const { 
     //return node_->output_.at(idx);
   //}
   inline const std::string& output(int idx) const { 
-    return node_->op_def.output(idx);
+    return def().output(idx);
   }
   //inline string& op_name() const { return node_->op_name_; }
-  inline const string& op_name() const { return node_->op_def.name(); }
+  inline const string& op_name() const { return def().name(); }
   //inline C_Dtype type() const { return node_->type_; }
-  inline DataType type() const { return node_->op_def.dtype(); }
-  //inline std::vector<int> shape() const { return node_->shape_; }
+  inline DataType type() const { return def().dtype(); }
+  inline std::vector<int> shape(int idx) const {
+    std::vector<int> out;
+    for (auto& d : def().shape(idx).dim())
+      out.push_back(d);
+    return out;
+  }
   //inline string& device() const { return node_->device_; }
-  inline DeviceType device() const { return node_->op_def.device(); }
+  inline DeviceType device() const { return def().device(); }
   //shared_ptr<node> node_;
   shared_ptr<node_t> node_;
   static int id_;

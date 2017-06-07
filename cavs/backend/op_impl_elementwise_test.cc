@@ -1,6 +1,6 @@
-#include "cavs/backend/op_def_builder.h"
 #include "cavs/midend/op_test.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/op_def_builder.h"
 
 using namespace midend;
 using namespace backend;

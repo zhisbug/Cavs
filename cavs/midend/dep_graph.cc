@@ -1,9 +1,9 @@
 #include "cavs/midend/dep_graph.h"
 #include "cavs/midend/statement_builder.h"
 #include "cavs/backend/op_decl.h"
-#include "cavs/backend/op_def_builder.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/op_def_builder.h"
 
 #include <string>
 #include <algorithm>
@@ -11,7 +11,7 @@
 
 using namespace std;
 using ::backend::OpDecl;
-using ::backend::BuildConstantOpDef;
+//using ::backend::BuildConstantOpDef;
 
 namespace midend {
 
@@ -139,38 +139,38 @@ void DepGraph::GroupClosedSet(
       outputs_shape.emplace_back(var->shape());
     }
     OpDef clipper;  
-    ::backend::OpDefBuilder("Clip")
-        .Input(outputs)
-        .Output(outputs)
-        .Shape(outputs_shape)
-        .Device("GPU")
-        .AttrSingle<float>("clip", clip)
-        .Finalize(&clipper);
+    OpDefBuilder("Clip")
+      .Input(outputs)
+      .Output(outputs)
+      .Shape(outputs_shape)
+      .Device("GPU")
+      .AttrSingle<float>("clip", clip)
+      .Finalize(&clipper);
     loss_scope->AddNode(clipper);
   }
 
   for (auto& var_name : vars) {
     const Edge* var = loss_scope->FindEdge(var_name);
     OpDef update;  
-    ::backend::OpDefBuilder(solver)
-        .Input(var_name)
-        .Input(GetGradientName(var_name))
-        .Output(var_name)
-        .Shape(var->shape())
-        .AttrSingle<float>("learning_rate", lr)
-        .Device("GPU")
-        .Finalize(&update);
+    OpDefBuilder(solver)
+      .Input(var_name)
+      .Input(GetGradientName(var_name))
+      .Output(var_name)
+      .Shape(var->shape())
+      .AttrSingle<float>("learning_rate", lr)
+      .Device("GPU")
+      .Finalize(&update);
     loss_scope->AddNode(update);
 
     if (proj.length() > 0) {
       //LOG(FATAL) << proj;
       OpDef projection;  
-      ::backend::OpDefBuilder(proj)
-          .Input(var_name)
-          .Output(var_name)
-          .Shape(var->shape())
-          .Device("GPU")
-          .Finalize(&projection);
+      OpDefBuilder(proj)
+        .Input(var_name)
+        .Output(var_name)
+        .Shape(var->shape())
+        .Device("GPU")
+        .Finalize(&projection);
       loss_scope->AddNode(projection);
     }
   }
@@ -222,9 +222,15 @@ void DepGraph::OptimizeWithLoss(
   Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
   OpDef const_op;
-  BuildConstantOpDef(&const_op, 
-      GetGradientName(loss),
-      loss_edge->shape(), 1.f);
+  //BuildConstantOpDef(&const_op, 
+      //GetGradientName(loss),
+      //loss_edge->shape(), 1.f);
+  OpDefBuilder("ConstOp")
+    .Output(GetGradientName(loss))
+    .Shape(loss_edge->shape())
+    .AttrSingle("init", 1.f)
+    .Device("GPU")
+    .Finalize(&const_op);
   loss_scope->AddNode(const_op);
   GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
   ScopedNode* sn = new ScopedNode(iters, loss_scope, def);

@@ -47,19 +47,24 @@ OpDefBuilder& OpDefBuilder::Device(const string& dev) {
   return *this;
 }
 
+OpDefBuilder& OpDefBuilder::Device(const DeviceType type) {
+  op_def_.set_device(type);
+  return *this;
+}
+
 OpDefBuilder& OpDefBuilder::Device(const OpDef& def) {
   op_def_.set_device(def.device());
   return *this;
 }
 
-bool OpDefBuilder::CheckValid() {
+bool OpDefBuilder::CheckValid() const {
   CHECK(op_def_.output_size() == op_def_.shape_size() ||
         op_def_.shape_size() == 0)
         << op_def_.DebugString();
   return true;
 }
 
-OpDefBuilder& OpDefBuilder::Shape(const initializer_list<int>& shape) {
+OpDefBuilder& OpDefBuilder::Shape(const vector<int>& shape) {
   op_def_.clear_shape();
   TensorShapeDef* shape_def = op_def_.add_shape();
   for (int dim : shape)
@@ -166,9 +171,10 @@ OpDefBuilder& OpDefBuilder::Attr(const vector<OpDef::AttrDef>& def) {
     return *this;                                   \
   }
 
-INSTANTIATE_SETATTR(float, f)
-INSTANTIATE_SETATTR(int, i)
-INSTANTIATE_SETATTR(bool, b)
+INSTANTIATE_SETATTR(float,  f)
+INSTANTIATE_SETATTR(int,    i)
+INSTANTIATE_SETATTR(bool,   b)
+INSTANTIATE_SETATTR(string, s)
 
 //void BuildConstantOpDef(OpDef* op_def, 
     //const string& output,

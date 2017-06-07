@@ -1,6 +1,6 @@
 #include "cavs/backend/op_decl.h"
-#include "cavs/backend/op_def_builder.h"
 #include "cavs/util/op_util.h"
+#include "cavs/util/op_def_builder.h"
 
 using std::vector;
 

@@ -8,14 +8,14 @@ DEFINE_double(lr,    0.01, "learning_rate"    );
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  Sym kernel1  = Sym::Variable(C_FLOAT, {20, 1, 5, 5 }, Sym::Xavier());
-  Sym bias1    = Sym::Variable(C_FLOAT, {1, 20, 1, 1 }, Sym::Zeros());
-  Sym kernel2  = Sym::Variable(C_FLOAT, {50, 20, 5, 5}, Sym::Xavier());
-  Sym bias2    = Sym::Variable(C_FLOAT, {1, 50, 1, 1 }, Sym::Zeros());
-  Sym fc1      = Sym::Variable(C_FLOAT, {500, 800    }, Sym::Xavier());
-  Sym bias_fc1 = Sym::Variable(C_FLOAT, {1, 500      }, Sym::Zeros());
-  Sym fc2      = Sym::Variable(C_FLOAT, {10, 500     }, Sym::Xavier());
-  Sym bias_fc2 = Sym::Variable(C_FLOAT, {1, 10       }, Sym::Zeros());
+  Sym kernel1  = Sym::Variable(DT_FLOAT, {20, 1, 5, 5 }, Sym::Xavier());
+  Sym bias1    = Sym::Variable(DT_FLOAT, {1, 20, 1, 1 }, Sym::Zeros());
+  Sym kernel2  = Sym::Variable(DT_FLOAT, {50, 20, 5, 5}, Sym::Xavier());
+  Sym bias2    = Sym::Variable(DT_FLOAT, {1, 50, 1, 1 }, Sym::Zeros());
+  Sym fc1      = Sym::Variable(DT_FLOAT, {500, 800    }, Sym::Xavier());
+  Sym bias_fc1 = Sym::Variable(DT_FLOAT, {1, 500      }, Sym::Zeros());
+  Sym fc2      = Sym::Variable(DT_FLOAT, {10, 500     }, Sym::Xavier());
+  Sym bias_fc2 = Sym::Variable(DT_FLOAT, {1, 10       }, Sym::Zeros());
 
   Sym image = Sym::MnistInput(FLAGS_batch, "Image", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");
   Sym label = Sym::MnistInput(FLAGS_batch, "Label", "/users/shizhenx/projects/Cavs/apps/lenet-5/data");

@@ -21,11 +21,11 @@ int main(int argc, char* argv[]) {
 
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   LOG(INFO) << "DOC: " << FLAGS_D;
-  Sym doc_word = Sym::Data(C_FLOAT, {FLAGS_D, FLAGS_V}, FLAGS_batch,
+  Sym doc_word = Sym::Data(DT_FLOAT, {FLAGS_D, FLAGS_V}, FLAGS_batch,
                            Sym::BinaryReader(FLAGS_file_docs));
-  Sym doc_tpc  = Sym::DDV(C_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_batch,
+  Sym doc_tpc  = Sym::DDV(DT_FLOAT, {FLAGS_D, FLAGS_K}, FLAGS_batch,
                           Sym::UniformNormalizer(FLAGS_K));
-  Sym tpc_word = Sym::Variable(C_FLOAT, {FLAGS_K, FLAGS_V},
+  Sym tpc_word = Sym::Variable(DT_FLOAT, {FLAGS_K, FLAGS_V},
                                Sym::UniformNormalizer(FLAGS_V));
 
   Sym loss = 0.5f/FLAGS_batch*((doc_word-(Sym::MatMul(doc_tpc, tpc_word))).Square().Reduce_sum());

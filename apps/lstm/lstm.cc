@@ -74,15 +74,15 @@ int main(int argc, char* argv[]) {
   //int var_size = 4*(FLAGS_hidden*(FLAGS_input_size+(2*FLAGS_lstm_layers-1)*FLAGS_hidden))
                   //+ 4*2*FLAGS_lstm_layers*FLAGS_hidden;
   int var_size  = FLAGS_lstm_layers*2*4*(FLAGS_hidden*(FLAGS_hidden+1));
-  Sym input     = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym label     = Sym::Placeholder(C_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym embedding = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden},
+  Sym input     = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym label     = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym embedding = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym LSTM_w    = Sym::Variable(C_FLOAT, {var_size},
+  Sym LSTM_w    = Sym::Variable(DT_FLOAT, {var_size},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym weight    = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden},
+  Sym weight    = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym bias      = Sym::Variable(C_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
+  Sym bias      = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
   Sym loss      = input.EmbeddingLookup(embedding)
                        .LSTM(LSTM_w, FLAGS_lstm_layers, FLAGS_hidden)
                        .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})

@@ -19,6 +19,7 @@ class OpDefBuilder {
   OpDefBuilder& Output(const std::vector<std::string>& outputs);
   OpDefBuilder& Output(const OpDef& def);
   OpDefBuilder& Device(const std::string& dev);
+  OpDefBuilder& Device(const DeviceType type);
   OpDefBuilder& Device(const OpDef& def);
   OpDefBuilder& Shape(const std::vector<int>& shape);
   OpDefBuilder& Shape(const TensorShapeDef& shape);
@@ -40,7 +41,7 @@ class OpDefBuilder {
 
  private:
   OpDef op_def_;
-  bool CheckValid();
+  bool CheckValid() const;
   DISALLOW_COPY_AND_ASSIGN(OpDefBuilder);
 };
 
