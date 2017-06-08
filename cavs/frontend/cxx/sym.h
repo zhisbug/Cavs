@@ -8,27 +8,31 @@
 
 #include <string>
 #include <vector>
-#include <memory>
-#include <iostream>
-#include <utility>
+//#include <memory>
+//#include <utility>
+#include <unordered_map>
 
 using std::string;
-using std::vector;
-using std::shared_ptr;
-using std::ostream;
-using std::pair;
 
 class Sym {
  public:
-  typedef pair<string, vector<OpDef::AttrDef>> ATTRIBUTE;
+  std::vector<string> output() const;
+  const string& output(int idx) const;
+  std::vector<int> shape(int idx) const;
+  inline DataType type() const { return def().dtype(); }
+  inline DeviceType device() const { return def().device(); }
+  inline const string& op_name() const { return def().name(); }
+  inline const OpDef& def() const { return node_->op_def; }
+  inline OpDef* mutable_def() { return &(node_->op_def); }
+
+  Sym(const OpDef& op_def);
+  typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
   enum MODE { STATIC_SYM = 1, DYNAMIC_SYM = 2 };
   inline static void SetMode(MODE mode) { mode_ = mode; }
-  inline static void SetFuncname(string name) { func_name_ = name; }
+  inline static void SetFuncName(string name) { func_name_ = name; }
 
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
-  inline const OpDef& def() const { return node_->op_def; }
-  inline OpDef* mutable_def() { return &(node_->op_def); }
 
   //non-arguments operation
   static Sym Variable(DataType type, const std::vector<int>& shape,
@@ -47,7 +51,7 @@ class Sym {
   static Sym Reduce_mean(const Sym& a, string device = "GPU");
   static Sym Reduce_sum(const Sym& a, string device = "GPU");
   static Sym Optimizer(const Sym& a);
-  static Sym Optimizer(const Sym& a, vector<Sym> variables,
+  static Sym Optimizer(const Sym& a, std::vector<Sym> variables,
       float lr, float clip = 0.f, int iters = 1, const string& projections = "");
   static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
   static Sym Relu(const Sym&a, string device = "GPU");
@@ -88,7 +92,7 @@ class Sym {
   Sym Reduce_mean() { return Reduce_mean(*this); };
   Sym Reduce_sum() { return Reduce_sum(*this); };
   Sym Optimizer() { return Optimizer(*this); }
-  Sym Optimizer(vector<Sym> variables,
+  Sym Optimizer(std::vector<Sym> variables,
       float lr, float clip = 0.f, int iters = 1, const string& projection = "") {
     return Optimizer(*this, variables, lr, clip, iters, projection); 
   }
@@ -145,30 +149,29 @@ class Sym {
       //const float clip = 0,
       //const int iters = 1,
       //const string& projections = "");
-  inline std::vector<string> outputs() const { 
-    std::vector<string> out;
-    for (auto& o : def().output())
-      out.push_back(o);
-    return out;
-  }
-  inline const std::string& output(int idx) const { 
-    return def().output(idx);
-  }
-  //inline string& op_name() const { return node_->op_name_; }
-  inline const string& op_name() const { return def().name(); }
-  //inline C_Dtype type() const { return node_->type_; }
-  inline DataType type() const { return def().dtype(); }
-  inline std::vector<int> shape(int idx) const {
-    std::vector<int> out;
-    for (auto& d : def().shape(idx).dim())
-      out.push_back(d);
-    return out;
-  }
-  inline DeviceType device() const { return def().device(); }
-  shared_ptr<node_t> node_;
+  std::shared_ptr<node_t> node_;
   static MODE mode_;
-  static std::string func_name_;
-  static std::unordered_map<std::string, FuncDef> func_def_;
+  static string func_name_;
+  static std::unordered_map<string, FuncDef> func_def_;
 };
+
+inline std::vector<string> Sym::output() const { 
+  std::vector<string> out;
+  for (auto& o : def().output())
+    out.push_back(o);
+  return out;
+}
+
+inline const string& Sym::output(int idx) const { 
+  return def().output(idx);
+}
+
+inline std::vector<int> Sym::shape(int idx) const { 
+  std::vector<int> s;
+  CHECK(idx < def().shape_size());
+  for (auto& d : def().shape(idx).dim())
+    s.push_back(d);
+  return s;
+}
 
 #endif

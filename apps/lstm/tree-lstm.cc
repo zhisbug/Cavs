@@ -1,4 +1,5 @@
 #include "cavs/frontend/cxx/sym.h"
+#include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
 #include "cavs/util/macros_gpu.h"
 
@@ -13,7 +14,6 @@ DEFINE_int32 (batch,       20,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
-DEFINE_int32 (lstm_layers, 2,     "stacked lstm layers");
 DEFINE_int32 (epoch,       10,    "epochs");
 DEFINE_int32 (iters,       99999, "iterations");
 DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
@@ -22,9 +22,10 @@ DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
     "ptb_file");
 
-class TreeModel : Vertex {
+class TreeModel : GraphSupport{
  public:
-  TreeModel() {
+  TreeModel(const Sym& graph_ph, const Sym& vertex_ph) :
+    GraphSupport(graph_ph, vertex_ph) {
     //It is the variable size required by cudnnRNN
     int var_size  = 2*4*(FLAGS_hidden*(FLAGS_hidden+1));
     embedding  = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden},
@@ -40,11 +41,11 @@ class TreeModel : Vertex {
   }
 
   void Inode() override {
-    Sym child_hl = InEdge(0).Slice({}, {}); 
-    Sym child_cl = InEdge(0).data(1);
-    Sym child_hr = InEdge(1).data(0); 
-    Sym child_cr = InEdge(1).data(1);
-    Sym x = GatherLocal();
+    Sym child_hl = Gather(0, 0, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_cl = Gather(0, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_hr = Gather(1, 0, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_cr = Gather(1, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
+    Sym x        = Pull(0, {FLAGS_input_size});
 
     Sym xh = Sym::Concat({x, child_hl+child_hr});
     Sym tmp = Sym::Matmul(xh, UW_uio);
@@ -66,13 +67,12 @@ class TreeModel : Vertex {
     c = i * u + Sym::Reduce_sum(f*child_c, 0);
     Sym h = o * Sym::Tanh(c);
 
-    OutData(0) = h;
-    OutEdge(0).data(0) = h;
-    OutEdge(0).data(1) = c;
+    Scatter(Sym::Concat({h, c}));
+    Push(h);
   }
 
   void Leaf() override {
-    Sym x = InData(0);
+    Sym x = Pull(0, {FLAGS_input_size});
     x = x.EmbeddingLookup(embedding);
     Sym h0 = Sym::Constant(0, {FLAGS_hidden*FLAGS_hidden});
     Sym xh = Sym::Concat({x, h0});
@@ -84,9 +84,8 @@ class TreeModel : Vertex {
     u = (u+bu).Tanh();
     c = i * u;
     Sym h = o * Sym::Tanh(c);
-    OutData(0) = h;
-    OutEdge(0).data(0) = h;
-    OutEdge(0).data(1) = c;
+    Push(h);
+    Scatter(Sym:Concat({h, c}));
   }
 
  private:
@@ -103,18 +102,19 @@ int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   FLAGS_log_dir =  "./";
 
-  Sym input     = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym label     = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym weight    = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias      = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
 
-  TreeModel model();
+  TreeModel model(graph, word_idx);
   Sym loss       = model.Output()
                         .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                         .FullyConnected(weight, bias)
                         .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
-  Sym train      = loss.Optimizer({}, FLAGS_lr, 5);
+  Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
   Session sess;

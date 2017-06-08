@@ -1,7 +1,13 @@
 #include "cavs/frontend/cxx/session.h"
 
-void Session::Run(const std::initializer_list<Sym>& outputs,
-    const std::initializer_list<std::pair<Sym&, void*>>& feed) {
+#include <vector>
+
+using std::vector;
+using std::initializer_list;
+using std::pair;
+
+void Session::Run(const initializer_list<Sym>& outputs,
+    const initializer_list<pair<Sym&, void*>>& feed) {
   vector<C_Tensor*> input_tensor;
   vector<const char*> input_name;
   for (auto& input : feed) {

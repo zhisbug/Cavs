@@ -8,6 +8,7 @@
 #include <iomanip>
 
 using std::vector;
+using std::unordered_map;
 
 //void Sym::node::Finalize(OpDef* op_def) const {
   //op_def->set_name(op_name_);
@@ -29,8 +30,9 @@ using std::vector;
     //shape_def->add_dim(dim);
 //}
 
-int Sym::id_ = 0;
-MODE Sym::mode_ = Sym::static_sym;
+Sym::MODE Sym::mode_ = Sym::STATIC_SYM;
+string Sym::func_name_;
+unordered_map<string, FuncDef> Sym::func_def_;
 
 //Sym::Sym(const string& op_name,
          //const vector<string>& inputs, 
@@ -120,12 +122,12 @@ MODE Sym::mode_ = Sym::static_sym;
     //serial_def.c_str(), serial_def.length());
 //}
 
-Sym(const OpDef& op_def) {
+Sym::Sym(const OpDef& op_def) {
   node_.reset(new node_t());
   node_->op_def = op_def;
 
   static int id_ = 0;
-  mutable_def()->add_output(op_name() + "_" + to_string(id_++));
+  mutable_def()->add_output(op_name() + "_" + std::to_string(id_++));
 
   string serialization;
   def().SerializeToString(&serialization);
@@ -501,7 +503,7 @@ Sym Sym::Mul(const Sym& a, const Sym& b, string device) {
   //return s;
   OpDef def = OpDefBuilder("Mul")
                 .Input(a.def().output(0))
-                .input(b.def().output(0))
+                .Input(b.def().output(0))
                 .Dtype(a.def().dtype())
                 .Device(device)
                 .Finalize();
