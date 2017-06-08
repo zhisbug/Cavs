@@ -2,6 +2,7 @@
 #define CAVS_FRONTEND_CXX_SYM_H_
 
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/proto/func.pb.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/util/logging.h"
 
@@ -20,11 +21,14 @@ using std::pair;
 class Sym {
  public:
   typedef pair<string, vector<OpDef::AttrDef>> ATTRIBUTE;
+  enum MODE { STATIC_SYM = 1, DYNAMIC_SYM = 2 };
+  inline static void SetMode(MODE mode) { mode_ = mode; }
+  inline static void SetFuncname(string name) { func_name_ = name; }
+
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
-  //void Finalize(OpDef* op_def) const { *op_def = node_->op_def; }
-  //const OpDef& Finalize() const { return node_->op_def; }
   inline const OpDef& def() const { return node_->op_def; }
+  inline OpDef* mutable_def() { return &(node_->op_def); }
 
   //non-arguments operation
   static Sym Variable(DataType type, const std::vector<int>& shape,
@@ -77,7 +81,6 @@ class Sym {
   void print();
   void* eval();
   //////////////////////////////////////////////////////////////////////////////
-  //////////////////////////////////////////////////////////////////////////////
   //unary operation
   Sym Abs() { return Abs(*this); }
   Sym Argmax(int axis) { return Argmax(*this, axis); };
@@ -129,7 +132,6 @@ class Sym {
     void* raw_data = NULL;
   } node_t;
     
-
   //Sym(const string& op_name,
       //const vector<string>& inputs, 
       //const C_Dtype type,
@@ -143,22 +145,12 @@ class Sym {
       //const float clip = 0,
       //const int iters = 1,
       //const string& projections = "");
-  Sym(const OpDef& op_def) {
-    node_.reset(new node_t());
-    node_->op_def = op_def;
-  }
-  //inline const std::vector<string>& outputs() const { 
-    //return node_->output_;
-  //}
   inline std::vector<string> outputs() const { 
     std::vector<string> out;
     for (auto& o : def().output())
       out.push_back(o);
     return out;
   }
-  //inline const std::string& output(int idx) const { 
-    //return node_->output_.at(idx);
-  //}
   inline const std::string& output(int idx) const { 
     return def().output(idx);
   }
@@ -172,11 +164,11 @@ class Sym {
       out.push_back(d);
     return out;
   }
-  //inline string& device() const { return node_->device_; }
   inline DeviceType device() const { return def().device(); }
-  //shared_ptr<node> node_;
   shared_ptr<node_t> node_;
-  static int id_;
+  static MODE mode_;
+  static std::string func_name_;
+  static std::unordered_map<std::string, FuncDef> func_def_;
 };
 
 #endif
