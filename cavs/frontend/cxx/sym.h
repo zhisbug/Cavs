@@ -15,14 +15,15 @@ using std::string;
 
 class Sym {
  public:
-  std::vector<string> output() const;
-  const string& output(int idx) const;
+  const string&   output(int idx) const;
+  int   output_size()             const;
+  std::vector<string>    output() const;
   std::vector<int> shape(int idx) const;
-  inline DataType type() const { return def().dtype(); }
-  inline DeviceType device() const { return def().device(); }
-  inline const string& op_name() const { return def().name(); }
-  inline const OpDef& def() const { return node_->op_def; }
-  inline OpDef* mutable_def() { return &(node_->op_def); }
+  inline DataType      type()     const { return def().dtype();    }
+  inline DeviceType    device()   const { return def().device();   }
+  inline const string& op_name()  const { return def().name();     }
+  inline const OpDef&  def()      const { return node_->op_def;    }
+  inline OpDef*        mutable_def()    { return &(node_->op_def); }
 
   Sym(const OpDef& op_def);
   Sym(const Sym& sym) { *this = sym; }
@@ -63,7 +64,8 @@ class Sym {
   static Sym Flatten(const Sym& a);
   static Sym Slice(const Sym& a, int offset, int stride);
   //multi return value 
-  static std::tuple<Sym, Sym, Sym> Split3(const Sym& a, int dimension);
+  static std::tuple<Sym, Sym, Sym> Split3(const Sym& a);
+  static std::tuple<Sym, Sym, Sym, Sym> Split4(const Sym& a);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
@@ -97,12 +99,12 @@ class Sym {
   void* eval();
   //////////////////////////////////////////////////////////////////////////////
   //unary operation
-  Sym Abs() { return Abs(*this); }
-  Sym Argmax(int axis) { return Argmax(*this, axis); };
-  Sym Square() { return Square(*this); }
-  Sym Reduce_mean() { return Reduce_mean(*this); };
-  Sym Reduce_sum() { return Reduce_sum(*this); };
-  Sym Optimizer() { return Optimizer(*this); }
+  Sym Abs()            { return Abs(*this);          }
+  Sym Argmax(int axis) { return Argmax(*this, axis); }
+  Sym Square()         { return Square(*this);       }
+  Sym Reduce_mean()    { return Reduce_mean(*this);  }
+  Sym Reduce_sum()     { return Reduce_sum(*this);   }
+  Sym Optimizer()      { return Optimizer(*this);    }
   Sym Optimizer(std::vector<Sym> variables,
       float lr, float clip = 0.f, int iters = 1, const string& projection = "") {
     return Optimizer(*this, variables, lr, clip, iters, projection); 
@@ -110,20 +112,21 @@ class Sym {
   Sym Maxpooling(int HightWindow, int WidthWindow) {
     return Maxpooling(*this, HightWindow, WidthWindow);
   }
-  Sym Relu() { return Relu(*this); }
+  Sym Relu()    { return Relu(*this);    }
   Sym Sigmoid() { return Sigmoid(*this); }
-  Sym Tanh() { return Tanh(*this); }
+  Sym Tanh()    { return Tanh(*this);    }
   Sym Flatten() { return Flatten(*this); }
   Sym Slice(int offset, int stride) { return Slice(*this, offset, stride); }
   //multi return value 
-  std::tuple<Sym, Sym, Sym> Split3(int dimension) { return Split3(*this, dimension); }
+  std::tuple<Sym, Sym, Sym> Split3()      { return Split3(*this); }
+  std::tuple<Sym, Sym, Sym, Sym> Split4() { return Split4(*this); }
   //binary operation
-  Sym SoftmaxEntropyLogits(const Sym& b) { return SoftmaxEntropyLogits(*this, b); }
-  Sym SoftmaxEntropyLoss(const Sym& b) { return SoftmaxEntropyLoss(*this, b); }
-  Sym EmbeddingLookup(const Sym& b) { return EmbeddingLookup(*this, b); }
-  Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape); }
+  Sym SoftmaxEntropyLogits(const Sym& b)     { return SoftmaxEntropyLogits(*this, b); }
+  Sym SoftmaxEntropyLoss(const Sym& b)       { return SoftmaxEntropyLoss(*this, b);   }
+  Sym EmbeddingLookup(const Sym& b)          { return EmbeddingLookup(*this, b);      }
+  Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape);          }
   //ternary operation
-  Sym Conv(const Sym& b, const Sym& c) { return Conv(*this, b, c); }
+  Sym Conv(const Sym& b, const Sym& c)           { return Conv(*this, b, c);           }
   Sym FullyConnected(const Sym& w, const Sym& b) { return FullyConnected(*this, w, b); }
   //quaternary operation
   Sym LSTM(const Sym& b, int layer, int hidden) { return LSTM(*this, b, layer, hidden); }
@@ -179,7 +182,12 @@ inline std::vector<string> Sym::output() const {
 }
 
 inline const string& Sym::output(int idx) const { 
+  CHECK(idx < def().output_size());
   return def().output(idx);
+}
+
+inline int Sym::output_size() const { 
+  return def().output_size();
 }
 
 inline std::vector<int> Sym::shape(int idx) const { 

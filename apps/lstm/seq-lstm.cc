@@ -22,9 +22,9 @@ DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
     "ptb_file");
 
-class TreeModel : public GraphSupport {
+class SeqModel : public GraphSupport {
  public:
-  TreeModel(const Sym& graph_ph, const Sym& vertex_ph) :
+  SeqModel(const Sym& graph_ph, const Sym& vertex_ph) :
     GraphSupport(graph_ph, vertex_ph) {
     //It is the variable size required by cudnnRNN
     int var_size  = 2*4*(FLAGS_hidden*(FLAGS_hidden+1));
@@ -32,39 +32,30 @@ class TreeModel : public GraphSupport {
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     Sym LSTM_w = Sym::Variable(DT_FLOAT, {var_size},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    UW_uio = LSTM_w.Slice(0, 2*3*FLAGS_hidden*FLAGS_hidden);
-    UW_f   = LSTM_w.Slice(2*3*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden*FLAGS_hidden);
-    bu     = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden);
-    bo     = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+FLAGS_hidden, FLAGS_hidden);
-    bi     = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+2*FLAGS_hidden, FLAGS_hidden);
-    bf     = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+3*FLAGS_hidden, FLAGS_hidden);
+    UW = LSTM_w.Slice(0, 2*4*FLAGS_hidden*FLAGS_hidden);
+    bu = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden);
+    bo = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+FLAGS_hidden, FLAGS_hidden);
+    bi = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+2*FLAGS_hidden, FLAGS_hidden);
+    bf = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+3*FLAGS_hidden, FLAGS_hidden);
   }
 
   void Inode() override {
-    Sym child_hl = Gather(0, 0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_cl = Gather(0, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_hr = Gather(1, 0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_cr = Gather(1, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
-    Sym x        = Pull(0, {FLAGS_input_size});
+    Sym child_h = Gather(0, 0, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_c = Gather(0, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
+    Sym x       = Pull(0, {FLAGS_input_size});
+    x           = x.EmbeddingLookup(embedding);
 
-    Sym xh = Sym::Concat({x, child_hl+child_hr});
-    Sym tmp = Sym::MatMul(xh, UW_uio);
-    Sym u, i, o;
-    tie(u, i, o) = tmp.Split3();
-    Sym xhl = Sym::Concat({x, child_hl});
-    Sym xhr = Sym::Concat({x, child_hr});
-    Sym fl = Sym::MatMul(xhl, UW_f);
-    Sym fr = Sym::MatMul(xhr, UW_f);
+    Sym xh = Sym::Concat({x, child_h});
+    Sym tmp = Sym::MatMul(xh, UW);
+    Sym u, i, o, f;
+    tie(u, i, o, f) = tmp.Split4();
 
     i = (i+bi).Sigmoid();
     o = (o+bo).Sigmoid();
     u = (u+bu).Tanh();
-    fl = (fl+bf).Sigmoid();
-    fr = (fr+bf).Sigmoid();
+    f = (f+bf).Sigmoid();
 
-    Sym f = Sym::Concat({fl, fr});
-    Sym child_c = Sym::Concat({child_cl, child_cr});
-    Sym c = i * u + Sym::Reduce_sum(f*child_c, 0);
+    Sym c = i * u + f*child_c;
     Sym h = o * Sym::Tanh(c);
 
     Scatter(Sym::Concat({h, c}));
@@ -76,9 +67,9 @@ class TreeModel : public GraphSupport {
     x = x.EmbeddingLookup(embedding);
     Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden*FLAGS_hidden});
     Sym xh = Sym::Concat({x, h0});
-    Sym tmp = Sym::MatMul(xh, UW_uio);
-    Sym u, i, o;
-    tie(u, i, o) = tmp.Split3();
+    Sym tmp = Sym::MatMul(xh, UW);
+    Sym u, i, o, f;
+    tie(u, i, o, f) = tmp.Split4();
     i = (i+bi).Sigmoid();
     o = (o+bo).Sigmoid();
     u = (u+bu).Tanh();
@@ -89,8 +80,7 @@ class TreeModel : public GraphSupport {
   }
 
  private:
-  Sym UW_uio;
-  Sym UW_f;
+  Sym UW;
   Sym bu;
   Sym bo;
   Sym bi;
