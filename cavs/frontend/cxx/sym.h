@@ -8,9 +8,8 @@
 
 #include <string>
 #include <vector>
-//#include <memory>
-//#include <utility>
 #include <unordered_map>
+#include <tuple>
 
 using std::string;
 
@@ -26,6 +25,8 @@ class Sym {
   inline OpDef* mutable_def() { return &(node_->op_def); }
 
   Sym(const OpDef& op_def);
+  Sym(const Sym& sym) { *this = sym; }
+  Sym() : node_(nullptr) {}
   typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
   enum MODE { STATIC_SYM = 1, DYNAMIC_SYM = 2 };
   inline static void SetMode(MODE mode) { mode_ = mode; }
@@ -38,6 +39,8 @@ class Sym {
   static Sym Variable(DataType type, const std::vector<int>& shape,
       const ATTRIBUTE& filler = Ones(), string device = "GPU");
   static Sym Placeholder(DataType type, const std::vector<int>& shape,
+      string device = "GPU");
+  static Sym Constant(DataType type, float value, const std::vector<int>& shape,
       string device = "GPU");
   static Sym MnistInput(int batch, string source, string file, string device = "GPU");
   static Sym Data(DataType type, const std::vector<int>& shape, int batch,
@@ -53,9 +56,14 @@ class Sym {
   static Sym Optimizer(const Sym& a);
   static Sym Optimizer(const Sym& a, std::vector<Sym> variables,
       float lr, float clip = 0.f, int iters = 1, const string& projections = "");
-  static Sym Maxpooling(const Sym&a, int HightWindow, int WidthWindow, string device = "GPU");
-  static Sym Relu(const Sym&a, string device = "GPU");
+  static Sym Maxpooling(const Sym& a, int HightWindow, int WidthWindow, string device = "GPU");
+  static Sym Relu(const Sym& a, string device = "GPU");
+  static Sym Sigmoid(const Sym& a, string device = "GPU");
+  static Sym Tanh(const Sym& a, string device = "GPU");
   static Sym Flatten(const Sym& a);
+  static Sym Slice(const Sym& a, int offset, int stride);
+  //multi return value 
+  static std::tuple<Sym, Sym, Sym> Split3(const Sym& a, int dimension);
   //binary operation
   static Sym Add(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Sub(const Sym& a, const Sym& b, string device = "GPU");
@@ -71,6 +79,9 @@ class Sym {
   static Sym FullyConnected(const Sym& x, const Sym& w, const Sym& b, string device = "GPU");
   //quaternary operation
   static Sym LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device = "GPU");
+  //multi operators
+  static Sym Concat(const std::vector<Sym>& syms, string device = "GPU");
+  
   //filler operation
   static ATTRIBUTE Ones();
   static ATTRIBUTE Zeros();
@@ -100,7 +111,12 @@ class Sym {
     return Maxpooling(*this, HightWindow, WidthWindow);
   }
   Sym Relu() { return Relu(*this); }
+  Sym Sigmoid() { return Sigmoid(*this); }
+  Sym Tanh() { return Tanh(*this); }
   Sym Flatten() { return Flatten(*this); }
+  Sym Slice(int offset, int stride) { return Slice(*this, offset, stride); }
+  //multi return value 
+  std::tuple<Sym, Sym, Sym> Split3(int dimension) { return Split3(*this, dimension); }
   //binary operation
   Sym SoftmaxEntropyLogits(const Sym& b) { return SoftmaxEntropyLogits(*this, b); }
   Sym SoftmaxEntropyLoss(const Sym& b) { return SoftmaxEntropyLoss(*this, b); }

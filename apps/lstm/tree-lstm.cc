@@ -22,15 +22,15 @@ DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
     "ptb_file");
 
-class TreeModel : GraphSupport{
+class TreeModel : public GraphSupport {
  public:
   TreeModel(const Sym& graph_ph, const Sym& vertex_ph) :
     GraphSupport(graph_ph, vertex_ph) {
     //It is the variable size required by cudnnRNN
     int var_size  = 2*4*(FLAGS_hidden*(FLAGS_hidden+1));
-    embedding  = Sym::Variable(C_FLOAT, {FLAGS_input_size, FLAGS_hidden},
+    embedding  = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    Sym LSTM_w = Sym::Variable(C_FLOAT, {var_size},
+    Sym LSTM_w = Sym::Variable(DT_FLOAT, {var_size},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     UW_uio = LSTM_w.Slice(0, 2*3*FLAGS_hidden*FLAGS_hidden);
     UW_f   = LSTM_w.Slice(2*3*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden*FLAGS_hidden);
@@ -48,13 +48,13 @@ class TreeModel : GraphSupport{
     Sym x        = Pull(0, {FLAGS_input_size});
 
     Sym xh = Sym::Concat({x, child_hl+child_hr});
-    Sym tmp = Sym::Matmul(xh, UW_uio);
+    Sym tmp = Sym::MatMul(xh, UW_uio);
     Sym u, i, o;
-    tie(u, i, o) = tmp.split3(tmp, 1);
+    tie(u, i, o) = tmp.Split3(1);
     Sym xhl = Sym::Concat({x, child_hl});
     Sym xhr = Sym::Concat({x, child_hr});
-    Sym fl = Sym::Matmul(xhl, UW_f);
-    Sym fr = Sym::Matmul(xhr, UW_f);
+    Sym fl = Sym::MatMul(xhl, UW_f);
+    Sym fr = Sym::MatMul(xhr, UW_f);
 
     i = (i+bi).Sigmoid();
     o = (o+bo).Sigmoid();
@@ -62,9 +62,9 @@ class TreeModel : GraphSupport{
     fl = (fl+bf).Sigmoid();
     fr = (fr+bf).Sigmoid();
 
-    f = Sym::Concat({fl, fr});
-    child_c = Sym::Concat({child_cl, child_cr});
-    c = i * u + Sym::Reduce_sum(f*child_c, 0);
+    Sym f = Sym::Concat({fl, fr});
+    Sym child_c = Sym::Concat({child_cl, child_cr});
+    Sym c = i * u + Sym::Reduce_sum(f*child_c, 0);
     Sym h = o * Sym::Tanh(c);
 
     Scatter(Sym::Concat({h, c}));
@@ -74,18 +74,18 @@ class TreeModel : GraphSupport{
   void Leaf() override {
     Sym x = Pull(0, {FLAGS_input_size});
     x = x.EmbeddingLookup(embedding);
-    Sym h0 = Sym::Constant(0, {FLAGS_hidden*FLAGS_hidden});
+    Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden*FLAGS_hidden});
     Sym xh = Sym::Concat({x, h0});
-    Sym tmp = Sym::Matmul(xh, UW_uio);
+    Sym tmp = Sym::MatMul(xh, UW_uio);
     Sym u, i, o;
-    tie(u, i, o) = tmp.split3(tmp, 1);
+    tie(u, i, o) = tmp.Split3(1);
     i = (i+bi).Sigmoid();
     o = (o+bo).Sigmoid();
     u = (u+bu).Tanh();
-    c = i * u;
+    Sym c = i * u;
     Sym h = o * Sym::Tanh(c);
     Push(h);
-    Scatter(Sym:Concat({h, c}));
+    Scatter(Sym::Concat({h, c}));
   }
 
  private:
