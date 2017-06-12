@@ -1,8 +1,11 @@
 #ifndef CAVS_MIDEND_SCOPE_H_
 #define CAVS_MIDEND_SCOPE_H_
 
-#include "cavs/midend/dep_graph.h"
+#include "cavs/midend/node.h"
+#include "cavs/midend/edge.h"
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/proto/func_def.pb.h"
+#include "cavs/util/logging.h"
 
 #include <string>
 #include <set>
@@ -11,24 +14,28 @@
 
 namespace midend {
 
-class Edge;
-class Node;
-class NodeGroup;
 class Scope {
  public:
-  Scope(const Scope* s, const std::string& n);
+  Scope(const Scope* father, const std::string& n);
+
+  Node* AddOp(const OpDef& op_def);
+  void GroupAllVariables(std::vector<std::string>* vars) const;
+  Node* AddOptimizerOp(const OpDef& op_def);
+  Node* AddFunction(const FunctionDef& func_def);
+
   Scope* FindChild(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;
-  Node* AddNode(const OpDef& op_def);
-  void AddNode(const Node* node);
-  void AddEdge(const Edge* edge);
-  void PrintSymbolTable();
+  Node* FindNode(const std::string& name) const;
+
+  friend class DepGraph;
+  friend class ScopedNode;
+  void DebugSymbolTable();
   inline const std::string& name() const {
     return name_; 
   }
   std::string DebugInfo();
-  friend class DepGraph;
-  friend class ScopedNode;
+  void AddEdge(const Edge* edge);
+  void AddNode(const Node* node);
     
  private:
   std::string name_;
@@ -41,7 +48,8 @@ class Scope {
   std::set<size_t> hash_nodes_;
 };
 
-Scope* GetGlobalScope();
+Scope* global_scope();
+Scope* main_scope();
 
 } //namespace midend
 #endif

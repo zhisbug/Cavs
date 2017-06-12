@@ -54,7 +54,7 @@ class OpTest {
 };
 
 OpTest ::OpTest(const OpDef& def) {
-  node_ = new Node(def);
+  node_ = new Node(def, main_scope());
   //op_def_ = def; 
   sess_ = new SessionOpTest();
 }

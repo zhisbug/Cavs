@@ -99,7 +99,7 @@ int main(int argc, char* argv[]) {
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias      = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
 
-  TreeModel model(graph, word_idx);
+  SeqModel model(graph, word_idx);
   Sym loss       = model.Output()
                         .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                         .FullyConnected(weight, bias)

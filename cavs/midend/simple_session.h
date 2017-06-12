@@ -2,6 +2,7 @@
 #define CAVS_MIDEND_SIMPLE_SESSION_H_
 
 #include "cavs/midend/session_base.h"
+#include "cavs/midend/scope.h"
 #include "cavs/midend/statement.h"
 
 #include <unordered_map>
@@ -11,7 +12,8 @@ namespace midend {
 
 class SimpleSession : public SessionBase {
  public:
-  SimpleSession(const DepGraph* graph);
+  //SimpleSession(const DepGraph* graph);
+  SimpleSession();
   void Run(const std::vector<std::string>& output_names, 
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
@@ -29,6 +31,9 @@ class SimpleSession : public SessionBase {
   std::string HashString(const std::vector<std::string>& input);
   std::unordered_map<std::string, std::vector<Statement*>> executors_;
   int round_;//current batch id;
+
+ protected:
+  const Scope* s_;
 };
 
 } //namespace midend

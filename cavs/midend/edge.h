@@ -29,10 +29,10 @@ class Edge {
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
   inline void RemoveDst(Node* node);
-  inline const Node* src(size_t i) const;
+  inline Node* src(size_t i) const;
   inline const std::vector<Node*>& srcs() const;
   inline int srcs_size() const;
-  inline const Node* dst(size_t i) const;
+  inline Node* dst(size_t i) const;
   inline const std::vector<Node*>& dsts() const;
   inline int dsts_size() const;
   void AddSource(Node* node);
@@ -80,7 +80,7 @@ inline void Edge::RemoveDst(Node* node) {
   std::remove(dsts_.begin(), dsts_.end(), node); 
 }
 
-inline const Node* Edge::src(size_t i) const {
+inline Node* Edge::src(size_t i) const {
   CHECK(i < srcs_.size());
   return srcs_[i];
 }
@@ -93,7 +93,7 @@ inline int Edge::srcs_size() const {
   return srcs_.size();
 }
 
-inline const Node* Edge::dst(size_t i) const {
+inline Node* Edge::dst(size_t i) const {
   CHECK(i < dsts_.size())
        << i << "\t" << dsts_size()
        << DebugInfo();

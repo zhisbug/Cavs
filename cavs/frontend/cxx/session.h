@@ -13,15 +13,18 @@
 class Session {
  public:
   Session(std::string name = "SimpleSession") {
-    s_ = C_NewSessionWithDG(
-        name.c_str(), name.length(), C_GetDefaultDG());
+    //s_ = C_NewSessionWithDG(
+        //name.c_str(), name.length(), C_GetDefaultDG());
+    s_ = C_NewSession(
+        name.c_str(), name.length());
   }
 
-  void Run(const std::initializer_list<Sym>& outputs,
+  void Run(std::vector<Sym> outputs,
       const std::initializer_list<std::pair<Sym&, void*>>& feed = {});
-  inline void Run(const Sym& output,
+  void Run(Sym& output,
       const std::initializer_list<std::pair<Sym&, void*>>& feed = {}) {
-    Run({output}, feed);
+    std::vector<Sym> out = {output};
+    Run(out, feed);
   }
 
  private:

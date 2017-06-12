@@ -1,4 +1,5 @@
-#include "cavs/midend/dep_graph.h"
+#include "cavs/midend/graph_util.h"
+#include "cavs/midend/statement.h"
 #include "cavs/midend/statement_builder.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
@@ -15,26 +16,56 @@ using ::backend::OpDecl;
 
 namespace midend {
 
-Node* DepGraph::AddNode(const OpDef& op_def) { 
-  //checkCudaError(cudaGetLastError()); 
-  return s_->AddNode(op_def); 
+//Node* DepGraph::AddNode(const OpDef& op_def) { 
+  //return s_->AddNode(op_def); 
+//}
+
+//const Node* DepGraph::FindNode(
+    //const std::string& name) const {
+  //const Edge* edge = s_->FindEdge(name);
+  //if (!edge) return NULL;
+  //CHECK(edge->isStateful() || edge->srcs_size() == 1)
+    //<< edge->name() << edge->srcs_size();
+  //return edge->src(0);
+//}
+
+//const Edge* DepGraph::FindEdge(
+    //const std::string& name) const {
+  //return s_->FindEdge(name);
+//}
+
+void DeduceAndApplyOneGradNode(
+    Scope* s,
+    const Node* node,
+    const string& edge) {
+  const vector<OpDef>& grads = 
+    ::backend::MakeGradient(node->op_def()); 
+  CHECK(grads.size()) << node->op_def().DebugString();
+  bool exist = false;
+  for (auto& grad : grads) {
+    if (std::find(grad.output().begin(), grad.output().end(),
+         GetGradientName(edge)) == grad.output().end()) {
+      continue;
+    }
+    CHECK(!exist) << "Two grad possible?"
+                  << node->op_def().DebugString()
+                  << grad.DebugString();
+    //Node* grad_node = s->AddNode(grad);
+    Node* grad_node = s->AddOp(grad);
+    if (grad_node) {
+      vector<TensorShapeDef> inputs;
+      grad_node->InputShapes(&inputs);
+      const vector<TensorShapeDef>& shapes = 
+        ::backend::ShapeInference(grad, inputs);
+      grad_node->SetShape(shapes);
+    }
+    exist = true;
+  }
+  CHECK(exist) << "No gradient wrt the edge name";
+  return;
 }
 
-const Node* DepGraph::FindNode(
-    const std::string& name) const {
-  const Edge* edge = s_->FindEdge(name);
-  if (!edge) return NULL;
-  CHECK(edge->isStateful() || edge->srcs_size() == 1)
-    << edge->name() << edge->srcs_size();
-  return edge->src(0);
-}
-
-const Edge* DepGraph::FindEdge(
-    const std::string& name) const {
-  return s_->FindEdge(name);
-}
-
-bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
+bool TraverseCriticalPath(Scope* loss_scope,
       const Edge* loss, const Edge* curr,
       unordered_map<const Node*, bool>* fwd_path,
       list<const Node*>* newly_traversed) {
@@ -43,7 +74,8 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
   //LOG(INFO) << curr->DebugInfo();
   if (curr == loss) {
     for (auto* node : *newly_traversed) {
-      loss_scope->AddNode(node->op_def());
+      //loss_scope->AddNode(node->op_def());
+      loss_scope->AddOp(node->op_def());
     }
     newly_traversed->clear();
     return true;
@@ -53,7 +85,8 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
   if (fwd_path->find(node) != fwd_path->end() && (*fwd_path)[node]) {
     DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
     for (auto* node : *newly_traversed) {
-      loss_scope->AddNode(node->op_def());
+      //loss_scope->AddNode(node->op_def());
+      loss_scope->AddOp(node->op_def());
     }
     newly_traversed->clear();
     return true;
@@ -83,37 +116,8 @@ bool DepGraph::TraverseCriticalPath(Scope* loss_scope,
   return (*fwd_path)[node];
 }
 
-void DepGraph::DeduceAndApplyOneGradNode(
-    Scope* s,
-    const Node* node,
-    const string& edge) {
-  const vector<OpDef>& grads = 
-    ::backend::MakeGradient(node->op_def()); 
-  CHECK(grads.size()) << node->op_def().DebugString();
-  bool exist = false;
-  for (auto& grad : grads) {
-    if (std::find(grad.output().begin(), grad.output().end(),
-         GetGradientName(edge)) == grad.output().end()) {
-      continue;
-    }
-    CHECK(!exist) << "Two grad possible?"
-                  << node->op_def().DebugString()
-                  << grad.DebugString();
-    Node* grad_node = s->AddNode(grad);
-    if (grad_node) {
-      vector<TensorShapeDef> inputs;
-      grad_node->InputShapes(&inputs);
-      const vector<TensorShapeDef>& shapes = 
-        ::backend::ShapeInference(grad, inputs);
-      grad_node->SetShape(shapes);
-    }
-    exist = true;
-  }
-  CHECK(exist) << "No gradient wrt the edge name";
-  return;
-}
 
-void DepGraph::GroupClosedSet(
+void GroupClosedSet(
     const vector<string>& vars,
     const Edge* loss,
     const string& solver,
@@ -146,7 +150,8 @@ void DepGraph::GroupClosedSet(
       .Device("GPU")
       .AttrSingle<float>("clip", clip)
       .Finalize(&clipper);
-    loss_scope->AddNode(clipper);
+    //loss_scope->AddNode(clipper);
+    loss_scope->AddOp(clipper);
   }
 
   for (auto& var_name : vars) {
@@ -160,7 +165,8 @@ void DepGraph::GroupClosedSet(
       .AttrSingle<float>("learning_rate", lr)
       .Device("GPU")
       .Finalize(&update);
-    loss_scope->AddNode(update);
+    //loss_scope->AddNode(update);
+    loss_scope->AddOp(update);
 
     if (proj.length() > 0) {
       //LOG(FATAL) << proj;
@@ -171,21 +177,23 @@ void DepGraph::GroupClosedSet(
         .Shape(var->shape())
         .Device("GPU")
         .Finalize(&projection);
-      loss_scope->AddNode(projection);
+      //loss_scope->AddNode(projection);
+      loss_scope->AddOp(projection);
     }
   }
 }
 
-void DepGraph::GroupAllVariables(vector<string>* vars) {
-  for (Node* n : s_->nodes_) {
-    if (static_cast<SingleNode*>(n)->IsVariableOp()) {
-      CHECK(n->outputs_size() == 1) << n->outputs_size();
-      vars->push_back(n->output(0)->name());
-    }
-  }
-}
+//void DepGraph::GroupAllVariables(vector<string>* vars) {
+  //for (Node* n : s_->nodes_) {
+    //if (static_cast<SingleNode*>(n)->IsVariableOp()) {
+      //CHECK(n->outputs_size() == 1) << n->outputs_size();
+      //vars->push_back(n->output(0)->name());
+    //}
+  //}
+//}
 
-void DepGraph::OptimizeWithLoss(
+//void DepGraph::OptimizeWithLoss(
+Node* GraphUtil::AddOptimizerOp(
     const OpDef& def) {
   CHECK(def.input_size() == 1);
   const string& loss = def.input(0);
@@ -219,7 +227,7 @@ void DepGraph::OptimizeWithLoss(
   //LOG(INFO) << "Projection Method: " << proj;
   CHECK(iters > 0);
   Scope* loss_scope = new Scope(s_, def.output(0));
-  Edge* loss_edge = s_->FindEdge(loss);
+  const Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
   OpDef const_op;
   //BuildConstantOpDef(&const_op, 
@@ -231,14 +239,16 @@ void DepGraph::OptimizeWithLoss(
     .AttrSingle("init", 1.f)
     .Device("GPU")
     .Finalize(&const_op);
-  loss_scope->AddNode(const_op);
+  //loss_scope->AddNode(const_op);
+  loss_scope->AddOp(const_op);
   GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
-  ScopedNode* sn = new ScopedNode(iters, loss_scope, def);
+  ScopedNode* sn = new ScopedNode(iters, loss_scope, def, s_);
+  return sn;
   //s_->PrintSymbolTable();
 }
 
-string DepGraph::DebugInfo() {
-  return s_->DebugInfo();
-}
+//string DepGraph::DebugInfo() {
+  //return s_->DebugInfo();
+//}
 
 } //namespace midend

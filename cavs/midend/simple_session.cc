@@ -13,8 +13,8 @@ using std::unordered_map;
 
 namespace midend {
 
-SimpleSession::SimpleSession(const DepGraph* graph)
-    : SessionBase(graph), round_(0) {}
+SimpleSession::SimpleSession()
+    : SessionBase(), round_(0), s_(main_scope()) {}
 
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
@@ -49,7 +49,8 @@ void SimpleSession::Compile(
   list<Node*> critical_path;
   unordered_map<Node*, bool> include;
   for (auto& output : output_names) {
-    Node* node = const_cast<Node*>(graph_->FindNode(output));
+    //Node* node = const_cast<Node*>(graph_->FindNode(output));
+    Node* node = const_cast<Node*>(s_->FindNode(output));
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
@@ -99,7 +100,8 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
   CHECK(input_names.size() == input_tensors.size());
   for (int i = 0; i < input_names.size(); i++) {
-    const Edge* edge = graph_->FindEdge(input_names[i]);
+    //const Edge* edge = graph_->FindEdge(input_names[i]);
+    const Edge* edge = s_->FindEdge(input_names[i]);
     CHECK(edge) << "Edge: " << input_names[i];
     //Tensor* t = &(tensor_map_[edge->scoped_name()]);
     Tensor* t = const_cast<Tensor*>(GetTensor(edge->scoped_name()));
@@ -116,9 +118,11 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
     VLOG(V_DEBUG) << "Fetching" << output_names[i];
-    if (graph_->FindEdge(output_names[i])->isVirtual())
+    //if (graph_->FindEdge(output_names[i])->isVirtual())
+    if (s_->FindEdge(output_names[i])->isVirtual())
       continue;
-    const Edge* edge = graph_->FindEdge(output_names[i]);
+    //const Edge* edge = graph_->FindEdge(output_names[i]);
+    const Edge* edge = s_->FindEdge(output_names[i]);
     CHECK(edge);
     const Tensor* t = GetTensor(edge->scoped_name());
     CHECK(t) << "Getting " << edge->scoped_name()

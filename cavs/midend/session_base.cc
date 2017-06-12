@@ -106,12 +106,13 @@ void SessionRegister::InitInternal(
 
 } //namespace session_factory
 
-SessionBase* GetSession(const string& name, 
-    const DepGraph* graph) {
+SessionBase* GetSession(const string& name) {
+    //const DepGraph* graph) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
-    return session_factory::GlobalSessionRegistry()->at(name)(graph);
+    //return session_factory::GlobalSessionRegistry()->at(name)(graph);
+    return session_factory::GlobalSessionRegistry()->at(name)();
 }
 
 } //namespace midend

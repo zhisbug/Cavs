@@ -2,7 +2,7 @@ syntax = "proto3";
 
 import "cavs/proto/op_def.proto";
 
-message FuncDef {
+message FunctionDef {
   string name            = 1;
   repeated OpDef ops     = 2;
 }

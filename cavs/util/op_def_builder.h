@@ -2,6 +2,8 @@
 #define CAVS_UTIL_OP_DEF_BUILDER_H_
 
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/proto/tensor_shape.pb.h"
+#include "cavs/proto/func_def.pb.h"
 #include "cavs/util/macros.h"
 
 #include <string>

@@ -2,7 +2,7 @@
 #define CAVS_FRONTEND_CXX_SYM_H_
 
 #include "cavs/proto/op_def.pb.h"
-#include "cavs/proto/func.pb.h"
+#include "cavs/proto/func_def.pb.h"
 #include "cavs/frontend/c_api.h"
 #include "cavs/util/logging.h"
 
@@ -16,7 +16,7 @@ using std::string;
 class Sym {
  public:
   const string&   output(int idx) const;
-  int   output_size()             const;
+  int             output_size()   const;
   std::vector<string>    output() const;
   std::vector<int> shape(int idx) const;
   inline DataType      type()     const { return def().dtype();    }
@@ -24,14 +24,20 @@ class Sym {
   inline const string& op_name()  const { return def().name();     }
   inline const OpDef&  def()      const { return node_->op_def;    }
   inline OpDef*        mutable_def()    { return &(node_->op_def); }
+  inline const void*   data()     const { return node_->raw_data;  }
+  inline void*   mutable_data()         { return node_->raw_data;  }
 
-  Sym(const OpDef& op_def);
+  explicit Sym(const OpDef& op_def);
   Sym(const Sym& sym) { *this = sym; }
   Sym() : node_(nullptr) {}
   typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
   enum MODE { STATIC_SYM = 1, DYNAMIC_SYM = 2 };
   inline static void SetMode(MODE mode) { mode_ = mode; }
-  inline static void SetFuncName(string name) { func_name_ = name; }
+  inline static void SetFuncName(const string& name) { func_name_ = name; }
+  inline static const FunctionDef& GetFunc(const string& name) {
+    CHECK(func_def_.find(name) != func_def_.end());
+    return func_def_.at(name);
+  }
 
   template <typename T> Sym (T constant);
   Sym& operator =(const Sym& sym);
@@ -135,8 +141,6 @@ class Sym {
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }
   friend Sym operator -(const Sym& a, const Sym& b) { return Sub(a, b); }
   friend Sym operator *(const Sym& a, const Sym& b) { return Mul(a, b); }
-        
-  friend class Session;
 
  private:
   //typedef struct node {
@@ -171,7 +175,7 @@ class Sym {
   std::shared_ptr<node_t> node_;
   static MODE mode_;
   static string func_name_;
-  static std::unordered_map<string, FuncDef> func_def_;
+  static std::unordered_map<string, FunctionDef> func_def_;
 };
 
 inline std::vector<string> Sym::output() const { 

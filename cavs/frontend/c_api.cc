@@ -3,10 +3,13 @@
 #include "cavs/proto/types.pb.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/proto/devices.pb.h"
+#include "cavs/proto/func_def.pb.h"
+#include "cavs/proto/op_def.pb.h"
 #include "cavs/midend/session_base.h"
 #include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
-#include "cavs/midend/dep_graph.h"
+//#include "cavs/midend/dep_graph.h"
+#include "cavs/midend/scope.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_impl.h"
 #include "cavs/util/logging.h"
@@ -17,7 +20,10 @@ using midend::Tensor;
 using midend::TensorShape;
 using midend::GetAllocator;
 using midend::DeviceTypeToString;
-using midend::DepGraph;
+//using midend::DepGraph;
+using midend::Scope;
+using midend::main_scope;
+using midend::global_scope;
 using midend::Node;
 using backend::ShapeInference;
 
@@ -45,8 +51,12 @@ struct C_Session {
   SessionBase* session;
 };
 
-struct C_DepGraph {
-  DepGraph* graph;
+//struct C_DepGraph {
+  //DepGraph* graph;
+//};
+
+struct C_Scope {
+  Scope* scope;
 };
 
 struct C_Tensor {
@@ -54,10 +64,10 @@ struct C_Tensor {
 };
 
 
-C_Session* C_NewSessionWithDG(const char* name, size_t name_len, 
-    C_DepGraph* C_graph) {
+C_Session* C_NewSession(const char* name, size_t name_len) {
   string name_str(name, name_len);
-  SessionBase* sess = GetSession(name_str, C_graph->graph);
+  //SessionBase* sess = GetSession(name_str, C_graph->graph);
+  SessionBase* sess = GetSession(name_str);
   return new C_Session{sess};
 }
 
@@ -73,17 +83,27 @@ C_Tensor* C_NewTensor(const char* name, size_t name_len,
   return new C_Tensor{t};
 }
 
-C_DepGraph* C_GetDefaultDG() {
-  static C_DepGraph* dep_graph = new C_DepGraph{new DepGraph()};
-  return dep_graph;
+//C_DepGraph* C_GetDefaultDG() {
+  //static C_DepGraph* dep_graph = new C_DepGraph{new DepGraph()};
+  //return dep_graph;
+//}
+
+C_Scope* C_GetMainScope() {
+  static C_Scope* scope = new C_Scope{ main_scope() };
+  return scope;
 }
 
-void C_AddNode(C_DepGraph* C_graph, 
-    const void* def, size_t def_length,
+C_Scope* C_GetGlobalScope() {
+  static C_Scope* scope = new C_Scope{ global_scope() };
+  return scope;
+}
+
+void C_AddOp(const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
-  Node* node = C_graph->graph->AddNode(op_def);
+  //Node* node = C_graph->graph->AddNode(op_def);
+  Node* node = C_GetMainScope()->scope->AddOp(op_def);
   vector<TensorShapeDef> input_shapes;
   node->InputShapes(&input_shapes);
   const vector<TensorShapeDef>& shape_def =
@@ -97,7 +117,15 @@ void C_AddNode(C_DepGraph* C_graph,
     (*dim)[i] = shape_def[0].dim(i);
 }
 
-void C_OptimizeWithLoss(C_DepGraph* c_graph, 
+void C_AddFunction(const void* def, size_t def_length) {
+  FunctionDef func_def;
+  func_def.ParseFromArray(def, def_length);
+  //Node* node = C_graph->graph->AddFunc(func_def);
+  Node* node = C_GetGlobalScope()->scope->AddFunction(func_def);
+  CHECK_NOTNULL(node);
+}
+
+void C_AddOptimizerOp(
     const void* def, size_t def_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
@@ -110,7 +138,8 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
   }
   if (!var_flag) {
     vector<string> var_names;
-    c_graph->graph->GroupAllVariables(&var_names);
+    //c_graph->graph->GroupAllVariables(&var_names);
+    C_GetMainScope()->scope->GroupAllVariables(&var_names);
     OpDef::AttrDef* var_attr = op_def.add_attr();
     var_attr->set_name("Vars");
     OpDef::AttrType::ListValue* str_list
@@ -118,12 +147,13 @@ void C_OptimizeWithLoss(C_DepGraph* c_graph,
     for (auto& var: var_names)
       str_list->add_s(var);
   }
-  c_graph->graph->OptimizeWithLoss(op_def);
+  //c_graph->graph->OptimizeWithLoss(op_def);
+  C_GetMainScope()->scope->AddOptimizerOp(op_def);
 }
 
-void C_DumpGraph(C_DepGraph* C_graph) {
-  LOG(INFO) << C_graph->graph->DebugInfo();
-}
+//void C_DumpGraph(C_DepGraph* C_graph) {
+  //LOG(INFO) << C_graph->graph->DebugInfo();
+//}
 
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
@@ -158,10 +188,3 @@ size_t C_TensorSize(const C_Tensor* t) {
   return midend::TensorCApi::size(t->tensor); 
 }
 
-//C_Tensor* C_GetTensorFromSession(
-      //C_Session* sess, const char* c_tensor_name, size_t len) {
-  //string tensor_name(c_tensor_name, len);
-  //const Tensor* t = sess->session->GetTensor(tensor_name);
-  //CHECK_NOTNULL(t);
-  //return new C_Tensor{const_cast<Tensor*>(t)};
-//}

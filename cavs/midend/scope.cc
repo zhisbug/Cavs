@@ -1,4 +1,5 @@
-#include "scope.h"
+#include "cavs/midend/scope.h"
+#include "cavs/midend/graph_util.h"
 #include "cavs/backend/op_decl.h"
 
 #include <vector>
@@ -8,12 +9,12 @@ using std::vector;
 
 namespace midend {
 
-Scope::Scope(const Scope* s, const std::string& n)
-    : father_(s) {
-  if (s) {
-    name_ = s->name() + ":" + n;
-    CHECK(s->children_.find(name_) == s->children_.end());
-    const_cast<Scope*>(s)->children_[name_] = const_cast<Scope*>(this);
+Scope::Scope(const Scope* father, const std::string& n)
+    : father_(father) {
+  if (father) {
+    name_ = father->name() + ":" + n;
+    CHECK(father->children_.find(name_) == father->children_.end());
+    const_cast<Scope*>(father)->children_[name_] = const_cast<Scope*>(this);
   }else {
     name_ = n;
   }
@@ -44,9 +45,17 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
   }
 }
 
+Node* Scope::FindNode(const std::string& name) const {
+  const Edge* edge = FindEdge(name);
+  if (!edge) return NULL;
+  CHECK(edge->isStateful() || edge->srcs_size() == 1)
+    << edge->name() << edge->srcs_size();
+  return edge->src(0);
+}
+
 //if node exists: return NULL;
 //otherwise: return new allocated node;
-Node* Scope::AddNode(const OpDef& op_def) {
+Node* Scope::AddOp(const OpDef& op_def) {
   size_t hash_code = GetHash(op_def);
   if (hash_nodes_.find(hash_code) != hash_nodes_.end()) {
     LOG(WARNING) << "Duplicated node in current scope"
@@ -139,7 +148,26 @@ void Scope::AddEdge(const Edge* edge) {
   edge_table_[name] = const_cast<Edge*>(edge);
 }
 
-void Scope::PrintSymbolTable() {
+void Scope::GroupAllVariables(vector<string>* vars) const {
+  for (Node* n : nodes_) {
+    if (static_cast<SingleNode*>(n)->IsVariableOp()) {
+      CHECK(n->outputs_size() == 1) << n->outputs_size();
+      vars->push_back(n->output(0)->name());
+    }
+  }
+}
+
+Node* Scope::AddOptimizerOp(const OpDef& op_def) {
+  return GraphUtil(this).AddOptimizerOp(op_def);
+}
+
+Node* Scope::AddFunction(const FunctionDef& func_def) {
+  CHECK(name_ == "global");
+  CHECK(father_);
+  return GraphUtil(this).AddFunction(func_def);
+}
+
+void Scope::DebugSymbolTable() {
   LOG(INFO) << "Printing Symbol Table\t" << name_;
   for (auto& one_pair : edge_table_) {
     LOG(INFO) << one_pair.first;
@@ -163,8 +191,13 @@ string Scope::DebugInfo() {
   return ret;
 }
 
-Scope* GetGlobalScope() {
+Scope* global_scope() {
   static Scope* s = new Scope(NULL, "global");
+  return s;
+}
+
+Scope* main_scope() {
+  static Scope* s = new Scope(global_scope(), "main");
   return s;
 }
 

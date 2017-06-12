@@ -33,7 +33,7 @@ using std::unordered_map;
 
 Sym::MODE Sym::mode_ = Sym::STATIC_SYM;
 string Sym::func_name_;
-unordered_map<string, FuncDef> Sym::func_def_;
+unordered_map<string, FunctionDef> Sym::func_def_;
 
 //Sym::Sym(const string& op_name,
          //const vector<string>& inputs, 
@@ -136,9 +136,11 @@ Sym::Sym(const OpDef& op_def) {
     if (mode_ == STATIC_SYM) {
       int *dim = NULL;
       size_t dim_length;
-      C_AddNode(C_GetDefaultDG(),
-          serialization.c_str(), serialization.length(),
-          &dim, &dim_length);
+      //C_AddNode(C_GetDefaultDG(),
+          //serialization.c_str(), serialization.length(),
+          //&dim, &dim_length);
+      C_AddOp(serialization.c_str(), serialization.length(),
+              &dim, &dim_length);
       mutable_def()->clear_shape();
       TensorShapeDef* shape = mutable_def()->add_shape();
       for (int i = 0; i < dim_length; i++)
@@ -146,7 +148,7 @@ Sym::Sym(const OpDef& op_def) {
       free(dim);
     }else {
       if (func_def_.find(func_name_) == func_def_.end()) {
-        FuncDef fdef; 
+        FunctionDef fdef; 
         fdef.set_name(func_name_);
         fdef.add_ops()->CopyFrom(def());
         func_def_.emplace(func_name_, fdef);
@@ -156,7 +158,9 @@ Sym::Sym(const OpDef& op_def) {
     }
   }else {
     CHECK(mode_ != DYNAMIC_SYM);
-    C_OptimizeWithLoss(C_GetDefaultDG(),
+    //C_OptimizeWithLoss(C_GetDefaultDG(),
+      //serialization.c_str(), serialization.length());
+    C_AddOptimizerOp(
       serialization.c_str(), serialization.length());
   }
 }
@@ -819,6 +823,6 @@ void* Sym::eval() {
 }
 
 void Sym::DumpGraph() {
-  C_DumpGraph(C_GetDefaultDG());
+  //C_DumpGraph(C_GetDefaultDG());
 }
 

@@ -2,7 +2,7 @@
 #define CAVS_MIDEND_STATEMENT_BUILDER_H_
 
 #include "cavs/midend/statement.h"
-#include "cavs/midend/dep_graph.h"
+#include "cavs/midend/node.h"
 #include "cavs/proto/op_def.pb.h"
 
 #include <vector>

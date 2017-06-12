@@ -17,13 +17,11 @@ namespace midend {
 
 class Scope;
 class Edge;
-extern Scope* GetGlobalScope();
 class SessionBase;
 
 class Node {
  public:
-  explicit Node(const OpDef& op_def,
-      const Scope* s = GetGlobalScope());
+  explicit Node(const OpDef& op_def, const Scope* s);
   virtual Statement* Compile(SessionBase* sess) {
     return NULL;
   }
@@ -57,8 +55,7 @@ class Node {
 
 class SingleNode : public Node {
  public:
-  explicit SingleNode(const OpDef& op_def,
-      const Scope* s = GetGlobalScope())
+  explicit SingleNode(const OpDef& op_def, const Scope* s)
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) override;
   bool IsSingleNode() const override { return true; }
@@ -80,15 +77,15 @@ class ScopedNode : public Node {
  public:
   explicit ScopedNode(int iter,
       Scope* contained,
-      const OpDef& op_def = OpDef(),
-      Scope* located = GetGlobalScope());
+      const OpDef& op_def,
+      const Scope* located);
   Statement* Compile(SessionBase* sess) override;
   bool IsScopedNode() const override { return true; }
   std::list<Node*> nodes_;
 
  private:
   int iter_;
-  Scope* contained_;
+  const Scope* contained_;
   void Compress();
 };
 

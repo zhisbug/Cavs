@@ -65,7 +65,7 @@ Statement* SingleNode::Compile(
 ScopedNode::ScopedNode(int iter,
       Scope* contained,
       const OpDef& op_def,
-      Scope* located)
+      const Scope* located)
     : iter_(iter), contained_(contained),
       Node(op_def, located) {
   for (auto& edge: contained->in_edges_) {

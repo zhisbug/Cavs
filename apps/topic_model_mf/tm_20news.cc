@@ -43,7 +43,7 @@ int main(int argc, char* argv[]) {
     }
     float loss_sum = 0.f;
     for (int j = 0; j < FLAGS_D/FLAGS_batch; j++) {
-      sess.Run({loss});
+      sess.Run(loss);
       loss_sum += *(float*)(loss.eval());
     }
     LOG(INFO) << "[Test] Epoch[" << i << "]:\t" << loss_sum/(FLAGS_D/FLAGS_batch);

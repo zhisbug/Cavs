@@ -18,7 +18,8 @@ namespace midend {
 
 class MPISession: public SimpleSession {
  public:
-  MPISession(const DepGraph* graph);
+  //MPISession(const DepGraph* graph);
+  MPISession();
   ~MPISession();
   void Run(const vector<string>& output_names, 
            vector<Tensor>* output_tensors,
@@ -82,10 +83,15 @@ void AddMPIOnPath(list<Node*>& critical_path) {
   }
 }
 
-MPISession::MPISession(const DepGraph* graph)
-    : SimpleSession(graph){
+//MPISession::MPISession(const DepGraph* graph)
+    //: SimpleSession(graph){
+  //MPI_Init(NULL, NULL);
+//}
+
+MPISession::MPISession() : SimpleSession(){
   MPI_Init(NULL, NULL);
 }
+
 
 MPISession::~MPISession() {
   MPI_Finalize();
@@ -96,7 +102,8 @@ void MPISession::Compile(
   list<Node*> critical_path;
   unordered_map<Node*, bool> include;
   for (auto& output : output_names) {
-    Node* node = const_cast<Node*>(graph_->FindNode(output));
+    //Node* node = const_cast<Node*>(graph_->FindNode(output));
+    Node* node = const_cast<Node*>(s_->FindNode(output));
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
