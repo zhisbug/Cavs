@@ -58,7 +58,9 @@ class SingleNode : public Node {
   explicit SingleNode(const OpDef& op_def, Scope* s)
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) override;
+
   bool IsSingleNode() const override { return true; }
+
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
   }
@@ -92,22 +94,28 @@ class ScopedNode : public Node {
 inline const OpDef& Node::op_def() const {
   return op_def_;
 }
+
 inline Scope* Node::scope() const {
   return located_;
 }
+
 inline const std::string& Node::name() const {
   return node_name_;
 }
+
 inline Edge* Node::input(int i) const {
   CHECK(i < inputs_.size());
   return inputs_[i];
 }
+
 inline const std::vector<Edge*>& Node::inputs() const {
   return inputs_; 
 }
+
 inline int Node::inputs_size() const {
   return inputs_.size();
 }
+
 inline Edge* Node::output(int i) const {
   CHECK(i < outputs_.size())
     << DebugInfo()
@@ -115,21 +123,27 @@ inline Edge* Node::output(int i) const {
     << "\nSize: " << outputs_.size();
   return outputs_[i];
 }
+
 inline const std::vector<Edge*>& Node::outputs() const {
   return outputs_;
 }
+
 inline int Node::outputs_size() const {
   return outputs_.size();
 }
+
 inline void Node::AddInput(const Edge* e) {
   inputs_.push_back(const_cast<Edge*>(e));
 }
+
 inline void Node::AddOutput(const Edge* e) {
   outputs_.push_back(const_cast<Edge*>(e));
 }
+
 inline void Node::RemoveInput(const Edge* e) {
   std::remove(inputs_.begin(), inputs_.end(), e);  
 }
+
 inline void Node::replaceInput(int i, Edge* edge) {
   CHECK(i < inputs_.size());
   inputs_[i] = edge; 
