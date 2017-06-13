@@ -214,9 +214,9 @@ Node* GraphUtil::AddOptimizerOp(
       proj = attr.value().s(); 
     }else if (attr.name() == "Iters") {
       iters = attr.value().i(); 
-    }else if (attr.name() == "learning_rate") {
+    }else if (attr.name() == "Learning_rate") {
       lr = attr.value().f(); 
-    }else if (attr.name() == "clip") {
+    }else if (attr.name() == "Clip") {
       clip = attr.value().f(); 
     }
   }

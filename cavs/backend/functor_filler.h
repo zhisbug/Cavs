@@ -122,11 +122,12 @@ struct NormalRandom : Filler<T> {
 };
 
 template <typename T>
-struct UniformRandomNormalized : UniformRandom<T> {
-  UniformRandomNormalized(const OpDef& op_def) : UniformRandom<T>(op_def) {}
+struct UniformRandomNormalized : Filler<T> {
+  UniformRandomNormalized(const OpDef& op_def) : Filler<T>(op_def) {}
   virtual void FillRaw(T* buf, int N) override {
     std::default_random_engine generator;
-    std::uniform_real_distribution<T> distribution(this->minval_, this->maxval_);
+    //std::uniform_real_distribution<T> distribution(this->minval_, this->maxval_);
+    std::uniform_real_distribution<T> distribution(0, 1);
     T sum = 0;
     for (unsigned i = 0; i < N; i++) {
       buf[i] = distribution(generator);

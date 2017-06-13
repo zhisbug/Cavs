@@ -59,7 +59,8 @@ OpDefBuilder& OpDefBuilder::Device(const OpDef& def) {
 
 bool OpDefBuilder::CheckValid() const {
   CHECK(op_def_.output_size() == op_def_.shape_size() ||
-        op_def_.shape_size() == 0)
+        op_def_.shape_size()  == 0 ||
+        op_def_.output_size() == 0/*internal op def*/)
         << op_def_.DebugString();
   return true;
 }

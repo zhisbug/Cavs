@@ -171,11 +171,10 @@ Sym::Sym<float> (float c) {
   //attr.set_name("init");
   //attr.mutable_value()->set_f(c);
   //new (this)Sym("ConstOp", {}, C_FLOAT, "", "GPU", {1}, {attr});
-  vector<int> shape = {1};
   OpDef def = OpDefBuilder("ConstOp")
                 .Dtype(DT_FLOAT)
                 .Device("GPU")
-                .Shape(shape)
+                .Shape(vector<int>({1}))
                 .AttrSingle("init", c)
                 .Finalize();
   new (this)Sym(def);
@@ -191,6 +190,7 @@ Sym Sym::Variable(DataType type, const vector<int>& shape,
                 .Shape(shape)
                 .Attr(filler.second)
                 .Finalize();
+  LOG(INFO) << def.DebugString();
   //return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
   return Sym(def);
 }
@@ -706,7 +706,7 @@ Sym Sym::Optimizer(const Sym& a) {
   OpDef def = OpDefBuilder("Optimizer")
                 .Input(a.output(0))
                 .Dtype(a.type())
-                .AttrSingle("learning_rate", 1)
+                .AttrSingle("Learning_rate", 1)
                 .AttrSingle("Iters", 1)
                 .Finalize();
   return Sym(def);
@@ -782,10 +782,11 @@ Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
                 .Input(a.output(0))
                 .Dtype(a.type())
                 .AttrList("Vars", vars)
-                .AttrSingle("learning_rate", lr)
-                .AttrSingle("clip", clip)
+                .AttrSingle("Learning_rate", lr)
+                .AttrSingle("Clip", clip)
                 .AttrSingle("Iters", iters)
                 .AttrSingle("Projection", projection)
+                .AttrSingle("Solver", string("SGD"))
                 .Finalize();
   return Sym(def);
 }
@@ -799,27 +800,28 @@ void Sym::print() {
   //hack here
   int length = 1;
   CHECK_NOTNULL(node_.get());
+  CHECK_NOTNULL(data());
   for (int dim : shape(0))
     length *= dim;
   if (type() == DT_FLOAT) {
     for (int i = 0; i < std::min(length, 10); i++) {
       LOG(INFO) << "[" << i << "]:\t"
                 << std::fixed << std::setprecision(15)
-                << ((float*)node_->raw_data)[i];
+                << ((float*)data())[i];
     }
   }
 }
 
-void* Sym::eval() {
+const void* Sym::eval() const {
   //hack here
   //currently, eval only support single element
   int length = 1;
   CHECK_NOTNULL(node_.get());
+  CHECK_NOTNULL(data());
   for (int dim : shape(0))
     length *= dim;
   CHECK(length == 1);
-  CHECK(node_->raw_data);
-  return node_->raw_data;
+  return data();
 }
 
 void Sym::DumpGraph() {

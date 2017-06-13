@@ -117,13 +117,15 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   CHECK(output_names.size() == output_tensors->size());
   for (int i = 0; i < output_names.size(); i++) {
-    VLOG(V_DEBUG) << "Fetching" << output_names[i];
+    VLOG(V_DEBUG) << "Fetching\t" << output_names[i]
+                  << "\tVirtual?\t"
+                  << s_->FindEdge(output_names[i])->isVirtual();
     //if (graph_->FindEdge(output_names[i])->isVirtual())
     if (s_->FindEdge(output_names[i])->isVirtual())
       continue;
     //const Edge* edge = graph_->FindEdge(output_names[i]);
     const Edge* edge = s_->FindEdge(output_names[i]);
-    CHECK(edge);
+    CHECK_NOTNULL(edge);
     const Tensor* t = GetTensor(edge->scoped_name());
     CHECK(t) << "Getting " << edge->scoped_name()
              << "\tin\n"   << DebugInfo();

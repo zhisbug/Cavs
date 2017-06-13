@@ -28,8 +28,8 @@ void Session::Run(vector<Sym> outputs,
 
   vector<C_Tensor*> output_tensor;
   vector<const char*> output_name;
-  for (auto& fetch: outputs) {
-    output_name.push_back(fetch.output(0).c_str());
+  for (auto& out: outputs) {
+    output_name.push_back(out.output(0).c_str());
   }
   output_tensor.resize(output_name.size(), NULL);
   C_Run(s_,
@@ -40,9 +40,9 @@ void Session::Run(vector<Sym> outputs,
         input_tensor.data(),
         input_name.size());
   int i = 0;
-  for (auto& fetch : outputs) {
-    void *data_ptr = fetch.mutable_data();
-    data_ptr = C_TensorData(output_tensor[i++]);
+  for (auto& out : outputs) {
+    void **data_ptr = out.mutable_data();
+    *data_ptr = C_TensorData(output_tensor[i++]);
   }
   for (auto* t : output_tensor)
     free(t);
