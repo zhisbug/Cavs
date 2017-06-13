@@ -3,7 +3,6 @@
 
 #include "cavs/proto/types.pb.h"
 #include "cavs/proto/devices.pb.h"
-#include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros.h"

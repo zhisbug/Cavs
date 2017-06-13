@@ -16,7 +16,7 @@ namespace midend {
 
 class GraphUtil {
  public:
-  GraphUtil(const Scope* s) : s_(s) {}
+  GraphUtil(Scope* s) : s_(s) {}
   //Node* AddNode(const OpDef& op_def);
   //const Node* FindNode(const std::string& name) const;
   //const Edge* FindEdge(const std::string& name) const;
@@ -28,7 +28,7 @@ class GraphUtil {
   std::string DebugInfo();
 
  private:
-  const Scope* s_;
+  Scope* s_;
   //bool TraverseCriticalPath(Scope*s,
       //const Edge* loss, const Edge* curr,
       //std::unordered_map<const Node*, bool>* fwd_path,

@@ -21,19 +21,19 @@ class SessionBase;
 
 class Node {
  public:
-  explicit Node(const OpDef& op_def, const Scope* s);
+  explicit Node(const OpDef& op_def, Scope* s);
   virtual Statement* Compile(SessionBase* sess) {
     return NULL;
   }
   virtual bool IsSingleNode() const { return false; }
   virtual bool IsScopedNode() const { return false; }
   inline const OpDef& op_def() const;
-  inline const Scope* scope() const;
+  inline Scope* scope() const;
   inline const std::string& name() const;
-  inline const Edge* input(int i) const;
+  inline Edge* input(int i) const;
   inline const std::vector<Edge*>& inputs() const;
   inline int inputs_size() const;
-  inline const Edge* output(int i) const;
+  inline Edge* output(int i) const;
   inline const std::vector<Edge*>& outputs() const;
   inline int outputs_size() const;
   inline void AddInput(const Edge* e);
@@ -55,7 +55,7 @@ class Node {
 
 class SingleNode : public Node {
  public:
-  explicit SingleNode(const OpDef& op_def, const Scope* s)
+  explicit SingleNode(const OpDef& op_def, Scope* s)
     : Node(op_def, s) {}
   Statement* Compile(SessionBase* sess) override;
   bool IsSingleNode() const override { return true; }
@@ -76,9 +76,9 @@ class SingleNode : public Node {
 class ScopedNode : public Node {
  public:
   explicit ScopedNode(int iter,
-      Scope* contained,
+      const Scope* contained,
       const OpDef& op_def,
-      const Scope* located);
+      Scope* located);
   Statement* Compile(SessionBase* sess) override;
   bool IsScopedNode() const override { return true; }
   std::list<Node*> nodes_;
@@ -92,13 +92,13 @@ class ScopedNode : public Node {
 inline const OpDef& Node::op_def() const {
   return op_def_;
 }
-inline const Scope* Node::scope() const {
+inline Scope* Node::scope() const {
   return located_;
 }
 inline const std::string& Node::name() const {
   return node_name_;
 }
-inline const Edge* Node::input(int i) const {
+inline Edge* Node::input(int i) const {
   CHECK(i < inputs_.size());
   return inputs_[i];
 }
@@ -108,7 +108,7 @@ inline const std::vector<Edge*>& Node::inputs() const {
 inline int Node::inputs_size() const {
   return inputs_.size();
 }
-inline const Edge* Node::output(int i) const {
+inline Edge* Node::output(int i) const {
   CHECK(i < outputs_.size())
     << DebugInfo()
     << "\nAcquiring idx: " << i

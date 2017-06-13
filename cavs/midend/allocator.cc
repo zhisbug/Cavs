@@ -1,6 +1,7 @@
 #include "cavs/midend/allocator.h"
-#include "cavs/midend/devices.h"
+//#include "cavs/midend/devices.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/op_util.h"
 
 using std::string;
 

@@ -15,17 +15,15 @@ namespace midend {
 
 class Scope;
 class Node;
-extern Scope* GetGlobalScope();
 
 class Edge {
  public:
-  explicit Edge(const std::string& name, 
-      Scope* s = GetGlobalScope());
+  explicit Edge(const std::string& name, Scope* s);
   inline bool isStateful() const;
   inline bool isVirtual() const;
   inline const std::string& name() const;
   inline const std::string& scoped_name() const;
-  inline const Scope* scope() const;
+  inline Scope* scope() const;
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
   inline void RemoveDst(Node* node);
@@ -45,7 +43,7 @@ class Edge {
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> dsts_;
-  Scope* s_;
+  Scope* located_;
 };
 
 inline bool Edge::isStateful() const {
@@ -64,8 +62,8 @@ inline const std::string& Edge::scoped_name() const {
   return scoped_name_;
 }
 
-inline const Scope* Edge::scope() const {
-  return s_; 
+inline Scope* Edge::scope() const {
+  return located_; 
 }
 
 inline void Edge::SetShape(const TensorShapeDef& def) {

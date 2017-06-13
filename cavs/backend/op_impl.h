@@ -48,7 +48,8 @@ class Key {
       : op_name_(name), dev_(""), label_("") {}
   Key(const OpDef& def) 
       : op_name_(def.name()), label_(def.label()) {
-    dev_ = ::midend::DeviceTypeToString(def.device());
+    //dev_ = ::midend::DeviceTypeToString(def.device());
+    dev_ = DeviceTypeToString(def.device());
   }
   Key& Device(std::string dev) { dev_ = dev; return *this; }
   Key& Label(std::string label) { label_ = label; return *this; }

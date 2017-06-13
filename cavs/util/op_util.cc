@@ -16,6 +16,13 @@ string GetOriginName(const string& op) {
   return op.substr(0, op.length()-5);
 }
 
+const char* DeviceTypeToString(DeviceType type) {
+  if (type == GPU)
+    return "GPU";
+  else if (type == CPU)
+    return "CPU";
+}
+
 size_t GetHash(const OpDef& op_def) {
   std::hash<string> hash_fn;
   string s;

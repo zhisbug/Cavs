@@ -16,6 +16,8 @@ std::string GetGradientName(const std::string& op);
 
 std::string GetOriginName(const std::string& op);
 
+const char* DeviceTypeToString(DeviceType type);
+
 size_t GetHash(const OpDef& op_def);
 
 bool IsVariable(const std::string& edge);

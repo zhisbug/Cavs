@@ -1,7 +1,7 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/backend/cublas_wrapper.h"
-#include "cavs/midend/devices.h"
+/*#include "cavs/midend/devices.h"*/
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
 

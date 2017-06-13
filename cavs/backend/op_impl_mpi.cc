@@ -1,7 +1,7 @@
 #include "cavs/backend/op_impl_mpi_functor.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/backend/cublas_wrapper.h"
-#include "cavs/midend/devices.h"
+//#include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
@@ -11,7 +11,7 @@
 namespace backend {
 
 using ::midend::Allocator;
-using ::midend::DeviceTypeToString;
+//using ::midend::DeviceTypeToString;
 using ::midend::Tensor;
 using std::vector;
 
@@ -35,7 +35,7 @@ void MPIAllReduceOpImpl<T>::Compute(OpContext* context) {
   CHECK(inp.count() == out->count());
   if (inp.device_type() != CPU) {
     Tensor cpu_buffer; 
-    cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), inp);
+    cpu_buffer.Rebase(::midend::GetAllocator(DeviceTypeToString(CPU)), inp);
     cpu_buffer.SyncWith(inp);
     MPIAllReduceFunctor<T>::Compute(cpu_buffer.data<T>(), 
           cpu_buffer.mutable_data<T>(), 
@@ -61,7 +61,7 @@ void MPIBcastOpImpl<T>::Compute(OpContext* context) {
   Tensor* out = context->Output(0);
   if (out->device_type() != CPU) {
     Tensor cpu_buffer;
-    cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), *out);
+    cpu_buffer.Rebase(::midend::GetAllocator(DeviceTypeToString(CPU)), *out);
     cpu_buffer.SyncWith(*out);
     //currently, we assume process0 executes the broadcast
     MPIBcastFunctor<T>::Compute(cpu_buffer.mutable_data<T>(),
@@ -125,12 +125,12 @@ void MPISFBOpImpl<T>::Compute(OpContext* context) {
   CHECK(A.device_type() == B.device_type());
   if (A.device_type() != CPU) {
     Tensor cpubufA;
-    cpubufA.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), A);
+    cpubufA.Rebase(::midend::GetAllocator(DeviceTypeToString(CPU)), A);
     cpubufA.SyncWith(A);
     MPIAllgatherFunctor<T>::Compute(cpubufA.data<T>(), A.count(),
         recvbufA.data(), A.count());
     Tensor cpubufB;
-    cpubufB.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), B);
+    cpubufB.Rebase(::midend::GetAllocator(DeviceTypeToString(CPU)), B);
     cpubufB.SyncWith(B);
     MPIAllgatherFunctor<T>::Compute(cpubufB.data<T>(), B.count(),
         recvbufB.data(), B.count());

@@ -3,7 +3,7 @@
 #include "cavs/backend/functor_elementwise.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/backend/cuda_common.h"
-#include "cavs/midend/devices.h"
+/*#include "cavs/midend/devices.h"*/
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/mpi_types.h"
@@ -17,7 +17,7 @@ namespace backend {
 
 using ::midend::Allocator;
 using ::midend::GetAllocator;
-using ::midend::DeviceTypeToString;
+/*using ::midend::DeviceTypeToString;*/
 using ::midend::Tensor;
 
 template <typename T>

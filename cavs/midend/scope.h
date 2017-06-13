@@ -27,15 +27,13 @@ class Scope {
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* FindNode(const std::string& name) const;
 
-  friend class DepGraph;
-  friend class ScopedNode;
-  void DebugSymbolTable();
-  inline const std::string& name() const {
-    return name_; 
-  }
-  std::string DebugInfo();
   void AddEdge(const Edge* edge);
   void AddNode(const Node* node);
+
+  friend class ScopedNode;
+  void DebugSymbolTable();
+  inline const std::string& name() const { return name_; }
+  std::string DebugInfo();
     
  private:
   std::string name_;

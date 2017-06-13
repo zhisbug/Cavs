@@ -144,7 +144,7 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     initialized_ = true;
     if (out->device_type() == GPU) {
       Tensor cpu_buffer; 
-      cpu_buffer.Rebase(::midend::GetAllocator(::midend::DeviceTypeToString(CPU)), *out);
+      cpu_buffer.Rebase(::midend::GetAllocator(DeviceTypeToString(CPU)), *out);
       cpu_buffer.SyncWith(*out);
       Bcast<BCASTFUNCTOR>(cpu_buffer.mutable_data<T>(), cpu_buffer.count(), 0);
       out->SyncWith(cpu_buffer);

@@ -6,7 +6,6 @@
 #include "cavs/proto/func_def.pb.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/midend/session_base.h"
-#include "cavs/midend/devices.h"
 #include "cavs/midend/tensor.h"
 //#include "cavs/midend/dep_graph.h"
 #include "cavs/midend/scope.h"
@@ -19,7 +18,7 @@ using midend::GetSession;
 using midend::Tensor;
 using midend::TensorShape;
 using midend::GetAllocator;
-using midend::DeviceTypeToString;
+//using midend::DeviceTypeToString;
 //using midend::DepGraph;
 using midend::Scope;
 using midend::main_scope;

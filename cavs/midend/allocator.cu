@@ -1,6 +1,7 @@
 #include "cavs/midend/allocator.h"
-#include "cavs/midend/devices.h"
+/*#include "cavs/midend/devices.h"*/
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/op_util.h"
 
 namespace midend {
 
