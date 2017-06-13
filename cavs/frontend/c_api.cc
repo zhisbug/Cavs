@@ -101,7 +101,6 @@ void C_AddOp(const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
-  //Node* node = C_graph->graph->AddNode(op_def);
   Node* node = C_GetMainScope()->scope->AddOp(op_def);
   vector<TensorShapeDef> input_shapes;
   node->InputShapes(&input_shapes);

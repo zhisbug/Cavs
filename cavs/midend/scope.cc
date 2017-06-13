@@ -66,23 +66,26 @@ Node* Scope::AddOp(const OpDef& op_def) {
   }
 
   SingleNode* node = new SingleNode(op_def, this);
-  //LOG(INFO) << "Adding node \t" << node->DebugInfo()
-            //<< "\nTo Scope " << name();
+  VLOG(V_DEBUG) << "Adding node \t" << node->DebugInfo()
+                << "\tTo Scope " << name();
+  VLOG(V_DEBUG) << "Adding its outputs...";
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
-    //bool stateful = node->IsVariableOp();
     //currently, only the source nodes can cross scopes
     if (node->isSourceOp()) {
-      //CHECK(op_def.shape_size() == 1) 
-        //<< op_def.DebugString();
-      LOG_IF(INFO, op_def.shape(0).dim_size() == 0)
+      //CHECK(op_def.shape_size() > 0) << op_def.DebugString();
+      VLOG_IF(V_DEBUG, op_def.shape_size() == 0 || op_def.shape(0).dim_size() == 0)
+          << "No shape operator:\n"
           << op_def.DebugString();
       if (!upper_out_edge) {
         //CHECK(!father_);
         out_edge = new Edge(out, this);
         out_edge->AddSource(node);
-        out_edge->SetShape(op_def.shape(0));
+        if (op_def.shape_size() > 0) {
+          CHECK(op_def.shape_size() == 1);
+          out_edge->SetShape(op_def.shape(0));
+        }
         node->AddOutput(out_edge);
       }else {
         CHECK(father_ && !out_edge);
@@ -115,6 +118,8 @@ Node* Scope::AddOp(const OpDef& op_def) {
       }
     }
   }
+  VLOG(V_DEBUG) << "Adding its inputs...";
+                
   //PrintSymbolTable();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);

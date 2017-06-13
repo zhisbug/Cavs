@@ -11,67 +11,12 @@
 using std::vector;
 using std::unordered_map;
 
-//void Sym::node::Finalize(OpDef* op_def) const {
-  //op_def->set_name(op_name_);
-  //for (const string& str: input_)
-    //op_def->add_input(str);
-  //for (const string& str: output_)
-    //op_def->add_output(str);
-  //op_def->set_dtype(DataType((int)type_));
-  //op_def->set_label(label_);
-  ////device
-  //if (device_ == "GPU")
-    //op_def->set_device(GPU);
-  //else
-    //op_def->set_device(CPU);
-  ////shape
-  //op_def->clear_shape();
-  //TensorShapeDef* shape_def = op_def->add_shape();
-  //for (auto dim : shape_)
-    //shape_def->add_dim(dim);
-//}
-
 Sym::MODE Sym::mode_ = Sym::STATIC_SYM;
 string Sym::func_name_;
 unordered_map<string, FunctionDef> Sym::func_def_;
 
 //Sym::Sym(const string& op_name,
-         //const vector<string>& inputs, 
-         //const C_Dtype type,
-         //const string& label,
-         //const string& device,
-         //const vector<int>& shape,
-         //const vector<OpDef::AttrDef>& attrs) {
-  //static int id = 0;  
-  //node_.reset(new node());
-  //node_->op_name_ = op_name;
-  //node_->output_.push_back(op_name + std::to_string(id++));
-  //node_->input_ = inputs;
-  //node_->type_ = type;
-  //node_->label_ = label;
-  //node_->shape_ = shape; 
-  //node_->device_ = device; 
-
-  //OpDef op_def;
-  //node_->Finalize(&op_def);
-  //for (auto& attr : attrs)
-    //*(op_def.add_attr()) = attr;
-  //string serial_def;
-  //op_def.SerializeToString(&serial_def);
-  //int *dim = NULL;
-  //size_t dim_length;
-  //C_AddNode(C_GetDefaultDG(),
-      //serial_def.c_str(), serial_def.length(),
-      //&dim, &dim_length);
-  //node_->shape_.clear();
-  //for (int i = 0; i < dim_length; i++)
-    //node_->shape_.push_back(dim[i]);
-  //free(dim);
-  ////LOG(INFO) << op_def.DebugString();
-//}
-
-//Sym::Sym(const string& op_name,
-    //const string& loss,
+   //const string& loss,
     //const vector<Sym>& variables,
     //const float lr,
     //const float clip,
@@ -136,11 +81,9 @@ Sym::Sym(const OpDef& op_def) {
     if (mode_ == STATIC_SYM) {
       int *dim = NULL;
       size_t dim_length;
-      //C_AddNode(C_GetDefaultDG(),
-          //serialization.c_str(), serialization.length(),
-          //&dim, &dim_length);
       C_AddOp(serialization.c_str(), serialization.length(),
               &dim, &dim_length);
+      CHECK_NOTNULL(dim);
       mutable_def()->clear_shape();
       TensorShapeDef* shape = mutable_def()->add_shape();
       for (int i = 0; i < dim_length; i++)
@@ -190,8 +133,6 @@ Sym Sym::Variable(DataType type, const vector<int>& shape,
                 .Shape(shape)
                 .Attr(filler.second)
                 .Finalize();
-  LOG(INFO) << def.DebugString();
-  //return Sym("Variable", {}, type, filler.first, device, shape, {filler.second});
   return Sym(def);
 }
 
@@ -203,7 +144,6 @@ Sym Sym::Placeholder(DataType type, const vector<int>& shape,
                 .Device(device)
                 .Shape(shape)
                 .Finalize();
-  //return Sym("Placeholder", {}, type, "", device, shape);
   return Sym(def);
 }
 
@@ -769,7 +709,6 @@ Sym::ATTRIBUTE Sym::BinaryReader(const string& filename) {
 
 Sym Sym::Optimizer(const Sym& a, vector<Sym> variables,
     float lr, float clip, int iters, const string& projection) {
-  //CHECK(variables.size() > 0);
   CHECK(iters > 0);
   CHECK(a.output_size() == 1);
   //Sym s("Optimizer", a.node_->output_[0],

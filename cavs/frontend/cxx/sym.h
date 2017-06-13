@@ -19,13 +19,13 @@ class Sym {
   int             output_size()   const;
   std::vector<string>    output() const;
   std::vector<int> shape(int idx) const;
-  inline DataType      type()     const { return def().dtype();       }
-  inline DeviceType    device()   const { return def().device();      }
-  inline const string& op_name()  const { return def().name();        }
-  inline const OpDef&  def()      const { return node_->op_def;       }
-  inline OpDef*        mutable_def()    { return &(node_->op_def);    }
-  inline const void*   data()     const { return node_->raw_data;     }
-  inline void**   mutable_data()        { return &(node_->raw_data);  }
+  inline DataType      type()     const { return def().dtype();      }
+  inline DeviceType    device()   const { return def().device();     }
+  inline const string& op_name()  const { return def().name();       }
+  inline const OpDef&  def()      const { return node_->op_def;      }
+  inline OpDef*        mutable_def()    { return &(node_->op_def);   }
+  inline const void*   data()     const { return node_->raw_data;    }
+  inline void**        mutable_data()   { return &(node_->raw_data); }
 
   explicit Sym(const OpDef& op_def);
   Sym(const Sym& sym) { *this = sym; }

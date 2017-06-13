@@ -127,7 +127,7 @@ void GroupClosedSet(
     Scope* loss_scope) {
   unordered_map<const Node*, bool> recalculate;
   for (auto& var_name : vars) {
-    LOG(INFO) << var_name;
+    VLOG(V_DEBUG) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
     list<const Node*> newly_traversed;
     TraverseCriticalPath(loss_scope, loss, var,
