@@ -7,7 +7,6 @@
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/midend/session_base.h"
 #include "cavs/midend/tensor.h"
-//#include "cavs/midend/dep_graph.h"
 #include "cavs/midend/scope.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/backend/op_impl.h"
@@ -18,8 +17,6 @@ using midend::GetSession;
 using midend::Tensor;
 using midend::TensorShape;
 using midend::GetAllocator;
-//using midend::DeviceTypeToString;
-//using midend::DepGraph;
 using midend::Scope;
 using midend::main_scope;
 using midend::global_scope;
@@ -50,10 +47,6 @@ struct C_Session {
   SessionBase* session;
 };
 
-//struct C_DepGraph {
-  //DepGraph* graph;
-//};
-
 struct C_Scope {
   Scope* scope;
 };
@@ -81,11 +74,6 @@ C_Tensor* C_NewTensor(const char* name, size_t name_len,
       std::move(tshape));
   return new C_Tensor{t};
 }
-
-//C_DepGraph* C_GetDefaultDG() {
-  //static C_DepGraph* dep_graph = new C_DepGraph{new DepGraph()};
-  //return dep_graph;
-//}
 
 C_Scope* C_GetMainScope() {
   static C_Scope* scope = new C_Scope{ main_scope() };
@@ -143,24 +131,9 @@ void C_AddOptimizerOp(
     }
   }
   CHECK(hasVars);
-  //if (!indicated) {
-    //vector<string> var_names;
-    ////c_graph->graph->GroupAllVariables(&var_names);
-    //C_GetMainScope()->scope->GroupAllVariables(&var_names);
-    //OpDef::AttrDef* var_attr = op_def.add_attr();
-    //var_attr->set_name("Vars");
-    //OpDef::AttrType::ListValue* str_list
-      //= var_attr->mutable_value()->mutable_list();
-    //for (auto& var: var_names)
-      //str_list->add_s(var);
-  //}
   //c_graph->graph->OptimizeWithLoss(op_def);
   C_GetMainScope()->scope->AddOptimizerOp(op_def);
 }
-
-//void C_DumpGraph(C_DepGraph* C_graph) {
-  //LOG(INFO) << C_graph->graph->DebugInfo();
-//}
 
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 

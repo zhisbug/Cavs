@@ -11,28 +11,8 @@
 #include <list>
 
 using namespace std;
-using ::backend::OpDecl;
-//using ::backend::BuildConstantOpDef;
 
 namespace midend {
-
-//Node* DepGraph::AddNode(const OpDef& op_def) { 
-  //return s_->AddNode(op_def); 
-//}
-
-//const Node* DepGraph::FindNode(
-    //const std::string& name) const {
-  //const Edge* edge = s_->FindEdge(name);
-  //if (!edge) return NULL;
-  //CHECK(edge->isStateful() || edge->srcs_size() == 1)
-    //<< edge->name() << edge->srcs_size();
-  //return edge->src(0);
-//}
-
-//const Edge* DepGraph::FindEdge(
-    //const std::string& name) const {
-  //return s_->FindEdge(name);
-//}
 
 void DeduceAndApplyOneGradNode(
     Scope* s,
@@ -183,15 +163,6 @@ void GroupClosedSet(
   }
 }
 
-//void DepGraph::GroupAllVariables(vector<string>* vars) {
-  //for (Node* n : s_->nodes_) {
-    //if (static_cast<SingleNode*>(n)->IsVariableOp()) {
-      //CHECK(n->outputs_size() == 1) << n->outputs_size();
-      //vars->push_back(n->output(0)->name());
-    //}
-  //}
-//}
-
 //void DepGraph::OptimizeWithLoss(
 Node* GraphUtil::AddOptimizerOp(
     const OpDef& def) {
@@ -247,9 +218,5 @@ Node* GraphUtil::AddOptimizerOp(
   return sn;
   //s_->PrintSymbolTable();
 }
-
-//string DepGraph::DebugInfo() {
-  //return s_->DebugInfo();
-//}
 
 } //namespace midend

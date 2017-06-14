@@ -15,59 +15,6 @@ Sym::MODE Sym::mode_ = Sym::STATIC_SYM;
 string Sym::func_name_;
 unordered_map<string, FunctionDef> Sym::func_def_;
 
-//Sym::Sym(const string& op_name,
-   //const string& loss,
-    //const vector<Sym>& variables,
-    //const float lr,
-    //const float clip,
-    //const int iters,
-    //const string& projection) {
-  //CHECK(op_name == "Optimizer");
-  //static int id = 0;
-  //node_.reset(new node());
-  //node_->op_name_ = op_name;
-  //node_->output_.push_back(op_name + std::to_string(id++));
-  //node_->input_ = {loss};
-
-  //OpDef op_def;
-  //node_->Finalize(&op_def);
-
-  //if (variables.size()) {
-    //OpDef::AttrDef* var_attr = op_def.add_attr();
-    //var_attr->set_name("Vars");
-    //OpDef::AttrType::ListValue* str_list
-      //= var_attr->mutable_value()->mutable_list();
-    //for (auto& sym : variables)
-      //str_list->add_s(sym.output(0));
-  //}
-  //OpDef::AttrDef* solver_attr = op_def.add_attr();
-  //solver_attr->set_name("Solver");
-  //solver_attr->mutable_value()->set_s("SGD");
-  //if (projection.length() > 0) {
-    //OpDef::AttrDef* proj_attr = op_def.add_attr();
-    //proj_attr->set_name("Projection");
-    //proj_attr->mutable_value()->set_s(projection);
-  //}
-  //OpDef::AttrDef* lr_attr = op_def.add_attr();
-  //lr_attr->set_name("learning_rate");
-  //lr_attr->mutable_value()->set_f(lr);
-
-  //if (clip != 0) {
-    //OpDef::AttrDef* clip_attr = op_def.add_attr();
-    //clip_attr->set_name("clip");
-    //clip_attr->mutable_value()->set_f(clip);
-  //}
-
-  //OpDef::AttrDef* iters_attr = op_def.add_attr();
-  //iters_attr->set_name("Iters");
-  //iters_attr->mutable_value()->set_i(iters);
-
-  //string serial_def;
-  //op_def.SerializeToString(&serial_def);
-  //C_OptimizeWithLoss(C_GetDefaultDG(),
-    //serial_def.c_str(), serial_def.length());
-//}
-
 Sym::Sym(const OpDef& op_def) {
   node_.reset(new node_t());
   node_->op_def = op_def;
