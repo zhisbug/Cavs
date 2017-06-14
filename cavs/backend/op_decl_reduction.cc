@@ -33,7 +33,7 @@ class ArgmaxOp: public OpDecl {
   explicit ArgmaxOp(const OpDef& def) : OpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
-    int axis = GetSingleArg<int>(op_def_, "axis", 0);
+    int axis = GetSingleArg<int>(op_def_, "Axis");
     CHECK(inputs.size() == 1);
     out_shape->resize(1);
     out_shape->at(0).clear_dim();

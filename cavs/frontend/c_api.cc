@@ -127,24 +127,33 @@ void C_AddOptimizerOp(
     const void* def, size_t def_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
-  bool var_flag = false;
-  for (auto& attr : op_def.attr()) {
+  bool hasVars = false;
+  for (auto& attr : *op_def.mutable_attr()) {
     if (attr.name() == "Vars") {
-      CHECK(attr.value().list().s().size());
-      var_flag = true;
+      CHECK(!hasVars);
+      if (attr.value().list().s().size() == 0) {
+        vector<string> var_names;
+        C_GetMainScope()->scope->GroupAllVariables(&var_names);
+        OpDef::AttrType::ListValue* str_list
+          = attr.mutable_value()->mutable_list();
+        for (auto& var: var_names)
+          str_list->add_s(var);
+      }
+      hasVars = true;
     }
   }
-  if (!var_flag) {
-    vector<string> var_names;
-    //c_graph->graph->GroupAllVariables(&var_names);
-    C_GetMainScope()->scope->GroupAllVariables(&var_names);
-    OpDef::AttrDef* var_attr = op_def.add_attr();
-    var_attr->set_name("Vars");
-    OpDef::AttrType::ListValue* str_list
-      = var_attr->mutable_value()->mutable_list();
-    for (auto& var: var_names)
-      str_list->add_s(var);
-  }
+  CHECK(hasVars);
+  //if (!indicated) {
+    //vector<string> var_names;
+    ////c_graph->graph->GroupAllVariables(&var_names);
+    //C_GetMainScope()->scope->GroupAllVariables(&var_names);
+    //OpDef::AttrDef* var_attr = op_def.add_attr();
+    //var_attr->set_name("Vars");
+    //OpDef::AttrType::ListValue* str_list
+      //= var_attr->mutable_value()->mutable_list();
+    //for (auto& var: var_names)
+      //str_list->add_s(var);
+  //}
   //c_graph->graph->OptimizeWithLoss(op_def);
   C_GetMainScope()->scope->AddOptimizerOp(op_def);
 }

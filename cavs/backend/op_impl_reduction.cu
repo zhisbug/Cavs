@@ -42,7 +42,7 @@ class ArgmaxOpCublasOrCuda: public OpImpl {
  public:
   explicit ArgmaxOpCublasOrCuda(const OpDef& def)
     : OpImpl(def) {
-    axis_ = GetSingleArg<int>(op_def_, "axis", 0);
+    axis_ = GetSingleArg<int>(op_def_, "Axis");
   }
   void Compute(OpContext* context) override;
 
@@ -55,7 +55,7 @@ void ArgmaxOpCublasOrCuda<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
   if (axis_ == 0) {
-    CHECK(1 == y->count());
+    CHECK(1 == y->count()) << op_def_.DebugString();
     int N = x.count();
     CHECK(N > 0);
     ArgmaxCublasWrapper<T>(N, x.data<T>(), y->mutable_data<int>());

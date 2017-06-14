@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
               .FullyConnected(fc2, bias_fc2).SoftmaxEntropyLogits(label);
   Sym train = y.Optimizer({}, FLAGS_lr);
   Sym correct_prediction = Sym::Equal(y.Argmax(1), label).Reduce_mean();
-  Sym::DumpGraph();
+  //Sym::DumpGraph();
 
   Session sess;
   for (int i = 0; i < FLAGS_iter; i++) {

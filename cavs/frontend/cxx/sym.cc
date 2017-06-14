@@ -259,6 +259,7 @@ Sym Sym::Argmax(const Sym& a, int axis, string device) {
                 .Input(a.output(0))
                 .Dtype(a.type())
                 .Device(device)
+                .AttrSingle("Axis", 1)
                 .Finalize();
   return Sym(def);
 }
@@ -325,7 +326,7 @@ Sym Sym::Maxpooling(const Sym& a,
   //}
   //return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_, "",
          //device, {}, attrs);
-  OpDef def = OpDefBuilder("Maxpooling")
+  OpDef def = OpDefBuilder("Pooling")
                 .Input(a.output(0))
                 .Dtype(a.type())
                 .Device(device)

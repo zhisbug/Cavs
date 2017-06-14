@@ -206,6 +206,7 @@ Node* GraphUtil::AddOptimizerOp(
   for (auto& attr : def.attr()) {
     if (attr.name() == "Vars") {
       auto& vars = attr.value().list().s();
+      CHECK(vars.size() > 0) << def.DebugString();
       var_names.resize(vars.size());
       std::copy(vars.begin(), vars.end(), var_names.begin());
     }else if (attr.name() == "Solver") {
