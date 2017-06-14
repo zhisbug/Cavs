@@ -15,32 +15,27 @@ using std::string;
 
 class Sym {
  public:
-  const string&   output(int idx) const;
-  int             output_size()   const;
-  std::vector<string>    output() const;
-  std::vector<int> shape(int idx) const;
-  inline DataType      type()     const { return def().dtype();      }
-  inline DeviceType    device()   const { return def().device();     }
-  inline const string& op_name()  const { return def().name();       }
-  inline const OpDef&  def()      const { return node_->op_def;      }
-  inline OpDef*        mutable_def()    { return &(node_->op_def);   }
-  inline const void*   data()     const { return node_->raw_data;    }
-  inline void**        mutable_data()   { return &(node_->raw_data); }
-
   explicit Sym(const OpDef& op_def);
   Sym(const Sym& sym) { *this = sym; }
   Sym() : node_(nullptr) {}
-  typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
-  enum MODE { STATIC_SYM = 1, DYNAMIC_SYM = 2 };
-  inline static void SetMode(MODE mode) { mode_ = mode; }
-  inline static void SetFuncName(const string& name) { func_name_ = name; }
-  inline static const FunctionDef& GetFunc(const string& name) {
-    CHECK(func_def_.find(name) != func_def_.end());
-    return func_def_.at(name);
-  }
-
-  template <typename T> Sym (T constant);
+  template <typename T>
+  Sym (T constant);
   Sym& operator =(const Sym& sym);
+
+
+  const string&        output(int idx) const;
+  int                  output_size()   const;
+  std::vector<string>  output()        const;
+  std::vector<int>     shape(int idx)  const;
+  inline DataType      type()          const { return def().dtype();      }
+  inline DeviceType    device()        const { return def().device();     }
+  inline const string& op_name()       const { return def().name();       }
+  inline const OpDef&  def()           const { return node_->op_def;      }
+  inline OpDef*        mutable_def()         { return &(node_->op_def);   }
+  inline const void*   data()          const { return node_->raw_data;    }
+  inline void**        mutable_data()        { return &(node_->raw_data); }
+
+  typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
 
   //non-arguments operation
   static Sym Variable(DataType type, const std::vector<int>& shape,
@@ -143,39 +138,12 @@ class Sym {
   friend Sym operator *(const Sym& a, const Sym& b) { return Mul(a, b); }
 
  private:
-  //typedef struct node {
-    //string op_name_;
-    //C_Dtype type_;
-    //std::string label_;
-    //std::vector<int> shape_;
-    //string device_;
-    //vector<string> output_;
-    //vector<string> input_;
-    //void Finalize(OpDef* op_def) const;
-    //void* raw_data = NULL;
-  //} node;
   typedef struct node_t {
     OpDef op_def;
     void* raw_data = NULL;
   } node_t;
     
-  //Sym(const string& op_name,
-      //const vector<string>& inputs, 
-      //const C_Dtype type,
-      //const string& label,
-      //const string& device,
-      //const std::vector<int>& shape = {},
-      //const vector<OpDef::AttrDef>& attrs = {});
-  //Sym(const string& op_name, const string& input,
-      //const vector<Sym>& variables = {},
-      //const float lr = 1,
-      //const float clip = 0,
-      //const int iters = 1,
-      //const string& projections = "");
   std::shared_ptr<node_t> node_;
-  static MODE mode_;
-  static string func_name_;
-  static std::unordered_map<string, FunctionDef> func_def_;
 };
 
 inline std::vector<string> Sym::output() const { 
@@ -201,5 +169,35 @@ inline std::vector<int> Sym::shape(int idx) const {
     s.push_back(d);
   return s;
 }
+
+class FuncConf {
+ public:
+  inline static void FuncDefineBegin(const string& name) {
+    Get()->name_ = name; 
+    Get()->def_.set_name(name);
+  }
+  inline static FunctionDef FuncDefineEnd(const string& name) {
+    CHECK(name == Get()->name_);
+    FunctionDef ret = Get()->def_;
+    Get()->name_.clear();
+    Get()->def_.Clear();
+    return ret;
+  }
+  inline static bool CheckInFunc() {
+    return !(Get()->name_.empty());
+  }
+  inline static FunctionDef* mutable_funcdef() {
+    CHECK(CheckInFunc());
+    CHECK(!(Get()->def_.name().empty()));
+    return &(Get()->def_); 
+  }
+
+ private:
+  FuncConf() : name_("") {}
+  static FuncConf* Get() { static FuncConf fc; return &fc; }
+  string name_;
+  FunctionDef def_;
+};
+
 
 #endif

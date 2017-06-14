@@ -11,10 +11,6 @@
 using std::vector;
 using std::unordered_map;
 
-Sym::MODE Sym::mode_ = Sym::STATIC_SYM;
-string Sym::func_name_;
-unordered_map<string, FunctionDef> Sym::func_def_;
-
 Sym::Sym(const OpDef& op_def) {
   node_.reset(new node_t());
   node_->op_def = op_def;
@@ -22,10 +18,18 @@ Sym::Sym(const OpDef& op_def) {
   static int id_ = 0;
   mutable_def()->add_output(op_name() + "_" + std::to_string(id_++));
 
-  string serialization;
-  def().SerializeToString(&serialization);
-  if (op_name() != "Optimizer") {
-    if (mode_ == STATIC_SYM) {
+  if (FuncConf::CheckInFunc()) {
+    CHECK(op_name() != "Optimizer");
+    FunctionDef* fdef = FuncConf::mutable_funcdef(); 
+    fdef->add_ops()->CopyFrom(def());
+  }else {
+    string serialization;
+    def().SerializeToString(&serialization);
+
+    if (op_name() == "Optimizer") {
+      C_AddOptimizerOp(
+        serialization.c_str(), serialization.length());
+    }else {
       int *dim = NULL;
       size_t dim_length;
       C_AddOp(serialization.c_str(), serialization.length(),
@@ -36,22 +40,7 @@ Sym::Sym(const OpDef& op_def) {
       for (int i = 0; i < dim_length; i++)
         shape->add_dim(dim[i]);
       free(dim);
-    }else {
-      if (func_def_.find(func_name_) == func_def_.end()) {
-        FunctionDef fdef; 
-        fdef.set_name(func_name_);
-        fdef.add_ops()->CopyFrom(def());
-        func_def_.emplace(func_name_, fdef);
-      }else {
-        func_def_[func_name_].add_ops()->CopyFrom(def());
-      }
     }
-  }else {
-    CHECK(mode_ != DYNAMIC_SYM);
-    //C_OptimizeWithLoss(C_GetDefaultDG(),
-      //serialization.c_str(), serialization.length());
-    C_AddOptimizerOp(
-      serialization.c_str(), serialization.length());
   }
 }
 

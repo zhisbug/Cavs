@@ -3,12 +3,12 @@
 #include "cavs/util/op_def_builder.h"
 
 Sym GraphSupport::Output() {
-  Sym::SetMode(Sym::DYNAMIC_SYM);
-  Sym::SetFuncName("Inode");
+  FuncConf::FuncDefineBegin("Inode");
   this->Inode();
-  Sym::SetFuncName("Leaf");
+  FuncConf::FuncDefineEnd("Inode");
+  FuncConf::FuncDefineBegin("Leaf");
   this->Leaf();
-  Sym::SetMode(Sym::STATIC_SYM);
+  FuncConf::FuncDefineEnd("Leaf");
 
   OpDef def = OpDefBuilder("GraphOutput")
                 .Input(raw_graph_.output(0))
