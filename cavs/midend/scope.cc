@@ -120,15 +120,9 @@ Node* Scope::AddOp(const OpDef& op_def) {
   }
   VLOG(V_DEBUG) << "Adding its inputs...";
                 
-  //PrintSymbolTable();
   for (auto& input : op_def.input()) {
     const Edge* in_edge = FindEdge(input);
-    CHECK(in_edge) << "name: " << input
-      << DebugInfo();
-    //LOG(INFO) << in_edge->name()
-              //<< "???\t"
-              //<< in_edge->scope()->name()
-              //<< in_edge->shape().DebugString();
+    CHECK(in_edge) << "name: " << input << "\n" << DebugInfo();
     node->AddInput(in_edge);
     const_cast<Edge*>(in_edge)->AddDst(node);
     if (!FindEdge(input, true) &&
@@ -166,7 +160,7 @@ Node* Scope::AddOptimizerOp(const OpDef& op_def) {
   return GraphUtil(this).AddOptimizerOp(op_def);
 }
 
-Node* Scope::AddFunction(const FunctionDef& func_def) {
+void Scope::AddFunction(const FunctionDef& func_def) {
   CHECK(name_ == "global");
   CHECK(father_);
   return GraphUtil(this).AddFunction(func_def);

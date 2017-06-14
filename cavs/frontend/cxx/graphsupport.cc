@@ -2,13 +2,29 @@
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/op_def_builder.h"
 
+#include <string>
+
+using std::string;
+
 Sym GraphSupport::Output() {
-  FuncConf::FuncDefineBegin("Inode");
-  this->Inode();
-  FuncConf::FuncDefineEnd("Inode");
-  FuncConf::FuncDefineBegin("Leaf");
-  this->Leaf();
-  FuncConf::FuncDefineEnd("Leaf");
+  {
+    FuncConf::FuncDefineBegin("Inode");
+    this->Inode();
+    FunctionDef fi = FuncConf::FuncDefineEnd("Inode");
+    VLOG(V_DEBUG) << fi.DebugString();
+    string serialization;
+    fi.SerializeToString(&serialization);
+    C_AddFunction(serialization.c_str(), serialization.length());
+  }
+
+  {
+    FuncConf::FuncDefineBegin("Leaf");
+    this->Leaf();
+    FunctionDef fl = FuncConf::FuncDefineEnd("Leaf");
+    string serialization;
+    fl.SerializeToString(&serialization);
+    C_AddFunction(serialization.c_str(), serialization.length());
+  }
 
   OpDef def = OpDefBuilder("GraphOutput")
                 .Input(raw_graph_.output(0))

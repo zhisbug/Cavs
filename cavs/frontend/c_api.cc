@@ -106,9 +106,7 @@ void C_AddOp(const void* def, size_t def_length,
 void C_AddFunction(const void* def, size_t def_length) {
   FunctionDef func_def;
   func_def.ParseFromArray(def, def_length);
-  //Node* node = C_graph->graph->AddFunc(func_def);
-  Node* node = C_GetGlobalScope()->scope->AddFunction(func_def);
-  CHECK_NOTNULL(node);
+  C_GetGlobalScope()->scope->AddFunction(func_def);
 }
 
 void C_AddOptimizerOp(

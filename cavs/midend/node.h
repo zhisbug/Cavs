@@ -77,10 +77,11 @@ class SingleNode : public Node {
 //compilation
 class ScopedNode : public Node {
  public:
-  explicit ScopedNode(int iter,
+  explicit ScopedNode(
+      Scope* located, 
       const Scope* contained,
       const OpDef& op_def,
-      Scope* located);
+      int iter);
   Statement* Compile(SessionBase* sess) override;
   bool IsScopedNode() const override { return true; }
   std::list<Node*> nodes_;

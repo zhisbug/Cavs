@@ -5,6 +5,7 @@
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/op_def_builder.h"
+#include "cavs/util/op_util.h"
 
 #include <string>
 #include <algorithm>
@@ -142,14 +143,13 @@ void GroupClosedSet(
       .Input(GetGradientName(var_name))
       .Output(var_name)
       .Shape(var->shape())
-      .AttrSingle<float>("learning_rate", lr)
+      .AttrSingle<float>("Learning_rate", lr)
       .Device("GPU")
       .Finalize(&update);
     //loss_scope->AddNode(update);
     loss_scope->AddOp(update);
 
     if (proj.length() > 0) {
-      //LOG(FATAL) << proj;
       OpDef projection;  
       OpDefBuilder(proj)
         .Input(var_name)
@@ -163,60 +163,74 @@ void GroupClosedSet(
   }
 }
 
-//void DepGraph::OptimizeWithLoss(
-Node* GraphUtil::AddOptimizerOp(
-    const OpDef& def) {
+Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
   CHECK(def.input_size() == 1);
   const string& loss = def.input(0);
-  vector<string> var_names(0);
-  int iters = 0;
-  string proj;
-  string solver;
-  float lr = 0;
-  float clip = 0;
-  for (auto& attr : def.attr()) {
-    if (attr.name() == "Vars") {
-      auto& vars = attr.value().list().s();
-      CHECK(vars.size() > 0) << def.DebugString();
-      var_names.resize(vars.size());
-      std::copy(vars.begin(), vars.end(), var_names.begin());
-    }else if (attr.name() == "Solver") {
-      solver = attr.value().s(); 
-    }else if (attr.name() == "Projection") {
-      proj = attr.value().s(); 
-    }else if (attr.name() == "Iters") {
-      iters = attr.value().i(); 
-    }else if (attr.name() == "Learning_rate") {
-      lr = attr.value().f(); 
-    }else if (attr.name() == "Clip") {
-      clip = attr.value().f(); 
-    }
-  }
+  //vector<string> var_names(0);
+  //int iters = 0;
+  //string proj;
+  //string solver;
+  //float lr = 0;
+  //float clip = 0;
+  //for (auto& attr : def.attr()) {
+    //if (attr.name() == "Vars") {
+      //auto& vars = attr.value().list().s();
+      //CHECK(vars.size() > 0) << def.DebugString();
+      //var_names.resize(vars.size());
+      //std::copy(vars.begin(), vars.end(), var_names.begin());
+    //}else if (attr.name() == "Solver") {
+      //solver = attr.value().s(); 
+    //}else if (attr.name() == "Projection") {
+      //proj = attr.value().s(); 
+    //}else if (attr.name() == "Iters") {
+      //iters = attr.value().i(); 
+    //}else if (attr.name() == "Learning_rate") {
+      //lr = attr.value().f(); 
+    //}else if (attr.name() == "Clip") {
+      //clip = attr.value().f(); 
+    //}
+  //}
+  vector<string> var_names = GetListArg<string>(def, string("Vars"));
+  int    iters  = GetSingleArg(def, "Iters"        , 0         );
+  float  lr     = GetSingleArg(def, "Learning_rate", 0.f       );
+  float  clip   = GetSingleArg(def, "Clip"         , 0.f       );
+  string proj   = GetSingleArg(def, "Projection"   , string(""));
+  string solver = GetSingleArg(def, "Solver"       , string(""));
+
+  CHECK(!var_names.empty());
+  CHECK(iters > 0);
   CHECK(lr > 0);
   CHECK(clip >= 0);
-  CHECK(var_names.size());
-  CHECK(solver.length());
-  //LOG(INFO) << "Projection Method: " << proj;
-  CHECK(iters > 0);
+  CHECK(!solver.empty());
+
   Scope* loss_scope = new Scope(s_, def.output(0));
+
   const Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
+
   OpDef const_op;
-  //BuildConstantOpDef(&const_op, 
-      //GetGradientName(loss),
-      //loss_edge->shape(), 1.f);
   OpDefBuilder("ConstOp")
     .Output(GetGradientName(loss))
     .Shape(loss_edge->shape())
     .AttrSingle("init", 1.f)
     .Device("GPU")
     .Finalize(&const_op);
-  //loss_scope->AddNode(const_op);
   loss_scope->AddOp(const_op);
+
   GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
-  ScopedNode* sn = new ScopedNode(iters, loss_scope, def, s_);
+  //ScopedNode* sn = new ScopedNode(iters, loss_scope, def, s_);
+  ScopedNode* sn = new ScopedNode(s_, loss_scope, def, iters);
+
   return sn;
-  //s_->PrintSymbolTable();
+}
+
+void GraphUtil::AddFunction(const FunctionDef& def) {
+  string func_scope_name = def.name();
+  Scope* func_scope = new Scope(s_, func_scope_name);
+
+  for (auto& op : def.ops()) {
+    func_scope->AddOp(op);
+  }
 }
 
 } //namespace midend

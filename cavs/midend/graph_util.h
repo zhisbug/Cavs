@@ -18,9 +18,7 @@ class GraphUtil {
  public:
   GraphUtil(Scope* s) : s_(s) {}
   Node* AddOptimizerOp(const OpDef& op_def);
-  Node* AddFunction(const FunctionDef& func_def) {
-    LOG(FATAL) << "Not implemented yet";
-  }
+  void AddFunction(const FunctionDef& func_def);
   std::string DebugInfo();
 
  private:

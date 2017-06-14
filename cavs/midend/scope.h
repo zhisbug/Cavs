@@ -21,7 +21,7 @@ class Scope {
   Node* AddOp(const OpDef& op_def);
   void GroupAllVariables(std::vector<std::string>* vars) const;
   Node* AddOptimizerOp(const OpDef& op_def);
-  Node* AddFunction(const FunctionDef& func_def);
+  void AddFunction(const FunctionDef& func_def);
 
   Scope* FindChild(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;

@@ -62,12 +62,9 @@ Statement* SingleNode::Compile(
   return stmt_;
 }
 
-ScopedNode::ScopedNode(int iter,
-      const Scope* contained,
-      const OpDef& op_def,
-      Scope* located)
-    : iter_(iter), contained_(contained),
-      Node(op_def, located) {
+ScopedNode::ScopedNode(Scope* located, const Scope* contained,
+      const OpDef& op_def, int iter)
+    : iter_(iter), contained_(contained), Node(op_def, located) {
   for (auto& edge: contained->in_edges_) {
     inputs_.push_back(edge.second);
   }
