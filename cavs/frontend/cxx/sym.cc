@@ -333,7 +333,7 @@ std::tuple<Sym, Sym, Sym, Sym> Sym::Split4(const Sym& a) {
                .Input(a.output(0))
                .Dtype(a.type())
                .Device(a.device())
-               .AttrSingle("Split", 3)
+               .AttrSingle("Split", 4)
                .AttrSingle("Index", i)
                .Finalize();
   }
@@ -367,6 +367,18 @@ Sym Sym::Reshape(const Sym& a, const std::vector<int>& shape) {
                 .Device(a.device())
                 .Shape(shape)
                 .AttrSingle("ShareMemory", true)
+                .Finalize();
+  return Sym(def);
+}
+
+Sym Sym::Expand_dims(const Sym& a, int axis) {
+  OpDef def = OpDefBuilder("Expand_dims")
+                .Input(a.output(0))
+                .Dtype(a.type())
+                .Device(a.device())
+                //.Shape(shape)
+                .AttrSingle("ShareMemory", true)
+                .AttrSingle("Axis", axis)
                 .Finalize();
   return Sym(def);
 }

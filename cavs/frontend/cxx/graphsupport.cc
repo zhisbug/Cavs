@@ -86,9 +86,9 @@ Sym GraphSupport::Pull(int offset,
 
 void GraphSupport::Push(const Sym& s) {
   OpDef def = OpDefBuilder("Push")
+                .Input(s.output(0))
                 .Input(raw_graph_.output(0))
                 .Input(raw_vertex_.output(0))
-                .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
                 //.Shape(s.shape(0))
@@ -98,9 +98,9 @@ void GraphSupport::Push(const Sym& s) {
 
 void GraphSupport::Scatter(const Sym& s) {
   OpDef def = OpDefBuilder("Scatter")
+                .Input(s.output(0))
                 .Input(raw_graph_.output(0))
                 .Input(raw_vertex_.output(0))
-                .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
                 //.Shape(s.shape(0))

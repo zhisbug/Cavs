@@ -46,6 +46,7 @@ void DataOpDecl::ShapeInference(
 }
 
 REGISTER_OP_DECL_BUILDER("Placeholder", PlaceholderOpDecl);
-REGISTER_OP_DECL_BUILDER("Data", DataOpDecl);
+REGISTER_OP_DECL_BUILDER("Constant",    PlaceholderOpDecl);
+REGISTER_OP_DECL_BUILDER("Data",        DataOpDecl);
 
 } //namespace backend

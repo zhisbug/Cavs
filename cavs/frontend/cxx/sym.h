@@ -77,6 +77,7 @@ class Sym {
   static Sym Equal(const Sym& a, const Sym& b, string device = "GPU");
   static Sym EmbeddingLookup(const Sym& a, const Sym& b, string device = "GPU");
   static Sym Reshape(const Sym& a, const std::vector<int>& shape);
+  static Sym Expand_dims(const Sym& a, int axis);
   //ternary operation
   static Sym Conv(const Sym& a, const Sym& b, const Sym& c, string device = "GPU");
   static Sym FullyConnected(const Sym& x, const Sym& w, const Sym& b, string device = "GPU");
@@ -126,11 +127,12 @@ class Sym {
   Sym SoftmaxEntropyLoss(const Sym& b)       { return SoftmaxEntropyLoss(*this, b);   }
   Sym EmbeddingLookup(const Sym& b)          { return EmbeddingLookup(*this, b);      }
   Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape);          }
+  Sym Expand_dims(int axis)                  { return Expand_dims(*this, axis);    }
   //ternary operation
   Sym Conv(const Sym& b, const Sym& c)           { return Conv(*this, b, c);           }
   Sym FullyConnected(const Sym& w, const Sym& b) { return FullyConnected(*this, w, b); }
   //quaternary operation
-  Sym LSTM(const Sym& b, int layer, int hidden) { return LSTM(*this, b, layer, hidden); }
+  Sym LSTM(const Sym& b, int layer, int hidden)  { return LSTM(*this, b, layer, hidden); }
   ////////////////////////////////////////////////
   //operator overloading
   friend Sym operator +(const Sym& a, const Sym& b) { return Add(a, b); }

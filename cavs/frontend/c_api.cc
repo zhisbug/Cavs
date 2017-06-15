@@ -19,7 +19,7 @@ using midend::TensorShape;
 using midend::GetAllocator;
 using midend::Scope;
 using midend::main_scope;
-using midend::global_scope;
+//using midend::global_scope;
 using midend::Node;
 using backend::ShapeInference;
 
@@ -80,10 +80,10 @@ C_Scope* C_GetMainScope() {
   return scope;
 }
 
-C_Scope* C_GetGlobalScope() {
-  static C_Scope* scope = new C_Scope{ global_scope() };
-  return scope;
-}
+//C_Scope* C_GetGlobalScope() {
+  //static C_Scope* scope = new C_Scope{ global_scope() };
+  //return scope;
+//}
 
 void C_AddOp(const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
@@ -107,7 +107,7 @@ void C_AddFunction(const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
   FunctionDef func_def;
   func_def.ParseFromArray(def, def_length);
-  TensorShapeDef shape = C_GetGlobalScope()->scope->AddFunction(func_def);
+  TensorShapeDef shape = C_GetMainScope()->scope->AddFunction(func_def);
   *dim_length = shape.dim_size();
   *dim = new int[*dim_length];
   for (int i = 0; i < shape.dim_size(); i++)

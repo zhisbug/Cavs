@@ -46,7 +46,7 @@ class Scope {
   std::set<size_t> hash_nodes_;
 };
 
-Scope* global_scope();
+//Scope* global_scope();
 Scope* main_scope();
 
 } //namespace midend

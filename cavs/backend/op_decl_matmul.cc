@@ -70,8 +70,9 @@ class MatMulOpDecl : public OpDecl {
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() >= 2) << inputs.size();
-    CHECK(inputs[0].dim_size() == 2);
-    CHECK(inputs[1].dim_size() == 2);
+    CHECK(inputs[0].dim_size() == 2)
+      << inputs[0].DebugString() << op_def_.DebugString();
+    CHECK(inputs[1].dim_size() == 2) << op_def_.DebugString();
     int MA = (TransA_ == false)? inputs[0].dim(0) : inputs[0].dim(1);
     int KA = (TransA_ == false)? inputs[0].dim(1) : inputs[0].dim(0);
     int KB = (TransB_ == false)? inputs[1].dim(0) : inputs[1].dim(1);

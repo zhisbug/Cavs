@@ -4,9 +4,9 @@ using std::vector;
 
 namespace backend {
 
-class ReluOpDecl : public UnaryOpDecl {
+class ActivationOpDecl : public UnaryOpDecl {
  public:
-  explicit ReluOpDecl(const OpDef& def)
+  explicit ActivationOpDecl(const OpDef& def)
     : UnaryOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK(grad->size() == 0);
@@ -25,8 +25,12 @@ class ReluOpDecl : public UnaryOpDecl {
   }
 };
 
-REGISTER_OP_DECL_BUILDER("Relu", ReluOpDecl);
-//ReluGrad operator does not need a gradient further
-REGISTER_OP_DECL_BUILDER(GetGradientName("Relu"), TernaryOpDecl);
+REGISTER_OP_DECL_BUILDER("Relu",    ActivationOpDecl);
+REGISTER_OP_DECL_BUILDER("Sigmoid", ActivationOpDecl);
+REGISTER_OP_DECL_BUILDER("Tanh",    ActivationOpDecl);
+//Activation Grad operator does not need a gradient further
+REGISTER_OP_DECL_BUILDER(GetGradientName("Relu"),    TernaryOpDecl);
+REGISTER_OP_DECL_BUILDER(GetGradientName("Sigmoid"), TernaryOpDecl);
+REGISTER_OP_DECL_BUILDER(GetGradientName("Tanh"),    TernaryOpDecl);
 
 } //namespace backend

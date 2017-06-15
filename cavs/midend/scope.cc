@@ -67,7 +67,8 @@ Node* Scope::AddOp(const OpDef& op_def) {
 
   SingleNode* node = new SingleNode(op_def, this);
   VLOG(V_DEBUG) << "Adding node \t" << node->DebugInfo()
-                << "\tTo Scope " << name();
+                << "\tTo Scope " << name() << "\n"
+                << op_def.DebugString();
   VLOG(V_DEBUG) << "Adding its outputs...";
   for (auto& out : op_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
@@ -161,8 +162,8 @@ Node* Scope::AddOptimizerOp(const OpDef& op_def) {
 }
 
 TensorShapeDef Scope::AddFunction(const FunctionDef& func_def) {
-  CHECK(name_ == "global");
-  CHECK(father_);
+  CHECK(name_ == "main");
+  CHECK(!father_);
   return GraphUtil(this).AddFunction(func_def);
 }
 
@@ -190,13 +191,13 @@ string Scope::DebugInfo() {
   return ret;
 }
 
-Scope* global_scope() {
-  static Scope* s = new Scope(NULL, "global");
-  return s;
-}
+//Scope* global_scope() {
+  //static Scope* s = new Scope(NULL, "global");
+  //return s;
+//}
 
 Scope* main_scope() {
-  static Scope* s = new Scope(global_scope(), "main");
+  static Scope* s = new Scope(NULL, "main");
   return s;
 }
 

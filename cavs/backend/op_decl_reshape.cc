@@ -34,9 +34,7 @@ class ReshapeOpDecl : public OpDecl {
 
 class ReshapeLikeOpDecl : public ReshapeOpDecl {
  public:
-  ReshapeLikeOpDecl(const OpDef& def) : ReshapeOpDecl(def) {
-    CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
-  }
+  ReshapeLikeOpDecl(const OpDef& def) : ReshapeOpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 2);
@@ -64,8 +62,32 @@ class FlattenOpDecl : public ReshapeOpDecl {
   }
 };
 
-REGISTER_OP_DECL_BUILDER("Reshape", ReshapeOpDecl);
-REGISTER_OP_DECL_BUILDER("Flatten", FlattenOpDecl);
+class ExpandDimsOpDecl : public ReshapeOpDecl {
+ public:
+  ExpandDimsOpDecl(const OpDef& def) : ReshapeOpDecl(def) {
+    axis_ = GetSingleArg<int>(def, "Axis");
+    CHECK(axis_ >= 0);
+  }
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 1);
+    CHECK(out_shape->empty());
+    CHECK(axis_ <= inputs[0].dim_size());
+    TensorShapeDef shape;
+    for (int i = 0; i < inputs[0].dim_size(); i++) {
+      if (axis_ == i) shape.add_dim(1);
+      shape.add_dim(inputs[0].dim(i));
+    }
+    out_shape->push_back(shape);
+  }
+
+ private:
+  int axis_;
+};
+
+REGISTER_OP_DECL_BUILDER("Reshape",     ReshapeOpDecl);
+REGISTER_OP_DECL_BUILDER("Flatten",     FlattenOpDecl);
 REGISTER_OP_DECL_BUILDER("ReshapeLike", ReshapeLikeOpDecl);
+REGISTER_OP_DECL_BUILDER("Expand_dims", ExpandDimsOpDecl);
 
 } //namespace backend

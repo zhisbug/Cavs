@@ -32,7 +32,8 @@ class SeqModel : public GraphSupport {
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     Sym LSTM_w = Sym::Variable(DT_FLOAT, {var_size},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    UW = LSTM_w.Slice(0, 2*4*FLAGS_hidden*FLAGS_hidden);
+    U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);
+    W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);
     bu = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden);
     bo = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+FLAGS_hidden, FLAGS_hidden);
     bi = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+2*FLAGS_hidden, FLAGS_hidden);
@@ -40,13 +41,17 @@ class SeqModel : public GraphSupport {
   }
 
   void Inode() override {
-    Sym child_h = Gather(0, 0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_c = Gather(0, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
-    Sym x       = Pull(0, {FLAGS_input_size});
+    Sym child_h = Gather(0, 0, {FLAGS_hidden});
+    Sym child_c = Gather(0, FLAGS_hidden, {FLAGS_hidden});
+    //Sym x       = Pull(0, {FLAGS_input_size});
+    Sym x       = Pull(0, {1});
     x           = x.EmbeddingLookup(embedding);
 
-    Sym xh = Sym::Concat({x, child_h});
-    Sym tmp = Sym::MatMul(xh, UW);
+    //Sym xh = Sym::Concat({x, child_h});
+    //Sym tmp = Sym::MatMul(xh, UW.Reshape({FLAGS_hidden, 2*4*FLAGS_hidden}));
+    Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
+            + Sym::MatMul(child_h.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
+
     Sym u, i, o, f;
     tie(u, i, o, f) = tmp.Split4();
 
@@ -63,11 +68,14 @@ class SeqModel : public GraphSupport {
   }
 
   void Leaf() override {
-    Sym x = Pull(0, {FLAGS_input_size});
+    //Sym x = Pull(0, {FLAGS_input_size});
+    Sym x = Pull(0, {1});
     x = x.EmbeddingLookup(embedding);
-    Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden*FLAGS_hidden});
-    Sym xh = Sym::Concat({x, h0});
-    Sym tmp = Sym::MatMul(xh, UW);
+    Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden});
+    //Sym xh = Sym::Concat({x, h0});
+    //Sym tmp = Sym::MatMul(xh, UW);
+    Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
+            + Sym::MatMul(h0.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
     Sym u, i, o, f;
     tie(u, i, o, f) = tmp.Split4();
     i = (i+bi).Sigmoid();
@@ -80,7 +88,7 @@ class SeqModel : public GraphSupport {
   }
 
  private:
-  Sym UW;
+  Sym U, W;
   Sym bu;
   Sym bo;
   Sym bi;

@@ -24,6 +24,7 @@ class SliceOpDecl : public OpDecl {
   }
   
   void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << "Not implemented yet";
     CHECK(grad->size() == 0);
     OpDef reshape;
     OpDefBuilder("Accumulate")
@@ -44,15 +45,17 @@ class SliceOpDecl : public OpDecl {
     for (auto d : inputs[0].dim()) dims *= d;
     TensorShapeDef sdef;
     if (offset_ < 0) {
-      CHECK(dims % split_ == 0);
+      CHECK(dims % split_ == 0) << dims << "\t" << split_;
       stride_ = dims / split_;
       offset_ = dims / split_ * index_;
     }
-    int count = stride_ - offset_;
+    int count = stride_;
     CHECK(count <= dims);
     sdef.add_dim(count);
 
     out_shape->push_back(sdef);
+    VLOG(V_DEBUG) << out_shape->at(0).DebugString();
+    VLOG(V_DEBUG) << op_def_.DebugString();
   }
 
  private:
@@ -62,6 +65,42 @@ class SliceOpDecl : public OpDecl {
   int index_;
 };
 
-REGISTER_OP_DECL_BUILDER("Slice", SliceOpDecl);
+class ConcatOpDecl : public OpDecl {
+ public:
+  ConcatOpDecl(const OpDef& def) : OpDecl(def) {}
+  
+  void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << "Not implemented yet";
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(out_shape->empty());
+    CHECK(!inputs.empty()); 
+
+    CHECK(inputs[0].dim_size() > 0);
+    for (auto& s : inputs) {
+      LOG(INFO) << s.DebugString();
+      CHECK(s.dim_size() == inputs[0].dim_size());
+    }
+
+    int sum = 0;
+    for (auto& s : inputs) {
+      CHECK(s.dim(0) > 0 || s.dim(0) == -1);
+      sum = (s.dim(0) == -1 || sum == -1) ? -1 : (sum + s.dim(0));
+      for (int i = 1; i < inputs[0].dim_size(); i++) {
+        CHECK(s.dim(i) == inputs[0].dim(i));
+      }
+    }
+
+    out_shape->resize(1);
+    out_shape->at(0) = inputs[0];
+    out_shape->at(0).set_dim(0, sum);
+    VLOG(V_DEBUG) << out_shape->at(0).DebugString();
+  }
+};
+
+REGISTER_OP_DECL_BUILDER("Slice" , SliceOpDecl );
+REGISTER_OP_DECL_BUILDER("Concat", ConcatOpDecl);
 
 } //namespace backend
