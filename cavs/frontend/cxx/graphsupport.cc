@@ -5,8 +5,11 @@
 #include <string>
 
 using std::string;
+using std::vector;
 
 Sym GraphSupport::Output() {
+  VLOG(V_DEBUG) << "Generating inode and leaf functions";
+  vector<int> inode_shape;
   {
     FuncConf::FuncDefineBegin("Inode");
     this->Inode();
@@ -14,24 +17,41 @@ Sym GraphSupport::Output() {
     VLOG(V_DEBUG) << fi.DebugString();
     string serialization;
     fi.SerializeToString(&serialization);
-    C_AddFunction(serialization.c_str(), serialization.length());
+
+    int *dim = NULL;
+    size_t dim_length;
+    C_AddFunction(serialization.c_str(), serialization.length(),
+                  &dim, &dim_length);
+    inode_shape = vector<int>(dim, dim+dim_length);
+    free(dim);
   }
 
+  vector<int> leaf_shape;
   {
     FuncConf::FuncDefineBegin("Leaf");
     this->Leaf();
     FunctionDef fl = FuncConf::FuncDefineEnd("Leaf");
     string serialization;
     fl.SerializeToString(&serialization);
-    C_AddFunction(serialization.c_str(), serialization.length());
+
+    int *dim = NULL;
+    size_t dim_length;
+    C_AddFunction(serialization.c_str(), serialization.length(),
+                  &dim, &dim_length);
+    leaf_shape = vector<int>(dim, dim+dim_length);
+    free(dim);
   }
+
+  CHECK(inode_shape == leaf_shape);
+  int count = 1;
+  for (int d : inode_shape) count *= d;
 
   OpDef def = OpDefBuilder("GraphOutput")
                 .Input(raw_graph_.output(0))
                 .Input(raw_vertex_.output(0))
                 .Dtype(raw_vertex_.type())
                 .Device(raw_vertex_.device())
-                .Shape({-1, count_})
+                .Shape({-1, count})
                 .AttrSingle("Wavefront", true)
                 .Finalize();
   return Sym(def);
@@ -71,14 +91,9 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .Shape(s.shape(0))
+                //.Shape(s.shape(0))
                 .Finalize();
   Sym AddToFunction(def);
-  int push_unit = 1;
-  for (int d : s.shape(0))
-    push_unit *= d;
-  CHECK(count_ == push_unit || count_ == 1);
-  count_ = push_unit;
 }
 
 void GraphSupport::Scatter(const Sym& s) {
@@ -88,7 +103,7 @@ void GraphSupport::Scatter(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .Shape(s.shape(0))
+                //.Shape(s.shape(0))
                 .Finalize();
   Sym AddToFunction(def);
 }

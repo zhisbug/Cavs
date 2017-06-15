@@ -164,7 +164,7 @@ inline int Sym::output_size() const {
 
 inline std::vector<int> Sym::shape(int idx) const { 
   std::vector<int> s;
-  CHECK(idx < def().shape_size());
+  CHECK(idx < def().shape_size()) << idx << "\n" << def().DebugString();
   for (auto& d : def().shape(idx).dim())
     s.push_back(d);
   return s;

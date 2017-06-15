@@ -18,7 +18,8 @@ class GraphUtil {
  public:
   GraphUtil(Scope* s) : s_(s) {}
   Node* AddOptimizerOp(const OpDef& op_def);
-  void AddFunction(const FunctionDef& func_def);
+  TensorShapeDef AddFunction(const FunctionDef& func_def);
+
   std::string DebugInfo();
 
  private:

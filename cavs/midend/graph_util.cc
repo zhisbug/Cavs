@@ -34,8 +34,8 @@ void DeduceAndApplyOneGradNode(
     //Node* grad_node = s->AddNode(grad);
     Node* grad_node = s->AddOp(grad);
     if (grad_node) {
-      vector<TensorShapeDef> inputs;
-      grad_node->InputShapes(&inputs);
+      const vector<TensorShapeDef>& inputs = 
+        grad_node->input_shapes();
       const vector<TensorShapeDef>& shapes = 
         ::backend::ShapeInference(grad, inputs);
       grad_node->SetShape(shapes);
@@ -224,13 +224,31 @@ Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
   return sn;
 }
 
-void GraphUtil::AddFunction(const FunctionDef& def) {
+TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
   string func_scope_name = def.name();
   Scope* func_scope = new Scope(s_, func_scope_name);
 
+  TensorShapeDef out_shape;
+  bool push_op = false;
   for (auto& op : def.ops()) {
-    func_scope->AddOp(op);
+    Node* node = func_scope->AddOp(op);
+    const vector<TensorShapeDef>& input_shapes = 
+      node->input_shapes();
+    const vector<TensorShapeDef>& shape_def = 
+      ::backend::ShapeInference(op, input_shapes);
+    node->SetShape(shape_def);
+    if (op.name() == "Push") {
+      //Currently, push only has one output.
+      //There is one and only one push op per function
+      CHECK(op.output_size() == 1);
+      CHECK(!push_op);
+      out_shape = shape_def[0];
+      push_op = true;
+    }
   }
+  CHECK(push_op);
+
+  return out_shape;
 }
 
 } //namespace midend

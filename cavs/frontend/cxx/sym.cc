@@ -557,7 +557,7 @@ Sym Sym::LSTM(const Sym& a, const Sym& b, int layer, int hidden, string device) 
 Sym Sym::Concat(const vector<Sym>& syms, string device) {
   vector<string> inputs;
   for (auto& s : syms) {
-    CHECK(s.output_size() == 0);
+    CHECK(s.output_size() == 1);
     CHECK(s.type() == syms[0].type());
     CHECK(s.device() == syms[0].device());
     inputs.push_back(s.output(0));

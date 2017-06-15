@@ -160,7 +160,7 @@ Node* Scope::AddOptimizerOp(const OpDef& op_def) {
   return GraphUtil(this).AddOptimizerOp(op_def);
 }
 
-void Scope::AddFunction(const FunctionDef& func_def) {
+TensorShapeDef Scope::AddFunction(const FunctionDef& func_def) {
   CHECK(name_ == "global");
   CHECK(father_);
   return GraphUtil(this).AddFunction(func_def);

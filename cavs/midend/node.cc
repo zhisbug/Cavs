@@ -1,6 +1,7 @@
 #include "cavs/midend/node.h"
 
 using std::string;
+using std::vector;
 
 namespace midend {
 
@@ -11,7 +12,7 @@ Node::Node(const OpDef& op_def, Scope* s)
 }
 
 void Node::SetShape(
-    const std::vector<TensorShapeDef>& def) {
+    const vector<TensorShapeDef>& def) {
   op_def_.clear_shape();
   for (int i = 0; i < outputs_.size(); i++) {
     outputs_[i]->SetShape(def[i]);
@@ -19,12 +20,15 @@ void Node::SetShape(
   }
 }
 
-void Node::InputShapes(
-    std::vector<TensorShapeDef>* inputs) {
+//void Node::InputShapes(
+    //std::vector<TensorShapeDef>* inputs) {
+vector<TensorShapeDef> Node::input_shapes() {
+  vector<TensorShapeDef> ret;
   for (auto* edge: inputs_) {
     CHECK(edge->shape().dim_size() > 0);
-    inputs->push_back(edge->shape());
+    ret.push_back(edge->shape());
   }
+  return ret;
 }
 
 string Node::DebugInfo() const {

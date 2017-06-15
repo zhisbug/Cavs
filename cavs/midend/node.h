@@ -36,12 +36,15 @@ class Node {
   inline Edge* output(int i) const;
   inline const std::vector<Edge*>& outputs() const;
   inline int outputs_size() const;
+  //void InputShapes(std::vector<TensorShapeDef>* inputs);
+  std::vector<TensorShapeDef> input_shapes();
+
   inline void AddInput(const Edge* e);
   inline void AddOutput(const Edge* e);
   inline void RemoveInput(const Edge* e);
   inline void replaceInput(int i, Edge* edge);
   void SetShape(const std::vector<TensorShapeDef>& def);
-  void InputShapes(std::vector<TensorShapeDef>* inputs);
+
   std::string DebugInfo() const;
 
  protected:

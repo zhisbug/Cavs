@@ -90,8 +90,8 @@ void C_AddOp(const void* def, size_t def_length,
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   Node* node = C_GetMainScope()->scope->AddOp(op_def);
-  vector<TensorShapeDef> input_shapes;
-  node->InputShapes(&input_shapes);
+  const vector<TensorShapeDef>& input_shapes =
+    node->input_shapes();
   const vector<TensorShapeDef>& shape_def =
     ShapeInference(op_def, input_shapes);
   node->SetShape(shape_def);
@@ -103,14 +103,18 @@ void C_AddOp(const void* def, size_t def_length,
     (*dim)[i] = shape_def[0].dim(i);
 }
 
-void C_AddFunction(const void* def, size_t def_length) {
+void C_AddFunction(const void* def, size_t def_length,
+    int** dim, size_t* dim_length) {
   FunctionDef func_def;
   func_def.ParseFromArray(def, def_length);
-  C_GetGlobalScope()->scope->AddFunction(func_def);
+  TensorShapeDef shape = C_GetGlobalScope()->scope->AddFunction(func_def);
+  *dim_length = shape.dim_size();
+  *dim = new int[*dim_length];
+  for (int i = 0; i < shape.dim_size(); i++)
+    (*dim)[i] = shape.dim(i);
 }
 
-void C_AddOptimizerOp(
-    const void* def, size_t def_length) {
+void C_AddOptimizerOp(const void* def, size_t def_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
   bool hasVars = false;

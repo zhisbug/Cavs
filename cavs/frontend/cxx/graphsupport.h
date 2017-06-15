@@ -8,8 +8,7 @@
 class GraphSupport {
  public:
   GraphSupport(const Sym& graph_ph, const Sym& vertex_ph) : 
-    raw_graph_(graph_ph), raw_vertex_(vertex_ph),
-    count_(1) {}
+    raw_graph_(graph_ph), raw_vertex_(vertex_ph) {}
   virtual void Inode() = 0; 
   virtual void Leaf() = 0;
   Sym Output();
@@ -23,7 +22,6 @@ class GraphSupport {
  private:
   Sym raw_graph_;
   Sym raw_vertex_;
-  int count_;
 };
 
 #endif
