@@ -134,6 +134,7 @@ void C_AddOptimizerOp(const void* def, size_t def_length) {
   }
   CHECK(hasVars);
   //c_graph->graph->OptimizeWithLoss(op_def);
+  VLOG(V_DEBUG) << "Adding Optimizer\n" << op_def.DebugString();
   C_GetMainScope()->scope->AddOptimizerOp(op_def);
 }
 

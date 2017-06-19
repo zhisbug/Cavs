@@ -27,8 +27,8 @@ class Scope {
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* FindNode(const std::string& name) const;
 
-  void AddEdge(const Edge* edge);
   void AddNode(const Node* node);
+  void AddEdge(const Edge* edge);
 
   friend class ScopedNode;
   void DebugSymbolTable();

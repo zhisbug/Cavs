@@ -40,9 +40,13 @@ class TensorShape {
   FORCE_INLINE int n_elements() const { return n_elements_; }
   FORCE_INLINE int dims() const { return shape_.size(); }
   FORCE_INLINE int dims(unsigned idx) const {
-    CHECK(idx < shape_.size())
-      << idx << "\t" << shape_.size();
+    CHECK(idx < shape_.size()) << idx << "\t" << shape_.size();
     return shape_.at(idx); 
+  }
+  FORCE_INLINE TensorShapeDef to_def() const {
+    TensorShapeDef def;
+    for (int s : shape_)  def.add_dim(s);
+    return def;
   }
   void set_dim(int d, int size);
   void add_dim(int size);

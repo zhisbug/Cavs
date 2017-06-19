@@ -26,7 +26,6 @@ class SeqModel : public GraphSupport {
  public:
   SeqModel(const Sym& graph_ph, const Sym& vertex_ph) :
     GraphSupport(graph_ph, vertex_ph) {
-    //It is the variable size required by cudnnRNN
     int var_size  = 2*4*(FLAGS_hidden*(FLAGS_hidden+1));
     embedding  = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
@@ -43,7 +42,6 @@ class SeqModel : public GraphSupport {
   void Inode() override {
     Sym child_h = Gather(0, 0, {FLAGS_hidden});
     Sym child_c = Gather(0, FLAGS_hidden, {FLAGS_hidden});
-    //Sym x       = Pull(0, {FLAGS_input_size});
     Sym x       = Pull(0, {1});
     x           = x.EmbeddingLookup(embedding);
 
@@ -68,7 +66,6 @@ class SeqModel : public GraphSupport {
   }
 
   void Leaf() override {
-    //Sym x = Pull(0, {FLAGS_input_size});
     Sym x = Pull(0, {1});
     x = x.EmbeddingLookup(embedding);
     Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden});
@@ -105,7 +102,7 @@ int main(int argc, char* argv[]) {
   Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym bias      = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
+  Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
 
   SeqModel model(graph, word_idx);
   Sym loss       = model.Output()

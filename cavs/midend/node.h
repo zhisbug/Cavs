@@ -21,7 +21,6 @@ class SessionBase;
 
 class Node {
  public:
-  explicit Node(const OpDef& op_def, Scope* s);
   virtual Statement* Compile(SessionBase* sess) {
     return NULL;
   }
@@ -48,6 +47,7 @@ class Node {
   std::string DebugInfo() const;
 
  protected:
+  explicit Node(const OpDef& op_def, Scope* s);
   OpDef op_def_;
   Scope* located_;
   std::vector<Edge*> inputs_;

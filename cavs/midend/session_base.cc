@@ -66,6 +66,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
         LOG(INFO) << "Share Memory Tensor" << out.DebugInfo();
         InsertTensor(out);
       }else {
+        CHECK(output->shape().dim_size() > 0);
         TensorShape shape(output->shape()); 
         Allocator* alloc = GetAllocator(op_def); 
         CHECK_NOTNULL(alloc);
