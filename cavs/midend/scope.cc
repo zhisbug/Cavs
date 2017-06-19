@@ -136,7 +136,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
 
 void Scope::AddNode(const Node* node) {
   CHECK(node->scope() == this);
-  nodes_.push_back(const_cast<Node*>(node));
+  typological_sorted_nodes_.push_back(const_cast<Node*>(node));
 }
 
 void Scope::AddEdge(const Edge* edge) {
@@ -149,7 +149,7 @@ void Scope::AddEdge(const Edge* edge) {
 }
 
 void Scope::GroupAllVariables(vector<string>* vars) const {
-  for (Node* n : nodes_) {
+  for (Node* n : typological_sorted_nodes_) {
     if (static_cast<SingleNode*>(n)->IsVariableOp()) {
       CHECK(n->outputs_size() == 1) << n->outputs_size();
       vars->push_back(n->output(0)->name());
@@ -178,7 +178,7 @@ string Scope::DebugInfo() {
   string ret = "\n============================\n";
   ret += "<<<<<<<<< In Scope " + name_ + " <<<<<<<<<\n";
   int i = 0;
-  for (auto* node : nodes_) {
+  for (auto* node : typological_sorted_nodes_) {
     ret += "The " + std::to_string(i++)
           + "th operators:\n";
     ret += node->op_def().DebugString();

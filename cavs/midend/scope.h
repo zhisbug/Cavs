@@ -26,11 +26,14 @@ class Scope {
   Scope* FindChild(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* FindNode(const std::string& name) const;
+  const std::vector<Node*>& sorted_nodes() const {
+    return typological_sorted_nodes_;
+  }
 
   void AddNode(const Node* node);
   void AddEdge(const Edge* edge);
 
-  friend class ScopedNode;
+  //friend class ScopedNode;
   void DebugSymbolTable();
   inline const std::string& name() const { return name_; }
   std::string DebugInfo();
@@ -40,10 +43,10 @@ class Scope {
   const Scope* father_;
   std::unordered_map<std::string, Scope*> children_;
   std::unordered_map<std::string, Edge*> edge_table_;
-  std::list<Node*> nodes_;
   std::unordered_map<std::string, Edge*> in_edges_;
-  std::unordered_map<std::string, Edge*> out_edges_;
+  //std::unordered_map<std::string, Edge*> out_edges_;
   std::set<size_t> hash_nodes_;
+  std::vector<Node*> typological_sorted_nodes_;
 };
 
 //Scope* global_scope();

@@ -75,8 +75,6 @@ ScopedNode::ScopedNode(Scope* located, const Scope* contained,
   CHECK(op_def.output_size() == 1);
   Edge* output = new Edge(op_def.output(0), located_);
   output->AddSource(this);
-  //for (auto* node_ptr : contained_->nodes_)
-    //nodes_.push_back(node_ptr);
   nodes_ = contained_->nodes_;
 }
 
