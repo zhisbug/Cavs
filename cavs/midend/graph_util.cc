@@ -182,8 +182,10 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     vector<unordered_map<size_t, OpDef>>* grads,
     const Edge* curr,
     const Edge* loss) {
-  CHECK(curr->srcs_size() == 1) << curr->DebugInfo();
-  LOG_IF(INFO, curr->dsts_size() > 1) << curr->DebugInfo();
+  CHECK(curr->src_size(true) == 1) << curr->DebugInfo();
+  CHECK(curr->src_size(false) == 1 || curr->isStateful()) << curr->DebugInfo();
+  LOG_IF(INFO, curr->dst_size() > 1) << curr->DebugInfo();
+  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->DebugInfo();
   if (curr == loss) {
     CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
     int idx = node2idx_[curr->src(0)];
@@ -192,12 +194,12 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     return true;
   }else {
     bool inpath = false;
-    for (Node* node : curr->dsts()) {
+    for (Node* node : curr->dst(true)) {
       CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
       int idx = node2idx_[node];
       CHECK(cpath->size() > idx);
       if (!cpath->at(idx)) {
-        for (int i = 0; i < node->outputs_size(); i++) {
+        for (int i = 0; i < node->output_size(); i++) {
           Edge* edge = node->output(i);
           if (GenCriticalPath(cpath, grads, edge, loss)) {
             cpath->at(idx) = true;
@@ -227,6 +229,8 @@ void GraphUtil::GenGradient(Scope* loss_scope,
     const vector<bool>& critical_path,
     const vector<unordered_map<size_t, OpDef>>& grads) {
   CHECK(critical_path.size() == grads.size());
+  CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
+  VLOG(V_DEBUG) << "Forwarding...";
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
       loss_scope->AddOp(s_->typological_sorted_nodes_[i]->op_def());
@@ -236,15 +240,25 @@ void GraphUtil::GenGradient(Scope* loss_scope,
     }
   }
 
-  for (int i = critical_path.size()-1 ; i >= 0; i++) {
-    for (auto& iter : grads[i]) {
-      Node* grad_node = loss_scope->AddOp(iter.second);
-      CHECK(grad_node);
-      const vector<TensorShapeDef>& inputs = 
-        grad_node->input_shapes();
-      const vector<TensorShapeDef>& shapes = 
-        ::backend::ShapeInference(iter.second, inputs);
-      grad_node->SetShape(shapes);
+  VLOG(V_DEBUG) << "Backwarding...";
+  for (int i = critical_path.size()-1 ; i >= 0; i--) {
+    if (critical_path[i]) {
+      VLOG(V_DEBUG) << "Backwarding for "
+                    << s_->typological_sorted_nodes_[i]->op_def().DebugString();
+      for (auto& iter : grads[i]) {
+        VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
+        Node* grad_node = loss_scope->AddOp(iter.second);
+        CHECK(grad_node);
+        VLOG(V_DEBUG) << "Getting input shape...";
+        const vector<TensorShapeDef>& inputs = 
+          grad_node->input_shapes();
+        VLOG(V_DEBUG) << "Shaping Inference...";
+        const vector<TensorShapeDef>& shapes = 
+          ::backend::ShapeInference(iter.second, inputs);
+        VLOG(V_DEBUG) << "Setting shape...";
+        grad_node->SetShape(shapes);
+        VLOG(V_DEBUG) << "One grad added";
+      }
     }
   }
 }
@@ -263,6 +277,7 @@ void GraphUtil::ComputeGradient(
     const Edge* var = loss_scope->FindEdge(var_name);
     GenCriticalPath(&critical_path, &grads, var, loss);
   }
+  VLOG(V_DEBUG) << "Generating gradient...";
   GenGradient(loss_scope, critical_path, grads);
 }
 
@@ -357,8 +372,10 @@ Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
     .Finalize(&const_op);
   loss_scope->AddOp(const_op);
 
+  VLOG(V_DEBUG) << "Compute Gradients...";
   //GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
   ComputeGradient(loss_scope, var_names, loss_edge, s_);
+  VLOG(V_DEBUG) << "Gradient process...";
   if (clip > 0) GradientProcess(loss_scope, var_names, clip);
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
   ScopedNode* sn = new ScopedNode(s_, loss_scope, def, iters);

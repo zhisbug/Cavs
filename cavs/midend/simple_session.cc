@@ -19,14 +19,14 @@ SimpleSession::SimpleSession()
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
     unordered_map<Node*, bool>* include) {
-  bool isSource = (curr->inputs_size() == 0);
+  bool isSource = (curr->input_size() == 0);
   bool accessed = (include->find(curr) != include->end());
 
   if (!accessed) {
     (*include)[curr] = true;
     if (!isSource) {
-      for (auto* edge : curr->inputs()) {
-        CHECK(edge->srcs_size() == 1 || edge->isStateful());
+      for (auto* edge : curr->input()) {
+        CHECK(edge->src_size() == 1 || edge->isStateful());
         //for (auto* node : edge->srcs()) {
         DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
         //}

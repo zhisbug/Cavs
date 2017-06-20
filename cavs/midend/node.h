@@ -29,19 +29,19 @@ class Node {
   inline const OpDef& op_def() const;
   inline Scope* scope() const;
   inline const std::string& name() const;
-  inline Edge* input(int i) const;
-  inline const std::vector<Edge*>& inputs() const;
-  inline int inputs_size() const;
-  inline Edge* output(int i) const;
-  inline const std::vector<Edge*>& outputs() const;
-  inline int outputs_size() const;
+  inline Edge* input(int idx) const;
+  inline const std::vector<Edge*>& input() const;
+  inline int input_size() const;
+  inline Edge* output(int idx) const;
+  inline const std::vector<Edge*>& output() const;
+  inline int output_size() const;
   //void InputShapes(std::vector<TensorShapeDef>* inputs);
   std::vector<TensorShapeDef> input_shapes();
 
-  inline void AddInput(const Edge* e);
-  inline void AddOutput(const Edge* e);
-  inline void RemoveInput(const Edge* e);
-  inline void replaceInput(int i, Edge* edge);
+  void AddInput(const Edge* e);
+  void AddOutput(const Edge* e);
+  //inline void RemoveInput(const Edge* e);
+  //inline void replaceInput(int i, Edge* edge);
   void SetShape(const std::vector<TensorShapeDef>& def);
 
   std::string DebugInfo() const;
@@ -107,51 +107,43 @@ inline const std::string& Node::name() const {
   return node_name_;
 }
 
-inline Edge* Node::input(int i) const {
-  CHECK(i < inputs_.size());
-  return inputs_[i];
+inline Edge* Node::input(int idx) const {
+  CHECK(idx < inputs_.size());
+  return inputs_[idx];
 }
 
-inline const std::vector<Edge*>& Node::inputs() const {
+inline const std::vector<Edge*>& Node::input() const {
   return inputs_; 
 }
 
-inline int Node::inputs_size() const {
+inline int Node::input_size() const {
   return inputs_.size();
 }
 
-inline Edge* Node::output(int i) const {
-  CHECK(i < outputs_.size())
-    << DebugInfo()
-    << "\nAcquiring idx: " << i
-    << "\nSize: " << outputs_.size();
-  return outputs_[i];
+inline Edge* Node::output(int idx) const {
+  CHECK(idx < outputs_.size())
+        << DebugInfo()
+        << "\nAcquiring idx: " << idx
+        << "\nSize: " << output_size();
+  return outputs_[idx];
 }
 
-inline const std::vector<Edge*>& Node::outputs() const {
+inline const std::vector<Edge*>& Node::output() const {
   return outputs_;
 }
 
-inline int Node::outputs_size() const {
+inline int Node::output_size() const {
   return outputs_.size();
 }
 
-inline void Node::AddInput(const Edge* e) {
-  inputs_.push_back(const_cast<Edge*>(e));
-}
+//inline void Node::RemoveInput(const Edge* e) {
+  //std::remove(inputs_.begin(), inputs_.end(), e);  
+//}
 
-inline void Node::AddOutput(const Edge* e) {
-  outputs_.push_back(const_cast<Edge*>(e));
-}
-
-inline void Node::RemoveInput(const Edge* e) {
-  std::remove(inputs_.begin(), inputs_.end(), e);  
-}
-
-inline void Node::replaceInput(int i, Edge* edge) {
-  CHECK(i < inputs_.size());
-  inputs_[i] = edge; 
-}
+//inline void Node::replaceInput(int i, Edge* edge) {
+  //CHECK(i < inputs_.size());
+  //inputs_[i] = edge; 
+//}
 
 } //namespace midend
 

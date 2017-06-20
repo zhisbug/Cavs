@@ -48,8 +48,8 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 Node* Scope::FindNode(const std::string& name) const {
   const Edge* edge = FindEdge(name);
   if (!edge) return NULL;
-  CHECK(edge->isStateful() || edge->srcs_size() == 1)
-    << edge->name() << edge->srcs_size();
+  CHECK(edge->isStateful() || edge->src_size() == 1)
+    << edge->name() << edge->src_size();
   return edge->src(0);
 }
 
@@ -110,15 +110,20 @@ Node* Scope::AddOp(const OpDef& op_def) {
       out_edge->AddSource(node);
       node->AddOutput(out_edge);
       if (upper_out_edge && !upper_out_edge->isStateful()) {
-        for (int i = 0; i < upper_out_edge->dsts_size(); i++) {
+        for (int i = 0; i < upper_out_edge->dst_size(); i++) {
           if (upper_out_edge->dst(i)->scope() == this) {
-            const_cast<Node*>(upper_out_edge->dst(i))
-              ->replaceInput(i, out_edge);
+            LOG(FATAL) << "It should not happen because we add each opeartor"
+                       << "according to its dependency, "
+                       << "both for user-defined operators and auto-diff operators";
+            //const_cast<Node*>(upper_out_edge->dst(i))
+              //->replaceInput(i, out_edge);
           }
         }
       }
     }
   }
+
+  VLOG(V_DEBUG) << "Add its outputs done";
   VLOG(V_DEBUG) << "Adding its inputs...";
                 
   for (auto& input : op_def.input()) {
@@ -131,6 +136,8 @@ Node* Scope::AddOp(const OpDef& op_def) {
       in_edges_[in_edge->name()] = const_cast<Edge*>(in_edge);
     }
   }
+
+  VLOG(V_DEBUG) << "Add its inputs done";
   return node;
 }
 
@@ -151,7 +158,7 @@ void Scope::AddEdge(const Edge* edge) {
 void Scope::GroupAllVariables(vector<string>* vars) const {
   for (Node* n : typological_sorted_nodes_) {
     if (static_cast<SingleNode*>(n)->IsVariableOp()) {
-      CHECK(n->outputs_size() == 1) << n->outputs_size();
+      CHECK(n->output_size() == 1) << n->output_size();
       vars->push_back(n->output(0)->name());
     }
   }

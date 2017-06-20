@@ -12,21 +12,30 @@ Edge::Edge(const string& name, Scope* s)
 
 void Edge::AddDst(Node* node) {
   dsts_.push_back(node); 
+  if (node->scope() == scope())
+    same_scoped_dsts_.push_back(node);
 }
 
 void Edge::AddSource(Node* node) {
   CHECK(isStateful() || srcs_.empty())
     << node->DebugInfo()
     << DebugInfo();
-  srcs_.push_back(node); 
+  srcs_.push_back(node);
+  if (node->scope() == scope())
+    same_scoped_srcs_.push_back(node);
 }
 
 string Edge::DebugInfo() const {
-  return "\nname:\t" + scoped_name() + 
-         "\nshape:\t" + shape().DebugString() + 
-         "scope:\t" + located_->name() +
-         "\tsrcs_size:\t" + std::to_string(srcs_size()) + 
-         "\ndsts_size:\t" + std::to_string(dsts_size());
+  string ret = "\nname:\t" + scoped_name() + 
+               "\nshape:\t" + shape().DebugString() + 
+               "scope:\t" + located_->name() +
+               "\tsrcs_size:\t" + std::to_string(src_size()) + 
+               "\ndsts_size:\t" + std::to_string(dst_size());
+  for (int i = 0; i < src_size(); i++)
+    ret += "\nsrc[" + std::to_string(i) + "]:\t" + src(i)->DebugInfo();
+  for (int i = 0; i < dst_size(); i++)
+    ret += "\ndst[" + std::to_string(i) + "]:\t" + dst(i)->DebugInfo();
+  return ret;
 }
 
 } //namespace midend

@@ -11,6 +11,17 @@ Node::Node(const OpDef& op_def, Scope* s)
   node_name_ = s->name() + ":" + op_def_.name();
 }
 
+void Node::AddInput(const Edge* e) {
+  //CHECK(e->scope() == scope());
+  inputs_.push_back(const_cast<Edge*>(e));
+}
+
+void Node::AddOutput(const Edge* e) {
+  CHECK(e->scope() == scope() || e->isStateful());
+  outputs_.push_back(const_cast<Edge*>(e));
+}
+
+
 void Node::SetShape(
     const vector<TensorShapeDef>& def) {
   op_def_.clear_shape();

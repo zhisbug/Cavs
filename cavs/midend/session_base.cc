@@ -36,12 +36,12 @@ void SessionBase::InsertTensor(const Tensor& t){
 OpContext* SessionBase::GetContext(const Node* node) {
   OpContext* ctxt  = new OpContext();
   const OpDef& op_def = node->op_def();
-  for (auto* input : node->inputs()) {
+  for (auto* input : node->input()) {
     const Tensor* t = GetTensor(input->scoped_name()); 
     CHECK(t) << "Getting " << input->scoped_name();
     ctxt->AppendInput(*t);
   }
-  for (auto* output : node->outputs()) {
+  for (auto* output : node->output()) {
     const Tensor* t = GetTensor(output->scoped_name());
     if (!t) {
       //LOG(INFO) << output->name() << "???";
@@ -59,7 +59,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
         //for single-input and single-output operators
         //and only share output(0) with input(0)
         //CHECK(node->inputs_size() == 1); //reshape need two inputs
-        CHECK(node->outputs_size() == 1); 
+        CHECK(node->output_size() == 1); 
         Tensor out(output->scoped_name(),
             *GetTensor(node->input(0)->scoped_name()));
         out.Reshape(output->shape());

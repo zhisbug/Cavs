@@ -42,8 +42,8 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           && name.substr(name.length()-5, 5) == "_grad") {
         if ((*iter)->op_def().name() == "MatMul") {
           LOG(INFO) << "SFB mechanism ENABLing...";
-          CHECK((*iter)->outputs_size() == 1);
-          CHECK((*iter)->inputs_size() == 2);
+          CHECK((*iter)->output_size() == 1);
+          CHECK((*iter)->input_size() == 2);
           OpDef comm;
           OpDefBuilder("MPISFB")
             .Input((*iter)->input(0)->name())
@@ -61,7 +61,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
           //sleep(3);
         }else {
           //we assume the output size of variable_grad node must equal 1
-          CHECK((*iter)->outputs_size() == 1);
+          CHECK((*iter)->output_size() == 1);
           OpDef comm;
           OpDefBuilder("MPIAllReduce")
             .Input(name)

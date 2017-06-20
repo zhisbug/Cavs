@@ -26,13 +26,13 @@ class Edge {
   inline Scope* scope() const;
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
-  inline void RemoveDst(Node* node);
-  inline Node* src(size_t i) const;
-  inline const std::vector<Node*>& srcs() const;
-  inline int srcs_size() const;
-  inline Node* dst(size_t i) const;
-  inline const std::vector<Node*>& dsts() const;
-  inline int dsts_size() const;
+  //inline void RemoveDst(Node* node);
+  inline Node* src(int idx, bool within=false) const;
+  inline const std::vector<Node*>& src(bool within=false) const;
+  inline int src_size(bool within=false) const;
+  inline Node* dst(int idx, bool within=false) const;
+  inline const std::vector<Node*>& dst(bool within=false) const;
+  inline int dst_size(bool within=false) const;
   void AddSource(Node* node);
   void AddDst(Node* node);
   std::string DebugInfo() const;
@@ -42,7 +42,9 @@ class Edge {
   std::string scoped_name_;
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
+  std::vector<Node*> same_scoped_srcs_;
   std::vector<Node*> dsts_;
+  std::vector<Node*> same_scoped_dsts_;
   Scope* located_;
 };
 
@@ -74,36 +76,54 @@ inline const TensorShapeDef& Edge::shape() const {
   return tensor_shape_; 
 }
 
-inline void Edge::RemoveDst(Node* node) {
-  std::remove(dsts_.begin(), dsts_.end(), node); 
+//inline void Edge::RemoveDst(Node* node) {
+  //std::remove(dsts_.begin(), dsts_.end(), node); 
+//}
+
+inline Node* Edge::src(int idx, bool within) const {
+  CHECK(idx < src_size(within));
+  if (!within)
+    return srcs_[idx];
+  else
+    return same_scoped_srcs_[idx];
 }
 
-inline Node* Edge::src(size_t i) const {
-  CHECK(i < srcs_.size());
-  return srcs_[i];
+inline const std::vector<Node*>& Edge::src(bool within) const {
+  if (!within)
+    return srcs_;
+  else
+    return same_scoped_srcs_;
 }
 
-inline const std::vector<Node*>& Edge::srcs() const {
-  return srcs_;
+inline int Edge::src_size(bool within) const {
+  if (!within)
+    return srcs_.size();
+  else
+    return same_scoped_srcs_.size();
 }
 
-inline int Edge::srcs_size() const {
-  return srcs_.size();
-}
-
-inline Node* Edge::dst(size_t i) const {
-  CHECK(i < dsts_.size())
-       << i << "\t" << dsts_size()
+inline Node* Edge::dst(int idx, bool within) const {
+  CHECK(idx < dst_size(within))
+       << idx << "\t" << dst_size(within)
        << DebugInfo();
-  return dsts_[i];
+  if (!within)
+    return dsts_[idx];
+  else
+    return same_scoped_dsts_[idx];
 }
 
-inline const std::vector<Node*>& Edge::dsts() const {
-  return dsts_;
+inline const std::vector<Node*>& Edge::dst(bool within) const {
+  if (!within)
+    return dsts_;
+  else
+    return same_scoped_dsts_;
 }
 
-inline int Edge::dsts_size() const {
-  return dsts_.size();
+inline int Edge::dst_size(bool within) const {
+  if (!within)
+    return dsts_.size();
+  else
+    return same_scoped_dsts_.size();
 }
 
 } //namespace midend
