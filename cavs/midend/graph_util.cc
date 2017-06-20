@@ -15,36 +15,36 @@ using namespace std;
 
 namespace midend {
 
-void DeduceAndApplyOneGradNode(
-    Scope* s,
-    const Node* node,
-    const string& edge) {
-  const vector<OpDef>& grads = 
-    ::backend::MakeGradient(node->op_def()); 
-  CHECK(grads.size()) << node->op_def().DebugString();
-  bool exist = false;
-  for (auto& grad : grads) {
-    if (std::find(grad.output().begin(), grad.output().end(),
-         GetGradientName(edge)) == grad.output().end()) {
-      continue;
-    }
-    CHECK(!exist) << "Two grad possible?"
-                  << node->op_def().DebugString()
-                  << grad.DebugString();
-    //Node* grad_node = s->AddNode(grad);
-    Node* grad_node = s->AddOp(grad);
-    if (grad_node) {
-      const vector<TensorShapeDef>& inputs = 
-        grad_node->input_shapes();
-      const vector<TensorShapeDef>& shapes = 
-        ::backend::ShapeInference(grad, inputs);
-      grad_node->SetShape(shapes);
-    }
-    exist = true;
-  }
-  CHECK(exist) << "No gradient wrt the edge name";
-  return;
-}
+//void DeduceAndApplyOneGradNode(
+    //Scope* s,
+    //const Node* node,
+    //const string& edge) {
+  //const vector<OpDef>& grads = 
+    //::backend::MakeGradient(node->op_def()); 
+  //CHECK(grads.size()) << node->op_def().DebugString();
+  //bool exist = false;
+  //for (auto& grad : grads) {
+    //if (std::find(grad.output().begin(), grad.output().end(),
+         //GetGradientName(edge)) == grad.output().end()) {
+      //continue;
+    //}
+    //CHECK(!exist) << "Two grad possible?"
+                  //<< node->op_def().DebugString()
+                  //<< grad.DebugString();
+    ////Node* grad_node = s->AddNode(grad);
+    //Node* grad_node = s->AddOp(grad);
+    //if (grad_node) {
+      //const vector<TensorShapeDef>& inputs = 
+        //grad_node->input_shapes();
+      //const vector<TensorShapeDef>& shapes = 
+        //::backend::ShapeInference(grad, inputs);
+      //grad_node->SetShape(shapes);
+    //}
+    //exist = true;
+  //}
+  //CHECK(exist) << "No gradient wrt the edge name";
+  //return;
+//}
 
 //bool TraverseCriticalPath(Scope* loss_scope,
       //const Edge* loss, const Edge* curr,
@@ -163,7 +163,7 @@ void DeduceAndApplyOneGradNode(
   //}
 //}
 
-OpDef PartialGrad(const Node* node, const string& edge) {
+OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
   const vector<OpDef>& grads = 
     ::backend::MakeGradient(node->op_def()); 
   CHECK(grads.size()) << node->op_def().DebugString();
@@ -178,53 +178,58 @@ OpDef PartialGrad(const Node* node, const string& edge) {
   LOG(FATAL) << "No gradient valid!";
 }
 
-bool GenCriticalPath(vector<bool>* in_path,
-                     vector<unordered_map<size_t, OpDef>>>* grads,
-                     const Edge* curr,
-                     const Edge* loss) {
+bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
+    vector<unordered_map<size_t, OpDef>>* grads,
+    const Edge* curr,
+    const Edge* loss) {
   CHECK(curr->srcs_size() == 1) << curr->DebugInfo();
   LOG_IF(INFO, curr->dsts_size() > 1) << curr->DebugInfo();
   if (curr == loss) {
-    int idx = node2idx_[curr->srcs(0)];
-    CHECK(in_path->size() > idx);
-    in_path->at(idx) = true;
+    CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
+    int idx = node2idx_[curr->src(0)];
+    CHECK(cpath->size() > idx);
+    cpath->at(idx) = true;
     return true;
   }else {
-    for (Node* node : curr->dst()) {
+    bool inpath = false;
+    for (Node* node : curr->dsts()) {
+      CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
       int idx = node2idx_[node];
-      CHECK(in_path->size() > idx);
-      if (!in_path->at(idx)) {
+      CHECK(cpath->size() > idx);
+      if (!cpath->at(idx)) {
         for (int i = 0; i < node->outputs_size(); i++) {
-          Edge* edge = node->outputs(i);
-          if (GenCriticalPath(in_path, edge, loss)) {
-            in_path->at(idx) = true;
+          Edge* edge = node->output(i);
+          if (GenCriticalPath(cpath, grads, edge, loss)) {
+            cpath->at(idx) = true;
+            inpath = true;
           }
         }
-        if (in_path->at(idx)) {
-          const OpDef& def = PartialGrad(loss_scope, node, curr->name());
+        if (cpath->at(idx)) {
+          const OpDef& def = PartialGrad(node, curr->name());
           size_t hashcode = GetHash(def);
           CHECK(grads->at(idx).find(hashcode) == grads->at(idx).end());
           grads->at(idx).emplace(hashcode, def);
         }
       }else {
-        const OpDef& def = PartialGrad(loss_scope, node, curr->name());
+        const OpDef& def = PartialGrad(node, curr->name());
         size_t hashcode = GetHash(def);
         if (grads->at(idx).find(hashcode) != grads->at(idx).end()) {
           grads->at(idx).emplace(hashcode, def);
         }
+        inpath = true;
       }
     }
-    return in_path->at(idx);
+    return inpath;
   }
 }
 
-void GenGradient(Scope* loss_scope,
-                 const vector<bool>& critical_path,
-                 const vector<unordered_map<size_t, OpDef>>& grads) {
+void GraphUtil::GenGradient(Scope* loss_scope,
+    const vector<bool>& critical_path,
+    const vector<unordered_map<size_t, OpDef>>& grads) {
   CHECK(critical_path.size() == grads.size());
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
-      loss_scope->AddOp(s_->sorted_nodes[i]);
+      loss_scope->AddOp(s_->typological_sorted_nodes_[i]->op_def());
       CHECK(!grads[i].empty());
     }else {
       CHECK(grads[i].empty());
@@ -238,21 +243,21 @@ void GenGradient(Scope* loss_scope,
       const vector<TensorShapeDef>& inputs = 
         grad_node->input_shapes();
       const vector<TensorShapeDef>& shapes = 
-        ::backend::ShapeInference(grad, inputs);
+        ::backend::ShapeInference(iter.second, inputs);
       grad_node->SetShape(shapes);
     }
   }
 }
 
-void ComputeGradient(
+void GraphUtil::ComputeGradient(
     Scope* loss_scope,
     const vector<string>& vars,
     const Edge* loss,
     const Scope* main_scope) {
   CHECK(loss_scope);
   CHECK(main_scope);
-  vector<bool> critical_path(main_scope->sorted_nodes().size(), false);
-  vector<unordered_map<size_t, OpDef>> grads(main_scope->sorted_nodes().size());
+  vector<bool> critical_path(main_scope->typological_sorted_nodes_.size(), false);
+  vector<unordered_map<size_t, OpDef>> grads(main_scope->typological_sorted_nodes_.size());
   for (auto& var_name : vars) {
     VLOG(V_DEBUG) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
@@ -261,10 +266,10 @@ void ComputeGradient(
   GenGradient(loss_scope, critical_path, grads);
 }
 
-void GradientProcess(
+void GraphUtil::GradientProcess(
     Scope* loss_scope,
     const vector<string>& vars,
-    const float clip) {
+    float clip) {
   vector<string> outputs;
   vector<TensorShapeDef> outputs_shape;
   for (auto& var_name : vars) {
@@ -284,11 +289,12 @@ void GradientProcess(
   loss_scope->AddOp(clipper);
 }
 
-void ApplyGradient(
+void GraphUtil::ApplyGradient(
     Scope* loss_scope,
     const vector<string>& vars,
     const string& solver,
-    const float lr) {
+    const string& proj,
+    float lr) {
   for (auto& var_name : vars) {
     const Edge* var = loss_scope->FindEdge(var_name);
     OpDef update;  
@@ -312,6 +318,12 @@ void ApplyGradient(
         .Finalize(&projection);
       loss_scope->AddOp(projection);
     }
+  }
+}
+
+GraphUtil::GraphUtil(Scope* s) : s_(s) {
+  for (int i = 0; i < s->typological_sorted_nodes_.size(); i++) {
+    node2idx_[s->typological_sorted_nodes_[i]] = i; 
   }
 }
 
@@ -348,6 +360,7 @@ Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
   //GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
   ComputeGradient(loss_scope, var_names, loss_edge, s_);
   if (clip > 0) GradientProcess(loss_scope, var_names, clip);
+  ApplyGradient(loss_scope, var_names, solver, proj, lr);
   ScopedNode* sn = new ScopedNode(s_, loss_scope, def, iters);
 
   return sn;

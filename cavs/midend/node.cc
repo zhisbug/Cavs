@@ -75,7 +75,8 @@ ScopedNode::ScopedNode(Scope* located, const Scope* contained,
   CHECK(op_def.output_size() == 1);
   Edge* output = new Edge(op_def.output(0), located_);
   output->AddSource(this);
-  nodes_ = contained_->nodes_;
+  nodes_.assign(contained_->typological_sorted_nodes_.begin(),
+                contained_->typological_sorted_nodes_.end());
 }
 
 Statement* ScopedNode::Compile(

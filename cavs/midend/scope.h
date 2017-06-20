@@ -26,14 +26,15 @@ class Scope {
   Scope* FindChild(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* FindNode(const std::string& name) const;
-  const std::vector<Node*>& sorted_nodes() const {
-    return typological_sorted_nodes_;
-  }
+  //const std::vector<Node*>& sorted_nodes() const {
+    //return typological_sorted_nodes_;
+  //}
 
   void AddNode(const Node* node);
   void AddEdge(const Edge* edge);
 
-  //friend class ScopedNode;
+  friend class ScopedNode;
+  friend class GraphUtil;
   void DebugSymbolTable();
   inline const std::string& name() const { return name_; }
   std::string DebugInfo();
