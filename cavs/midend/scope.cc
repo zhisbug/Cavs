@@ -3,9 +3,11 @@
 #include "cavs/backend/op_decl.h"
 
 #include <vector>
+#include <set>
 
 using std::string;
 using std::vector;
+using std::set;
 
 namespace midend {
 
@@ -65,27 +67,52 @@ Node* Scope::AddOp(const OpDef& op_def) {
     hash_nodes_.insert(hash_code);
   }
 
-  SingleNode* node = new SingleNode(op_def, this);
+  SingleNode* node = NULL;
+  OpDef new_def = op_def;
+  if (op_def.name() == "GraphOutput") {
+    VLOG(V_DEBUG) << "Original graph output info" << op_def.DebugString();
+    set<string> inputs;
+    for (auto& i : new_def.input())
+      inputs.insert(i);
+    for (auto&& func : {name()+":Inode", name()+":Leaf"}) {
+      CHECK(children_.find(func) != children_.end());
+      const Scope* c = children_[func];
+      CHECK_NOTNULL(c);
+      for (auto& iter : c->in_edges_) {
+        //if (iter.second->isStateful()) {
+          //trainable_vars.insert(iter.second->name()); 
+        //}
+        inputs.insert(iter.second->name());
+      }
+    }
+
+    new_def.clear_input(); 
+    for (auto& s : inputs) {
+      new_def.add_input(s); 
+    }
+    VLOG(V_DEBUG) << "new graph output info" << new_def.DebugString();
+  }
+  node = new SingleNode(new_def, this);
+
   VLOG(V_DEBUG) << "Adding node \t" << node->DebugInfo()
                 << "\tTo Scope " << name() << "\n"
-                << op_def.DebugString();
+                << new_def.DebugString();
   VLOG(V_DEBUG) << "Adding its outputs...";
-  for (auto& out : op_def.output()) {
+  for (auto& out : new_def.output()) {
     Edge* upper_out_edge = FindEdge(out, false);
     Edge* out_edge = FindEdge(out, true);
     //currently, only the source nodes can cross scopes
     if (node->isSourceOp()) {
-      //CHECK(op_def.shape_size() > 0) << op_def.DebugString();
-      VLOG_IF(V_DEBUG, op_def.shape_size() == 0 || op_def.shape(0).dim_size() == 0)
+      VLOG_IF(V_DEBUG, new_def.shape_size() == 0 || new_def.shape(0).dim_size() == 0)
           << "No shape operator:\n"
-          << op_def.DebugString();
+          << new_def.DebugString();
       if (!upper_out_edge) {
         //CHECK(!father_);
         out_edge = new Edge(out, this);
         out_edge->AddSource(node);
-        if (op_def.shape_size() > 0) {
-          CHECK(op_def.shape_size() == 1);
-          out_edge->SetShape(op_def.shape(0));
+        if (new_def.shape_size() > 0) {
+          CHECK(new_def.shape_size() == 1);
+          out_edge->SetShape(new_def.shape(0));
         }
         node->AddOutput(out_edge);
       }else {
@@ -126,7 +153,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
   VLOG(V_DEBUG) << "Add its outputs done";
   VLOG(V_DEBUG) << "Adding its inputs...";
                 
-  for (auto& input : op_def.input()) {
+  for (auto& input : new_def.input()) {
     const Edge* in_edge = FindEdge(input);
     CHECK(in_edge) << "name: " << input << "\n" << DebugInfo();
     node->AddInput(in_edge);

@@ -275,7 +275,9 @@ void GraphUtil::ComputeGradient(
   for (auto& var_name : vars) {
     VLOG(V_DEBUG) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
-    GenCriticalPath(&critical_path, &grads, var, loss);
+    if (!GenCriticalPath(&critical_path, &grads, var, loss)) {
+      LOG(FATAL) << var_name << "\tis not a trainable variable";
+    }
   }
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradient(loss_scope, critical_path, grads);
