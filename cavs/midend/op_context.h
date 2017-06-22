@@ -20,12 +20,15 @@ class OpContext {
   inline void AppendOutput(const Tensor& t);
   std::string DebugInfo();
   inline void SetRound(int r) { round_ = r; }
+  //inline void SetContinue(bool c) { continue_ = c; }
   inline int GetRound() const { return round_; }
+  //inline bool GetContinue() const { return continue_; }
   static std::unordered_map<std::string, void*> repo_;
  private:
   std::vector<Tensor> inputs_;
   std::vector<Tensor> outputs_;
   int round_;
+  //bool continue_;
 };
 
 inline const Tensor& OpContext::Input(int idx) const {

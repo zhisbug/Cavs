@@ -25,12 +25,9 @@ class SessionBase {
   enum { BASE=1, SIMPLE=2, MPI=3, PARTIALEXECUTION=4 };
   std::string DebugInfo();
  protected:
-  //SessionBase() {}
   std::unordered_map<std::string, Tensor> tensor_map_;
-  //const DepGraph* graph_;
 };
 
-//SessionBase* GetSession(const std::string& name, const DepGraph* graph);
 SessionBase* GetSession(const std::string& name);
 
 #define REGISTER_SESSION_BUILDER(key, ...)                 \

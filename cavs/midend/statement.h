@@ -16,16 +16,17 @@ class Statement {
  public:
   virtual void Run() = 0;
   inline void SetRound(int r) { round_ = r; }
+
  protected:
   inline int GetRound() const { return round_; }
+
  private:
   int round_;
 };
 
 class ExprStatement : public Statement {
  public:
-  ExprStatement(OpImpl* op = NULL, OpContext* ctxt = NULL)
-    : op_(op), ctxt_(ctxt) {}
+  ExprStatement(OpImpl* op, OpContext* ctxt) : op_(op), ctxt_(ctxt) {}
   ~ExprStatement() {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
@@ -52,35 +53,54 @@ class ExprStatement : public Statement {
 
 class BasicBlock : public Statement {
  public:
-  BasicBlock(int iter = 1)
-    : iter_(iter), stmts_(0) {}
+  BasicBlock(int iter) : iter_(iter), stmts_(0) {
+    CHECK(iter > 0) ;
+  }
+
   ~BasicBlock() {
     for (auto* stmt : stmts_)
       free(stmt);
   }
+
   inline void Run() override {
     VLOG(V_DEBUG) << "This Basic Block will Run " << iter_ << " iterations ";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
-        CHECK(stmt);
         stmt->Run();
       }
     }
   }
-  inline void AppendStmt(Statement* stmt) {
+  inline Statement* AppendStmt(Statement* stmt) {
     CHECK(stmt);
     stmts_.push_back(stmt); 
+    return stmt;
   }
-  inline void SetStmts(const std::vector<Statement*>& stmts) {
-    stmts_ = stmts;
+
+ protected:
+  int iter_;
+  std::vector<Statement*> stmts_;
+};
+
+class GraphStatement : public BasicBlock {
+ public:
+  GraphStatement(Statement* leaf, Statement* inode)
+      : BasicBlock(1) {
+    leaf_ = AppendStmt(leaf);
+    inode_ = AppendStmt(inode);
   }
-  inline void SetIter(int iter) {
-    iter_ = iter; 
+
+  inline void Run() override {
+    while (!GraphScheduler::LeafEmpty()) {
+      leaf_->Run(); 
+    }
+    while (!GraphScheduler::InodeEmpty()) {
+      inode_->Run(); 
+    }
   }
 
  private:
-  int iter_;
-  std::vector<Statement*> stmts_;
+  Statement* leaf_;
+  Statement* inode_;
 };
 
 } //namespace midend

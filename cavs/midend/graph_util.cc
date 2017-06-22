@@ -1,6 +1,6 @@
 #include "cavs/midend/graph_util.h"
 #include "cavs/midend/statement.h"
-#include "cavs/midend/statement_builder.h"
+//#include "cavs/midend/statement_builder.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
