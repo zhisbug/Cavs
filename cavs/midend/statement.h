@@ -2,6 +2,7 @@
 #define CAVS_MIDEND_STATEMENT_H_
 
 #include "cavs/midend/op_context.h"
+#include "cavs/midend/graph_scheduler.h"
 #include "cavs/backend/op_impl.h"
 
 #include <string>

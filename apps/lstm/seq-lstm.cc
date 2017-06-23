@@ -45,8 +45,6 @@ class SeqModel : public GraphSupport {
     Sym x       = Pull(0, {1});
     x           = x.EmbeddingLookup(embedding);
 
-    //Sym xh = Sym::Concat({x, child_h});
-    //Sym tmp = Sym::MatMul(xh, UW.Reshape({FLAGS_hidden, 2*4*FLAGS_hidden}));
     Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
             + Sym::MatMul(child_h.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
 
