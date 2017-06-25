@@ -42,7 +42,7 @@ vector<TensorShapeDef> Node::input_shapes() {
   return ret;
 }
 
-string Node::DebugInfo() const {
+string Node::debug_info() const {
   return "\nname:\t" + op_def_.name() +
          "(scope: " + located_->name() + ")" +
          "\noutput[0]:\t" + op_def_.output(0);
@@ -93,15 +93,15 @@ ScopedNode::ScopedNode(Scope* located, const Scope* contained,
 Statement* ScopedNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    VLOG(V_DEBUG) << "Compiling ScopeNode:\t" << op_def().output(0);
+    VLOG(V_DEBUG) << "Compiling ScopeNode:\t"  << op_def().output(0);
     VLOG(V_DEBUG) << "It is located in scope " << scope()->name();
-    VLOG(V_DEBUG) << "It contains a scope " << contained_->name();
+    VLOG(V_DEBUG) << "It contains a scope "    << contained_->name();
     BasicBlock* bb = new BasicBlock(iter_);
     for (auto* node : nodes_) {
       VLOG(V_DEBUG) << "\tCompiling\t" << node->op_def().name()
                     << "\t in Scope: " << contained_->name();
       Statement* stmt = node->Compile(sess);
-      CHECK(stmt) << node->DebugInfo();
+      CHECK(stmt) << node->debug_info();
       bb->AppendStmt(stmt);
     }
     stmt_ = bb;

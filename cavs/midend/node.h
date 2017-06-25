@@ -43,7 +43,7 @@ class Node {
   //inline void replaceInput(int i, Edge* edge);
   void SetShape(const std::vector<TensorShapeDef>& def);
 
-  std::string DebugInfo() const;
+  std::string debug_info() const;
 
  protected:
   explicit Node(const OpDef& op_def, Scope* s);
@@ -121,7 +121,7 @@ inline int Node::input_size() const {
 
 inline Edge* Node::output(int idx) const {
   CHECK(idx < outputs_.size())
-        << DebugInfo()
+        << debug_info()
         << "\nAcquiring idx: " << idx
         << "\nSize: " << output_size();
   return outputs_[idx];

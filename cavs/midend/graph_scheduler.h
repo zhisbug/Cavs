@@ -32,11 +32,18 @@ class GraphScheduler {
   }
   static void* buffer(int child_id) {
     LOG(FATAL) << "How to define the unit of child";
-    return (char*)Get()->__internal_storage_ + child_id;
+    return (char*)Get()->__internal_storage_
+         + child_id*Get()->__internal_unit_;
+  }
+  static void SetUnit(size_t u) {
+    if (Get()->__internal_unit_ != u) {
+      CHECK(Get()->__internal_unit_ == 0); 
+      Get()->__internal_unit_ = u;
+    }
   }
 
  private:
-  GraphScheduler() {}
+  GraphScheduler() : __internal_unit_(0) {}
   enum state {};
   static GraphScheduler* Get() { static GraphScheduler gs; return &gs; }
   std::list<int> activate_leaf_;
@@ -44,6 +51,7 @@ class GraphScheduler {
   std::vector<int> parent_ids_;
   std::vector<std::vector<int>> child_ids_;
   void* __internal_storage_;
+  size_t __internal_unit_;
 };
 
 class BatchedGraphScheduler : public GraphScheduler {

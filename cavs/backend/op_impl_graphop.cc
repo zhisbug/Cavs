@@ -17,9 +17,14 @@ class GraphGatherOp : public OpImpl {
     offset_ = GetSingleArg<int>(def, "Offset");
     CHECK(offset_ >= 0);
   }
-  ~GraphGatherOp(); 
 
-  void Compute(OpContext* context) override;
+  void Compute(OpContext* context) override {
+    int job_id = GraphScheduler::GetJobId();
+    int child_id = GraphScheduler::child_id(job_id, child_idx_);
+    Tensor* out = context->Output(0);
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(), GraphScheduler::buffer(child_id)+offset_*sizeof(T), 
+                              out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+  }
 
  private:
   int child_idx_;
@@ -27,29 +32,44 @@ class GraphGatherOp : public OpImpl {
 };
 
 template <typename T>
-void GraphGatherOp<T>::Compute(OpContext* context) {
-  int parent_id = GraphScheduler::GetJobId();
-  int child_id = GraphScheduler::child_id(parent_id, child_idx_);
-  Tensor* out = context->Output(0);
-  //out->CopyFrom(GraphScheduler::buffer(child_id)+offset*sizeof(T));
-  checkCudaError(cudaMemcpy(out->mutable_data<T>(), GraphScheduler::buffer(child_id)+offset_*sizeof(T), 
-                            cudaMemcpyDeviceToDevice));
-}
-
-template <typename T>
 class GraphScatterOp : public OpImpl {
  public:
-  explicit GraphScatterOp(const OpDef& def) {
+  explicit GraphScatterOp(const OpDef& def) {}
+
+  void Compute(OpContext* context) override {
+    int job_id = GraphScheduler::GetJobId();
+    const Tensor& inp = context->Input(0);
+    GraphScheduler::SetUnit(inp.count()*sizeof(T));
+    checkCudaError(cudaMemcpy(GraphScheduler::buffer(job_id), inp.data<T>(),
+                              inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
   }
-  ~GraphScatterOp(); 
-
-  void Compute(OpContext* context) override;
-
- private:
 };
 
 template <typename T>
-void GraphScatterOp<T>::Compute(OpContext* context) {
-}
+class GraphPushOp : public OpImpl {
+ public:
+  explicit GraphPushOp(const OpDef& def) {}
+  void Compute(OpContext* context) override {
+    int job_id = GraphScheduler::GetJobId();
+    const Tensor& inp = context->Input(0);
+    Tensor* out = context->Output(0);
+    checkCudaError(cudaMemcpy(out->mutable_data<T>()+job_id, inp.data<T>(), 
+                              inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+  }
+};
+
+template <typename T>
+class GraphPullOp : public OpImpl {
+ public:
+  explicit GraphPullOp(const OpDef& def) {}
+  void Compute(OpContext* context) override {
+    int job_id = GraphScheduler::GetJobId();
+    const Tensor& inp = context->Input(0);
+    Tensor* out = context->Output(0);
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(), inp.data<T>()+job_id, 
+                              out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+  }
+};
+
 
 } //namespace backend

@@ -1,7 +1,6 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
-#include "cavs/util/macros_gpu.h"
 
 #include <iostream>
 #include <fstream>
@@ -67,8 +66,6 @@ class SeqModel : public GraphSupport {
     Sym x = Pull(0, {1});
     x = x.EmbeddingLookup(embedding);
     Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden});
-    //Sym xh = Sym::Concat({x, h0});
-    //Sym tmp = Sym::MatMul(xh, UW);
     Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
             + Sym::MatMul(h0.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
     Sym u, i, o, f;

@@ -94,7 +94,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
   }
   node = new SingleNode(new_def, this);
 
-  VLOG(V_DEBUG) << "Adding node \t" << node->DebugInfo()
+  VLOG(V_DEBUG) << "Adding node \t" << node->debug_info()
                 << "\tTo Scope " << name() << "\n"
                 << new_def.DebugString();
   VLOG(V_DEBUG) << "Adding its outputs...";

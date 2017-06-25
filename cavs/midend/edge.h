@@ -35,7 +35,7 @@ class Edge {
   inline int dst_size(bool within=false) const;
   void AddSource(Node* node);
   void AddDst(Node* node);
-  std::string DebugInfo() const;
+  std::string debug_info() const;
 
  private:
   std::string name_;
@@ -105,7 +105,7 @@ inline int Edge::src_size(bool within) const {
 inline Node* Edge::dst(int idx, bool within) const {
   CHECK(idx < dst_size(within))
        << idx << "\t" << dst_size(within)
-       << DebugInfo();
+       << debug_info();
   if (!within)
     return dsts_[idx];
   else

@@ -1,6 +1,5 @@
 #include "cavs/midend/graph_util.h"
 #include "cavs/midend/statement.h"
-//#include "cavs/midend/statement_builder.h"
 #include "cavs/backend/op_decl.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
@@ -182,10 +181,10 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     vector<unordered_map<size_t, OpDef>>* grads,
     const Edge* curr,
     const Edge* loss) {
-  CHECK(curr->src_size(true) == 1) << curr->DebugInfo();
-  CHECK(curr->src_size(false) == 1 || curr->isStateful()) << curr->DebugInfo();
-  LOG_IF(INFO, curr->dst_size() > 1) << curr->DebugInfo();
-  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->DebugInfo();
+  CHECK(curr->src_size(true) == 1) << curr->debug_info();
+  CHECK(curr->src_size(false) == 1 || curr->isStateful()) << curr->debug_info();
+  LOG_IF(INFO, curr->dst_size() > 1) << curr->debug_info();
+  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->debug_info();
   if (curr == loss) {
     CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
     int idx = node2idx_[curr->src(0)];
@@ -375,11 +374,13 @@ Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
   loss_scope->AddOp(const_op);
 
   VLOG(V_DEBUG) << "Compute Gradients...";
-  //GroupClosedSet(var_names, loss_edge, solver, lr, clip, proj, loss_scope);
   ComputeGradient(loss_scope, var_names, loss_edge, s_);
+
   VLOG(V_DEBUG) << "Gradient process...";
   if (clip > 0) GradientProcess(loss_scope, var_names, clip);
+
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
+
   ScopedNode* sn = new ScopedNode(s_, loss_scope, def, iters);
 
   return sn;
@@ -410,6 +411,72 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
   CHECK(push_op);
 
   return out_shape;
+}
+
+void GraphUtil::ComputeGradientForFunction(
+    Scope* func_grad_scope,
+    const Scope* func_scope) {
+  CHECK(func_grad_scope);
+  CHECK(func_scope);
+  vector<bool> critical_path(func_scope->typological_sorted_nodes_.size(), false);
+  vector<unordered_map<size_t, OpDef>> grads(func_scope->typological_sorted_nodes_.size());
+  vector<Edge*> origins;
+  vector<Edge*> terminals;
+  for (auto* node : func_scope->typological_sorted_nodes_) {
+    VLOG(V_DEBUG) << node->debug_info();
+    if (node->name() == "Gather") {
+      CHECK(node->output_size() == 1);
+      origins.push_back(node->output(0));
+    }
+    if (node->name() == "Push" || node->name() == "Scatter") {
+      CHECK(node->output_size() == 1);
+      terminals.push_back(node->output(0));
+    }
+  }
+  CHECK(origins.size() >= 1);
+  CHECK(terminals.size() == 2);
+
+  for (auto* o_edge : origins) {
+    for (auto* t_edge : terminals) {
+      if (!GenCriticalPath(&critical_path, &grads, o_edge, t_edge)) {
+        LOG(FATAL) << o_edge->name()
+                   << "\tis not a trainable variable in function";
+      }
+    }
+  }
+
+  VLOG(V_DEBUG) << "Generating gradient...";
+  GenGradientForFunction(func_grad_scope, critical_path, grads);
+}
+
+void GraphUtil::GenGradientForFunction(Scope* func_grad_scope,
+    const vector<bool>& critical_path,
+    const vector<unordered_map<size_t, OpDef>>& grads) {
+  CHECK(critical_path.size() == grads.size());
+  CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
+  VLOG(V_DEBUG) << "Function auto-diff does not need forwarding...";
+
+  VLOG(V_DEBUG) << "Function auto-diff backwarding...";
+  for (int i = critical_path.size()-1 ; i >= 0; i--) {
+    if (critical_path[i]) {
+      VLOG(V_DEBUG) << "Backwarding for "
+                    << s_->typological_sorted_nodes_[i]->op_def().DebugString();
+      for (auto& iter : grads[i]) {
+        VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
+        Node* grad_node = func_grad_scope->AddOp(iter.second);
+        CHECK(grad_node);
+        VLOG(V_DEBUG) << "Getting input shape...";
+        const vector<TensorShapeDef>& inputs = 
+          grad_node->input_shapes();
+        VLOG(V_DEBUG) << "Shaping Inference...";
+        const vector<TensorShapeDef>& shapes = 
+          ::backend::ShapeInference(iter.second, inputs);
+        VLOG(V_DEBUG) << "Setting shape...";
+        grad_node->SetShape(shapes);
+        VLOG(V_DEBUG) << "One grad added";
+      }
+    }
+  }
 }
 
 } //namespace midend
