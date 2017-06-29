@@ -24,17 +24,16 @@ class SliceOpDecl : public OpDecl {
   }
   
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << "Not implemented yet";
     CHECK(grad->size() == 0);
-    OpDef reshape;
+    OpDef slice;
     OpDefBuilder("Accumulate")
       .Input(GetGradientName(op_def_.output(0)))
       .Output(GetGradientName(op_def_.input(0)))
       .AttrSingle("Offset", offset_)
       .AttrSingle("Stride", stride_)
       .Device(op_def_)
-      .Finalize(&reshape);
-    grad->push_back(reshape);
+      .Finalize(&slice);
+    grad->push_back(slice);
   }
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,

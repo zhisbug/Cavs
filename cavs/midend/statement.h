@@ -47,6 +47,9 @@ class ExprStatement : public Statement {
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
 
+ protected:
+  ExprStatement() : op_(NULL), ctxt_(NULL) {}
+
  private:
    OpImpl* op_;
    OpContext* ctxt_;
@@ -82,13 +85,10 @@ class BasicBlock : public Statement {
   std::vector<Statement*> stmts_;
 };
 
-class GraphStatement : public BasicBlock {
+class GraphStatement : public ExprStatement {
  public:
   GraphStatement(Statement* leaf, Statement* inode)
-      : BasicBlock(1) {
-    leaf_ = AppendStmt(leaf);
-    inode_ = AppendStmt(inode);
-  }
+      : ExprStatement(), leaf_(leaf), inode_(inode) {}
 
   inline void Run() override {
     while (!GraphScheduler::LeafEmpty()) {

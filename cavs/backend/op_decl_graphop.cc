@@ -2,6 +2,7 @@
 #include "cavs/util/op_def_builder.h"
 
 using std::vector;
+using std::string;
 
 namespace backend {
 
@@ -64,6 +65,24 @@ class PushOpDecl : public EmitOpDecl {
 class GraphOutputOpDecl : public EmitOpDecl {
  public:
   GraphOutputOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+
+  void MakeGradient(vector<OpDef>* grad) override {
+    CHECK(op_def_.input_size() >= 2) << op_def_.DebugString();
+    CHECK(op_def_.output_size() == 1) << op_def_.DebugString();
+    vector<string> var_grad;
+    for (int i = 2; i < op_def_.input_size(); i++)
+      var_grad.push_back(GetGradientName(op_def_.input(i)));
+    OpDef graphout_grad;
+    OpDefBuilder(GetGradientName("GraphOutput"))
+      .Input(GetGradientName(op_def_.output(0)))
+      .Input(op_def_.input(0))
+      .Input(op_def_.input(1))
+      //Output should be the gradient of the variable
+      .Output(var_grad)
+      .Device(op_def_)
+      .Finalize(&graphout_grad);
+    grad->push_back(std::move(graphout_grad));
+  }
 };
 
 REGISTER_OP_DECL_BUILDER("Gather",      GatherOpDecl     );

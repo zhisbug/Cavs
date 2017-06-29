@@ -258,6 +258,14 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         grad_node->SetShape(shapes);
         VLOG(V_DEBUG) << "One grad added";
       }
+      if (s_->typological_sorted_nodes_[i]->op_def().name() == "GraphOutput") {
+        for (auto&& func_name : {"Leaf", "Inode"}) {
+          const Scope* func_scope = s_->FindChildScope(func_name);
+          Scope* func_grad_scope = new Scope(loss_scope, GetGradientName(func_name));
+          CHECK(func_grad_scope);
+          ComputeGradientForFunction(func_grad_scope, func_scope);
+        }
+      }
     }
   }
 }
@@ -404,7 +412,6 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
       //There is one and only one push op per function
       CHECK(op.output_size() == 1);
       CHECK(!push_op);
-      out_shape = shape_def[0];
       push_op = true;
     }
   }

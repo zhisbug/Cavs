@@ -22,8 +22,9 @@ Scope::Scope(const Scope* father, const std::string& n)
   }
 }
 
-Scope* Scope::FindChild(const string& n) const {
-  if (children_.find(n) == children_.end())
+Scope* Scope::FindChildScope(const string& n) const {
+  string scoped_name = name()+":"+n;
+  if (children_.find(scoped_name) == children_.end())
     return NULL;
   else
     return const_cast<Scope*>(this)->children_[n]; 
@@ -55,6 +56,41 @@ Node* Scope::FindNode(const std::string& name) const {
   return edge->src(0);
 }
 
+void Scope::AddGraphOpTransformation(OpDef* new_def, const OpDef& def) {
+  VLOG(V_DEBUG) << "Original graph output info" << def.DebugString();
+  set<string> inputs;
+  for (auto& i : new_def->input())
+    inputs.insert(i);
+  for (auto&& func : {name()+":Inode", name()+":Leaf"}) {
+    Scope* func_scope = this;
+    //the function may defined in the current scope(current scope == main)
+    //or the ancestor scope(current scope == optimizer)
+    if (func_scope->children_.find(func) != func_scope->children_.end()) {
+      func_scope = const_cast<Scope*>(func_scope->father_);
+      if (func_scope->children_.find(func) != func_scope->children_.end()) {
+        CHECK(func_scope->children_.find(func) != func_scope->children_.end())
+             << func << "\n"
+             << this->debug_info()
+             << func_scope->debug_info();
+      }
+    }
+    const Scope* c = func_scope->children_[func];
+    CHECK_NOTNULL(c);
+    for (auto& iter : c->in_edges_) {
+      //if (iter.second->isStateful()) {
+        //trainable_vars.insert(iter.second->name()); 
+      //}
+      inputs.insert(iter.second->name());
+    }
+  }
+
+  new_def->clear_input(); 
+  for (auto& s : inputs) {
+    new_def->add_input(s); 
+  }
+  VLOG(V_DEBUG) << "new graph output info" << new_def->DebugString();
+}
+
 //if node exists: return NULL;
 //otherwise: return new allocated node;
 Node* Scope::AddOp(const OpDef& op_def) {
@@ -70,27 +106,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
   SingleNode* node = NULL;
   OpDef new_def = op_def;
   if (op_def.name() == "GraphOutput") {
-    VLOG(V_DEBUG) << "Original graph output info" << op_def.DebugString();
-    set<string> inputs;
-    for (auto& i : new_def.input())
-      inputs.insert(i);
-    for (auto&& func : {name()+":Inode", name()+":Leaf"}) {
-      CHECK(children_.find(func) != children_.end());
-      const Scope* c = children_[func];
-      CHECK_NOTNULL(c);
-      for (auto& iter : c->in_edges_) {
-        //if (iter.second->isStateful()) {
-          //trainable_vars.insert(iter.second->name()); 
-        //}
-        inputs.insert(iter.second->name());
-      }
-    }
-
-    new_def.clear_input(); 
-    for (auto& s : inputs) {
-      new_def.add_input(s); 
-    }
-    VLOG(V_DEBUG) << "new graph output info" << new_def.DebugString();
+    AddGraphOpTransformation(&new_def, op_def);
   }
   node = new SingleNode(new_def, this);
 
@@ -155,7 +171,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
                 
   for (auto& input : new_def.input()) {
     const Edge* in_edge = FindEdge(input);
-    CHECK(in_edge) << "name: " << input << "\n" << DebugInfo();
+    CHECK(in_edge) << "name: " << input << "\n" << debug_info();
     node->AddInput(in_edge);
     const_cast<Edge*>(in_edge)->AddDst(node);
     if (!FindEdge(input, true) &&
@@ -208,7 +224,7 @@ void Scope::DebugSymbolTable() {
   }
 }
 
-string Scope::DebugInfo() {
+string Scope::debug_info() {
   string ret = "\n============================\n";
   ret += "<<<<<<<<< In Scope " + name_ + " <<<<<<<<<\n";
   int i = 0;
@@ -219,7 +235,7 @@ string Scope::DebugInfo() {
     ret += "\n\n";
   }
   for (auto& child: children_) {
-    ret += child.second->DebugInfo();
+    ret += child.second->debug_info();
   }
   ret += "\n============================\n";
   return ret;

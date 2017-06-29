@@ -23,7 +23,7 @@ class Scope {
   TensorShapeDef AddFunction(const FunctionDef& func_def);
   void GroupAllVariables(std::vector<std::string>* vars) const;
 
-  Scope* FindChild(const std::string& n) const;
+  Scope* FindChildScope(const std::string& n) const;
   Edge* FindEdge(const std::string& n, bool within = false) const;
   Node* FindNode(const std::string& name) const;
 
@@ -34,9 +34,10 @@ class Scope {
   friend class GraphUtil;
   inline const std::string& name() const { return name_; }
   void DebugSymbolTable();
-  std::string DebugInfo();
+  std::string debug_info();
     
  private:
+  void AddGraphOpTransformation(OpDef* new_def, const OpDef& def);
   std::string name_;
   const Scope* father_;
   std::unordered_map<std::string, Scope*> children_;
