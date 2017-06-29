@@ -69,7 +69,20 @@ class ConcatOpDecl : public OpDecl {
   ConcatOpDecl(const OpDef& def) : OpDecl(def) {}
   
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << "Not implemented yet";
+    //LOG(FATAL) << "Not implemented yet";
+    //It needs further design!!!
+    CHECK(grad->empty());
+    for (auto& s : op_def_.input()) {
+      OpDef slice;
+      OpDefBuilder("Slice")
+        .Input(GetGradientName(op_def_.output(0)))
+        .Output(GetGradientName(s))
+        .AttrSingle("Offset", -1)
+        .AttrSingle("Stride", -1)
+        .Device(op_def_)
+        .Finalize(&slice);
+      grad->push_back(slice);
+    }
   }
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,

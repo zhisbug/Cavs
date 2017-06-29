@@ -180,27 +180,30 @@ OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
 bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     vector<unordered_map<size_t, OpDef>>* grads,
     const Edge* curr,
-    const Edge* loss) {
+    const Edge* loss,
+    const Scope* scope) {
+  CHECK(curr->scope() == scope);
+  CHECK(loss->scope() == scope);
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
   CHECK(curr->src_size(false) == 1 || curr->isStateful()) << curr->debug_info();
   LOG_IF(INFO, curr->dst_size() > 1) << curr->debug_info();
   VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->debug_info();
   if (curr == loss) {
-    CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
-    int idx = node2idx_[curr->src(0)];
+    CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
+    int idx = scope->node2idx_.at(curr->src(0));
     CHECK(cpath->size() > idx);
     cpath->at(idx) = true;
     return true;
   }else {
     bool inpath = false;
     for (Node* node : curr->dst(true)) {
-      CHECK(node2idx_.find(curr->src(0)) != node2idx_.end());
-      int idx = node2idx_[node];
+      CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
+      int idx = scope->node2idx_.at(node);
       CHECK(cpath->size() > idx);
       if (!cpath->at(idx)) {
         for (int i = 0; i < node->output_size(); i++) {
           Edge* edge = node->output(i);
-          if (GenCriticalPath(cpath, grads, edge, loss)) {
+          if (GenCriticalPath(cpath, grads, edge, loss, scope)) {
             cpath->at(idx) = true;
             inpath = true;
           }
@@ -260,8 +263,10 @@ void GraphUtil::GenGradient(Scope* loss_scope,
       }
       if (s_->typological_sorted_nodes_[i]->op_def().name() == "GraphOutput") {
         for (auto&& func_name : {"Leaf", "Inode"}) {
+          //find the childscope of father or ancestor(optimizer case)
           const Scope* func_scope = s_->FindChildScope(func_name);
           Scope* func_grad_scope = new Scope(loss_scope, GetGradientName(func_name));
+          CHECK(func_scope);
           CHECK(func_grad_scope);
           ComputeGradientForFunction(func_grad_scope, func_scope);
         }
@@ -282,7 +287,7 @@ void GraphUtil::ComputeGradient(
   for (auto& var_name : vars) {
     VLOG(V_DEBUG) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
-    if (!GenCriticalPath(&critical_path, &grads, var, loss)) {
+    if (!GenCriticalPath(&critical_path, &grads, var, loss, main_scope)) {
       LOG(FATAL) << var_name << "\tis not a trainable variable";
     }
   }
@@ -346,9 +351,9 @@ void GraphUtil::ApplyGradient(
 }
 
 GraphUtil::GraphUtil(Scope* s) : s_(s) {
-  for (int i = 0; i < s->typological_sorted_nodes_.size(); i++) {
-    node2idx_[s->typological_sorted_nodes_[i]] = i; 
-  }
+  //for (int i = 0; i < s->typological_sorted_nodes_.size(); i++) {
+    //node2idx_[s->typological_sorted_nodes_[i]] = i; 
+  //}
 }
 
 Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
@@ -435,17 +440,19 @@ void GraphUtil::ComputeGradientForFunction(
       CHECK(node->output_size() == 1);
       origins.push_back(node->output(0));
     }
+    LOG(INFO) << node->name();
     if (node->name() == "Push" || node->name() == "Scatter") {
       CHECK(node->output_size() == 1);
       terminals.push_back(node->output(0));
     }
   }
-  CHECK(origins.size() >= 1);
-  CHECK(terminals.size() == 2);
+  //For leaf nodes, no gather operations.
+  //CHECK(origins.size() >= 1);
+  CHECK(terminals.size() == 2) << terminals.size();
 
   for (auto* o_edge : origins) {
     for (auto* t_edge : terminals) {
-      if (!GenCriticalPath(&critical_path, &grads, o_edge, t_edge)) {
+      if (!GenCriticalPath(&critical_path, &grads, o_edge, t_edge, func_scope)) {
         LOG(FATAL) << o_edge->name()
                    << "\tis not a trainable variable in function";
       }
@@ -453,21 +460,22 @@ void GraphUtil::ComputeGradientForFunction(
   }
 
   VLOG(V_DEBUG) << "Generating gradient...";
-  GenGradientForFunction(func_grad_scope, critical_path, grads);
+  GenGradientForFunction(func_grad_scope, critical_path, grads, func_scope);
 }
 
 void GraphUtil::GenGradientForFunction(Scope* func_grad_scope,
     const vector<bool>& critical_path,
-    const vector<unordered_map<size_t, OpDef>>& grads) {
+    const vector<unordered_map<size_t, OpDef>>& grads,
+    const Scope* func_scope) {
   CHECK(critical_path.size() == grads.size());
-  CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
+  CHECK(critical_path.size() == func_scope->typological_sorted_nodes_.size());
   VLOG(V_DEBUG) << "Function auto-diff does not need forwarding...";
 
   VLOG(V_DEBUG) << "Function auto-diff backwarding...";
   for (int i = critical_path.size()-1 ; i >= 0; i--) {
     if (critical_path[i]) {
       VLOG(V_DEBUG) << "Backwarding for "
-                    << s_->typological_sorted_nodes_[i]->op_def().DebugString();
+                    << func_scope->typological_sorted_nodes_[i]->op_def().DebugString();
       for (auto& iter : grads[i]) {
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
         Node* grad_node = func_grad_scope->AddOp(iter.second);

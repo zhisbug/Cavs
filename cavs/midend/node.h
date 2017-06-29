@@ -27,14 +27,16 @@ class Node {
   virtual bool IsSingleNode() const { return false; }
   virtual bool IsScopedNode() const { return false; }
   inline const OpDef& op_def() const;
-  inline Scope* scope() const;
-  inline const std::string& name() const;
-  inline Edge* input(int idx) const;
-  inline const std::vector<Edge*>& input() const;
-  inline int input_size() const;
-  inline Edge* output(int idx) const;
-  inline const std::vector<Edge*>& output() const;
-  inline int output_size() const;
+  inline Scope*                    scope()         const;
+  inline Edge*                     input(int idx)  const;
+  inline const std::vector<Edge*>& input()         const;
+  inline int                       input_size()    const;
+  inline Edge*                     output(int idx) const;
+  inline const std::vector<Edge*>& output()        const;
+  inline int                       output_size()   const;
+
+  std::string name()        const;
+  std::string scoped_name() const;
   std::vector<TensorShapeDef> input_shapes();
 
   void AddInput(const Edge* e);
@@ -102,9 +104,6 @@ inline Scope* Node::scope() const {
   return located_;
 }
 
-inline const std::string& Node::name() const {
-  return node_name_;
-}
 
 inline Edge* Node::input(int idx) const {
   CHECK(idx < inputs_.size());

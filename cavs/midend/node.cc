@@ -5,10 +5,18 @@ using std::vector;
 
 namespace midend {
 
+std::string Node::name() const {
+  return node_name_;
+}
+
+std::string Node::scoped_name() const {
+  return located_->name() + ":" + node_name_;
+}
+
 Node::Node(const OpDef& op_def, Scope* s)
   : op_def_(op_def), located_(s), stmt_(NULL){
   located_->AddNode(this);
-  node_name_ = s->name() + ":" + op_def_.name();
+  node_name_ = op_def_.name();
 }
 
 void Node::AddInput(const Edge* e) {
@@ -24,6 +32,9 @@ void Node::AddOutput(const Edge* e) {
 
 void Node::SetShape(
     const vector<TensorShapeDef>& def) {
+  CHECK(def.size() == outputs_.size())
+      << "in shapes:\t" << def.size()
+      << "\tneeded shapes:\t" << outputs_.size();
   op_def_.clear_shape();
   for (int i = 0; i < outputs_.size(); i++) {
     outputs_[i]->SetShape(def[i]);

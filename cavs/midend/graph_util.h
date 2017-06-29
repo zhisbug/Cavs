@@ -25,7 +25,8 @@ class GraphUtil {
   bool GenCriticalPath(std::vector<bool>* path,
       std::vector<std::unordered_map<size_t, OpDef>>* grads,
       const Edge* curr,
-      const Edge* loss);
+      const Edge* loss,
+      const Scope* scope);
   void GenGradient(Scope* loss_scope,
       const std::vector<bool>& critical_path,
       const std::vector<std::unordered_map<size_t, OpDef>>& grads);
@@ -46,9 +47,9 @@ class GraphUtil {
       const Scope* func_scope);
   void GenGradientForFunction(Scope* func_grad_scope,
       const std::vector<bool>& critical_path,
-      const std::vector<std::unordered_map<size_t, OpDef>>& grads);
+      const std::vector<std::unordered_map<size_t, OpDef>>& grads,
+      const Scope* func_scope);
   Scope* s_;
-  std::unordered_map<Node*, int> node2idx_;
 };
 
 } //namespace midend 

@@ -22,30 +22,32 @@ Scope::Scope(const Scope* father, const std::string& n)
   }
 }
 
-Scope* Scope::FindChildScope(const string& n) const {
-  string scoped_name = name()+":"+n;
-  if (children_.find(scoped_name) == children_.end())
-    return NULL;
+Scope* Scope::FindChildScope(const string& n, bool within) const {
+  const Scope* s = this;
+  if (!within) {
+    while (s && s->children_.find(s->name() + ":" + n) == s->children_.end()) {
+      s = s->father_;
+    }
+  }
+  if (s && s->children_.find(s->name() + ":" + n) != s->children_.end())
+    return s->children_.at(s->name() + ":" + n); 
   else
-    return const_cast<Scope*>(this)->children_[n]; 
+    return NULL;
 }
 
 Edge* Scope::FindEdge(const string& n, bool within) const {
   const Scope* s = this;
-  if (within) {
-    if (s->edge_table_.find(n) == s->edge_table_.end())
-      return NULL;
-    else
-      return s->edge_table_.at(n);
-  }else {
+  if (!within) {
     while (s && s->edge_table_.find(n) == s->edge_table_.end()) {
       s = s->father_;
     }
-    if (s)
-      return s->edge_table_.at(n);
-    else
-      return NULL;
   }
+
+  if (s && s->edge_table_.find(n) != s->edge_table_.end())
+    return s->edge_table_.at(n);
+  else
+    return NULL;
+  
 }
 
 Node* Scope::FindNode(const std::string& name) const {
@@ -61,22 +63,12 @@ void Scope::AddGraphOpTransformation(OpDef* new_def, const OpDef& def) {
   set<string> inputs;
   for (auto& i : new_def->input())
     inputs.insert(i);
-  for (auto&& func : {name()+":Inode", name()+":Leaf"}) {
-    Scope* func_scope = this;
+  for (auto&& func : {"Inode", "Leaf"}) {
+    const Scope* func_scope = FindChildScope(func);
     //the function may defined in the current scope(current scope == main)
     //or the ancestor scope(current scope == optimizer)
-    if (func_scope->children_.find(func) != func_scope->children_.end()) {
-      func_scope = const_cast<Scope*>(func_scope->father_);
-      if (func_scope->children_.find(func) != func_scope->children_.end()) {
-        CHECK(func_scope->children_.find(func) != func_scope->children_.end())
-             << func << "\n"
-             << this->debug_info()
-             << func_scope->debug_info();
-      }
-    }
-    const Scope* c = func_scope->children_[func];
-    CHECK_NOTNULL(c);
-    for (auto& iter : c->in_edges_) {
+    CHECK_NOTNULL(func_scope);
+    for (auto& iter : func_scope->in_edges_) {
       //if (iter.second->isStateful()) {
         //trainable_vars.insert(iter.second->name()); 
       //}
@@ -186,6 +178,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
 
 void Scope::AddNode(const Node* node) {
   CHECK(node->scope() == this);
+  node2idx_[const_cast<Node*>(node)] = typological_sorted_nodes_.size();
   typological_sorted_nodes_.push_back(const_cast<Node*>(node));
 }
 
@@ -224,7 +217,7 @@ void Scope::DebugSymbolTable() {
   }
 }
 
-string Scope::debug_info() {
+string Scope::debug_info() const {
   string ret = "\n============================\n";
   ret += "<<<<<<<<< In Scope " + name_ + " <<<<<<<<<\n";
   int i = 0;
