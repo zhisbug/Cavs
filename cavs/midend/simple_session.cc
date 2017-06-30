@@ -26,7 +26,7 @@ void SimpleSession::DepthSearch(Node* curr,
     (*include)[curr] = true;
     if (!isSource) {
       for (auto* edge : curr->input()) {
-        CHECK(edge->src_size() == 1 || edge->isStateful());
+        CHECK(edge->src_size() == 1 || edge->isVariable());
         //for (auto* node : edge->srcs()) {
         DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
         //}

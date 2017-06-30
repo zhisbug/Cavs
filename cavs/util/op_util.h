@@ -20,4 +20,5 @@ const char* DeviceTypeToString(DeviceType type);
 
 size_t GetHash(const OpDef& op_def);
 
-bool IsVariable(const std::string& edge);
+bool IsVariableName(const std::string& edge);
+bool IsGradientName(const std::string& edge);

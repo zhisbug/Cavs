@@ -119,14 +119,14 @@ class SliceAllOpDecl : public OpDecl {
  public:
   SliceAllOpDecl(const OpDef& def) : OpDecl(def) {
     CHECK(def.input_size() >= 2); 
-    CHECK(def.output_size() -1 == def.input_size()); 
+    CHECK(def.output_size() + 1 == def.input_size()); 
   }
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == op_def_.input_size());
     CHECK(out_shape->empty());
-    for (int i = 1; i < op_def_.output_size(); i++) {
+    for (int i = 1; i < inputs.size(); i++) {
       out_shape->push_back(inputs[i]);
     }
   }

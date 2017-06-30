@@ -53,8 +53,8 @@ Edge* Scope::FindEdge(const string& n, bool within) const {
 Node* Scope::FindNode(const std::string& name) const {
   const Edge* edge = FindEdge(name);
   if (!edge) return NULL;
-  CHECK(edge->isStateful() || edge->src_size() == 1)
-    << edge->name() << edge->src_size();
+  CHECK(edge->isVariable() || edge->src_size() == 1)
+       << edge->name() << edge->src_size();
   return edge->src(0);
 }
 
@@ -131,7 +131,7 @@ Node* Scope::AddOp(const OpDef& op_def) {
     }else {
       if (!out_edge) {
         if (upper_out_edge){
-          if (upper_out_edge->isStateful()) {
+          if (upper_out_edge->isVariable()) {
             out_edge = upper_out_edge;
           }else {
             out_edge = new Edge(out, this);
@@ -144,17 +144,17 @@ Node* Scope::AddOp(const OpDef& op_def) {
       }
       out_edge->AddSource(node);
       node->AddOutput(out_edge);
-      if (upper_out_edge && !upper_out_edge->isStateful()) {
-        for (int i = 0; i < upper_out_edge->dst_size(); i++) {
-          if (upper_out_edge->dst(i)->scope() == this) {
-            LOG(FATAL) << "It should not happen because we add each opeartor"
-                       << "according to its dependency, "
-                       << "both for user-defined operators and auto-diff operators";
-            //const_cast<Node*>(upper_out_edge->dst(i))
-              //->replaceInput(i, out_edge);
-          }
-        }
-      }
+      //if (upper_out_edge && !upper_out_edge->isVariable()) {
+        //for (int i = 0; i < upper_out_edge->dst_size(); i++) {
+          //if (upper_out_edge->dst(i)->scope() == this) {
+            //LOG(FATAL) << "It should not happen because we add each opeartor"
+                       //<< "according to its dependency, "
+                       //<< "both for user-defined operators and auto-diff operators";
+            ////const_cast<Node*>(upper_out_edge->dst(i))
+              ////->replaceInput(i, out_edge);
+          //}
+        //}
+      //}
     }
   }
 

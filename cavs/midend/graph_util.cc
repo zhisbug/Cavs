@@ -185,7 +185,7 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
   CHECK(curr->scope() == scope);
   CHECK(loss->scope() == scope);
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
-  CHECK(curr->src_size(false) == 1 || curr->isStateful()) << curr->debug_info();
+  CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
   LOG_IF(INFO, curr->dst_size() > 1) << curr->debug_info();
   VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->debug_info();
   if (curr == loss) {
@@ -216,9 +216,14 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
         }
       }else {
         const OpDef& def = PartialGrad(node, curr->name());
+        VLOG(V_DEBUG) << "CHECKING whether this partial is already inserted\t"
+                      << def.DebugString();
         size_t hashcode = GetHash(def);
-        if (grads->at(idx).find(hashcode) != grads->at(idx).end()) {
+        if (grads->at(idx).find(hashcode) == grads->at(idx).end()) {
+          VLOG(V_DEBUG) << "CHECKING RESULT: False\n";
           grads->at(idx).emplace(hashcode, def);
+        }else {
+          VLOG(V_DEBUG) << "CHECKING RESULT: True\n";
         }
         inpath = true;
       }
@@ -265,7 +270,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         for (auto&& func_name : {"Leaf", "Inode"}) {
           //find the childscope of father or ancestor(optimizer case)
           const Scope* func_scope = s_->FindChildScope(func_name);
-          Scope* func_grad_scope = new Scope(loss_scope, GetGradientName(func_name));
+          Scope* func_grad_scope = new Scope(func_scope, GetGradientName(func_name));
           CHECK(func_scope);
           CHECK(func_grad_scope);
           ComputeGradientForFunction(func_grad_scope, func_scope);

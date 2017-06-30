@@ -19,8 +19,9 @@ class Node;
 class Edge {
  public:
   explicit Edge(const std::string& name, Scope* s);
-  inline bool isStateful() const;
+  inline bool isVariable() const;
   inline bool isVirtual() const;
+  inline bool isGradient() const;
   inline const std::string& name() const;
   inline const std::string& scoped_name() const;
   inline Scope* scope() const;
@@ -48,8 +49,12 @@ class Edge {
   Scope* located_;
 };
 
-inline bool Edge::isStateful() const {
-  return IsVariable(name_); 
+inline bool Edge::isVariable() const {
+  return IsVariableName(name_); 
+}
+
+inline bool Edge::isGradient() const {
+  return IsGradientName(name_); 
 }
 
 inline bool Edge::isVirtual() const {

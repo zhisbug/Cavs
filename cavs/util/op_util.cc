@@ -33,9 +33,13 @@ size_t GetHash(const OpDef& op_def) {
   return hash_fn(s);
 }
 
-bool IsVariable(const std::string& edge) {
+bool IsVariableName(const string& edge) {
   return (edge.length() >= 8 && edge.substr(0, 8) == "Variable")
       || (edge.length() >= 3 && edge.substr(0, 3) == "DDV" );
+}
+
+bool IsGradientName(const string& edge) {
+  return (edge.length() > 5 && edge.substr(edge.length()-5, 5) == "_grad");
 }
 
 #define INSTANTIATE_GETSINGLEARG(T, fieldname)      \

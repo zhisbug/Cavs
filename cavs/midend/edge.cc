@@ -17,7 +17,11 @@ void Edge::AddDst(Node* node) {
 }
 
 void Edge::AddSource(Node* node) {
-  CHECK(isStateful() || srcs_.empty())
+  //we loose the constraint to gradients.
+  //In the lstm cases, one tensor should be 
+  //transmitted to two or more operators, and therefore
+  //the gradients come from two or more operators
+  CHECK(isVariable() || isGradient() || srcs_.empty())
     << node->debug_info()
     << debug_info();
   srcs_.push_back(node);

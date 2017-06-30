@@ -25,7 +25,7 @@ void Node::AddInput(const Edge* e) {
 }
 
 void Node::AddOutput(const Edge* e) {
-  CHECK(e->scope() == scope() || e->isStateful());
+  CHECK(e->scope() == scope() || e->isVariable());
   outputs_.push_back(const_cast<Edge*>(e));
 }
 
