@@ -27,11 +27,11 @@ class SliceOpDecl : public OpDecl {
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK(grad->size() == 0);
     OpDef slice;
-    OpDefBuilder("Accumulate")
+    OpDefBuilder("PartialAdd")
       .Input(GetGradientName(op_def_.output(0)))
+      .Input(op_def_.input(0))
       .Output(GetGradientName(op_def_.input(0)))
-      .AttrSingle("Offset", offset_)
-      .AttrSingle("Stride", stride_)
+      .Attr(op_def_)
       .Device(op_def_)
       .Finalize(&slice);
     grad->push_back(slice);
@@ -130,11 +130,26 @@ class SliceAllOpDecl : public OpDecl {
       out_shape->push_back(inputs[i]);
     }
   }
+};
 
+class PartialAddOpDecl : public OpDecl {
+ public:
+  PartialAddOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(def.input_size() == 2); 
+    CHECK(def.output_size() == 1); 
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == op_def_.input_size());
+    CHECK(out_shape->empty());
+    out_shape->push_back(inputs[1]);
+  }
 };
 
 REGISTER_OP_DECL_BUILDER("Slice" , SliceOpDecl );
 REGISTER_OP_DECL_BUILDER("Concat", ConcatOpDecl);
-REGISTER_OP_DECL_BUILDER("SliceAll", SliceAllOpDecl);
+REGISTER_OP_DECL_BUILDER("SliceAll"  , SliceAllOpDecl  );
+REGISTER_OP_DECL_BUILDER("PartialAdd", PartialAddOpDecl);
 
 } //namespace backend
