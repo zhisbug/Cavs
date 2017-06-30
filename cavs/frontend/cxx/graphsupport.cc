@@ -57,15 +57,22 @@ Sym GraphSupport::Output() {
   return Sym(def);
 }
 
-Sym GraphSupport::Gather(int child, int offset,
+Sym GraphSupport::Gather(int child,
     const std::vector<int>& shape) {
+  CHECK(!shape.empty());
   OpDef def = OpDefBuilder("Gather")
                 .Dtype(raw_vertex_.type())
                 .Device(raw_vertex_.device())
                 .Shape(shape)
                 .AttrSingle("Child", child)
-                .AttrSingle("Offset", offset)
+                .AttrSingle("Offset", 0)
                 .Finalize();
+  if (__internal_unit.empty()) {
+    __internal_unit = shape; 
+  }else {
+    CHECK(__internal_unit == shape);
+  }
+
   return Sym(def);
 }
 
@@ -92,11 +99,12 @@ void GraphSupport::Push(const Sym& s) {
 }
 
 void GraphSupport::Scatter(const Sym& s) {
+  CHECK(!__internal_unit.empty());
   OpDef def = OpDefBuilder("Scatter")
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                //.Shape(s.shape(0))
+                .Shape(__internal_unit)
                 .Finalize();
   Sym AddToFunction(def);
 }

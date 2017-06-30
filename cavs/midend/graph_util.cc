@@ -350,11 +350,7 @@ void GraphUtil::ApplyGradient(
   }
 }
 
-GraphUtil::GraphUtil(Scope* s) : s_(s) {
-  //for (int i = 0; i < s->typological_sorted_nodes_.size(); i++) {
-    //node2idx_[s->typological_sorted_nodes_[i]] = i; 
-  //}
-}
+GraphUtil::GraphUtil(Scope* s) : s_(s) {}
 
 Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
   CHECK(def.input_size() == 1);

@@ -39,8 +39,11 @@ class SeqModel : public GraphSupport {
   }
 
   void Inode() override {
-    Sym child_h = Gather(0, 0, {FLAGS_hidden});
-    Sym child_c = Gather(0, FLAGS_hidden, {FLAGS_hidden});
+    //Sym child_h = Gather(0, 0, {FLAGS_hidden});
+    //Sym child_c = Gather(0, FLAGS_hidden, {FLAGS_hidden});
+    Sym child = Gather(0, {FLAGS_hidden});
+    Sym child_h, child_c;
+    tie(child_h, child_c) = child.Split2();
     Sym x       = Pull(0, {1});
     x           = x.EmbeddingLookup(embedding);
 

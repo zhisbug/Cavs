@@ -65,6 +65,7 @@ class Sym {
   static Sym Flatten(const Sym& a);
   static Sym Slice(const Sym& a, int offset, int stride);
   //multi return value 
+  static std::tuple<Sym, Sym> Split2(const Sym& a);
   static std::tuple<Sym, Sym, Sym> Split3(const Sym& a);
   static std::tuple<Sym, Sym, Sym, Sym> Split4(const Sym& a);
   //binary operation
@@ -120,6 +121,7 @@ class Sym {
   Sym Flatten() { return Flatten(*this); }
   Sym Slice(int offset, int stride) { return Slice(*this, offset, stride); }
   //multi return value 
+  std::tuple<Sym, Sym> Split2()           { return Split2(*this); }
   std::tuple<Sym, Sym, Sym> Split3()      { return Split3(*this); }
   std::tuple<Sym, Sym, Sym, Sym> Split4() { return Split4(*this); }
   //binary operation

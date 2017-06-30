@@ -312,6 +312,20 @@ Sym Sym::Slice(const Sym& a, int offset, int stride) {
   return Sym(def);
 }
 
+std::tuple<Sym, Sym> Sym::Split2(const Sym& a) {
+  OpDef def[2];
+  for (int i = 0; i < 2; i++) {
+    def[i] = OpDefBuilder("Slice")
+               .Input(a.output(0))
+               .Dtype(a.type())
+               .Device(a.device())
+               .AttrSingle("Split", 2)
+               .AttrSingle("Index", i)
+               .Finalize();
+  }
+  return std::make_tuple(Sym(def[0]), Sym(def[1]));
+}
+
 std::tuple<Sym, Sym, Sym> Sym::Split3(const Sym& a) {
   OpDef def[3];
   for (int i = 0; i < 3; i++) {

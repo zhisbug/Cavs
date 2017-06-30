@@ -41,10 +41,12 @@ class TreeModel : public GraphSupport {
   }
 
   void Inode() override {
-    Sym child_hl = Gather(0, 0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_cl = Gather(0, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_hr = Gather(1, 0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_cr = Gather(1, FLAGS_hidden*FLAGS_hidden, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_l = Gather(0, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_r = Gather(1, {FLAGS_hidden, FLAGS_hidden});
+    Sym child_hl, child_cl;
+    tie(child_hl, child_cl) = child_l.Split2();
+    Sym child_hr, child_cr;
+    tie(child_hr, child_cr) = child_r.Split2();
     Sym x        = Pull(0, {FLAGS_input_size});
 
     Sym xh = Sym::Concat({x, child_hl+child_hr});
