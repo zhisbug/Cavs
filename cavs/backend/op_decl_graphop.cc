@@ -64,12 +64,16 @@ class PullOpDecl : public ExtractOpDecl {
 
 class ScatterOpDecl : public EmitOpDecl {
  public:
-  ScatterOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+  ScatterOpDecl(const OpDef& def) : EmitOpDecl(def) {
+    CHECK(def.shape_size() == 1)
+         << def.DebugString();
+  }
   void MakeGradient(vector<OpDef>* grad) override {
     //It needs further design!!!!!
     OpDef gather;
     OpDefBuilder("Gather")
       .Output(GetGradientName(op_def_.input(0)))
+      .Shape(op_def_)
       .Device(op_def_)
       .Finalize(&gather);
     grad->push_back(gather);

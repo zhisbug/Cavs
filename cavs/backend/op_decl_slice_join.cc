@@ -2,6 +2,7 @@
 #include "cavs/util/op_def_builder.h"
 
 using std::vector;
+using std::string;
 
 namespace backend {
 
@@ -69,20 +70,22 @@ class ConcatOpDecl : public OpDecl {
   ConcatOpDecl(const OpDef& def) : OpDecl(def) {}
   
   void MakeGradient(vector<OpDef>* grad) override {
-    //LOG(FATAL) << "Not implemented yet";
     //It needs further design!!!
     CHECK(grad->empty());
+    vector<string> input;
+    vector<string> input_grad;
     for (auto& s : op_def_.input()) {
-      OpDef slice;
-      OpDefBuilder("Slice")
-        .Input(GetGradientName(op_def_.output(0)))
-        .Output(GetGradientName(s))
-        .AttrSingle("Offset", -1)
-        .AttrSingle("Stride", -1)
-        .Device(op_def_)
-        .Finalize(&slice);
-      grad->push_back(slice);
+      input.push_back(s);
+      input_grad.push_back(GetGradientName(s));
     }
+    OpDef slice_all;
+    OpDefBuilder("SliceAll")
+      .Input(GetGradientName(op_def_.output(0)))
+      .Input(input)
+      .Output(input_grad)
+      .Device(op_def_)
+      .Finalize(&slice_all);
+    grad->push_back(slice_all);
   }
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,
@@ -112,7 +115,26 @@ class ConcatOpDecl : public OpDecl {
   }
 };
 
+class SliceAllOpDecl : public OpDecl {
+ public:
+  SliceAllOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(def.input_size() >= 2); 
+    CHECK(def.output_size() -1 == def.input_size()); 
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == op_def_.input_size());
+    CHECK(out_shape->empty());
+    for (int i = 1; i < op_def_.output_size(); i++) {
+      out_shape->push_back(inputs[i]);
+    }
+  }
+
+};
+
 REGISTER_OP_DECL_BUILDER("Slice" , SliceOpDecl );
 REGISTER_OP_DECL_BUILDER("Concat", ConcatOpDecl);
+REGISTER_OP_DECL_BUILDER("SliceAll", SliceAllOpDecl);
 
 } //namespace backend
