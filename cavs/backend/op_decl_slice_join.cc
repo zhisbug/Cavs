@@ -10,6 +10,9 @@ class SliceOpDecl : public OpDecl {
  public:
   SliceOpDecl(const OpDef& def) : OpDecl(def),
     split_(-1), index_(-1), offset_(-1), stride_(-1) {
+    //It should not be shared memory, because the slice is not
+    //guaranteed to be continous, although currently only continous
+    //slice is supported
     //CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
     if (GetSingleArg(def, "Split", 0) != 0) {
       split_ = GetSingleArg<int>(def, "Split"); 

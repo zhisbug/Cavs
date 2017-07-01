@@ -5,11 +5,11 @@ using std::vector;
 
 namespace midend {
 
-std::string Node::name() const {
+string Node::name() const {
   return node_name_;
 }
 
-std::string Node::scoped_name() const {
+string Node::scoped_name() const {
   return located_->name() + ":" + node_name_;
 }
 

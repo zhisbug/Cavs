@@ -49,10 +49,8 @@ class ExprStatement : public Statement {
 
  protected:
   ExprStatement() : op_(NULL), ctxt_(NULL) {}
-
- private:
-   OpImpl* op_;
-   OpContext* ctxt_;
+  OpImpl* op_;
+  OpContext* ctxt_;
 };
 
 class BasicBlock : public Statement {
@@ -90,14 +88,7 @@ class GraphStatement : public ExprStatement {
   GraphStatement(Statement* leaf, Statement* inode)
       : ExprStatement(), leaf_(leaf), inode_(inode) {}
 
-  inline void Run() override {
-    while (!GraphScheduler::LeafEmpty()) {
-      leaf_->Run(); 
-    }
-    while (!GraphScheduler::InodeEmpty()) {
-      inode_->Run(); 
-    }
-  }
+  void Run() override;
 
  private:
   Statement* leaf_;

@@ -27,14 +27,17 @@ int GraphScheduler::GetJobId() {
 }
 
 //parent-idx form
-void GraphScheduler::LoadGraph(vector<int>&& parent_ids) {
-  Get()->parent_ids_ = std::move(parent_ids);
-  Get()->child_ids_.resize(parent_ids.size());
-  for (int i = 0; i < parent_ids.size(); i++) {
-    CHECK(parent_ids[i] < parent_ids.size());
-    Get()->child_ids_[parent_ids[i]].push_back(i);
+void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
+  //Get()->parent_ids_ = std::move(parent_ids);
+  CHECK(parent_ids.dims() == 1);
+  Get()->parent_ids_.assign(parent_ids.data<int>(),
+                            parent_ids.data<int>() + parent_ids.count());
+  Get()->child_ids_.resize(Get()->parent_ids_.size());
+  for (int i = 0; i < Get()->parent_ids_.size(); i++) {
+    CHECK(Get()->parent_ids_[i] < Get()->parent_ids_.size());
+    Get()->child_ids_[Get()->parent_ids_[i]].push_back(i);
     if (Get()->child_ids_[i].empty()) {//must be the leaf node
-      Get()->activate_leaf_.push_back(i); 
+      Get()->activate_leaf_.push_back(i);
     }
   }
 }

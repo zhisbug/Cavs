@@ -4,7 +4,6 @@
 
 #include <iostream>
 #include <fstream>
-#include <math.h>
 #include <vector>
 
 using namespace std;
@@ -13,13 +12,31 @@ DEFINE_int32 (batch,       20,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
-DEFINE_int32 (epoch,       10,    "epochs");
-DEFINE_int32 (iters,       99999, "iterations");
+DEFINE_int32 (epoch,       1,    "epochs");
+DEFINE_int32 (iters,       1, "iterations");
 DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
 DEFINE_double(lr,          1.f,   "learning rate");
 DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
     "ptb_file");
+
+void load(float** input_data, float** target, size_t* len) {
+  vector<float> inputs;
+  fstream file(FLAGS_file_docs);
+  int id;
+  int lines = 0; 
+  while (file >> id && ++lines) {
+    inputs.push_back(id);
+  }
+  cout <<  lines << endl;
+  file.close();
+  *len = inputs.size();
+  cout << "Length:\t"<< *len << endl;
+  *input_data = (float*)malloc(*len*sizeof(float));
+  *target     = (float*)malloc(*len*sizeof(float));
+  memcpy(*input_data, inputs.data(), *len*sizeof(float));
+  memcpy(*target, inputs.data()+1, (*len-1)*sizeof(float));
+}
 
 class SeqModel : public GraphSupport {
  public:
@@ -39,8 +56,6 @@ class SeqModel : public GraphSupport {
   }
 
   void Inode() override {
-    //Sym child_h = Gather(0, 0, {FLAGS_hidden});
-    //Sym child_c = Gather(0, FLAGS_hidden, {FLAGS_hidden});
     Sym child = Gather(0, {2*FLAGS_hidden});
     Sym child_h, child_c;
     tie(child_h, child_c) = child.Split2();
@@ -93,13 +108,36 @@ class SeqModel : public GraphSupport {
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
-  FLAGS_log_dir =  "./";
 
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  float *input_data, *label_data;
+  size_t data_len;
+  load(&input_data, &label_data, &data_len);
+  vector<vector<float>> input_ph;
+  vector<vector<float>> label_ph;
+  vector<vector<float>> graph_ph;
+  const int sample_len = data_len/FLAGS_batch;
+  cout << "sample_len = " << sample_len << endl;;
+  input_ph.resize(sample_len/FLAGS_timestep); 
+  label_ph.resize(sample_len/FLAGS_timestep); 
+  graph_ph.resize(sample_len/FLAGS_timestep); 
+  for (int i = 0; i < sample_len/FLAGS_timestep; i++) {
+    input_ph[i].resize(FLAGS_timestep*FLAGS_batch, 0);
+    label_ph[i].resize(FLAGS_timestep*FLAGS_batch, 0);
+    graph_ph[i].resize(FLAGS_timestep*FLAGS_batch, -1);
+    for (int j = 0; j < FLAGS_batch; j++) {
+      for (int k = 0; k < FLAGS_timestep; k++) {
+        input_ph[i][j*FLAGS_timestep+k] = input_data[j*sample_len+i*FLAGS_timestep+k];
+        label_ph[i][j*FLAGS_timestep+k] = label_data[j*sample_len+i*FLAGS_timestep+k]; 
+        graph_ph[i][j*FLAGS_timestep+k] = (k+1 == FLAGS_timestep)? -1 : k+1;
+      }
+    }
+  }
+
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch}, "CPU");
   Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
   Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
-                                Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                               Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
 
   SeqModel model(graph, word_idx);
@@ -114,8 +152,11 @@ int main(int argc, char* argv[]) {
   int iterations = FLAGS_iters;
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
-      //sess.Run({train}, {{input,input_ph[j%input_ph.size()].data()},
+      //sess.run({train}, {{input,input_ph[j%input_ph.size()].data()},
                          //{label,label_ph[j%label_ph.size()].data()}});
+      sess.Run({train}, {{graph, graph_ph[j%graph_ph.size()].data()},
+                         {label, label_ph[j%label_ph.size()].data()},
+                         {word_idx, input_ph[j%input_ph.size()].data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
   }

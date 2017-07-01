@@ -34,7 +34,7 @@ struct MPIBinaryReader {
   }
 };
 
-REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl<CUDAMemCopy>);
+REGISTER_OP_IMPL_BUILDER(Key("Placeholder").Device("GPU"), PlaceholderOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Data").Label("BinaryReader").Device("GPU"), DataOpImpl<BinaryReader, CUDAMemCopy, float, false>);
 REGISTER_OP_IMPL_BUILDER(Key("DataMPI").Label("BinaryReader").Device("GPU"), DataOpImpl<MPIBinaryReader, CUDAMemCopy, float, true>);
 

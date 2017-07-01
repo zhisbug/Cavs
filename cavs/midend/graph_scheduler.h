@@ -1,6 +1,7 @@
 #ifndef CAVS_MIDEND_GRAPH_SCHEDULER_H_
 #define CAVS_MIDEND_GRAPH_SCHEDULER_H_
 
+#include "cavs/midend/tensor.h"
 #include "cavs/util/logging.h"
 
 #include <vector>
@@ -18,7 +19,8 @@ class GraphScheduler {
   static bool InodeEmpty() {
     return Get()->activate_inode_.empty(); 
   }
-  static void LoadGraph(std::vector<int>&& parent_ids);
+  //static void LoadGraph(std::vector<int>&& parent_ids);
+  static void LoadGraph(const Tensor& parent_ids);
   static bool isLeaf(int id) {
     return Get()->child_ids_[id].empty();
   }

@@ -54,7 +54,6 @@ class ConvOpCudnn: public ConvOpCudnnBase {
         workspace(NULL), workspaceSizeInBytes(0) {}
   ~ConvOpCudnn();
   void Compute(OpContext* context) override;
-  /*static void inference_shape*/
 
  private:
   size_t workspaceSizeInBytes;

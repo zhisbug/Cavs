@@ -13,7 +13,6 @@ namespace backend {
 using ::midend::OpContext;
 using ::midend::Tensor;
 
-template <typename COPYFUNCTOR>//copy
 class PlaceholderOpImpl : public OpImpl {
  public:
   explicit PlaceholderOpImpl(const OpDef& def) : OpImpl(def) {}
@@ -57,10 +56,6 @@ class DataOpImpl : public OpImpl {
     }
     int next_idx = context->GetRound() % (num_/batch_);
     if (next_idx != curr_idx_) {
-      //LOG(INFO) << "Next idx: " << next_idx
-                //<< "\tCurr idx: " << curr_idx_
-                //<< "\tRound: " << context->GetRound();
-      //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;
       Tensor* out = context->Output(0);
       CHECK(out->count() == batch_*item_size_);
       CHECK(next_idx >= 0 && next_idx < num_/batch_);
