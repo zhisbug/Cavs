@@ -38,7 +38,13 @@ class TensorBuffer : public TensorBufferBase {
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   FORCE_INLINE void* data() const override { return data_; }
   FORCE_INLINE size_t size() const override { return elem_*sizeof(T); }
-  FORCE_INLINE size_t count() const override { return elem_; }
+  //FORCE_INLINE size_t count() const override { return elem_; }
+  FORCE_INLINE void* Resize(int size) override { 
+    CHECK(size % sizeof(T) == 0);
+    CHECK(size != elem_*sizeof(T));
+    if (data_) { alloc_->Deallocate<T>(data_); }
+    data_ = alloc->Allocate<T>(size/sizeof(T));   
+  }
 
  private:
   T* data_;
@@ -47,16 +53,17 @@ class TensorBuffer : public TensorBufferBase {
   DISALLOW_COPY_AND_ASSIGN(TensorBuffer);
 };
 
-string TensorShape::DebugInfo() const {
+string TensorShape::debug_info() const {
   string ret; 
   for (auto& s : shape_)
     ret += std::to_string(s) + ",";
   return ret;
 }
-string Tensor::DebugInfo() const {
+
+string Tensor::debug_info() const {
   string ret; 
   ret += "\nname: " + name_;
-  ret += "\nshape: " + shape_->DebugInfo();
+  ret += "\nshape: " + shape_->debug_info();
   ret += "\ntype: " + std::to_string(type_);
   return ret;
 }
@@ -72,7 +79,7 @@ void Tensor::DebugNumerical<float>() const {
       checkCudaError(cudaMemcpy(res.data(), data<float>(),
             count()*sizeof(float), cudaMemcpyHostToHost));
     }
-    VLOG(V_EXHAUSTIVE_DEBUG) << DebugInfo();
+    VLOG(V_EXHAUSTIVE_DEBUG) << debug_info();
     float L2_norm = 0;
     float checksum = 0;
     for (int i = 0; i < count(); i++) {
@@ -97,26 +104,40 @@ void Tensor::DebugNumerical<float>() const {
   }
 }
 
-Tensor::Tensor() : buf_(nullptr), shape_(nullptr) {}
+Tensor::Tensor() :
+  buf_(nullptr), shape_(nullptr), name_(""), type_(0), dynamic_size_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
-    : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
-  //shape_.reset(new TensorShape(shape));
-  Rebase(a, type, std::move(shape));
+    : buf_(nullptr), shape_(nullptr), name_(name),
+      type_(type), dynamic_size_(false) {
+  CHECK(shape.dim() > 0);
+  if (shape.dim(0) == -1) {
+    dynamic_size_ == true; 
+    shape_.reset(new TensorShape(shape));
+  }else {
+    CHECK(shape.n_elements() > 0);
+    Rebase(a, type, shape);
+  }
 }
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, TensorShape&& shape) 
-    : name_(name), buf_(nullptr), shape_(nullptr), type_(type) {
-  //shape_.reset(new TensorShape(std::move(shape)));
-  Rebase(a, type, std::move(shape));
+    : buf_(nullptr), shape_(nullptr), name_(name),
+      type_(type), dynamic_size_(false) {
+  CHECK(shape.dim() > 0);
+  if (shape.dim(0) == -1) {
+    dynamic_size_ == true; 
+    shape_.reset(new TensorShape(std::move(shape)));
+  }else {
+    CHECK(shape.n_elements() > 0);
+    Rebase(a, type, std::move(shape));
+  }
 }
 
 Tensor::Tensor(const std::string& name, const Tensor& t) {
   *this = t;
   name_ = name;
-  //: buf_(t.buf_), shape_(t.shape_), type_(t.type_), name_(name) {
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
@@ -146,11 +167,19 @@ void Tensor::Rebase(Allocator *a, const Tensor& t) {
   Rebase(a, t.type_, *(t.shape_));
 }
 
+void Tensor::Scale(int dyn_dim) {
+  CHECK(shape_);
+  CHECK(shape_->dim(0) != dyn_dim);
+  shape_->SetDim(0, dyn_dim);
+  buf_->Resize(count());
+}
+
 void Tensor::Reshape(const TensorShapeDef& shape) {
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
-  CHECK(new_counts == count());
+  CHECK(new_counts == count())
+       << new_counts << "\tvs\t" << count();
   shape_.reset(new TensorShape(shape));
 }
 

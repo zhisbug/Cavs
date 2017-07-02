@@ -3,7 +3,6 @@
 
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/node.h"
-//#include "cavs/midend/graph_util.h"
 
 #include <unordered_map>
 
@@ -13,7 +12,6 @@ class OpContext;
 class Node;
 class SessionBase {
  public:
-  //SessionBase(const DepGraph* graph) : graph_(graph) {}
   const Tensor* GetTensor(const std::string& name, bool recursive = false) const;
   void InsertTensor(const Tensor& t);
   virtual void Run(const std::vector<std::string>& output_names, 
@@ -40,16 +38,11 @@ SessionBase* GetSession(const std::string& name);
             []() -> SessionBase* {                            \
                 return new __VA_ARGS__();             \
               }) 
-            //[](const DepGraph* graph)          \
-              //-> SessionBase* {                            \
-                //return new __VA_ARGS__(graph);             \
-              //}) 
 
 namespace session_factory {
 
 class SessionRegister {
  public:
-  //typedef SessionBase* (*Factory)(const DepGraph* graph);
   typedef SessionBase* (*Factory)();
   SessionRegister(const std::string& name, Factory factory) {
     InitInternal(name, factory); 

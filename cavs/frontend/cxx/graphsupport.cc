@@ -19,9 +19,10 @@ Sym GraphSupport::Output() {
     fi.SerializeToString(&serialization);
 
     int *dim = NULL;
-    size_t dim_length;
+    size_t dim_length = 0;
     C_AddFunction(serialization.c_str(), serialization.length(),
                   &dim, &dim_length);
+    CHECK(dim_length > 0);
     inode_shape = vector<int>(dim, dim+dim_length);
     free(dim);
   }
@@ -35,14 +36,16 @@ Sym GraphSupport::Output() {
     fl.SerializeToString(&serialization);
 
     int *dim = NULL;
-    size_t dim_length;
+    size_t dim_length = 0;
     C_AddFunction(serialization.c_str(), serialization.length(),
                   &dim, &dim_length);
     leaf_shape = vector<int>(dim, dim+dim_length);
+    CHECK(dim_length > 0);
     free(dim);
   }
 
   CHECK(inode_shape == leaf_shape);
+  CHECK(!inode_shape.empty());
   int count = 1;
   for (int d : inode_shape) count *= d;
 

@@ -413,12 +413,13 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
     const vector<TensorShapeDef>& shape_def = 
       ::backend::ShapeInference(op, input_shapes);
     node->SetShape(shape_def);
-    if (op.name() == "Push") {
+    if (node->name() == "Push") {
       //Currently, push only has one output.
       //There is one and only one push op per function
-      CHECK(op.output_size() == 1);
+      CHECK(node->output_size() == 1);
       CHECK(!push_op);
       push_op = true;
+      out_shape = shape_def[0];
     }
   }
   CHECK(push_op);

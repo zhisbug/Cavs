@@ -8,7 +8,7 @@ namespace midend {
 
 std::unordered_map<std::string, void*> OpContext::repo_;
 
-string OpContext::DebugInfo() {
+string OpContext::debug_info() const {
   string info;
   for (unsigned i = 0; i < inputs_.size(); i++) {
     info += "input tensor[" + std::to_string(i)

@@ -2,6 +2,10 @@
 
 namespace midend {
 
+int Statement::round_ = 0;
+int Statement::dynamic_dim_ = -1;
+bool Statement::dynamic_exist_ = false;
+
 void GraphStatement::Run() {
   CHECK(op_);
   CHECK(ctxt_);

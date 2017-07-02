@@ -71,5 +71,15 @@ class GraphPullOp : public OpImpl {
   }
 };
 
+template <typename T>
+class GraphOutputOp : public OpImpl {
+ public:
+  explicit GraphOutputOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    //do nothing now...
+  }
+};
+
+REGISTER_OP_IMPL_BUILDER(Key("GraphOutput").Device("GPU"), GraphOutputOp<float>);
 
 } //namespace backend

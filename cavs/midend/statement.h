@@ -16,13 +16,26 @@ using ::backend::CreateOp;
 class Statement {
  public:
   virtual void Run() = 0;
-  inline void SetRound(int r) { round_ = r; }
+  //inline void SetRound(int r) { round_ = r; }
+  inline static void IncRound() {
+    round_++;
+    dynamic_exist_ = false;
+  }
 
  protected:
-  inline int GetRound() const { return round_; }
+  inline static int round() const { return round_; }
+  inline static void TrigerDimChange(int new_dim) {
+    CHECK(new_dim != dynamic_dim_); 
+    dynamic_dim_ = new_dim;
+    dynamic_exist_ = true;
+  }
+  inline static int  dynamic_dim() const { return dynamic_dim_; }
+  inline static bool dynamic_exist() const { return dynamic_exist_; }
 
  private:
-  int round_;
+  static int round_;
+  static int dynamic_dim_;
+  static bool dynamic_exist_;
 };
 
 class ExprStatement : public Statement {
@@ -40,7 +53,10 @@ class ExprStatement : public Statement {
     VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
     VLOG(V_TIMING) << "--------------------------------------";
     VLOG(V_TIMING) << "Context Info \n" << ctxt_->DebugInfo();
-    ctxt_->SetRound(GetRound());
+    ctxt_->SetRound(round());
+    if (dynamic_exist()) {
+      ctxt_->ScaleTensor(dynamic_dim());
+    }
     op_->Compute(ctxt_);
     VLOG(V_TIMING) << "======================================";
   }

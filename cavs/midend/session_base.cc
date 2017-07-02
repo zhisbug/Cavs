@@ -1,7 +1,6 @@
 #include "cavs/midend/session_base.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
-//#include "cavs/util/op_util.h"
 
 #include <unordered_map>
 
@@ -108,11 +107,9 @@ void SessionRegister::InitInternal(
 } //namespace session_factory
 
 SessionBase* GetSession(const string& name) {
-    //const DepGraph* graph) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
-    //return session_factory::GlobalSessionRegistry()->at(name)(graph);
     return session_factory::GlobalSessionRegistry()->at(name)();
 }
 

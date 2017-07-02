@@ -85,9 +85,18 @@ class PushOpDecl : public EmitOpDecl {
   PushOpDecl(const OpDef& def) : EmitOpDecl(def) {}
 };
 
-class GraphOutputOpDecl : public EmitOpDecl {
+class GraphOutputOpDecl : public OpDecl {
  public:
-  GraphOutputOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+  GraphOutputOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(def.shape_size() == 1)
+         << def.DebugString();
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(out_shape->empty());
+    out_shape->push_back(op_def_.shape(0));
+  }
 
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK(op_def_.input_size() >= 2) << op_def_.DebugString();

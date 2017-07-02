@@ -6,17 +6,16 @@ using std::vector;
 namespace midend {
 
 string Node::name() const {
-  return node_name_;
+  return op_def_.name();
 }
 
 string Node::scoped_name() const {
-  return located_->name() + ":" + node_name_;
+  return located_->name() + ":" + name();
 }
 
 Node::Node(const OpDef& op_def, Scope* s)
   : op_def_(op_def), located_(s), stmt_(NULL){
   located_->AddNode(this);
-  node_name_ = op_def_.name();
 }
 
 void Node::AddInput(const Edge* e) {
@@ -42,8 +41,6 @@ void Node::SetShape(
   }
 }
 
-//void Node::InputShapes(
-    //std::vector<TensorShapeDef>* inputs) {
 vector<TensorShapeDef> Node::input_shapes() {
   vector<TensorShapeDef> ret;
   for (auto* edge: inputs_) {

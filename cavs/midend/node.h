@@ -41,8 +41,6 @@ class Node {
 
   void AddInput(const Edge* e);
   void AddOutput(const Edge* e);
-  //inline void RemoveInput(const Edge* e);
-  //inline void replaceInput(int i, Edge* edge);
   void SetShape(const std::vector<TensorShapeDef>& def);
 
   std::string debug_info() const;
@@ -53,7 +51,6 @@ class Node {
   Scope* located_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
-  std::string node_name_;
   Statement* stmt_;
 };
 
@@ -133,15 +130,6 @@ inline const std::vector<Edge*>& Node::output() const {
 inline int Node::output_size() const {
   return outputs_.size();
 }
-
-//inline void Node::RemoveInput(const Edge* e) {
-  //std::remove(inputs_.begin(), inputs_.end(), e);  
-//}
-
-//inline void Node::replaceInput(int i, Edge* edge) {
-  //CHECK(i < inputs_.size());
-  //inputs_[i] = edge; 
-//}
 
 } //namespace midend
 
