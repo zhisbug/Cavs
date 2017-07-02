@@ -168,13 +168,6 @@ void Tensor::Rebase(Allocator *a, const Tensor& t) {
   Rebase(a, t.type_, *(t.shape_));
 }
 
-void Tensor::Scale(int dyn_dim) {
-  CHECK(shape_);
-  CHECK(shape_->dim(0) != dyn_dim);
-  shape_->SetDim(0, dyn_dim);
-  buf_->Resize(count());
-}
-
 void Tensor::Reshape(const TensorShapeDef& shape) {
   int new_counts = 1;
   for (auto& dim : shape.dim())
@@ -197,20 +190,37 @@ void Tensor::Reshape(const Tensor& t) {
   shape_ = t.shape_;
 }
 
+//the shape may be less than the real buffer size
+void Tensor::ScaleShape(int dyn_dim) {
+  CHECK(shape_);
+  CHECK(shape_->dim(0) != dyn_dim);
+  if (dyn_dim > shape_->dim(0)) {
+    int new_count = count()/shape_->dim(0)*dyn_dim;
+    buf_->Resize(new_count);
+  }
+  shape_->SetDim(0, dyn_dim);
+}
+
+
 void Tensor::SyncWith(const Tensor& t) {
   //currently, syncwith function is used for
   //cross-device data synchronization
   CHECK(t.device_type() != device_type());
   CHECK(t.buf_ && buf_);
   CHECK(t.shape_ && shape_);
+  size_t size = count();
+  CASES(type_, size*= sizeof(T));
+  CHECK(size <= t.buf_->size());
   //cudaMemcpyDefault can remove such a complexity
   //but for development, specified it clearly is better.
   if (t.device_type() == CPU && device_type() == GPU) {
+    //checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
+                   //t.buf_->size(), cudaMemcpyHostToDevice));
     checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
-                   t.buf_->size(), cudaMemcpyHostToDevice));
+                   size, cudaMemcpyHostToDevice));
   }else if (t.device_type() == GPU && device_type() == CPU) {
     checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
-                   t.buf_->size(), cudaMemcpyDeviceToHost));
+                   size, cudaMemcpyDeviceToHost));
   }
 }
 

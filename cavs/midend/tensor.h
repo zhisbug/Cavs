@@ -22,7 +22,6 @@ class TensorBufferBase {
   virtual ~TensorBufferBase() {}
   virtual void* data() const = 0;
   virtual size_t size() const = 0;
-  //virtual size_t count() const = 0;
   virtual void* Resize(int size) = 0;
 
  protected:
@@ -69,29 +68,32 @@ class Tensor {
   Tensor& operator =(const Tensor& t);
 
   inline DeviceType device_type() const { return buf_->device_type(); }
-  inline DataType data_type() const { return type_; }
-  inline std::string name() const { return name_; }
-  inline bool empty() const { return buf_ == nullptr; }
-  inline bool IsDynamicSize() const { return dynamic_size_; }
+  inline DataType data_type()     const { return type_; }
+  inline std::string name()       const { return name_; }
+  inline bool empty()             const { return buf_ == nullptr; }
+  inline bool IsDynamicSize()     const { return dynamic_size_; }
   //for opeators
-  inline size_t count() const { return shape_->n_elements(); }
-  inline int dims() const { return shape_->dim(); }
+  inline size_t count()    const { return shape_->n_elements(); }
+  inline int dims()        const { return shape_->dim(); }
   inline int dims(int idx) const { return shape_->dim(idx); }
 
   //allocate a new buffer
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
   void Rebase(Allocator *a, DataType type, TensorShape&& shape);
   void Rebase(Allocator *a, const Tensor& t);
-  void Scale(int dyn_dim);
   //reuse pre-allocated buffer and only change the shape
   void Reshape(const TensorShapeDef& shape);
   void Reshape(const std::vector<int>& dims);
   void Reshape(const Tensor& t);
-  void SyncWith(const Tensor& t);
+  void ScaleShape(int dyn_dim);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
+
+  inline bool IsShareBuf(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
+  void SyncWith(const Tensor& t);
+
   std::string debug_info() const;
   template <typename T>
   void DebugNumerical() const;

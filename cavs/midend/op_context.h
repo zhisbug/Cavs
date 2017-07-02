@@ -77,7 +77,7 @@ inline void OpContext::ScaleTensor(int new_dim) {
       //we assume only one output tensor size is dynamic
       CHECK(!will_scale);
       will_scale = true;
-      t.Scale(new_dim);
+      t.ScaleShape(new_dim);
     } 
   }
 
