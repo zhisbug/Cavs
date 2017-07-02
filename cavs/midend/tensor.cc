@@ -63,7 +63,7 @@ string TensorShape::debug_info() const {
 string Tensor::debug_info() const {
   string ret; 
   ret += "\nname: " + name_;
-  ret += "\nshape: " + shape_->debug_info();
+  ret += "\nshape: " + shape_.debug_info();
   ret += "\ntype: " + std::to_string(type_);
   return ret;
 }
@@ -105,17 +105,17 @@ void Tensor::DebugNumerical<float>() const {
 }
 
 Tensor::Tensor() :
-  buf_(nullptr), shape_(nullptr), name_(""),
-  type_(DataType(0)), dynamic_size_(false) {}
+  buf_(nullptr), name_(""),
+  type_(DataType(0)), dynamic_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
-    : buf_(nullptr), shape_(nullptr), name_(name),
-      type_(type), dynamic_size_(false) {
+    : buf_(nullptr), name_(name),
+      type_(type), dynamic_(false) {
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
-    dynamic_size_ == true; 
-    shape_.reset(new TensorShape(shape));
+    dynamic_ = true; 
+    shape_ = shape;
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, shape);
@@ -124,12 +124,12 @@ Tensor::Tensor(const string& name, Allocator *a,
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, TensorShape&& shape) 
-    : buf_(nullptr), shape_(nullptr), name_(name),
-      type_(type), dynamic_size_(false) {
+    : buf_(nullptr), name_(name),
+      type_(type), dynamic_(false) {
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
-    dynamic_size_ == true; 
-    shape_.reset(new TensorShape(std::move(shape)));
+    dynamic_ = true; 
+    shape_ = std::move(shape);
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, std::move(shape));
@@ -153,36 +153,43 @@ Tensor& Tensor::operator =(const Tensor& t) {
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
   type_ = type;
-  shape_.reset(new TensorShape(shape));
-  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
+  //shape_.reset(new TensorShape(shape));
+  shape_ = shape;
+  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, TensorShape&& shape) {
   type_ = type;
-  shape_.reset(new TensorShape(std::move(shape)));
-  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_->n_elements())));
+  //shape_.reset(new TensorShape(std::move(shape)));
+  shape_ = std::move(shape);
+  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 
 void Tensor::Rebase(Allocator *a, const Tensor& t) {
-  Rebase(a, t.type_, *(t.shape_));
+  Rebase(a, t.type_, t.shape_);
 }
 
 void Tensor::Reshape(const TensorShapeDef& shape) {
+  CHECK(shape.dim_size() > 0);
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
-  CHECK(new_counts == count())
+  CHECK(new_counts == count() || shape.dim(0) == -1)
        << new_counts << "\tvs\t" << count();
-  shape_.reset(new TensorShape(shape));
+  //shape_.reset(new TensorShape(shape));
+  shape_ = TensorShape(shape);
 }
 
 void Tensor::Reshape(const vector<int>& dims) {
+  CHECK(!dims.empty());
   int new_counts = 1;
   for (auto& dim : dims)
     new_counts *= dim;
-  CHECK(new_counts == count());
-  shape_.reset(new TensorShape(dims));
+  CHECK(new_counts == count() || dims[0] == -1)
+       << new_counts << "\tvs\t" << count();
+  //shape_.reset(new TensorShape(dims));
+  shape_ = TensorShape(dims);
 }
 
 void Tensor::Reshape(const Tensor& t) {
@@ -192,13 +199,13 @@ void Tensor::Reshape(const Tensor& t) {
 
 //the shape may be less than the real buffer size
 void Tensor::ScaleShape(int dyn_dim) {
-  CHECK(shape_);
-  CHECK(shape_->dim(0) != dyn_dim);
-  if (dyn_dim > shape_->dim(0)) {
-    int new_count = count()/shape_->dim(0)*dyn_dim;
+  CHECK(shape_.n_elements() > 0);
+  CHECK(shape_.dim(0) != dyn_dim);
+  if (dyn_dim > shape_.dim(0)) {
+    int new_count = count()/shape_.dim(0)*dyn_dim;
     buf_->Resize(new_count);
   }
-  shape_->SetDim(0, dyn_dim);
+  shape_.SetDim(0, dyn_dim);
 }
 
 
@@ -207,7 +214,7 @@ void Tensor::SyncWith(const Tensor& t) {
   //cross-device data synchronization
   CHECK(t.device_type() != device_type());
   CHECK(t.buf_ && buf_);
-  CHECK(t.shape_ && shape_);
+  CHECK(t.shape_.n_elements() > 0 && shape_.n_elements() > 0);
   size_t size = count();
   CASES(type_, size*= sizeof(T));
   CHECK(size <= t.buf_->size());

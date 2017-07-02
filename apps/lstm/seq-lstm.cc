@@ -143,7 +143,7 @@ int main(int argc, char* argv[]) {
   SeqModel model(graph, word_idx);
   Sym loss       = model.Output()
                         .FullyConnected(weight, bias)
-                        .SoftmaxEntropyLoss(label.Reshape({-1,1}));
+                        .SoftmaxEntropyLoss(label.Reshape({-1, 1}));
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 

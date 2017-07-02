@@ -31,12 +31,13 @@ class TensorBufferBase {
 //metadata
 class TensorShape {
  public:
-  TensorShape() : n_elements_(0) {}
+  TensorShape() : n_elements_(0), shape_(0) {}
   explicit TensorShape(const TensorShapeDef& shape);
   explicit TensorShape(const std::vector<int>& shape);
   explicit TensorShape(const TensorShape& shape);
   explicit TensorShape(TensorShape&& shape);
   TensorShape& operator =(const TensorShape& b);
+  TensorShape& operator =(TensorShape&& b);
   FORCE_INLINE int n_elements() const { return n_elements_; }
   FORCE_INLINE int dim() const { return shape_.size(); }
   FORCE_INLINE int dim(unsigned idx) const {
@@ -71,11 +72,12 @@ class Tensor {
   inline DataType data_type()     const { return type_; }
   inline std::string name()       const { return name_; }
   inline bool empty()             const { return buf_ == nullptr; }
-  inline bool IsDynamicSize()     const { return dynamic_size_; }
+  inline bool IsDynamicSize()     const { return dynamic_; }
+  inline void SetAsDynamic() { dynamic_= true; }
   //for opeators
-  inline size_t count()    const { return shape_->n_elements(); }
-  inline int dims()        const { return shape_->dim(); }
-  inline int dims(int idx) const { return shape_->dim(idx); }
+  inline size_t count()    const { return shape_.n_elements(); }
+  inline int dims()        const { return shape_.dim(); }
+  inline int dims(int idx) const { return shape_.dim(idx); }
 
   //allocate a new buffer
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
@@ -91,7 +93,7 @@ class Tensor {
   template <typename T>
     const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
 
-  inline bool IsShareBuf(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
+  inline bool IsSharedWith(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
   void SyncWith(const Tensor& t);
 
   std::string debug_info() const;
@@ -102,11 +104,11 @@ class Tensor {
 
  private:
   std::shared_ptr<TensorBufferBase> buf_;
-  std::shared_ptr<TensorShape> shape_;
+  TensorShape shape_;
   std::string name_;
   DataType type_;
   //if a tensor is dynamic at first, it is dynamic at last
-  bool dynamic_size_;
+  bool dynamic_;
 };
 
 FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {
@@ -140,6 +142,12 @@ FORCE_INLINE TensorShape::TensorShape(TensorShape&& shape) {
 FORCE_INLINE TensorShape& TensorShape::operator =(const TensorShape& b) {
   n_elements_ = b.n_elements_;
   shape_ = b.shape_;
+  return *this;
+}
+
+FORCE_INLINE TensorShape& TensorShape::operator =(TensorShape&& b) {
+  n_elements_ = b.n_elements_;
+  shape_ = std::move(b.shape_);
   return *this;
 }
 
