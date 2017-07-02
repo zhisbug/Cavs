@@ -23,18 +23,18 @@ class Statement {
   }
 
  protected:
-  inline static int round() const { return round_; }
+  inline static int round() { return round_; }
   inline static void TrigerDimChange(int new_dim) {
     CHECK(new_dim != dynamic_dim_); 
     dynamic_dim_ = new_dim;
     dynamic_exist_ = true;
   }
-  inline static int  dynamic_dim() const { return dynamic_dim_; }
-  inline static bool dynamic_exist() const { return dynamic_exist_; }
+  inline static int  dynamic_dim()   { return dynamic_dim_;   }
+  inline static bool dynamic_exist() { return dynamic_exist_; }
 
  private:
-  static int round_;
-  static int dynamic_dim_;
+  static int  round_;
+  static int  dynamic_dim_;
   static bool dynamic_exist_;
 };
 
@@ -52,7 +52,7 @@ class ExprStatement : public Statement {
     VLOG(V_TIMING) << "Running Operator " << op_->DebugInfo(V_TIMING);
     VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
     VLOG(V_TIMING) << "--------------------------------------";
-    VLOG(V_TIMING) << "Context Info \n" << ctxt_->DebugInfo();
+    VLOG(V_TIMING) << "Context Info \n" << ctxt_->debug_info();
     ctxt_->SetRound(round());
     if (dynamic_exist()) {
       ctxt_->ScaleTensor(dynamic_dim());

@@ -43,7 +43,7 @@ class TensorBuffer : public TensorBufferBase {
     CHECK(size % sizeof(T) == 0);
     CHECK(size != elem_*sizeof(T));
     if (data_) { alloc_->Deallocate<T>(data_); }
-    data_ = alloc->Allocate<T>(size/sizeof(T));   
+    data_ = alloc_->Allocate<T>(size/sizeof(T));   
   }
 
  private:
@@ -105,7 +105,8 @@ void Tensor::DebugNumerical<float>() const {
 }
 
 Tensor::Tensor() :
-  buf_(nullptr), shape_(nullptr), name_(""), type_(0), dynamic_size_(false) {}
+  buf_(nullptr), shape_(nullptr), name_(""),
+  type_(DataType(0)), dynamic_size_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
@@ -200,6 +201,8 @@ void Tensor::SyncWith(const Tensor& t) {
   //currently, syncwith function is used for
   //cross-device data synchronization
   CHECK(t.device_type() != device_type());
+  CHECK(t.buf_ && buf_);
+  CHECK(t.shape_ && shape_);
   //cudaMemcpyDefault can remove such a complexity
   //but for development, specified it clearly is better.
   if (t.device_type() == CPU && device_type() == GPU) {

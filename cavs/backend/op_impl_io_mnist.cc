@@ -117,7 +117,7 @@ void MnistInputOp::Compute(OpContext* context) {
       free(image_raw_buf);
       fclose(image_fp);
     }
-    int next_idx = context->GetRound() % (image_desc_.N/batch_);
+    int next_idx = context->round() % (image_desc_.N/batch_);
     if (image_curr_idx_ != next_idx) {
       checkCudaError(cudaMemcpy(image->mutable_data<float>(),
             image_buf_+next_idx*batch_*image_desc_.H*image_desc_.W, 
@@ -148,7 +148,7 @@ void MnistInputOp::Compute(OpContext* context) {
       free(label_raw_buf);
       fclose(label_fp);
     }
-    int next_idx = context->GetRound() % (label_desc_.N/batch_);
+    int next_idx = context->round() % (label_desc_.N/batch_);
     if (label_curr_idx_ != next_idx) {
       checkCudaError(cudaMemcpy(label->mutable_data<float>(),
             label_buf_+next_idx*batch_, 

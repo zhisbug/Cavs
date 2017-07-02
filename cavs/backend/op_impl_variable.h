@@ -185,7 +185,7 @@ void DDVOpImpl<FILLFUNCTOR, T, MPIEnable>::Compute(OpContext* context) {
     buf_ = (T*)malloc(num_*item_size_*sizeof(T));
     FILLFUNCTOR(op_def_).Compute(buf_, num_*item_size_);
   }
-  int next_idx = (context->GetRound() % (num_/batch_));
+  int next_idx = (context->round() % (num_/batch_));
   if (next_idx != curr_idx_) {
     //LOG(INFO) << "Next idx: " << next_idx << "\tCurr idx: " << curr_idx_;
     //LOG(INFO) << "batch: " << batch_ << "\titem_size: " << item_size_;

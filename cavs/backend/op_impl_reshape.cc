@@ -34,7 +34,7 @@ void FlattenOp::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
   CHECK(x.dims() == 4);
-  CHECK(y->dims() == 2) << y->DebugInfo();
+  CHECK(y->dims() == 2) << y->debug_info();
   CHECK(x.dims(0) == y->dims(0));
   CHECK(x.count() == y->count());
 }

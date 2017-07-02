@@ -31,13 +31,15 @@ namespace midend {
 class TensorCApi {
  public:
   static void* raw_data(const Tensor& tensor) {
-    if (tensor.buf_)
-      return tensor.buf_->data();
-    else
-      return NULL;
+    CHECK(tensor.buf_) << tensor.debug_info();
+    return tensor.buf_->data();
   }
   static size_t size(const Tensor& tensor) {
+    CHECK(tensor.buf_) << tensor.debug_info();
     return tensor.buf_->size();
+  }
+  static bool IsVirtual(const Tensor& tensor) {
+    return tensor.empty();  
   }
 };
 
@@ -68,7 +70,7 @@ C_Tensor* C_NewTensor(const char* name, size_t name_len,
   string name_str(name, name_len);
   TensorShape tshape;
   for (int i = 0; i < dims; i++)
-    tshape.add_dim(shape[i]);
+    tshape.AddDim(shape[i]);
   Tensor t(name_str, 
       GetAllocator(DeviceTypeToString(CPU)), DataType((int)dtype),
       std::move(tshape));
@@ -141,6 +143,7 @@ void C_AddOptimizerOp(const void* def, size_t def_length) {
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {
+  VLOG(V_DEBUG) << "Session Run Begins...\n";
   vector<string> output_names(noutputs);
   vector<Tensor> output_tensors(noutputs);
   for (int i = 0; i < noutputs; i++) {
@@ -164,10 +167,16 @@ void C_Run(C_Session* s,
 
 void* C_TensorData(const C_Tensor* t) { 
   CHECK(t);
-  return midend::TensorCApi::raw_data(t->tensor); 
+  if (midend::TensorCApi::IsVirtual(t->tensor))
+    return NULL;
+  else 
+    return midend::TensorCApi::raw_data(t->tensor); 
 }
 
 size_t C_TensorSize(const C_Tensor* t) { 
-  return midend::TensorCApi::size(t->tensor); 
+  if (midend::TensorCApi::IsVirtual(t->tensor))
+    return 0;
+  else
+    return midend::TensorCApi::size(t->tensor); 
 }
 

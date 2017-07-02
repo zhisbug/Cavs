@@ -139,7 +139,7 @@ void MPISession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {
   SimpleSession::FetchOutput(output_names, output_tensors);
   for (auto& t : *output_tensors) {
-    if (!t.Empty()) {
+    if (!t.empty()) {
       MPIAllReduceFunctor<float>::Compute(t.data<float>(),
           t.mutable_data<float>(), t.count());
     }

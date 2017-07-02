@@ -14,7 +14,7 @@ using std::unordered_map;
 namespace midend {
 
 SimpleSession::SimpleSession()
-    : SessionBase(), round_(0), s_(main_scope()) {}
+    : SessionBase(), s_(main_scope()) /*round_(0), */{}
 
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
@@ -80,6 +80,7 @@ void SimpleSession::Run(const vector<string>& output_names,
     vector<Tensor>* output_tensors,
     const vector<string>& input_names,
     const vector<Tensor>& input_tensors) {
+  VLOG(V_TIMING) << "Compiling for calculating the output ...";
   if (executors_.find(HashString(output_names)) == executors_.end()) {
     Compile(output_names);
   }
@@ -87,13 +88,13 @@ void SimpleSession::Run(const vector<string>& output_names,
   FeedInput(input_names, input_tensors);
   VLOG(V_TIMING) << "Executing...";
   for (auto* exe : executors_[HashString(output_names)]) {
-    exe->SetRound(round_);
+    exe->IncRound();
     exe->Run();
   }
   VLOG(V_TIMING) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
   VLOG(V_TIMING) << "Execution completed";
-  round_++;
+  //round_++;
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,

@@ -75,8 +75,8 @@ class Tensor {
   inline bool IsDynamicSize() const { return dynamic_size_; }
   //for opeators
   inline size_t count() const { return shape_->n_elements(); }
-  inline int dims() const { return shape_->dims(); }
-  inline int dims(int idx) const { return shape_->dims(idx); }
+  inline int dims() const { return shape_->dim(); }
+  inline int dims(int idx) const { return shape_->dim(idx); }
 
   //allocate a new buffer
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
@@ -142,7 +142,7 @@ FORCE_INLINE TensorShape& TensorShape::operator =(const TensorShape& b) {
 }
 
 FORCE_INLINE void TensorShape::SetDim(int d, int size) {
-  CHECK(dims() >= d);
+  CHECK(dim() > d);
   n_elements_ = n_elements_/shape_[d]*size;
   shape_[d] = size;
 }

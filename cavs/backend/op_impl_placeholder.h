@@ -54,7 +54,7 @@ class DataOpImpl : public OpImpl {
       buf_ = (T*)malloc(num_*item_size_*sizeof(T));
       READFUNCTOR::Compute(buf_, filename_.c_str(), num_*item_size_*sizeof(T));
     }
-    int next_idx = context->GetRound() % (num_/batch_);
+    int next_idx = context->round() % (num_/batch_);
     if (next_idx != curr_idx_) {
       Tensor* out = context->Output(0);
       CHECK(out->count() == batch_*item_size_);

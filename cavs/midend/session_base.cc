@@ -62,7 +62,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
         Tensor out(output->scoped_name(),
             *GetTensor(node->input(0)->scoped_name()));
         out.Reshape(output->shape());
-        LOG(INFO) << "Share Memory Tensor" << out.DebugInfo();
+        LOG(INFO) << "Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
       }else {
         CHECK(output->shape().dim_size() > 0);
@@ -70,14 +70,14 @@ OpContext* SessionBase::GetContext(const Node* node) {
         Allocator* alloc = GetAllocator(op_def); 
         CHECK_NOTNULL(alloc);
         VLOG(V_DEBUG) << "allocating tensor for " << output->scoped_name()
-                  << " with shape info: " << shape.DebugInfo();
+                  << " with shape info: " << shape.debug_info();
         Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
-        VLOG(V_DEBUG) << out.DebugInfo();
+        VLOG(V_DEBUG) << out.debug_info();
         InsertTensor(out);
       }
     }
     t = GetTensor(output->scoped_name());
-    CHECK(t) << t->DebugInfo();
+    CHECK(t) << t->debug_info();
     ctxt->AppendOutput(*t);
   }
   return ctxt;

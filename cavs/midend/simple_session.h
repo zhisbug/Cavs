@@ -30,7 +30,7 @@ class SimpleSession : public SessionBase {
                    std::unordered_map<Node*, bool>* include);
   std::string HashString(const std::vector<std::string>& input);
   std::unordered_map<std::string, std::vector<Statement*>> executors_;
-  int round_;//current batch id;
+  //int round_;//current batch id;
 
  protected:
   const Scope* s_;

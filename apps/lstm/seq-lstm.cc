@@ -142,13 +142,13 @@ int main(int argc, char* argv[]) {
 
   SeqModel model(graph, word_idx);
   Sym loss       = model.Output()
-                        .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                         .FullyConnected(weight, bias)
-                        .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
+                        .SoftmaxEntropyLoss(label.Reshape({-1,1}));
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
   Session sess;
+  LOG(INFO) << "here";
   int iterations = FLAGS_iters;
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
