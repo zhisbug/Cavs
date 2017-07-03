@@ -40,6 +40,51 @@ class BinaryOp : public OpImpl {
   }
 };
 
+template <typename FUNCTOR, typename T>
+class PartialUnaryOp : public UnaryOp<FUNCTOR, T> {
+ public:
+  explicit PartialUnaryOp(const OpDef& def)
+    : UnaryOp<FUNCTOR, T>(def),
+      split_(-1), index_(-1), offset_(-1), stride_(-1) {
+    if (GetSingleArg(def, "Split", 0) != 0) {
+      //dynamic slicing
+      split_ = GetSingleArg<int>(def, "Split"); 
+      index_ = GetSingleArg<int>(def, "Index"); 
+      CHECK(split_ > 0);
+      CHECK(index_ >= 0);
+    }else {
+      //static slicing
+      offset_ = GetSingleArg<int>(def, "Offset");
+      stride_ = GetSingleArg<int>(def, "Stride");
+      CHECK(offset_ >= 0);
+      CHECK(stride_ > 0);
+    }
+  }
+  void Compute(OpContext* context) override {
+    const Tensor& inp = context->Input(0);
+    //inp.DebugNumerical<T>();
+    Tensor* out = context->Output(0);
+
+    //inp is the small tensor and out is the big one
+    if (split_ > 0) {
+      //it means the dynamic slicing
+      CHECK(inp.count() % split_ == 0) << inp.count() << "\t" << split_;
+      stride_ = inp.count() / split_;
+      offset_ = stride_ * index_;
+    }
+    CHECK(inp.count() == stride_);
+    FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_, 
+        inp.data<T>(), stride_);
+    //out->DebugNumerical<T>();
+  }
+
+ private:
+  int offset_;
+  int stride_;
+  int split_;
+  int index_;
+};
+
 } //namespace backend
 
 #endif

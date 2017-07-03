@@ -80,6 +80,16 @@ class GraphOutputOp : public OpImpl {
   }
 };
 
+template <typename T>
+class GraphOutputGradOp : public OpImpl {
+ public:
+  explicit GraphOutputGradOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    //do nothing now...
+  }
+};
+
 REGISTER_OP_IMPL_BUILDER(Key("GraphOutput").Device("GPU"), GraphOutputOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("GraphOutput")).Device("GPU"), GraphOutputGradOp<float>);
 
 } //namespace backend

@@ -20,10 +20,14 @@ REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"),
     CudaUnaryOpInstance(math::Square, float));
 REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
     CudaBinaryOpInstance(math::Mul, float));
-REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),
-    CudaUnaryOpInstance(math::Assign, float));
+/*REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),*/
+    /*CudaUnaryOpInstance(math::Assign, float));*/
 
 REGISTER_OP_IMPL_BUILDER(Key("Equal").Device("GPU"),
     CudaBinaryOpInstance(math::Equal, float));
+
+//Currently, we assume all slicing are seperate
+REGISTER_OP_IMPL_BUILDER(Key("PartialAdd").Device("GPU"),
+    CudaPartialUnaryOpInstance(math::Assign, float));
 
 } //namespace backend
