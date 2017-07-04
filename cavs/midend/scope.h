@@ -14,12 +14,15 @@
 
 namespace midend {
 
+class SingleNode;
+class ScopedNode;
+
 class Scope {
  public:
   Scope(const Scope* father, const std::string& n);
 
-  Node* AddOp(const OpDef& op_def);
-  Node* AddOptimizerOp(const OpDef& op_def);
+  SingleNode* AddOp(const OpDef& op_def);
+  ScopedNode* AddOptimizerOp(const OpDef& op_def);
   TensorShapeDef AddFunction(const FunctionDef& func_def);
   void GroupAllVariables(std::vector<std::string>* vars) const;
 
@@ -32,8 +35,8 @@ class Scope {
 
   friend class ScopedNode;
   friend class GraphUtil;
-  inline const std::string& name() const { return name_; }
-  void DebugSymbolTable();
+  inline std::string name() const { return name_; }
+  void DebugSymbolTable() const;
   std::string debug_info() const;
     
  private:

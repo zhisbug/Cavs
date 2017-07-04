@@ -17,11 +17,13 @@ class SessionBase {
   virtual void Run(const std::vector<std::string>& output_names, 
                    std::vector<Tensor>* output_tensors,
                    const std::vector<std::string>& input_names,
-                   const std::vector<Tensor>& input_tensors) {}
+                   const std::vector<Tensor>& input_tensors) {
+    LOG(FATAL) << "Base Session";
+  }
   virtual OpContext* GetContext(const Node* node);
-  virtual int SessionType() { return BASE; }
+  virtual int session_type() const { return BASE; }
   enum { BASE=1, SIMPLE=2, MPI=3, PARTIALEXECUTION=4 };
-  std::string DebugInfo();
+  std::string debug_info() const ;
  protected:
   std::unordered_map<std::string, Tensor> tensor_map_;
 };

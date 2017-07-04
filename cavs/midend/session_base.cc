@@ -34,7 +34,8 @@ void SessionBase::InsertTensor(const Tensor& t){
 
 OpContext* SessionBase::GetContext(const Node* node) {
   OpContext* ctxt  = new OpContext();
-  const OpDef& op_def = node->op_def();
+  CHECK(node->IsSingleNode());
+  const OpDef& op_def = dynamic_cast<const SingleNode*>(node)->op_def();
   for (auto* input : node->input()) {
     const Tensor* t = GetTensor(input->scoped_name()); 
     CHECK(t) << "Getting " << input->scoped_name();
@@ -83,7 +84,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
   return ctxt;
 }
 
-string SessionBase::DebugInfo() {
+string SessionBase::debug_info() const {
   string ret;
   for (auto& one_pair : tensor_map_)
     ret += one_pair.first + "\t";

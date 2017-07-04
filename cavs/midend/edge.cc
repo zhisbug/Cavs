@@ -7,7 +7,7 @@ namespace midend {
 Edge::Edge(const string& name, Scope* s)
   : name_(name), located_(s), 
     scoped_name_(s->name() + ":" + name) {
-  located_->AddEdge(this);
+  //located_->AddEdge(this);
 }
 
 void Edge::AddDst(Node* node) {

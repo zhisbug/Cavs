@@ -163,9 +163,10 @@ namespace midend {
 //}
 
 OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
+  CHECK(node->IsSingleNode());
   const vector<OpDef>& grads = 
-    ::backend::MakeGradient(node->op_def()); 
-  CHECK(grads.size()) << node->op_def().DebugString();
+    ::backend::MakeGradient(dynamic_cast<const SingleNode*>(node)->op_def()); 
+  CHECK(grads.size()) << dynamic_cast<const SingleNode*>(node)->op_def().DebugString();
 
   for (auto& grad : grads) {
     if (std::find(grad.output().begin(), grad.output().end(),
@@ -240,7 +241,8 @@ void GraphUtil::GenGradient(Scope* loss_scope,
   VLOG(V_DEBUG) << "Forwarding...";
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
-      loss_scope->AddOp(s_->typological_sorted_nodes_[i]->op_def());
+      CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
+      loss_scope->AddOp(dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def());
       CHECK(!grads[i].empty());
     }else {
       CHECK(grads[i].empty());
@@ -250,11 +252,12 @@ void GraphUtil::GenGradient(Scope* loss_scope,
   VLOG(V_DEBUG) << "Backwarding...";
   for (int i = critical_path.size()-1 ; i >= 0; i--) {
     if (critical_path[i]) {
+      CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       VLOG(V_DEBUG) << "Backwarding for "
-                    << s_->typological_sorted_nodes_[i]->op_def().DebugString();
+                    << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
       for (auto& iter : grads[i]) {
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
-        Node* grad_node = loss_scope->AddOp(iter.second);
+        SingleNode* grad_node = loss_scope->AddOp(iter.second);
         CHECK(grad_node);
         VLOG(V_DEBUG) << "Getting input shape...";
         const vector<TensorShapeDef>& inputs = 
@@ -266,7 +269,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         grad_node->SetShape(shapes);
         VLOG(V_DEBUG) << "One grad added";
       }
-      if (s_->typological_sorted_nodes_[i]->op_def().name() == "GraphOutput") {
+      if (s_->typological_sorted_nodes_[i]->name() == "GraphOutput") {
         for (auto&& func_name : {"Leaf", "Inode"}) {
           //find the childscope of father or ancestor(optimizer case)
           const Scope* func_scope = s_->FindChildScope(func_name);
@@ -357,7 +360,7 @@ void GraphUtil::ApplyGradient(
 
 GraphUtil::GraphUtil(Scope* s) : s_(s) {}
 
-Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
+ScopedNode* GraphUtil::AddOptimizerOp(const OpDef& def) {
   CHECK(def.input_size() == 1);
   const string& loss = def.input(0);
   vector<string> var_names = GetListArg<string>(def, string("Vars"));
@@ -395,7 +398,7 @@ Node* GraphUtil::AddOptimizerOp(const OpDef& def) {
 
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
 
-  ScopedNode* sn = new ScopedNode(s_, loss_scope, def, iters);
+  ScopedNode* sn = new ScopedNode(s_, loss_scope, def.output(0), iters);
 
   return sn;
 }
@@ -407,7 +410,7 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
   TensorShapeDef out_shape;
   bool push_op = false;
   for (auto& op : def.ops()) {
-    Node* node = func_scope->AddOp(op);
+    SingleNode* node = func_scope->AddOp(op);
     const vector<TensorShapeDef>& input_shapes = 
       node->input_shapes();
     const vector<TensorShapeDef>& shape_def = 
@@ -477,10 +480,10 @@ void GraphUtil::GenGradientForFunction(Scope* func_grad_scope,
   for (int i = critical_path.size()-1 ; i >= 0; i--) {
     if (critical_path[i]) {
       VLOG(V_DEBUG) << "Backwarding for "
-                    << func_scope->typological_sorted_nodes_[i]->op_def().DebugString();
+                    << func_scope->typological_sorted_nodes_[i]->debug_info();
       for (auto& iter : grads[i]) {
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
-        Node* grad_node = func_grad_scope->AddOp(iter.second);
+        SingleNode* grad_node = func_grad_scope->AddOp(iter.second);
         CHECK(grad_node);
         VLOG(V_DEBUG) << "Getting input shape...";
         const vector<TensorShapeDef>& inputs = 

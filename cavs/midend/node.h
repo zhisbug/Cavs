@@ -24,10 +24,13 @@ class Node {
   virtual Statement* Compile(SessionBase* sess) {
     return NULL;
   }
-  virtual bool IsSingleNode() const { return false; }
-  virtual bool IsScopedNode() const { return false; }
-  inline const OpDef& op_def() const;
-  inline Scope*                    scope()         const;
+  virtual bool IsSingleNode()  const { return false; }
+  virtual bool IsScopedNode()  const { return false; }
+  virtual std::string name()   const = 0;
+  std::string scoped_name()    const;
+
+  inline Scope* scope() const { return located_; }
+
   inline Edge*                     input(int idx)  const;
   inline const std::vector<Edge*>& input()         const;
   inline int                       input_size()    const;
@@ -35,39 +38,59 @@ class Node {
   inline const std::vector<Edge*>& output()        const;
   inline int                       output_size()   const;
 
-  std::string name()        const;
-  std::string scoped_name() const;
-  std::vector<TensorShapeDef> input_shapes();
+  std::vector<TensorShapeDef> input_shapes() const;
 
   void AddInput(const Edge* e);
   void AddOutput(const Edge* e);
-  void SetShape(const std::vector<TensorShapeDef>& def);
 
   std::string debug_info() const;
 
  protected:
-  explicit Node(const OpDef& op_def, Scope* s);
+  //explicit Node(const OpDef& op_def, Scope* s);
+  //explicit Node(const OpDef& op_def, Scope* s);
+  Node(Scope* located);
   OpDef op_def_;
-  Scope* located_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
+  Scope* located_;
   Statement* stmt_;
 };
 
 class SingleNode : public Node {
  public:
-  explicit SingleNode(const OpDef& op_def, Scope* s)
-    : Node(op_def, s) {}
+  //explicit SingleNode(const OpDef& op_def, Scope* s)
+    //: Node(op_def, s) {}
+  SingleNode(const OpDef& op_def, Scope* s);
   Statement* Compile(SessionBase* sess) override;
 
-  bool IsSingleNode() const override { return true; }
-
+  bool IsSingleNode() const override { return true;  }
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
   }
   inline bool isSourceOp() const {
     return op_def_.input_size() == 0;
   }
+  inline bool IsGraphOp() const { 
+    return (op_def_.name() == "GraphOutput");
+  }
+  inline const OpDef& op_def() const {
+    return op_def_;
+  }
+  inline std::string name() const override {
+    return op_def_.name();
+  }
+
+  void SetShape(const std::vector<TensorShapeDef>& def);
+
+ protected:
+  OpDef op_def_;
+}; 
+
+class GraphNode : public SingleNode {
+ public:
+  explicit GraphNode(const OpDef& op_def, Scope* s)
+    : SingleNode(op_def, s) {}
+  Statement* Compile(SessionBase* sess) override;
 }; 
 
 //The ScopedNode is defined as a group of nodes
@@ -78,29 +101,20 @@ class SingleNode : public Node {
 //compilation
 class ScopedNode : public Node {
  public:
-  explicit ScopedNode(
-      Scope* located, 
-      const Scope* contained,
-      const OpDef& op_def,
-      int iter);
+  explicit ScopedNode(Scope* located, const Scope* contained,
+      const std::string& name, int iter);
   Statement* Compile(SessionBase* sess) override;
-  bool IsScopedNode() const override { return true; }
+  inline bool IsScopedNode() const override { return true; }
+  inline std::string name() const override {
+    return name_;
+  }
   std::list<Node*> nodes_;
 
  private:
+  std::string name_;
   int iter_;
   const Scope* contained_;
-  void Compress();
 };
-
-inline const OpDef& Node::op_def() const {
-  return op_def_;
-}
-
-inline Scope* Node::scope() const {
-  return located_;
-}
-
 
 inline Edge* Node::input(int idx) const {
   CHECK(idx < inputs_.size());

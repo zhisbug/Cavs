@@ -15,7 +15,7 @@ namespace midend {
 class GraphUtil {
  public:
   GraphUtil(Scope* s);
-  Node* AddOptimizerOp(const OpDef& op_def);
+  ScopedNode* AddOptimizerOp(const OpDef& op_def);
   TensorShapeDef AddFunction(const FunctionDef& func_def);
 
   std::string DebugInfo();

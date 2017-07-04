@@ -59,7 +59,7 @@ class OpTest {
   std::unique_ptr<OpImpl> op_;
   std::unique_ptr<OpContext> context_;
   OpDef op_def_;
-  Node* node_;
+  SingleNode* node_;
   SessionBase* sess_;
 };
 

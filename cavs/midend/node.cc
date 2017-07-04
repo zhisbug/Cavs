@@ -5,17 +5,19 @@ using std::vector;
 
 namespace midend {
 
-string Node::name() const {
-  return op_def_.name();
+//Node::Node(const OpDef& op_def, Scope* s)
+  //: op_def_(op_def), located_(s), stmt_(NULL){
+  //located_->AddNode(this);
+//}
+
+Node::Node(Scope* located) : 
+  located_(located), inputs_(0), outputs_(0), stmt_(NULL) {
+  located->AddNode(this);
 }
 
 string Node::scoped_name() const {
-  return located_->name() + ":" + name();
-}
-
-Node::Node(const OpDef& op_def, Scope* s)
-  : op_def_(op_def), located_(s), stmt_(NULL){
-  located_->AddNode(this);
+  CHECK(scope());
+  return scope()->name() + ":" + name();
 }
 
 void Node::AddInput(const Edge* e) {
@@ -28,8 +30,25 @@ void Node::AddOutput(const Edge* e) {
   outputs_.push_back(const_cast<Edge*>(e));
 }
 
+vector<TensorShapeDef> Node::input_shapes() const {
+  vector<TensorShapeDef> ret;
+  for (auto* edge: inputs_) {
+    CHECK(edge->shape().dim_size() > 0);
+    ret.push_back(edge->shape());
+  }
+  return ret;
+}
 
-void Node::SetShape(
+string Node::debug_info() const {
+  return "\nname:\t" + name() +
+         "(scope: " + located_->name() + ")";
+}
+
+SingleNode::SingleNode(const OpDef& op_def, Scope* s)
+  : Node(s), op_def_(op_def) {
+}
+
+void SingleNode::SetShape(
     const vector<TensorShapeDef>& def) {
   CHECK(def.size() == outputs_.size())
       << "in shapes:\t" << def.size()
@@ -41,27 +60,12 @@ void Node::SetShape(
   }
 }
 
-vector<TensorShapeDef> Node::input_shapes() {
-  vector<TensorShapeDef> ret;
-  for (auto* edge: inputs_) {
-    CHECK(edge->shape().dim_size() > 0);
-    ret.push_back(edge->shape());
-  }
-  return ret;
-}
-
-string Node::debug_info() const {
-  return "\nname:\t" + op_def_.name() +
-         "(scope: " + located_->name() + ")" +
-         "\noutput[0]:\t" + op_def_.output(0);
-}
-
 Statement* SingleNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
     //LOG(INFO) << DebugInfo();
     OpImpl* op = NULL;
-    if (sess->SessionType() == SessionBase::MPI &&
+    if (sess->session_type() == SessionBase::MPI &&
         (op_def().name() == "Variable" ||
          op_def().name() == "DDV" ||
          op_def().name() == "Data")) {
@@ -85,14 +89,32 @@ Statement* SingleNode::Compile(
   return stmt_;
 }
 
-ScopedNode::ScopedNode(Scope* located, const Scope* contained,
-      const OpDef& op_def, int iter)
-    : iter_(iter), contained_(contained), Node(op_def, located) {
+Statement* GraphNode::Compile(
+    SessionBase* sess) {
+  //if (!stmt_) {
+    ////Scope*
+    //OpImpl* op = NULL;
+    //VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
+    //op = CreateOp(op_def());
+    //OpContext* ctxt = sess->GetContext(this);
+    //CHECK(op) << op_def().DebugString();
+    //CHECK(ctxt) << op_def().DebugString();
+    //GraphStatement* graph_stmt =  new GraphStatement(op, ctxt);
+    //CHECK(expr_stmt);
+    //stmt_ = expr_stmt;
+  //}
+  //return stmt_;
+}
+
+ScopedNode::ScopedNode(Scope* located,
+      const Scope* contained, const string& name, int iter)
+    : Node(located), name_(name), iter_(iter), contained_(contained) {
   for (auto& edge: contained->in_edges_) {
     inputs_.push_back(edge.second);
   }
-  CHECK(op_def.output_size() == 1);
-  Edge* output = new Edge(op_def.output(0), located_);
+  //CHECK(op_def.output_size() == 1);
+  //Edge* output = new Edge(op_def.output(0), located_);
+  Edge* output = new Edge(name, located_);
   output->AddSource(this);
   nodes_.assign(contained_->typological_sorted_nodes_.begin(),
                 contained_->typological_sorted_nodes_.end());
@@ -101,12 +123,12 @@ ScopedNode::ScopedNode(Scope* located, const Scope* contained,
 Statement* ScopedNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    VLOG(V_DEBUG) << "Compiling ScopeNode:\t"  << op_def().output(0);
+    VLOG(V_DEBUG) << "Compiling ScopeNode:\t"  << name_;
     VLOG(V_DEBUG) << "It is located in scope " << scope()->name();
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->name();
     BasicBlock* bb = new BasicBlock(iter_);
     for (auto* node : nodes_) {
-      VLOG(V_DEBUG) << "\tCompiling\t" << node->op_def().name()
+      VLOG(V_DEBUG) << "\tCompiling\t" << name()
                     << "\t in Scope: " << contained_->name();
       Statement* stmt = node->Compile(sess);
       CHECK(stmt) << node->debug_info();

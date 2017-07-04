@@ -1,4 +1,7 @@
 #include "cavs/midend/graph_scheduler.h"
+#include "cavs/proto/devices.pb.h"
+
+#include <algorithm>
 
 using std::vector;
 
@@ -30,8 +33,12 @@ int GraphScheduler::GetJobId() {
 void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   //Get()->parent_ids_ = std::move(parent_ids);
   CHECK(parent_ids.dims() == 1);
+  CHECK(parent_ids.device_type() == CPU);
+  int real_length = std::find(parent_ids.data<int>(),
+                              parent_ids.data<int>() + parent_ids.count(), -1) 
+                  - parent_ids.data<int>();
   Get()->parent_ids_.assign(parent_ids.data<int>(),
-                            parent_ids.data<int>() + parent_ids.count());
+                            parent_ids.data<int>() + real_length);
   Get()->child_ids_.resize(Get()->parent_ids_.size());
   for (int i = 0; i < Get()->parent_ids_.size(); i++) {
     CHECK(Get()->parent_ids_[i] < Get()->parent_ids_.size());

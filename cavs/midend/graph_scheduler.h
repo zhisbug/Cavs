@@ -46,7 +46,6 @@ class GraphScheduler {
 
  private:
   GraphScheduler() : __internal_unit_(0) {}
-  enum state {};
   static GraphScheduler* Get() { static GraphScheduler gs; return &gs; }
   std::list<int> activate_leaf_;
   std::list<int> activate_inode_;

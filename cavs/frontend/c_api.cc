@@ -20,7 +20,7 @@ using midend::GetAllocator;
 using midend::Scope;
 using midend::main_scope;
 //using midend::global_scope;
-using midend::Node;
+using midend::SingleNode;
 using backend::ShapeInference;
 
 using std::string;
@@ -91,7 +91,7 @@ void C_AddOp(const void* def, size_t def_length,
     int** dim, size_t* dim_length) {
   OpDef op_def;
   op_def.ParseFromArray(def, def_length);
-  Node* node = C_GetMainScope()->scope->AddOp(op_def);
+  SingleNode* node = C_GetMainScope()->scope->AddOp(op_def);
   const vector<TensorShapeDef>& input_shapes =
     node->input_shapes();
   const vector<TensorShapeDef>& shape_def =

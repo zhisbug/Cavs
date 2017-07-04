@@ -25,7 +25,7 @@ class MPISession: public SimpleSession {
            vector<Tensor>* output_tensors,
            const vector<string>& input_names,
            const vector<Tensor>& input_tensors) override;
-  int SessionType() override { return MPI; }
+  int session_type() const override { return MPI; }
  private:
   void Compile(const vector<string>& output_names) override;
   void FetchOutput(const vector<string>& output_names,
@@ -40,7 +40,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
       LOG(INFO) << name;
       if ((name.length() >= 13 && name.substr(0, 8) == "Variable")
           && name.substr(name.length()-5, 5) == "_grad") {
-        if ((*iter)->op_def().name() == "MatMul") {
+        if ((*iter)->name() == "MatMul") {
           LOG(INFO) << "SFB mechanism ENABLing...";
           CHECK((*iter)->output_size() == 1);
           CHECK((*iter)->input_size() == 2);
@@ -50,7 +50,7 @@ void AddMPIOnPath(list<Node*>& critical_path) {
             .Input((*iter)->input(1)->name())
             .Output((*iter)->output(0)->name())
             .Shape((*iter)->output(0)->shape())
-            .Attr((*iter)->op_def())
+            .Attr(dynamic_cast<SingleNode*>(*iter)->op_def())
             .Device("GPU")
             .Finalize(&comm);
           Node* comm_node = new SingleNode(comm, (*iter)->scope());
@@ -117,9 +117,9 @@ void MPISession::Compile(
   CHECK(executors_.find(HashString(output_names)) == executors_.end());
   vector<Statement*>* executor = &executors_[HashString(output_names)];
   for (auto* node : critical_path) {
-    LOG(INFO) << node->op_def().DebugString();
+    LOG(INFO) << node->debug_info();
     LOG(INFO) << node->scope()->name();
-    LOG(INFO) << "compiling\t" << node->op_def().name();
+    LOG(INFO) << "compiling\t" << node->name();
     Statement* stmt = node->Compile(this);
     CHECK(stmt);
     executor->push_back(stmt);

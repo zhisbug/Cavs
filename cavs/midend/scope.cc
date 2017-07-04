@@ -85,7 +85,7 @@ void Scope::AddGraphOpTransformation(OpDef* new_def, const OpDef& def) {
 
 //if node exists: return NULL;
 //otherwise: return new allocated node;
-Node* Scope::AddOp(const OpDef& op_def) {
+SingleNode* Scope::AddOp(const OpDef& op_def) {
   size_t hash_code = GetHash(op_def);
   if (hash_nodes_.find(hash_code) != hash_nodes_.end()) {
     LOG(WARNING) << "Duplicated node in current scope"
@@ -100,7 +100,9 @@ Node* Scope::AddOp(const OpDef& op_def) {
   if (op_def.name() == "GraphOutput") {
     AddGraphOpTransformation(&new_def, op_def);
   }
+
   node = new SingleNode(new_def, this);
+  AddNode(node);
 
   VLOG(V_DEBUG) << "Adding node \t" << node->debug_info()
                 << "\tTo Scope " << name() << "\n"
@@ -200,7 +202,7 @@ void Scope::GroupAllVariables(vector<string>* vars) const {
   }
 }
 
-Node* Scope::AddOptimizerOp(const OpDef& op_def) {
+ScopedNode* Scope::AddOptimizerOp(const OpDef& op_def) {
   return GraphUtil(this).AddOptimizerOp(op_def);
 }
 
@@ -210,7 +212,7 @@ TensorShapeDef Scope::AddFunction(const FunctionDef& func_def) {
   return GraphUtil(this).AddFunction(func_def);
 }
 
-void Scope::DebugSymbolTable() {
+void Scope::DebugSymbolTable() const {
   LOG(INFO) << "Printing Symbol Table\t" << name_;
   for (auto& one_pair : edge_table_) {
     LOG(INFO) << one_pair.first;
@@ -224,7 +226,7 @@ string Scope::debug_info() const {
   for (auto* node : typological_sorted_nodes_) {
     ret += "The " + std::to_string(i++)
           + "th operators:\n";
-    ret += node->op_def().DebugString();
+    ret += node->debug_info();
     ret += "\n\n";
   }
   for (auto& child: children_) {

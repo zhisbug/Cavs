@@ -59,9 +59,9 @@ void SimpleSession::Compile(
   for (auto* node : critical_path) {
     VLOG(V_DEBUG) << "-------Node INFO\t"
                   << node->scope()->name() 
-                  << ":" << node->op_def().name()
+                  << ":" << node->name()
                   << "------";
-    VLOG(V_DEBUG) << node->op_def().DebugString();
+    VLOG(V_DEBUG) << node->debug_info();
   }
   VLOG(V_DEBUG) << "============End Critical Path============";
 
@@ -107,10 +107,13 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     //Tensor* t = &(tensor_map_[edge->scoped_name()]);
     Tensor* t = const_cast<Tensor*>(GetTensor(edge->scoped_name()));
     CHECK(t);
-    if (t->device_type() == GPU)
+    if (t->device_type() == GPU) {
+      VLOG(V_DEBUG) << "Copying to GPU...";
       t->SyncWith(input_tensors[i]);
-    else
+    }else {
+      VLOG(V_DEBUG) << "Pointer switching on CPU...";
       *t = input_tensors[i];
+    }
   }
 }
 
@@ -129,7 +132,7 @@ void SimpleSession::FetchOutput(const vector<string>& output_names,
     CHECK_NOTNULL(edge);
     const Tensor* t = GetTensor(edge->scoped_name());
     CHECK(t) << "Getting " << edge->scoped_name()
-             << "\tin\n"   << DebugInfo();
+             << "\tin\n"   << debug_info();
     if (t->device_type() == GPU) {
       output_tensors->at(i).Rebase(GetAllocator(DeviceTypeToString(CPU)),
           *t);
