@@ -30,6 +30,11 @@ void Node::AddOutput(const Edge* e) {
   outputs_.push_back(const_cast<Edge*>(e));
 }
 
+void Node::AddControlDependency(const Edge* e) {
+  CHECK(e->scope() == scope() || e->isVariable());
+  control_dependency_.push_back(const_cast<Edge*>(e));
+}
+
 vector<TensorShapeDef> Node::input_shapes() const {
   vector<TensorShapeDef> ret;
   for (auto* edge: inputs_) {
@@ -42,6 +47,12 @@ vector<TensorShapeDef> Node::input_shapes() const {
 string Node::debug_info() const {
   return "\nname:\t" + name() +
          "(scope: " + located_->name() + ")";
+}
+
+string SingleNode::debug_info() const {
+  return "\nname:\t" + name() +
+         "(scope: " + located_->name() + ")\n" +
+         op_def_.DebugString();
 }
 
 SingleNode::SingleNode(const OpDef& op_def, Scope* s)

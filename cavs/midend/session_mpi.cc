@@ -10,7 +10,7 @@
 using std::string;
 using std::vector;
 using std::list;
-using std::unordered_map;
+using std::set;
 
 using ::backend::MPIAllReduceFunctor;
 
@@ -100,7 +100,7 @@ MPISession::~MPISession() {
 void MPISession::Compile(
     const vector<string>& output_names) {
   list<Node*> critical_path;
-  unordered_map<Node*, bool> include;
+  set<Node*> include;
   for (auto& output : output_names) {
     //Node* node = const_cast<Node*>(graph_->FindNode(output));
     Node* node = const_cast<Node*>(s_->FindNode(output));

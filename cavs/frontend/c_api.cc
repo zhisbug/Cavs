@@ -140,6 +140,12 @@ void C_AddOptimizerOp(const void* def, size_t def_length) {
   C_GetMainScope()->scope->AddOptimizerOp(op_def);
 }
 
+void C_AddControlDependency(const void* def, size_t def_length) {
+  OpDef op_def;
+  op_def.ParseFromArray(def, def_length);
+  C_GetMainScope()->scope->AddControlDependency(op_def);
+}
+
 void C_Run(C_Session* s, 
     const char** c_output_names, C_Tensor** c_output_tensors, int noutputs, 
     const char** c_input_names, C_Tensor* const* c_input_tensors, int ninputs) {

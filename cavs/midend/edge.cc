@@ -5,9 +5,12 @@ using std::string;
 namespace midend {
 
 Edge::Edge(const string& name, Scope* s)
-  : name_(name), located_(s), 
-    scoped_name_(s->name() + ":" + name) {
-  //located_->AddEdge(this);
+  : name_(name), located_(s) {
+  located_->AddEdge(this);
+}
+
+inline string Edge::scoped_name() const {
+  return located_->name() + ":" + name();
 }
 
 void Edge::AddDst(Node* node) {

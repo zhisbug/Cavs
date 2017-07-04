@@ -5,7 +5,7 @@
 #include "cavs/midend/scope.h"
 #include "cavs/midend/statement.h"
 
-#include <unordered_map>
+#include <set>
 #include <list>
 
 namespace midend {
@@ -27,7 +27,7 @@ class SimpleSession : public SessionBase {
                  std::vector<Tensor>* output_tensors);
   void DepthSearch(Node* curr,
                    std::list<Node*>* critical_path,
-                   std::unordered_map<Node*, bool>* include);
+                   std::set<Node*>* include);
   std::string HashString(const std::vector<std::string>& input);
   std::unordered_map<std::string, std::vector<Statement*>> executors_;
   //int round_;//current batch id;

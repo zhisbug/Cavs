@@ -23,6 +23,7 @@ class Scope {
 
   SingleNode* AddOp(const OpDef& op_def);
   ScopedNode* AddOptimizerOp(const OpDef& op_def);
+  void AddControlDependency(const OpDef& op_def);
   TensorShapeDef AddFunction(const FunctionDef& func_def);
   void GroupAllVariables(std::vector<std::string>* vars) const;
 

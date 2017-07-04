@@ -37,13 +37,15 @@ class Node {
   inline Edge*                     output(int idx) const;
   inline const std::vector<Edge*>& output()        const;
   inline int                       output_size()   const;
+  inline const std::vector<Edge*>& control_dependency()    const;
 
   std::vector<TensorShapeDef> input_shapes() const;
 
   void AddInput(const Edge* e);
   void AddOutput(const Edge* e);
+  void AddControlDependency(const Edge* e);
 
-  std::string debug_info() const;
+  virtual std::string debug_info() const;
 
  protected:
   //explicit Node(const OpDef& op_def, Scope* s);
@@ -52,6 +54,7 @@ class Node {
   OpDef op_def_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
+  std::vector<Edge*> control_dependency_;
   Scope* located_;
   Statement* stmt_;
 };
@@ -81,6 +84,7 @@ class SingleNode : public Node {
   }
 
   void SetShape(const std::vector<TensorShapeDef>& def);
+  std::string debug_info() const override;
 
  protected:
   OpDef op_def_;
@@ -143,6 +147,10 @@ inline const std::vector<Edge*>& Node::output() const {
 
 inline int Node::output_size() const {
   return outputs_.size();
+}
+
+inline const std::vector<Edge*>& Node::control_dependency() const {
+  return control_dependency_;
 }
 
 } //namespace midend

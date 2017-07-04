@@ -29,6 +29,9 @@ Sym::Sym(const OpDef& op_def) {
     if (op_name() == "Optimizer") {
       C_AddOptimizerOp(
         serialization.c_str(), serialization.length());
+    }else if (op_name() == "ControlDependency") {
+      C_AddControlDependency(
+        serialization.c_str(), serialization.length());
     }else {
       int *dim = NULL;
       size_t dim_length;
@@ -515,6 +518,14 @@ Sym Sym::EmbeddingLookup(const Sym& a, const Sym& b, string device) {
                 .Input(b.output(0))
                 .Dtype(a.type())
                 .Device(device)
+                .Finalize();
+  return Sym(def);
+}
+
+Sym Sym::ControlDependency(const Sym& a, const Sym& b) {
+  OpDef def = OpDefBuilder("ControlDependency")
+                .Input(a.output(0))
+                .Input(b.output(0))
                 .Finalize();
   return Sym(def);
 }

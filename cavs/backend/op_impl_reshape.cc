@@ -17,7 +17,8 @@ class ReshapeOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     const Tensor& x = context->Input(0);
     Tensor* y = context->Output(0);
-    CHECK(x.count() == y->count());
+    CHECK(y->dims() > 0);
+    CHECK(x.count() == y->count() || y->dims(0) == -1);
     x.DebugNumerical<float>();
     y->DebugNumerical<float>();
   }

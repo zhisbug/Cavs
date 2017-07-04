@@ -77,6 +77,7 @@ class Sym {
   static Sym SoftmaxEntropyLoss(const Sym&a, const Sym& b, string device = "GPU");
   static Sym Equal(const Sym& a, const Sym& b, string device = "GPU");
   static Sym EmbeddingLookup(const Sym& a, const Sym& b, string device = "GPU");
+  static Sym ControlDependency(const Sym& a, const Sym& b);
   static Sym Reshape(const Sym& a, const std::vector<int>& shape);
   static Sym Expand_dims(const Sym& a, int axis);
   //ternary operation
@@ -128,6 +129,7 @@ class Sym {
   Sym SoftmaxEntropyLogits(const Sym& b)     { return SoftmaxEntropyLogits(*this, b); }
   Sym SoftmaxEntropyLoss(const Sym& b)       { return SoftmaxEntropyLoss(*this, b);   }
   Sym EmbeddingLookup(const Sym& b)          { return EmbeddingLookup(*this, b);      }
+  Sym ControlDependency(const Sym& b)        { return ControlDependency(*this, b);      }
   Sym Reshape(const std::vector<int>& shape) { return Reshape(*this, shape);          }
   Sym Expand_dims(int axis)                  { return Expand_dims(*this, axis);    }
   //ternary operation

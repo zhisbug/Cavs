@@ -22,25 +22,26 @@ class Edge {
   inline bool isVariable() const;
   inline bool isVirtual() const;
   inline bool isGradient() const;
-  inline const std::string& name() const;
-  inline const std::string& scoped_name() const;
+  inline std::string name() const;
   inline Scope* scope() const;
-  inline void SetShape(const TensorShapeDef& def);
-  inline const TensorShapeDef& shape() const;
-  //inline void RemoveDst(Node* node);
+  std::string scoped_name() const;
+
   inline Node* src(int idx, bool within=false) const;
   inline const std::vector<Node*>& src(bool within=false) const;
   inline int src_size(bool within=false) const;
   inline Node* dst(int idx, bool within=false) const;
   inline const std::vector<Node*>& dst(bool within=false) const;
   inline int dst_size(bool within=false) const;
+
   void AddSource(Node* node);
   void AddDst(Node* node);
+  inline void SetShape(const TensorShapeDef& def);
+  inline const TensorShapeDef& shape() const;
   std::string debug_info() const;
 
  private:
   std::string name_;
-  std::string scoped_name_;
+  //std::string scoped_name_;
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> same_scoped_srcs_;
@@ -61,13 +62,13 @@ inline bool Edge::isVirtual() const {
   return tensor_shape_.dim_size() == 0; 
 }
 
-inline const std::string& Edge::name() const {
+inline std::string Edge::name() const {
   return name_;
 }
 
-inline const std::string& Edge::scoped_name() const {
-  return scoped_name_;
-}
+//inline const std::string& Edge::scoped_name() const {
+  //return scoped_name_;
+//}
 
 inline Scope* Edge::scope() const {
   return located_; 

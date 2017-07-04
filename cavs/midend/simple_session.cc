@@ -9,7 +9,7 @@
 using std::string;
 using std::vector;
 using std::list;
-using std::unordered_map;
+using std::set;
 
 namespace midend {
 
@@ -18,18 +18,23 @@ SimpleSession::SimpleSession()
 
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
-    unordered_map<Node*, bool>* include) {
+    set<Node*>* include) {
   bool isSource = (curr->input_size() == 0);
   bool accessed = (include->find(curr) != include->end());
 
   if (!accessed) {
-    (*include)[curr] = true;
+    //(*include)[curr] = true;
+    include->insert(curr);
     if (!isSource) {
       for (auto* edge : curr->input()) {
         CHECK(edge->src_size() == 1 || edge->isVariable());
         //for (auto* node : edge->srcs()) {
         DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
         //}
+      }
+      for (auto* edge : curr->control_dependency()) {
+        CHECK(edge->src_size() == 1);
+        DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
       }
     }
     critical_path->push_back(curr);
@@ -47,7 +52,7 @@ string SimpleSession::HashString(const vector<string>& input) {
 void SimpleSession::Compile(
     const vector<string>& output_names) {
   list<Node*> critical_path;
-  unordered_map<Node*, bool> include;
+  set<Node*> include;
   for (auto& output : output_names) {
     //Node* node = const_cast<Node*>(graph_->FindNode(output));
     Node* node = const_cast<Node*>(s_->FindNode(output));

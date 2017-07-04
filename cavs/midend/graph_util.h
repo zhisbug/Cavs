@@ -30,7 +30,7 @@ class GraphUtil {
   void GenGradient(Scope* loss_scope,
       const std::vector<bool>& critical_path,
       const std::vector<std::unordered_map<size_t, OpDef>>& grads);
-  void ComputeGradient(Scope* loss_scope,
+  void ComputeGradient(Scope* loss_scope, ScopedNode* sn, 
       const std::vector<std::string>& vars,
       const Edge* loss,
       const Scope* main_scope);

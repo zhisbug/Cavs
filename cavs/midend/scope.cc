@@ -102,7 +102,6 @@ SingleNode* Scope::AddOp(const OpDef& op_def) {
   }
 
   node = new SingleNode(new_def, this);
-  AddNode(node);
 
   VLOG(V_DEBUG) << "Adding node \t" << node->debug_info()
                 << "\tTo Scope " << name() << "\n"
@@ -180,6 +179,7 @@ SingleNode* Scope::AddOp(const OpDef& op_def) {
 
 void Scope::AddNode(const Node* node) {
   CHECK(node->scope() == this);
+  CHECK(node2idx_.find(const_cast<Node*>(node)) == node2idx_.end());
   node2idx_[const_cast<Node*>(node)] = typological_sorted_nodes_.size();
   typological_sorted_nodes_.push_back(const_cast<Node*>(node));
 }
@@ -187,8 +187,7 @@ void Scope::AddNode(const Node* node) {
 void Scope::AddEdge(const Edge* edge) {
   CHECK(edge->scope() == this);
   const string& name = edge->name();
-  CHECK(edge_table_.find(name) ==
-        edge_table_.end())
+  CHECK(edge_table_.find(name) == edge_table_.end())
       << "Adding duplicated Edge: \"" << name << "\"";
   edge_table_[name] = const_cast<Edge*>(edge);
 }
@@ -199,6 +198,20 @@ void Scope::GroupAllVariables(vector<string>* vars) const {
       CHECK(n->output_size() == 1) << n->output_size();
       vars->push_back(n->output(0)->name());
     }
+  }
+}
+
+void Scope::AddControlDependency(const OpDef& op_def) {
+  CHECK(op_def.name() == "ControlDependency");
+  CHECK(op_def.input_size() == 1);
+  CHECK(op_def.output_size() == 1);
+  Edge* i = FindEdge(op_def.input(0), true);
+  Edge* o = FindEdge(op_def.output(0), true);
+  CHECK_NOTNULL(i);
+  CHECK_NOTNULL(o);
+  CHECK(o->src_size(true) == 1);
+  for (auto* n : o->src(true)) {
+    n->AddControlDependency(i); 
   }
 }
 

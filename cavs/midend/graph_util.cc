@@ -241,6 +241,8 @@ void GraphUtil::GenGradient(Scope* loss_scope,
   VLOG(V_DEBUG) << "Forwarding...";
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
+      VLOG(V_DEBUG) << "[" << i << "]:\n"
+                    << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
       CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       loss_scope->AddOp(dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def());
       CHECK(!grads[i].empty());
@@ -272,6 +274,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
       if (s_->typological_sorted_nodes_[i]->name() == "GraphOutput") {
         for (auto&& func_name : {"Leaf", "Inode"}) {
           //find the childscope of father or ancestor(optimizer case)
+          VLOG(V_DEBUG) << "Compute Gradient for " << func_name << "...";
           const Scope* func_scope = s_->FindChildScope(func_name);
           Scope* func_grad_scope = new Scope(func_scope, GetGradientName(func_name));
           CHECK(func_scope);
@@ -285,6 +288,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
 
 void GraphUtil::ComputeGradient(
     Scope* loss_scope,
+    ScopedNode* loss_scope_node,
     const vector<string>& vars,
     const Edge* loss,
     const Scope* main_scope) {
@@ -297,6 +301,20 @@ void GraphUtil::ComputeGradient(
     const Edge* var = loss_scope->FindEdge(var_name);
     if (!GenCriticalPath(&critical_path, &grads, var, loss, main_scope)) {
       LOG(FATAL) << var_name << "\tis not a trainable variable";
+    }
+  }
+
+  for (int i = 0; i < critical_path.size(); i++) {
+    if (critical_path[i]) {
+      for (auto* e : main_scope->typological_sorted_nodes_[i]->control_dependency()) {
+        CHECK(e->scope() == main_scope);
+        CHECK(e->src_size(true) == 1);
+        for (auto* n : e->src(true)) {
+          if (!critical_path[main_scope->node2idx_.at(n)]) {
+            loss_scope_node->AddControlDependency(e);
+          }
+        }
+      }
     }
   }
   VLOG(V_DEBUG) << "Generating gradient...";
@@ -390,15 +408,15 @@ ScopedNode* GraphUtil::AddOptimizerOp(const OpDef& def) {
     .Finalize(&const_op);
   loss_scope->AddOp(const_op);
 
+  ScopedNode* sn = new ScopedNode(s_, loss_scope, def.output(0), iters);
+
   VLOG(V_DEBUG) << "Compute Gradients...";
-  ComputeGradient(loss_scope, var_names, loss_edge, s_);
+  ComputeGradient(loss_scope, sn, var_names, loss_edge, s_);
 
   VLOG(V_DEBUG) << "Gradient process...";
   if (clip > 0) GradientProcess(loss_scope, var_names, clip);
 
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
-
-  ScopedNode* sn = new ScopedNode(s_, loss_scope, def.output(0), iters);
 
   return sn;
 }
@@ -445,7 +463,6 @@ void GraphUtil::ComputeGradientForFunction(
       CHECK(node->output_size() == 1);
       origins.push_back(node->output(0));
     }
-    LOG(INFO) << node->name();
     if (node->name() == "Push" || node->name() == "Scatter") {
       CHECK(node->output_size() == 1);
       terminals.push_back(node->output(0));
