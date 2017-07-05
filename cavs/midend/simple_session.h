@@ -12,7 +12,6 @@ namespace midend {
 
 class SimpleSession : public SessionBase {
  public:
-  //SimpleSession(const DepGraph* graph);
   SimpleSession();
   void Run(const std::vector<std::string>& output_names, 
            std::vector<Tensor>* output_tensors,
@@ -30,7 +29,6 @@ class SimpleSession : public SessionBase {
                    std::set<Node*>* include);
   std::string HashString(const std::vector<std::string>& input);
   std::unordered_map<std::string, std::vector<Statement*>> executors_;
-  //int round_;//current batch id;
 
  protected:
   const Scope* s_;

@@ -408,15 +408,14 @@ ScopedNode* GraphUtil::AddOptimizerOp(const OpDef& def) {
     .Finalize(&const_op);
   loss_scope->AddOp(const_op);
 
-  ScopedNode* sn = new ScopedNode(s_, loss_scope, def.output(0), iters);
-
+  ScopedNode* sn = new ScopedNode(s_, def.output(0), iters);
   VLOG(V_DEBUG) << "Compute Gradients...";
   ComputeGradient(loss_scope, sn, var_names, loss_edge, s_);
-
   VLOG(V_DEBUG) << "Gradient process...";
   if (clip > 0) GradientProcess(loss_scope, var_names, clip);
-
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
+
+  sn->SetContainedScope(loss_scope);
 
   return sn;
 }

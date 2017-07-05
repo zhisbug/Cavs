@@ -105,8 +105,8 @@ class GraphNode : public SingleNode {
 //compilation
 class ScopedNode : public Node {
  public:
-  explicit ScopedNode(Scope* located, const Scope* contained,
-      const std::string& name, int iter);
+  explicit ScopedNode(Scope* located, const std::string& name, int iter);
+  void SetContainedScope(const Scope* contained);
   Statement* Compile(SessionBase* sess) override;
   inline bool IsScopedNode() const override { return true; }
   inline std::string name() const override {

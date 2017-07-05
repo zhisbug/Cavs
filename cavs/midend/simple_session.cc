@@ -19,8 +19,10 @@ SimpleSession::SimpleSession()
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
     set<Node*>* include) {
+  VLOG(V_DEBUG) << curr->debug_info();
   bool isSource = (curr->input_size() == 0);
   bool accessed = (include->find(curr) != include->end());
+  VLOG(V_DEBUG) << isSource << "\t" << accessed;
 
   if (!accessed) {
     //(*include)[curr] = true;
@@ -32,10 +34,10 @@ void SimpleSession::DepthSearch(Node* curr,
         DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
         //}
       }
-      for (auto* edge : curr->control_dependency()) {
-        CHECK(edge->src_size() == 1);
-        DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
-      }
+      //for (auto* edge : curr->control_dependency()) {
+        //CHECK(edge->src_size() == 1);
+        //DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
+      //}
     }
     critical_path->push_back(curr);
   }
@@ -54,11 +56,11 @@ void SimpleSession::Compile(
   list<Node*> critical_path;
   set<Node*> include;
   for (auto& output : output_names) {
-    //Node* node = const_cast<Node*>(graph_->FindNode(output));
     Node* node = const_cast<Node*>(s_->FindNode(output));
     CHECK(node);
     DepthSearch(node, &critical_path, &include);
   }
+  CHECK(critical_path.size() >= 2);
 
   VLOG(V_DEBUG) << "============In Critical Path============";
   for (auto* node : critical_path) {
@@ -111,7 +113,7 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
     CHECK(edge) << "Edge: " << input_names[i];
     //Tensor* t = &(tensor_map_[edge->scoped_name()]);
     Tensor* t = const_cast<Tensor*>(GetTensor(edge->scoped_name()));
-    CHECK(t);
+    CHECK(t) << input_names[i] << "\t" << debug_info();
     if (t->device_type() == GPU) {
       VLOG(V_DEBUG) << "Copying to GPU...";
       t->SyncWith(input_tensors[i]);

@@ -118,14 +118,17 @@ Statement* GraphNode::Compile(
 }
 
 ScopedNode::ScopedNode(Scope* located,
-      const Scope* contained, const string& name, int iter)
-    : Node(located), name_(name), iter_(iter), contained_(contained) {
+      const string& name, int iter)
+    : Node(located), name_(name), iter_(iter), contained_(NULL) {}
+
+void ScopedNode::SetContainedScope(const Scope* contained) {
+  CHECK_NOTNULL(contained);
+  contained_ = contained;
   for (auto& edge: contained->in_edges_) {
     inputs_.push_back(edge.second);
   }
-  //CHECK(op_def.output_size() == 1);
-  //Edge* output = new Edge(op_def.output(0), located_);
-  Edge* output = new Edge(name, located_);
+
+  Edge* output = new Edge(name_, located_);
   output->AddSource(this);
   nodes_.assign(contained_->typological_sorted_nodes_.begin(),
                 contained_->typological_sorted_nodes_.end());
@@ -133,6 +136,7 @@ ScopedNode::ScopedNode(Scope* located,
 
 Statement* ScopedNode::Compile(
     SessionBase* sess) {
+  CHECK_NOTNULL(contained_);
   if (!stmt_) {
     VLOG(V_DEBUG) << "Compiling ScopeNode:\t"  << name_;
     VLOG(V_DEBUG) << "It is located in scope " << scope()->name();
