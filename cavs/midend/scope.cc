@@ -203,15 +203,18 @@ void Scope::GroupAllVariables(vector<string>* vars) const {
 
 void Scope::AddControlDependency(const OpDef& op_def) {
   CHECK(op_def.name() == "ControlDependency");
-  CHECK(op_def.input_size() == 1);
-  CHECK(op_def.output_size() == 1);
-  Edge* i = FindEdge(op_def.input(0), true);
-  Edge* o = FindEdge(op_def.output(0), true);
+  CHECK(op_def.input_size() == 2) << op_def.DebugString();
+  //CHECK(op_def.output_size() == 1) << op_def.DebugString();
+  Edge* o = FindEdge(op_def.input(0), true);
+  Edge* i = FindEdge(op_def.input(1), true);
   CHECK_NOTNULL(i);
   CHECK_NOTNULL(o);
   CHECK(o->src_size(true) == 1);
   for (auto* n : o->src(true)) {
+    VLOG(V_DEBUG) << "Node: " << n->scoped_name() << "\t" << n->name()
+                  << " depends on " << i->scoped_name();
     n->AddControlDependency(i); 
+    i->AddControlDependency(n);
   }
 }
 
@@ -244,6 +247,12 @@ string Scope::debug_info() const {
   }
   for (auto& child: children_) {
     ret += child.second->debug_info();
+  }
+
+  ret += "--------------in edges-----------------------\n";
+  for (auto& e : in_edges_) {
+    ret += e.second->scoped_name();
+    ret += "\n";
   }
   ret += "\n============================\n";
   return ret;

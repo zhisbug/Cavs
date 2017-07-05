@@ -141,9 +141,10 @@ int main(int argc, char* argv[]) {
   Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
 
   SeqModel model(graph, word_idx);
-  Sym loss       = model.Output()
-                        .FullyConnected(weight, bias)
-                        .SoftmaxEntropyLoss(label.Reshape({-1, 1}));
+  Sym graph_output = model.Output();
+  Sym label_reshape = label.Reshape({-1, 1});
+  label_reshape.ControlDependency(graph_output);
+  Sym loss = graph_output.FullyConnected(weight, bias).SoftmaxEntropyLoss(label_reshape);
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 

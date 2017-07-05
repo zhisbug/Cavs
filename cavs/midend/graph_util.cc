@@ -174,8 +174,8 @@ OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
       return grad;
     }
   }
-
-  LOG(FATAL) << "No gradient valid!";
+  LOG(FATAL) << "No gradient valid for " << edge
+             << "\n from " << node->debug_info();
 }
 
 bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
@@ -189,16 +189,17 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
   CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
   LOG_IF(INFO, curr->dst_size() > 1) << curr->debug_info();
   VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->debug_info();
+  CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
   if (curr == loss) {
-    CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
     int idx = scope->node2idx_.at(curr->src(0));
     CHECK(cpath->size() > idx);
     cpath->at(idx) = true;
     return true;
   }else {
     bool inpath = false;
+    //CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
+    //for (auto&& dst : initializer_list<i>{curr->dst(true), curr->control_dependency()}) {
     for (Node* node : curr->dst(true)) {
-      CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
       int idx = scope->node2idx_.at(node);
       CHECK(cpath->size() > idx);
       if (!cpath->at(idx)) {
@@ -229,6 +230,8 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
         inpath = true;
       }
     }
+
+    //}
     return inpath;
   }
 }
@@ -245,7 +248,9 @@ void GraphUtil::GenGradient(Scope* loss_scope,
                     << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
       CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       loss_scope->AddOp(dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def());
-      CHECK(!grads[i].empty());
+      //we have to loose this constraint because of dependency support
+      //the dependent node does not need to backward.
+      //CHECK(!grads[i].empty());
     }else {
       CHECK(grads[i].empty());
     }
@@ -271,7 +276,8 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         grad_node->SetShape(shapes);
         VLOG(V_DEBUG) << "One grad added";
       }
-      if (s_->typological_sorted_nodes_[i]->name() == "GraphOutput") {
+
+      if (dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->IsGraphOp()) {
         for (auto&& func_name : {"Leaf", "Inode"}) {
           //find the childscope of father or ancestor(optimizer case)
           VLOG(V_DEBUG) << "Compute Gradient for " << func_name << "...";
@@ -304,19 +310,37 @@ void GraphUtil::ComputeGradient(
     }
   }
 
+  //dealing with the dependency
   for (int i = 0; i < critical_path.size(); i++) {
-    if (critical_path[i]) {
+    if (critical_path[i]) {//other nodes are dependent on this node
       for (auto* e : main_scope->typological_sorted_nodes_[i]->control_dependency()) {
         CHECK(e->scope() == main_scope);
         CHECK(e->src_size(true) == 1);
         for (auto* n : e->src(true)) {
           if (!critical_path[main_scope->node2idx_.at(n)]) {
+            VLOG(V_DEBUG) << "ScopedNode dependency: "
+                          << loss_scope_node->scoped_name()
+                          << " depends on " << e->scoped_name();
             loss_scope_node->AddControlDependency(e);
+          }
+        }
+      }
+
+      for (auto* e : main_scope->typological_sorted_nodes_[i]->output()) {
+        for (auto* n : e->control_dependency()) {
+          VLOG(V_DEBUG) << "here!!!";
+          CHECK(n->scope() == main_scope);
+          if (!critical_path[main_scope->node2idx_.at(n)]) {
+            VLOG(V_DEBUG) << "Triger dependency in ScopedNode: "
+                          << n->scoped_name()
+                          << " depends on " << e->scoped_name();
+            critical_path[main_scope->node2idx_.at(n)] = true;
           }
         }
       }
     }
   }
+
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradient(loss_scope, critical_path, grads);
 }

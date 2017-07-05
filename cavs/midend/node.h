@@ -50,7 +50,7 @@ class Node {
  protected:
   //explicit Node(const OpDef& op_def, Scope* s);
   //explicit Node(const OpDef& op_def, Scope* s);
-  Node(Scope* located);
+  explicit Node(Scope* located);
   OpDef op_def_;
   std::vector<Edge*> inputs_;
   std::vector<Edge*> outputs_;
@@ -92,7 +92,7 @@ class SingleNode : public Node {
 
 class GraphNode : public SingleNode {
  public:
-  explicit GraphNode(const OpDef& op_def, Scope* s)
+  GraphNode(const OpDef& op_def, Scope* s)
     : SingleNode(op_def, s) {}
   Statement* Compile(SessionBase* sess) override;
 }; 
@@ -105,13 +105,14 @@ class GraphNode : public SingleNode {
 //compilation
 class ScopedNode : public Node {
  public:
-  explicit ScopedNode(Scope* located, const std::string& name, int iter);
+  ScopedNode(Scope* located, const std::string& name, int iter);
   void SetContainedScope(const Scope* contained);
   Statement* Compile(SessionBase* sess) override;
   inline bool IsScopedNode() const override { return true; }
   inline std::string name() const override {
     return name_;
   }
+  std::string debug_info() const override;
   std::list<Node*> nodes_;
 
  private:

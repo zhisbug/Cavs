@@ -26,27 +26,31 @@ class Edge {
   inline Scope* scope() const;
   std::string scoped_name() const;
 
-  inline Node* src(int idx, bool within=false) const;
-  inline const std::vector<Node*>& src(bool within=false) const;
-  inline int src_size(bool within=false) const;
-  inline Node* dst(int idx, bool within=false) const;
-  inline const std::vector<Node*>& dst(bool within=false) const;
-  inline int dst_size(bool within=false) const;
+  inline Node*                     src(int idx, bool within=false) const;
+  inline const std::vector<Node*>& src(bool within=false)          const;
+  inline int                       src_size(bool within=false)     const;
+  inline Node*                     dst(int idx, bool within=false) const;
+  inline const std::vector<Node*>& dst(bool within=false)          const;
+  inline int                       dst_size(bool within=false)     const;
+  inline const std::vector<Node*>& control_dependency()            const;
 
   void AddSource(Node* node);
   void AddDst(Node* node);
+  void AddControlDependency(const Node* n);
+
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
+
   std::string debug_info() const;
 
  private:
   std::string name_;
-  //std::string scoped_name_;
   TensorShapeDef tensor_shape_;
   std::vector<Node*> srcs_;
   std::vector<Node*> same_scoped_srcs_;
   std::vector<Node*> dsts_;
   std::vector<Node*> same_scoped_dsts_;
+  std::vector<Node*> control_dependency_on_me_;
   Scope* located_;
 };
 
@@ -130,6 +134,10 @@ inline int Edge::dst_size(bool within) const {
     return dsts_.size();
   else
     return same_scoped_dsts_.size();
+}
+
+inline const std::vector<Node*>& Edge::control_dependency() const {
+  return control_dependency_on_me_;
 }
 
 } //namespace midend

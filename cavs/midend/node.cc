@@ -31,7 +31,7 @@ void Node::AddOutput(const Edge* e) {
 }
 
 void Node::AddControlDependency(const Edge* e) {
-  CHECK(e->scope() == scope() || e->isVariable());
+  CHECK(e->scope() == scope());
   control_dependency_.push_back(const_cast<Edge*>(e));
 }
 
@@ -123,6 +123,7 @@ ScopedNode::ScopedNode(Scope* located,
 
 void ScopedNode::SetContainedScope(const Scope* contained) {
   CHECK_NOTNULL(contained);
+  CHECK(!contained_);
   contained_ = contained;
   for (auto& edge: contained->in_edges_) {
     inputs_.push_back(edge.second);
@@ -152,6 +153,12 @@ Statement* ScopedNode::Compile(
     stmt_ = bb;
   }
   return stmt_;
+}
+
+string ScopedNode::debug_info() const {
+  return "\nname:\t" + name() +
+         "(scope: " + located_->name() + ")\n" +
+         contained_->debug_info();
 }
 
 } //namespace midend

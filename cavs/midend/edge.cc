@@ -32,6 +32,11 @@ void Edge::AddSource(Node* node) {
     same_scoped_srcs_.push_back(node);
 }
 
+void Edge::AddControlDependency(const Node* n) {
+  CHECK(n->scope() == scope());
+  control_dependency_on_me_.push_back(const_cast<Node*>(n));
+}
+
 string Edge::debug_info() const {
   string ret = "\nname:\t" + scoped_name() + 
                "\nshape:\t" + shape().DebugString() + 
