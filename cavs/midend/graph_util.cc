@@ -238,7 +238,8 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
 
 void GraphUtil::GenGradient(Scope* loss_scope,
     const vector<bool>& critical_path,
-    const vector<unordered_map<size_t, OpDef>>& grads) {
+    const vector<unordered_map<size_t, OpDef>>& grads,
+    const Edge* loss_edge) {
   CHECK(critical_path.size() == grads.size());
   CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
   VLOG(V_DEBUG) << "Forwarding...";
@@ -255,6 +256,15 @@ void GraphUtil::GenGradient(Scope* loss_scope,
       CHECK(grads[i].empty());
     }
   }
+
+  OpDef const_op;
+  OpDefBuilder("ConstOp")
+    .Output(GetGradientName(loss_edge->name()))
+    .Shape(loss_edge->shape())
+    .AttrSingle("init", 1.f)
+    .Device("GPU")
+    .Finalize(&const_op);
+  loss_scope->AddOp(const_op);
 
   VLOG(V_DEBUG) << "Backwarding...";
   for (int i = critical_path.size()-1 ; i >= 0; i--) {
@@ -296,7 +306,7 @@ void GraphUtil::ComputeGradient(
     Scope* loss_scope,
     ScopedNode* loss_scope_node,
     const vector<string>& vars,
-    const Edge* loss,
+    const Edge* loss_edge,
     const Scope* main_scope) {
   CHECK(loss_scope);
   CHECK(main_scope);
@@ -305,7 +315,7 @@ void GraphUtil::ComputeGradient(
   for (auto& var_name : vars) {
     VLOG(V_DEBUG) << var_name;
     const Edge* var = loss_scope->FindEdge(var_name);
-    if (!GenCriticalPath(&critical_path, &grads, var, loss, main_scope)) {
+    if (!GenCriticalPath(&critical_path, &grads, var, loss_edge, main_scope)) {
       LOG(FATAL) << var_name << "\tis not a trainable variable";
     }
   }
@@ -342,7 +352,7 @@ void GraphUtil::ComputeGradient(
   }
 
   VLOG(V_DEBUG) << "Generating gradient...";
-  GenGradient(loss_scope, critical_path, grads);
+  GenGradient(loss_scope, critical_path, grads, loss_edge);
 }
 
 void GraphUtil::GradientProcess(
@@ -422,15 +432,6 @@ ScopedNode* GraphUtil::AddOptimizerOp(const OpDef& def) {
 
   const Edge* loss_edge = s_->FindEdge(loss);
   CHECK(loss_edge);
-
-  OpDef const_op;
-  OpDefBuilder("ConstOp")
-    .Output(GetGradientName(loss))
-    .Shape(loss_edge->shape())
-    .AttrSingle("init", 1.f)
-    .Device("GPU")
-    .Finalize(&const_op);
-  loss_scope->AddOp(const_op);
 
   ScopedNode* sn = new ScopedNode(s_, def.output(0), iters);
   VLOG(V_DEBUG) << "Compute Gradients...";
