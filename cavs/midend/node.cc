@@ -1,4 +1,5 @@
 #include "cavs/midend/node.h"
+#include "cavs/midend/graph_session.h"
 
 using std::string;
 using std::vector;
@@ -74,7 +75,6 @@ void SingleNode::SetShape(
 Statement* SingleNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    //LOG(INFO) << DebugInfo();
     OpImpl* op = NULL;
     if (sess->session_type() == SessionBase::MPI &&
         (op_def().name() == "Variable" ||
@@ -103,21 +103,28 @@ Statement* SingleNode::Compile(
 Statement* GraphNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
+    OpContext* ctxt = sess->GetContext(this);
+
     VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
+    CHECK(!gsess_);
+    int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
+    CHECK(max_graph_node_count > 0);
+    gsess_ = new GraphSession(sess, max_graph_node_count);
 
     Scope* leaf = main_scope()->FindChildScope("Leaf");
     CHECK_NOTNULL(leaf);
     ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
     lsn->SetContainedScope(leaf);
-    Statement* lstmt = lsn->Compile(sess);
+    Statement* lstmt = lsn->Compile(gsess_);
 
     Scope* inode = main_scope()->FindChildScope("Inode");
     CHECK_NOTNULL(inode);
     ScopedNode* isn = new ScopedNode(main_scope(), "Inode", 1);
     isn->SetContainedScope(inode);
-    Statement* istmt = isn->Compile(sess);
+    Statement* istmt = isn->Compile(gsess_);
 
     stmt_ = new GraphStatement(lstmt, istmt);
+    dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }
   return stmt_;
 }

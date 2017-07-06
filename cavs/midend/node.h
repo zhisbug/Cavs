@@ -18,6 +18,7 @@ namespace midend {
 class Scope;
 class Edge;
 class SessionBase;
+class GraphSession;
 
 class Node {
  public:
@@ -88,8 +89,10 @@ class SingleNode : public Node {
 class GraphNode : public SingleNode {
  public:
   GraphNode(const OpDef& op_def, Scope* s)
-    : SingleNode(op_def, s) {}
+    : SingleNode(op_def, s), gsess_(NULL) {}
   Statement* Compile(SessionBase* sess) override;
+ private:
+  GraphSession* gsess_;
 }; 
 
 //The ScopedNode is defined as a group of nodes

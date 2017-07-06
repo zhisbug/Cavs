@@ -46,16 +46,19 @@ Sym GraphSupport::Output() {
 
   CHECK(inode_shape == leaf_shape);
   CHECK(!inode_shape.empty());
-  int count = 1;
-  for (int d : inode_shape) count *= d;
+  int one_node_output_size = 1;
+  for (int d : inode_shape) one_node_output_size *= d;
+  int max_graph_node_count = 1;
+  for (int d : raw_graph_.shape(0)) max_graph_node_count *= d;
 
   OpDef def = OpDefBuilder("GraphOutput")
                 .Input(raw_graph_.output(0))
                 .Input(raw_vertex_.output(0))
                 .Dtype(raw_vertex_.type())
                 .Device(raw_vertex_.device())
-                .Shape({-1, count})
+                .Shape({-1, one_node_output_size})
                 .AttrSingle("Wavefront", true)
+                .AttrSingle("MaxGraphNodeCount", max_graph_node_count)
                 .Finalize();
   return Sym(def);
 }
