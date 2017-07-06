@@ -16,7 +16,6 @@ using ::backend::CreateOp;
 class Statement {
  public:
   virtual void Run() = 0;
-  //inline void SetRound(int r) { round_ = r; }
   inline static void IncRound() {
     round_++;
     dynamic_exist_ = false;
@@ -84,7 +83,6 @@ class BasicBlock : public Statement {
     VLOG(V_DEBUG) << "This Basic Block will Run " << iter_ << " iterations ";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
-        CHECK(stmt);
         stmt->Run();
       }
     }

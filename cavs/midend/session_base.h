@@ -12,17 +12,18 @@ class OpContext;
 class Node;
 class SessionBase {
  public:
-  const Tensor* GetTensor(const std::string& name, bool recursive = false) const;
-  void InsertTensor(const Tensor& t);
+  virtual const Tensor* GetTensor(const std::string& name, bool recursive = false) const;
+  virtual OpContext* GetContext(const Node* node) ;
   virtual void Run(const std::vector<std::string>& output_names, 
                    std::vector<Tensor>* output_tensors,
                    const std::vector<std::string>& input_names,
                    const std::vector<Tensor>& input_tensors) {
     LOG(FATAL) << "Base Session";
   }
-  virtual OpContext* GetContext(const Node* node);
+  enum { BASE=1, SIMPLE=2, MPI=3, GRAPH=4 };
   virtual int session_type() const { return BASE; }
-  enum { BASE=1, SIMPLE=2, MPI=3, PARTIALEXECUTION=4 };
+
+  void InsertTensor(const Tensor& t);
   std::string debug_info() const ;
  protected:
   std::unordered_map<std::string, Tensor> tensor_map_;

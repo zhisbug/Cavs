@@ -37,6 +37,7 @@ class Scope {
   friend class ScopedNode;
   friend class GraphUtil;
   inline std::string name() const { return name_; }
+  std::string scoped_name() const;
   void DebugSymbolTable() const;
   std::string debug_info() const;
     

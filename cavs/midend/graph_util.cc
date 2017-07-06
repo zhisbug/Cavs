@@ -14,37 +14,6 @@ using namespace std;
 
 namespace midend {
 
-//void DeduceAndApplyOneGradNode(
-    //Scope* s,
-    //const Node* node,
-    //const string& edge) {
-  //const vector<OpDef>& grads = 
-    //::backend::MakeGradient(node->op_def()); 
-  //CHECK(grads.size()) << node->op_def().DebugString();
-  //bool exist = false;
-  //for (auto& grad : grads) {
-    //if (std::find(grad.output().begin(), grad.output().end(),
-         //GetGradientName(edge)) == grad.output().end()) {
-      //continue;
-    //}
-    //CHECK(!exist) << "Two grad possible?"
-                  //<< node->op_def().DebugString()
-                  //<< grad.DebugString();
-    ////Node* grad_node = s->AddNode(grad);
-    //Node* grad_node = s->AddOp(grad);
-    //if (grad_node) {
-      //const vector<TensorShapeDef>& inputs = 
-        //grad_node->input_shapes();
-      //const vector<TensorShapeDef>& shapes = 
-        //::backend::ShapeInference(grad, inputs);
-      //grad_node->SetShape(shapes);
-    //}
-    //exist = true;
-  //}
-  //CHECK(exist) << "No gradient wrt the edge name";
-  //return;
-//}
-
 //bool TraverseCriticalPath(Scope* loss_scope,
       //const Edge* loss, const Edge* curr,
       //unordered_map<const Node*, bool>* fwd_path,
@@ -197,8 +166,6 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     return true;
   }else {
     bool inpath = false;
-    //CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
-    //for (auto&& dst : initializer_list<i>{curr->dst(true), curr->control_dependency()}) {
     for (Node* node : curr->dst(true)) {
       int idx = scope->node2idx_.at(node);
       CHECK(cpath->size() > idx);
@@ -230,8 +197,6 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
         inpath = true;
       }
     }
-
-    //}
     return inpath;
   }
 }
@@ -374,7 +339,6 @@ void GraphUtil::GradientProcess(
     .Device("GPU")
     .AttrSingle<float>("clip", clip)
     .Finalize(&clipper);
-  //loss_scope->AddNode(clipper);
   loss_scope->AddOp(clipper);
 }
 

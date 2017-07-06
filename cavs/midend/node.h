@@ -31,13 +31,13 @@ class Node {
 
   inline Scope* scope() const { return located_; }
 
-  inline Edge*                     input(int idx)  const;
-  inline const std::vector<Edge*>& input()         const;
-  inline int                       input_size()    const;
-  inline Edge*                     output(int idx) const;
-  inline const std::vector<Edge*>& output()        const;
-  inline int                       output_size()   const;
-  inline const std::vector<Edge*>& control_dependency()    const;
+  inline Edge*                     input(int idx)       const;
+  inline const std::vector<Edge*>& input()              const;
+  inline int                       input_size()         const;
+  inline Edge*                     output(int idx)      const;
+  inline const std::vector<Edge*>& output()             const;
+  inline int                       output_size()        const;
+  inline const std::vector<Edge*>& control_dependency() const;
 
   std::vector<TensorShapeDef> input_shapes() const;
 
@@ -48,8 +48,6 @@ class Node {
   virtual std::string debug_info() const;
 
  protected:
-  //explicit Node(const OpDef& op_def, Scope* s);
-  //explicit Node(const OpDef& op_def, Scope* s);
   explicit Node(Scope* located);
   OpDef op_def_;
   std::vector<Edge*> inputs_;
@@ -61,12 +59,11 @@ class Node {
 
 class SingleNode : public Node {
  public:
-  //explicit SingleNode(const OpDef& op_def, Scope* s)
-    //: Node(op_def, s) {}
   SingleNode(const OpDef& op_def, Scope* s);
   Statement* Compile(SessionBase* sess) override;
+  void SetShape(const std::vector<TensorShapeDef>& def);
 
-  bool IsSingleNode() const override { return true;  }
+  inline bool IsSingleNode() const override { return true;  }
   inline bool IsVariableOp() const {
     return (op_def_.name() == "Variable" || op_def_.name() == "DDV");
   }
@@ -82,8 +79,6 @@ class SingleNode : public Node {
   inline std::string name() const override {
     return op_def_.name();
   }
-
-  void SetShape(const std::vector<TensorShapeDef>& def);
   std::string debug_info() const override;
 
  protected:

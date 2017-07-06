@@ -12,25 +12,29 @@ using std::set;
 namespace midend {
 
 Scope::Scope(const Scope* father, const std::string& n)
-    : father_(father) {
+    : father_(father), name_(n) {
   if (father) {
-    name_ = father->name() + ":" + n;
     CHECK(father->children_.find(name_) == father->children_.end());
     const_cast<Scope*>(father)->children_[name_] = const_cast<Scope*>(this);
-  }else {
-    name_ = n;
   }
+}
+
+string Scope::scoped_name() const {
+  if (father_) {
+    return father_->scoped_name() + ":" + name();
+  }else
+    return name();
 }
 
 Scope* Scope::FindChildScope(const string& n, bool within) const {
   const Scope* s = this;
   if (!within) {
-    while (s && s->children_.find(s->name() + ":" + n) == s->children_.end()) {
+    while (s && s->children_.find(n) == s->children_.end()) {
       s = s->father_;
     }
   }
-  if (s && s->children_.find(s->name() + ":" + n) != s->children_.end())
-    return s->children_.at(s->name() + ":" + n); 
+  if (s && s->children_.find(n) != s->children_.end())
+    return s->children_.at(n); 
   else
     return NULL;
 }
@@ -99,9 +103,11 @@ SingleNode* Scope::AddOp(const OpDef& op_def) {
   OpDef new_def = op_def;
   if (op_def.name() == "GraphOutput") {
     AddGraphOpTransformation(&new_def, op_def);
+    node = new GraphNode(new_def, this);
+  }else {
+    node = new SingleNode(new_def, this);
   }
 
-  node = new SingleNode(new_def, this);
 
   VLOG(V_DEBUG) << "Adding node \t" << node->debug_info()
                 << "\tTo Scope " << name() << "\n"

@@ -102,19 +102,24 @@ Statement* SingleNode::Compile(
 
 Statement* GraphNode::Compile(
     SessionBase* sess) {
-  //if (!stmt_) {
-    ////Scope*
-    //OpImpl* op = NULL;
-    //VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
-    //op = CreateOp(op_def());
-    //OpContext* ctxt = sess->GetContext(this);
-    //CHECK(op) << op_def().DebugString();
-    //CHECK(ctxt) << op_def().DebugString();
-    //GraphStatement* graph_stmt =  new GraphStatement(op, ctxt);
-    //CHECK(expr_stmt);
-    //stmt_ = expr_stmt;
-  //}
-  //return stmt_;
+  if (!stmt_) {
+    VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
+
+    Scope* leaf = main_scope()->FindChildScope("Leaf");
+    CHECK_NOTNULL(leaf);
+    ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
+    lsn->SetContainedScope(leaf);
+    Statement* lstmt = lsn->Compile(sess);
+
+    Scope* inode = main_scope()->FindChildScope("Inode");
+    CHECK_NOTNULL(inode);
+    ScopedNode* isn = new ScopedNode(main_scope(), "Inode", 1);
+    isn->SetContainedScope(inode);
+    Statement* istmt = isn->Compile(sess);
+
+    stmt_ = new GraphStatement(lstmt, istmt);
+  }
+  return stmt_;
 }
 
 ScopedNode::ScopedNode(Scope* located,
