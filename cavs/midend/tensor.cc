@@ -210,9 +210,7 @@ void Tensor::Resize(const TensorShapeDef& shape) {
 
 
 void Tensor::SyncWith(const Tensor& t) {
-  //currently, syncwith function is used for
-  //cross-device data synchronization
-  CHECK(t.device_type() != device_type());
+  //CHECK(t.device_type() != device_type());
   CHECK(t.buf_ && buf_);
   CHECK(t.shape_.n_elements() > 0 && shape_.n_elements() > 0);
   size_t size = count();
@@ -228,6 +226,14 @@ void Tensor::SyncWith(const Tensor& t) {
   }else if (t.device_type() == GPU && device_type() == CPU) {
     checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
                    size, cudaMemcpyDeviceToHost));
+  }else if (t.device_type() == CPU && device_type() == CPU) {
+    checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
+                   size, cudaMemcpyHostToHost));
+  }else if (t.device_type() == GPU && device_type() == GPU) {
+    checkCudaError(cudaMemcpy(buf_->data(), t.buf_->data(), 
+                   size, cudaMemcpyDeviceToDevice));
+  }else{
+    LOG(FATAL) << "which device on earth?";
   }
 }
 

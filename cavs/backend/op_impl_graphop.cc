@@ -20,11 +20,11 @@ class GraphGatherOp : public OpImpl {
 
   void Compute(OpContext* context) override {
     LOG(FATAL) << "Gather Operator needs further runtime support";
-    int job_id = GraphScheduler::GetJobId();
-    int child_id = GraphScheduler::child_id(job_id, child_idx_);
-    Tensor* out = context->Output(0);
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(), GraphScheduler::buffer(child_id)+offset_*sizeof(T), 
-                              out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //int job_id = GraphScheduler::GetJobId();
+    //int child_id = GraphScheduler::child_id(job_id, child_idx_);
+    //Tensor* out = context->Output(0);
+    //checkCudaError(cudaMemcpy(out->mutable_data<T>(), GraphScheduler::buffer(child_id)+offset_*sizeof(T), 
+                              //out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
   }
 
  private:
@@ -39,11 +39,11 @@ class GraphScatterOp : public OpImpl {
 
   void Compute(OpContext* context) override {
     LOG(FATAL) << "Push Operator needs further runtime support";
-    int job_id = GraphScheduler::GetJobId();
-    const Tensor& inp = context->Input(0);
-    GraphScheduler::SetUnit(inp.count()*sizeof(T));
-    checkCudaError(cudaMemcpy(GraphScheduler::buffer(job_id), inp.data<T>(),
-                              inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //int job_id = GraphScheduler::GetJobId();
+    //const Tensor& inp = context->Input(0);
+    //GraphScheduler::SetUnit(inp.count()*sizeof(T));
+    //checkCudaError(cudaMemcpy(GraphScheduler::buffer(job_id), inp.data<T>(),
+                              //inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
   }
 };
 
@@ -53,11 +53,11 @@ class GraphPushOp : public OpImpl {
   explicit GraphPushOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     LOG(FATAL) << "Push Operator needs further runtime support";
-    int job_id = GraphScheduler::GetJobId();
-    const Tensor& inp = context->Input(0);
-    Tensor* out = context->Output(0);
-    checkCudaError(cudaMemcpy(out->mutable_data<T>()+job_id, inp.data<T>(), 
-                              inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //int job_id = GraphScheduler::GetJobId();
+    //const Tensor& inp = context->Input(0);
+    //Tensor* out = context->Output(0);
+    //checkCudaError(cudaMemcpy(out->mutable_data<T>()+job_id, inp.data<T>(), 
+                              //inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
   }
 };
 
@@ -67,11 +67,11 @@ class GraphPullOp : public OpImpl {
   explicit GraphPullOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     LOG(FATAL) << "Pull Operator needs further runtime support";
-    int job_id = GraphScheduler::GetJobId();
-    const Tensor& inp = context->Input(0);
-    Tensor* out = context->Output(0);
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(), inp.data<T>()+job_id, 
-                              out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //int job_id = GraphScheduler::GetJobId();
+    //const Tensor& inp = context->Input(0);
+    //Tensor* out = context->Output(0);
+    //checkCudaError(cudaMemcpy(out->mutable_data<T>(), inp.data<T>()+job_id, 
+                              //out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
   }
 };
 

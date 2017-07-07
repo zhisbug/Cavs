@@ -11,48 +11,41 @@ namespace midend {
 
 class GraphScheduler {
  public:
-  static void ActiveItsParent(int id);
-  static int GetJobId();
-  static bool LeafEmpty() {
-    return Get()->activate_leaf_.empty(); 
+  GraphScheduler() : parent_ids_(0), sample_id_(0) {}
+  void ActiveItsParent(int id);
+  int GetJobId();
+  bool LeafEmpty() {
+    return activate_leaf_.empty(); 
   }
-  static bool InodeEmpty() {
-    return Get()->activate_inode_.empty(); 
+  bool InodeEmpty() {
+    return activate_inode_.empty(); 
   }
   //static void LoadGraph(std::vector<int>&& parent_ids);
-  static void LoadGraph(const Tensor& parent_ids);
-  static bool isLeaf(int id) {
-    return Get()->child_ids_[id].empty();
+  void LoadGraph(const Tensor& parent_ids);
+  bool isLeaf(int id) {
+    CHECK(sample_id_ < child_ids_.size());
+    CHECK(id < child_ids_[sample_id_].size());
+    return child_ids_[sample_id_][id].empty();
   }
-  static int parent_id(int id) {
-    return Get()->parent_ids_[id]; 
+  int parent_id(int id) {
+    CHECK(sample_id_ < parent_ids_.size());
+    CHECK(id < parent_ids_[sample_id_].size());
+    return parent_ids_[sample_id_][id]; 
   }
-  static int child_id(int parent_id, int child_offset) {
+  int child_id(int parent_id, int child_rank) {
+    CHECK(sample_id_ < child_ids_.size());
     CHECK(!isLeaf(parent_id));
-    CHECK(Get()->child_ids_[parent_id].size() > child_offset);
-    return Get()->child_ids_[parent_id][child_offset]; 
-  }
-  static void* buffer(int child_id) {
-    LOG(FATAL) << "How to define the unit of child";
-    return (char*)Get()->__internal_storage_
-         + child_id*Get()->__internal_unit_;
-  }
-  static void SetUnit(size_t u) {
-    if (Get()->__internal_unit_ != u) {
-      CHECK(Get()->__internal_unit_ == 0); 
-      Get()->__internal_unit_ = u;
-    }
+    CHECK(child_rank < child_ids_[sample_id_][parent_id].size());
+    return child_ids_[sample_id_][parent_id][child_rank]; 
   }
 
  private:
-  GraphScheduler() : __internal_unit_(0) {}
-  static GraphScheduler* Get() { static GraphScheduler gs; return &gs; }
+  //static GraphScheduler* Get() { static GraphScheduler gs; return &gs; }
   std::list<int> activate_leaf_;
   std::list<int> activate_inode_;
-  std::vector<int> parent_ids_;
-  std::vector<std::vector<int>> child_ids_;
-  void* __internal_storage_;
-  size_t __internal_unit_;
+  std::vector<std::vector<int>> parent_ids_;
+  std::vector<std::vector<std::vector<int>>> child_ids_;
+  int sample_id_;
 };
 
 class BatchedGraphScheduler : public GraphScheduler {

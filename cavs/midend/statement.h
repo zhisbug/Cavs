@@ -100,14 +100,14 @@ class BasicBlock : public Statement {
 
 class GraphStatement : public ExprStatement {
  public:
-  GraphStatement(Statement* leaf, Statement* inode)
-      : ExprStatement(), leaf_(leaf), inode_(inode) {}
+  GraphStatement(Statement* leaf, Statement* inode);
 
   void Run() override;
 
  private:
   Statement* leaf_;
   Statement* inode_;
+  GraphScheduler* gs_;
 };
 
 } //namespace midend

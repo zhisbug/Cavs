@@ -120,8 +120,8 @@ void SimpleSession::FeedInput(const vector<string>& input_names,
       VLOG(V_DEBUG) << "Copying to GPU...";
       t->SyncWith(input_tensors[i]);
     }else {
-      VLOG(V_DEBUG) << "Pointer switching on CPU...";
-      *t = input_tensors[i];
+      VLOG(V_DEBUG) << "Copying to CPU...";
+      t->SyncWith(input_tensors[i]);
     }
   }
 }

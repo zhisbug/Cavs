@@ -303,7 +303,6 @@ void GraphUtil::ComputeGradient(
 
       for (auto* e : main_scope->typological_sorted_nodes_[i]->output()) {
         for (auto* n : e->control_dependency()) {
-          VLOG(V_DEBUG) << "here!!!";
           CHECK(n->scope() == main_scope);
           if (!critical_path[main_scope->node2idx_.at(n)]) {
             VLOG(V_DEBUG) << "Triger dependency in ScopedNode: "

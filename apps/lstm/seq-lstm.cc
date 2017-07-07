@@ -114,7 +114,7 @@ int main(int argc, char* argv[]) {
   load(&input_data, &label_data, &data_len);
   vector<vector<float>> input_ph;
   vector<vector<float>> label_ph;
-  vector<vector<float>> graph_ph;
+  vector<vector<int>> graph_ph;
   const int sample_len = data_len/FLAGS_batch;
   cout << "sample_len = " << sample_len << endl;;
   input_ph.resize(sample_len/FLAGS_timestep); 
