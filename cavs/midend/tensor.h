@@ -87,7 +87,7 @@ class Tensor {
   void Reshape(const TensorShapeDef& shape);
   void Reshape(const std::vector<int>& dims);
   void Reshape(const Tensor& t);
-  void ScaleShape(int dyn_dim);
+  void Resize(const TensorShapeDef& shape);
   template <typename T>
     T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
   template <typename T>

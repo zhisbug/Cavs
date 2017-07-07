@@ -53,9 +53,9 @@ class ExprStatement : public Statement {
     VLOG(V_TIMING) << "--------------------------------------";
     VLOG(V_TIMING) << "Context Info \n" << ctxt_->debug_info();
     ctxt_->SetRound(round());
-    if (dynamic_exist()) {
-      ctxt_->ScaleTensor(dynamic_dim());
-    }
+    //if (dynamic_exist()) {
+      //ctxt_->ScaleTensor(dynamic_dim());
+    //}
     op_->Compute(ctxt_);
     VLOG(V_TIMING) << "======================================";
   }

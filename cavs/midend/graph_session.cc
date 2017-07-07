@@ -79,6 +79,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
                     << TensorNameInFunctionContext(output)
                     << " with shape info: " << shape.debug_info();
       Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(shape));
+      out.Resize(output->shape());
       VLOG(V_DEBUG) << out.debug_info();
       InsertTensor(out);
     }

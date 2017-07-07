@@ -23,7 +23,7 @@ class OpContext {
   inline int round() const { return round_; }
   inline void ResetDynDim() { CHECK(dyn_dim_ > 0); dyn_dim_ = 0; }
   inline int dyn_dim() const { return dyn_dim_; }
-  inline void ScaleTensor(int new_dim);
+  //inline void ScaleTensor(int new_dim);
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
@@ -61,28 +61,28 @@ inline void OpContext::AppendOutput(const Tensor& t) {
   outputs_.push_back(t); 
 }
 
-inline void OpContext::ScaleTensor(int new_dim) {
-  bool scaled = false;
-  for (auto& t : inputs_) {
-    if (t.IsDynamicSize()) {
-      //we assume only one input tensor size is dynamic
-      CHECK(!scaled);
-      scaled = true;
-    } 
-  }
+//inline void OpContext::ScaleTensor(int new_dim) {
+  //bool scaled = false;
+  //for (auto& t : inputs_) {
+    //if (t.IsDynamicSize()) {
+      ////we assume only one input tensor size is dynamic
+      //CHECK(!scaled);
+      //scaled = true;
+    //} 
+  //}
 
-  bool will_scale = false;
-  for (auto& t : outputs_) {
-    if (t.IsDynamicSize()) {
-      //we assume only one output tensor size is dynamic
-      CHECK(!will_scale);
-      will_scale = true;
-      t.ScaleShape(new_dim);
-    } 
-  }
+  //bool will_scale = false;
+  //for (auto& t : outputs_) {
+    //if (t.IsDynamicSize()) {
+      ////we assume only one output tensor size is dynamic
+      //CHECK(!will_scale);
+      //will_scale = true;
+      //t.ScaleShape(new_dim);
+    //} 
+  //}
 
-  CHECK(!(scaled ^ will_scale));
-}
+  //CHECK(!(scaled ^ will_scale));
+//}
 
 } //namespace midend
         

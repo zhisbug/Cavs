@@ -198,14 +198,14 @@ void Tensor::Reshape(const Tensor& t) {
 }
 
 //the shape may be less than the real buffer size
-void Tensor::ScaleShape(int dyn_dim) {
-  CHECK(shape_.n_elements() > 0);
-  CHECK(shape_.dim(0) != dyn_dim);
-  if (dyn_dim > shape_.dim(0)) {
-    int new_count = count()/shape_.dim(0)*dyn_dim;
-    buf_->Resize(new_count);
+void Tensor::Resize(const TensorShapeDef& shape) {
+  int new_counts = 1;
+  for (auto& dim : shape.dim())
+    new_counts *= dim;
+  if (new_counts > shape_.n_elements()) {
+    buf_->Resize(new_counts);
   }
-  shape_.SetDim(0, dyn_dim);
+  shape_ = TensorShape(shape);
 }
 
 
