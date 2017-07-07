@@ -10,7 +10,7 @@ Edge::Edge(const string& name, Scope* s)
 }
 
 inline string Edge::scoped_name() const {
-  return located_->name() + ":" + name();
+  return located_->scoped_name() + ":" + name();
 }
 
 void Edge::AddDst(Node* node) {

@@ -61,8 +61,9 @@ class GraphPushOp : public OpImpl {
 template <typename T>
 class GraphPullOp : public OpImpl {
  public:
-  explicit GraphPullOp(const OpDef& def) {}
+  explicit GraphPullOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
+    LOG(FATAL) << "Pull Operator needs implementation";
     int job_id = GraphScheduler::GetJobId();
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
@@ -91,5 +92,6 @@ class GraphOutputGradOp : public OpImpl {
 
 REGISTER_OP_IMPL_BUILDER(Key("GraphOutput").Device("GPU"), GraphOutputOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("GraphOutput")).Device("GPU"), GraphOutputGradOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key("Pull").Device("GPU"), GraphPullOp<float>);
 
 } //namespace backend

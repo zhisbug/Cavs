@@ -4,6 +4,14 @@ using std::string;
 
 namespace midend {
 
+//For normal single node, the original scope is its running scope
+//But for graph/function node, the original scope is only it defination scope
+//its running scope may be belongs to the optimizer scope
+string GraphSession::TensorNameInFunctionContext(const Edge* e) const {
+  CHECK_NOTNULL(running_scope_);
+  return running_scope_->scoped_name() + ":" + e->name();
+}
+
 const Tensor* GraphSession::GetTensor(const string& name, bool recursive) const {
   const Tensor* t;
   if (t = SessionBase::GetTensor(name, recursive))
@@ -22,16 +30,20 @@ OpContext* GraphSession::GetContext(const Node* node) {
   CHECK(node->IsSingleNode());
   const OpDef& op_def = dynamic_cast<const SingleNode*>(node)->op_def();
   for (auto* input : node->input()) {
-    const Tensor* t = GetTensor(input->scoped_name()); 
-    CHECK(t) << "Getting " << input->scoped_name();
+    //for the input scope, there might be two cases:
+    //1) the input is in main scope and not moved into sub-scope(such as placeholder)
+    //2) the input is in main scope and moved into sub-scope(such as slice)
+    //for both cases, we use the recursive method to fetch tensor
+    const Tensor* t = GetTensor(TensorNameInFunctionContext(input), true); 
+    CHECK(t) << "Getting " << TensorNameInFunctionContext(input);
     ctxt->AppendInput(*t);
   }
 
   for (auto* output : node->output()) {
-    const Tensor* t = GetTensor(output->scoped_name());
+    const Tensor* t = GetTensor(TensorNameInFunctionContext(output));
     //all the outputs of the operators in the function are unique
     CHECK(!t);
-    const Tensor* upper_t = GetTensor(output->scoped_name(), true);
+    const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
     //all the outputs of the operators in the function are unique
     CHECK(!upper_t);
     //We assume we do not support reshape operators in the body of a function
@@ -41,8 +53,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
       //and only share output(0) with input(0)
       //CHECK(node->inputs_size() == 1); //reshape need two inputs
       CHECK(node->output_size() == 1); 
-      Tensor out(output->scoped_name(),
-          *GetTensor(node->input(0)->scoped_name()));
+      Tensor out(TensorNameInFunctionContext(output),
+          *GetTensor(TensorNameInFunctionContext(node->input(0))));
       out.Reshape(output->shape());
       LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
       InsertTensor(out);
@@ -64,14 +76,14 @@ OpContext* GraphSession::GetContext(const Node* node) {
       Allocator* alloc = GetAllocator(op_def); 
       CHECK_NOTNULL(alloc);
       VLOG(V_DEBUG) << "[In Graph Session]: Allocating full tensor for "
-                    << output->scoped_name()
+                    << TensorNameInFunctionContext(output)
                     << " with shape info: " << shape.debug_info();
-      Tensor out(output->scoped_name(), alloc, op_def.dtype(), std::move(shape));
+      Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(shape));
       VLOG(V_DEBUG) << out.debug_info();
       InsertTensor(out);
     }
-    t = GetTensor(output->scoped_name());
-    CHECK(t) << t->debug_info();
+    t = GetTensor(TensorNameInFunctionContext(output));
+    CHECK_NOTNULL(t);
     ctxt->AppendOutput(*t);
   }
   return ctxt;

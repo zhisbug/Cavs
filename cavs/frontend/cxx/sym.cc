@@ -89,7 +89,7 @@ Sym Sym::Placeholder(DataType type, const vector<int>& shape,
 Sym Sym::Constant(DataType type, float value, const vector<int>& shape,
       string device) {
   CHECK(shape.size() > 0);
-  OpDef def = OpDefBuilder("Constant")
+  OpDef def = OpDefBuilder("ConstOp")
                 .Dtype(type)
                 .Device(device)
                 .Shape(shape)
