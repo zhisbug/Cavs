@@ -52,6 +52,27 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
                             cudaMemcpyDeviceToDevice));
 }
 
-REGISTER_OP_IMPL_BUILDER(Key("Slice").Device("GPU"), SliceOpImpl<float>);
+template <typename T>
+class ConcatOpImpl : public OpImpl {
+ public:
+  explicit ConcatOpImpl(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    Tensor* out = context->Output(0);
+    CHECK(out->count() > 0);
+    int input_count = 0;
+    for (int i = 0; i < context->InputSize(); i++) {
+      const Tensor& inp = context->Input(i);
+      CHECK(inp.count() > 0);
+      CHECK(input_count + inp.count() <= out->count());
+      checkCudaError(cudaMemcpy(out->mutable_data<T>()+inp.count(), inp.data<T>(),
+                                inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+      input_count += inp.count();
+    } 
+    CHECK(out->count() == input_count);
+  }
+};
+
+REGISTER_OP_IMPL_BUILDER(Key("Slice").Device("GPU"),  SliceOpImpl<float>);
+REGISTER_OP_IMPL_BUILDER(Key("Concat").Device("GPU"), ConcatOpImpl<float>);
 
 } //namespace backend
