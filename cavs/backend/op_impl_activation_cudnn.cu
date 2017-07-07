@@ -11,6 +11,7 @@ namespace backend {
 
 using ::midend::Tensor;
 
+template <cudnnActivationMode_t mode>
 class ActivationOpCudnnBase : public OpImpl {
  public:
   explicit ActivationOpCudnnBase(const OpDef& def);
@@ -21,32 +22,40 @@ class ActivationOpCudnnBase : public OpImpl {
   cudnnActivationDescriptor_t activation_desc_;
 };
 
-ActivationOpCudnnBase::ActivationOpCudnnBase(const OpDef& def)
+template <cudnnActivationMode_t mode>
+ActivationOpCudnnBase<mode>::ActivationOpCudnnBase(const OpDef& def)
     : OpImpl(def) {
   checkCUDNNError(cudnnCreateTensorDescriptor(&x_desc_));    
   checkCUDNNError(cudnnCreateTensorDescriptor(&y_desc_));    
   checkCUDNNError(cudnnCreateActivationDescriptor(&activation_desc_));    
-  //Currently, the arguments are hard coded.
+  /*//Currently, the arguments are hard coded.*/
+  /*checkCUDNNError(cudnnSetActivationDescriptor(activation_desc_,*/
+        /*CUDNN_ACTIVATION_RELU, CUDNN_NOT_PROPAGATE_NAN, 0));    */
   checkCUDNNError(cudnnSetActivationDescriptor(activation_desc_,
-        CUDNN_ACTIVATION_RELU, CUDNN_NOT_PROPAGATE_NAN, 0));    
+        mode, CUDNN_NOT_PROPAGATE_NAN, 0));    
 }
 
-ActivationOpCudnnBase::~ActivationOpCudnnBase() {
+template <cudnnActivationMode_t mode>
+ActivationOpCudnnBase<mode>::~ActivationOpCudnnBase() {
   checkCUDNNError(cudnnDestroyTensorDescriptor(x_desc_));
   checkCUDNNError(cudnnDestroyTensorDescriptor(y_desc_));
   checkCUDNNError(cudnnDestroyActivationDescriptor(activation_desc_));
 }
 
-template <typename T>
-class ActivationOpCudnn : public ActivationOpCudnnBase {
+template <typename T, cudnnActivationMode_t mode>
+class ActivationOpCudnn : public ActivationOpCudnnBase<mode> {
  public:
   explicit ActivationOpCudnn(const OpDef& def) 
-      : ActivationOpCudnnBase(def) {}
+      : ActivationOpCudnnBase<mode>(def) {}
   void Compute(OpContext* context) override;
+
+  using ActivationOpCudnnBase<mode>::x_desc_;
+  using ActivationOpCudnnBase<mode>::y_desc_;
+  using ActivationOpCudnnBase<mode>::activation_desc_;
 };
 
-template <typename T>
-void ActivationOpCudnn<T>::Compute(OpContext* context) {
+template <typename T, cudnnActivationMode_t mode>
+void ActivationOpCudnn<T, mode>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
   CHECK(x.dims() == y->dims());
@@ -75,16 +84,20 @@ void ActivationOpCudnn<T>::Compute(OpContext* context) {
   /*y->DebugNumerical<T>();*/
 }
 
-template <typename T>
-class ActivationOpCudnnGrad : public ActivationOpCudnnBase {
+template <typename T, cudnnActivationMode_t mode>
+class ActivationOpCudnnGrad : public ActivationOpCudnnBase<mode> {
  public:
   explicit ActivationOpCudnnGrad(const OpDef& def) 
-      : ActivationOpCudnnBase(def) {}
+      : ActivationOpCudnnBase<mode>(def) {}
   void Compute(OpContext* context) override;
+
+  using ActivationOpCudnnBase<mode>::x_desc_;
+  using ActivationOpCudnnBase<mode>::y_desc_;
+  using ActivationOpCudnnBase<mode>::activation_desc_;
 };
 
-template <typename T>
-void ActivationOpCudnnGrad<T>::Compute(OpContext* context) {
+template <typename T, cudnnActivationMode_t mode>
+void ActivationOpCudnnGrad<T, mode>::Compute(OpContext* context) {
   const Tensor& dy = context->Input(0);
   const Tensor& y = context->Input(1);
   const Tensor& x = context->Input(2);
@@ -120,7 +133,11 @@ void ActivationOpCudnnGrad<T>::Compute(OpContext* context) {
   /*dx->DebugNumerical<T>();*/
 }
 
-REGISTER_OP_IMPL_BUILDER(Key("Relu").Device("GPU"), ActivationOpCudnn<float>);
-REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Relu")).Device("GPU"), ActivationOpCudnnGrad<float>);
+REGISTER_OP_IMPL_BUILDER(Key("Relu").Device("GPU"),    ActivationOpCudnn<float, CUDNN_ACTIVATION_RELU>);
+REGISTER_OP_IMPL_BUILDER(Key("Sigmoid").Device("GPU"), ActivationOpCudnn<float, CUDNN_ACTIVATION_SIGMOID>);
+REGISTER_OP_IMPL_BUILDER(Key("Tanh").Device("GPU"),    ActivationOpCudnn<float, CUDNN_ACTIVATION_TANH>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Relu")).Device("GPU"),    ActivationOpCudnnGrad<float, CUDNN_ACTIVATION_RELU>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Sigmoid")).Device("GPU"), ActivationOpCudnnGrad<float, CUDNN_ACTIVATION_SIGMOID>);
+REGISTER_OP_IMPL_BUILDER(Key(GetGradientName("Tanh")).Device("GPU"),    ActivationOpCudnnGrad<float, CUDNN_ACTIVATION_TANH>);
 
 } //namespace backend
