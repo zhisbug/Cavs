@@ -68,6 +68,7 @@ class GraphPullOp : public OpImpl {
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Pull Operator needs further runtime support";
     GraphScheduler* gs = context->graph_scheduler();
+    CHECK_NOTNULL(gs);
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
     CHECK(inp.count() >= out->count())

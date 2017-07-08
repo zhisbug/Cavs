@@ -68,7 +68,7 @@ void SoftmaxEntropyLogitsOpCudnn<T>::Compute(OpContext* context) {
                   CUDNN_TENSOR_NCHW, DataTypeToCudnnType<T>::value,
                   YN, YC, YH, YW));
   checkCUDNNError(cudnnSoftmaxForward(CudaCommon::cudnnHandle(),
-                  CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+                  CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_INSTANCE,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, y_desc_, y->mutable_data<T>()));
   x.DebugNumerical<T>();
@@ -128,7 +128,7 @@ void SoftmaxEntropyLossOpCudnn<T>::Compute(OpContext* context) {
   }
   float alpha = 1.f, beta = 0.f;
   checkCUDNNError(cudnnSoftmaxForward(CudaCommon::cudnnHandle(),
-                  CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_CHANNEL,
+                  CUDNN_SOFTMAX_ACCURATE, CUDNN_SOFTMAX_MODE_INSTANCE,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, x_desc_, workspace_));
   int n = label.count();

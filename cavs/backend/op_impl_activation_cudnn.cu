@@ -59,13 +59,15 @@ void ActivationOpCudnn<T, mode>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
   CHECK(x.dims() == y->dims());
-  CHECK(x.dims() < 5);
-  CHECK(x.dims() > 1);
+  CHECK(x.dims() < 5) << x.dims();
+  CHECK(x.dims() > 0) << x.dims();
 
   //I don't know why cudnn has this bug(in NdTensor support)...
+  //it can be one-dimension
+  //and therefore we loose the constraint in the development of tree-lstm
   int XN, YN, XC, YC, XH, YH, XW, YW;
   XN = YN = x.dims(0);
-  XC = YC = x.dims(1);
+  XC = YC = x.dims() > 1? x.dims(1) : 1;
   XH = YH = x.dims() > 2? x.dims(2) : 1;
   XW = YW = x.dims() > 3? x.dims(3) : 1;
 
@@ -104,12 +106,15 @@ void ActivationOpCudnnGrad<T, mode>::Compute(OpContext* context) {
   Tensor* dx = context->Output(0);
 
   CHECK(x.dims() == y.dims());
-  CHECK(x.dims() < 5);
-  CHECK(x.dims() > 1);
+  CHECK(x.dims() < 5) << x.dims();
+  CHECK(x.dims() > 1) << x.dims();
+
   //I don't know why cudnn has this bug(in NdTensor support)...
+  //it can be one-dimension
+  //and therefore we loose the constraint in the development of tree-lstm
   int XN, YN, XC, YC, XH, YH, XW, YW;
   XN = YN = x.dims(0);
-  XC = YC = x.dims(1);
+  XC = YC = x.dims() > 1? x.dims(1) : 1;
   XH = YH = x.dims() > 2? x.dims(2) : 1;
   XW = YW = x.dims() > 3? x.dims(3) : 1;
 
