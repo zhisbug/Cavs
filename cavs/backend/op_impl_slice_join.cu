@@ -47,7 +47,8 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
   }
   CHECK(stride_ == y->count());
 
-  checkCudaError(cudaMemcpy(y->mutable_data<T>(), x.data<T>()+offset_,
+  checkCudaError(cudaMemcpy(y->mutable_data<T>(),
+                            x.data<T>()+offset_,
                             stride_*sizeof(T),
                             cudaMemcpyDeviceToDevice));
 }
@@ -64,8 +65,10 @@ class ConcatOpImpl : public OpImpl {
       const Tensor& inp = context->Input(i);
       CHECK(inp.count() > 0);
       CHECK(input_count + inp.count() <= out->count());
-      checkCudaError(cudaMemcpy(out->mutable_data<T>()+inp.count(), inp.data<T>(),
-                                inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+      checkCudaError(cudaMemcpy(out->mutable_data<T>()+inp.count(),
+                                inp.data<T>(),
+                                inp.count()*sizeof(T),
+                                cudaMemcpyDeviceToDevice));
       input_count += inp.count();
     } 
     CHECK(out->count() == input_count);

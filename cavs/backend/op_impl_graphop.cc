@@ -38,12 +38,23 @@ class GraphScatterOp : public OpImpl {
   explicit GraphScatterOp(const OpDef& def) : OpImpl(def) {}
 
   void Compute(OpContext* context) override {
-    LOG(FATAL) << "Push Operator needs further runtime support";
+    //LOG(FATAL) << "Scatter Operator needs further runtime support";
     //int job_id = GraphScheduler::GetJobId();
     //const Tensor& inp = context->Input(0);
     //GraphScheduler::SetUnit(inp.count()*sizeof(T));
     //checkCudaError(cudaMemcpy(GraphScheduler::buffer(job_id), inp.data<T>(),
                               //inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    const Tensor& inp = context->Input(0);
+    Tensor* out = context->Output(0);
+    CHECK(out->count() == inp.count())
+          << "Input count:\t" << inp.count()
+          << "\t" << inp.debug_size() << "Bytes\n"
+          << "Output count:\t" << out->count() 
+          << "\t" << out->debug_size() << "Bytes";
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>(),
+                              inp.count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
   }
 };
 
@@ -52,12 +63,20 @@ class GraphPushOp : public OpImpl {
  public:
   explicit GraphPushOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
-    LOG(FATAL) << "Push Operator needs further runtime support";
-    //int job_id = GraphScheduler::GetJobId();
-    //const Tensor& inp = context->Input(0);
-    //Tensor* out = context->Output(0);
-    //checkCudaError(cudaMemcpy(out->mutable_data<T>()+job_id, inp.data<T>(), 
-                              //inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //LOG(FATAL) << "Push Operator needs further runtime support";
+    GraphScheduler* gs = context->graph_scheduler();
+    CHECK_NOTNULL(gs);
+    const Tensor& inp = context->Input(0);
+    Tensor* out = context->Output(0);
+    CHECK(out->count() >= inp.count())
+          << "Input count:\t" << inp.count()
+          << "\t" << inp.debug_size() << "Bytes\n"
+          << "Output count:\t" << out->count() 
+          << "\t" << out->debug_size() << "Bytes";
+    checkCudaError(cudaMemcpy(out->mutable_data<T>() + inp.count()*gs->GetJobId(),
+                              inp.data<T>(),
+                              inp.count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
   }
 };
 
@@ -72,8 +91,9 @@ class GraphPullOp : public OpImpl {
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
     CHECK(inp.count() >= out->count())
-          << inp.count() << "\t" << inp.debug_size() << "Bytes\t"
-          << out->count() 
+          << "Input count:\t" << inp.count()
+          << "\t" << inp.debug_size() << "Bytes\n"
+          << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
     checkCudaError(cudaMemcpy(out->mutable_data<T>(),
                               inp.data<T>() + out->count()*gs->GetJobId(), 
