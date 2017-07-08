@@ -109,7 +109,8 @@ Statement* GraphNode::Compile(
     CHECK(!gsess_);
     int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
     CHECK(max_graph_node_count > 0);
-    gsess_ = new GraphSession(sess, located_, max_graph_node_count);
+    GraphScheduler* gs = new GraphScheduler();
+    gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
 
     Scope* leaf = main_scope()->FindChildScope("Leaf");
     CHECK_NOTNULL(leaf);
@@ -123,7 +124,7 @@ Statement* GraphNode::Compile(
     isn->SetContainedScope(inode);
     Statement* istmt = isn->Compile(gsess_);
 
-    stmt_ = new GraphStatement(lstmt, istmt);
+    stmt_ = new GraphStatement(lstmt, istmt, gs);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }
   return stmt_;

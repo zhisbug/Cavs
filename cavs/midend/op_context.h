@@ -2,6 +2,7 @@
 #define CAVS_MIDEND_OP_CONTEXT_H_
 
 #include "cavs/midend/tensor.h"
+#include "cavs/midend/graph_scheduler.h"
 #include "cavs/proto/op_def.pb.h"
 
 #include <unordered_map>
@@ -11,7 +12,7 @@ namespace midend {
 
 class OpContext {
  public:
-  OpContext() : round_(0), dyn_dim_(0) {}
+  OpContext() : round_(0),/* dyn_dim_(0),*/ gs_(NULL) {}
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
   inline int InputSize() const;
@@ -21,8 +22,10 @@ class OpContext {
 
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
-  inline void ResetDynDim() { CHECK(dyn_dim_ > 0); dyn_dim_ = 0; }
-  inline int dyn_dim() const { return dyn_dim_; }
+  void SetGraphScheduler(GraphScheduler* gs);
+  inline GraphScheduler* graph_scheduler() { return gs_; }
+  //inline void ResetDynDim() { CHECK(dyn_dim_ > 0); dyn_dim_ = 0; }
+  //inline int dyn_dim() const { return dyn_dim_; }
   //inline void ScaleTensor(int new_dim);
 
   std::string debug_info() const;
@@ -31,7 +34,8 @@ class OpContext {
   std::vector<Tensor> inputs_;
   std::vector<Tensor> outputs_;
   int round_;
-  int dyn_dim_;
+  GraphScheduler* gs_;
+  //int dyn_dim_;
 };
 
 inline const Tensor& OpContext::Input(int idx) const {

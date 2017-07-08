@@ -8,6 +8,11 @@ namespace midend {
 
 std::unordered_map<std::string, void*> OpContext::repo_;
 
+void OpContext::SetGraphScheduler(GraphScheduler* gs) {
+  CHECK(gs_ == NULL && gs);
+  gs_ = gs;
+}
+
 string OpContext::debug_info() const {
   string info;
   for (unsigned i = 0; i < inputs_.size(); i++) {

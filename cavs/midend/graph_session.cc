@@ -27,6 +27,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
   //But for each function call, it may work on a specific range
   //of the whole tensor, which we will support through tensor class.
   OpContext* ctxt  = new OpContext();
+  CHECK(gscheduler_);
+  ctxt->SetGraphScheduler(gscheduler_);
   CHECK(node->IsSingleNode());
   const OpDef& op_def = dynamic_cast<const SingleNode*>(node)->op_def();
   for (auto* input : node->input()) {
