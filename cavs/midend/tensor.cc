@@ -44,6 +44,7 @@ class TensorBuffer : public TensorBufferBase {
     CHECK(size != elem_*sizeof(T));
     if (data_) { alloc_->Deallocate<T>(data_); }
     data_ = alloc_->Allocate<T>(size/sizeof(T));   
+    elem_ = size/sizeof(T);
   }
 
  private:
@@ -105,12 +106,12 @@ void Tensor::DebugNumerical<float>() const {
 }
 
 Tensor::Tensor() :
-  buf_(nullptr), name_(""),
+  buf_(nullptr), offset_(0), name_(""),
   type_(DataType(0)), dynamic_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, const TensorShape& shape) 
-    : buf_(nullptr), name_(name),
+    : buf_(nullptr), offset_(0), name_(name),
       type_(type), dynamic_(false) {
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
@@ -124,7 +125,7 @@ Tensor::Tensor(const string& name, Allocator *a,
 
 Tensor::Tensor(const string& name, Allocator *a, 
         DataType type, TensorShape&& shape) 
-    : buf_(nullptr), name_(name),
+    : buf_(nullptr), offset_(0), name_(name),
       type_(type), dynamic_(false) {
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
@@ -142,10 +143,11 @@ Tensor::Tensor(const std::string& name, const Tensor& t) {
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
-  buf_   = t.buf_;
-  shape_ = t.shape_;
-  name_  = t.name_;
-  type_  = t.type_;
+  buf_    = t.buf_;
+  shape_  = t.shape_;
+  offset_ = t.offset_;
+  name_   = t.name_;
+  type_   = t.type_;
   return *this;
 }
 
@@ -206,6 +208,19 @@ void Tensor::Resize(const TensorShapeDef& shape) {
     buf_->Resize(new_counts);
   }
   shape_ = TensorShape(shape);
+}
+
+bool Tensor::SetOffsetWithId(int id) {
+  size_t unit = count();
+  CASES(type_, unit *= sizeof(T));
+  if (unit == buf_->size()) {
+    return false; 
+  }else {
+    size_t offset = unit*id; 
+    CHECK(offset < buf_->size()); 
+    offset_ = offset;
+    return true;
+  }
 }
 
 

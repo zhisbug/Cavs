@@ -22,8 +22,12 @@ class OpContext {
 
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
-  void SetGraphScheduler(GraphScheduler* gs);
+  inline void SetGraphScheduler(GraphScheduler* gs) {
+    CHECK(gs_ == NULL && gs);
+    gs_ = gs;
+  }
   inline GraphScheduler* graph_scheduler() { return gs_; }
+  void SetTensorOffset();
   //inline void ResetDynDim() { CHECK(dyn_dim_ > 0); dyn_dim_ = 0; }
   //inline int dyn_dim() const { return dyn_dim_; }
   //inline void ScaleTensor(int new_dim);

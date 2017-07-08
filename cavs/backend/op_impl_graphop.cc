@@ -66,12 +66,18 @@ class GraphPullOp : public OpImpl {
  public:
   explicit GraphPullOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
-    LOG(FATAL) << "Pull Operator needs further runtime support";
-    //int job_id = GraphScheduler::GetJobId();
-    //const Tensor& inp = context->Input(0);
-    //Tensor* out = context->Output(0);
-    //checkCudaError(cudaMemcpy(out->mutable_data<T>(), inp.data<T>()+job_id, 
-                              //out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //LOG(FATAL) << "Pull Operator needs further runtime support";
+    GraphScheduler* gs = context->graph_scheduler();
+    const Tensor& inp = context->Input(0);
+    Tensor* out = context->Output(0);
+    CHECK(inp.count() >= out->count())
+          << inp.count() << "\t" << inp.debug_size() << "Bytes\t"
+          << out->count() 
+          << "\t" << out->debug_size() << "Bytes";
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>() + out->count()*gs->GetJobId(), 
+                              out->count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
   }
 };
 

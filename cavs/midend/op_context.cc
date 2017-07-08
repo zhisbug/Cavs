@@ -8,9 +8,21 @@ namespace midend {
 
 std::unordered_map<std::string, void*> OpContext::repo_;
 
-void OpContext::SetGraphScheduler(GraphScheduler* gs) {
-  CHECK(gs_ == NULL && gs);
-  gs_ = gs;
+void OpContext::SetTensorOffset() {
+  if (gs_) {
+    int job_id = gs_->GetJobId();
+    VLOG(V_DEBUG) << "here" << job_id;
+    for (auto& t : inputs_) {
+      if (!t.SetOffsetWithId(job_id))
+        VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
+                      << "and referenced as an input in a function";
+    }
+    for (auto& t : outputs_) {
+      if (!t.SetOffsetWithId(job_id))
+        VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
+                      << "and referenced as an output in a function";
+    }
+  }
 }
 
 string OpContext::debug_info() const {

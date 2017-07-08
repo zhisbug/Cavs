@@ -78,6 +78,7 @@ class Tensor {
   inline size_t count()    const { return shape_.n_elements(); }
   inline int dims()        const { return shape_.dim(); }
   inline int dims(int idx) const { return shape_.dim(idx); }
+  inline size_t debug_size() const { return buf_->size(); }
 
   //allocate a new buffer
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
@@ -89,9 +90,14 @@ class Tensor {
   void Reshape(const Tensor& t);
   void Resize(const TensorShapeDef& shape);
   template <typename T>
-    T* mutable_data() const { return reinterpret_cast<T*>(buf_->data()); }
+    T* mutable_data() const {
+      return reinterpret_cast<T*>((char*)(buf_->data()) + offset_); 
+  }
   template <typename T>
-    const T* data() const { return reinterpret_cast<T*>(buf_->data()); }
+    const T* data() const {
+      return reinterpret_cast<T*>((char*)(buf_->data()) + offset_); 
+  }
+  bool SetOffsetWithId(int id);
 
   inline bool IsSharedWith(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
   void SyncWith(const Tensor& t);
@@ -105,6 +111,7 @@ class Tensor {
  private:
   std::shared_ptr<TensorBufferBase> buf_;
   TensorShape shape_;
+  size_t offset_;
   std::string name_;
   DataType type_;
   //if a tensor is dynamic at first, it is dynamic at last
