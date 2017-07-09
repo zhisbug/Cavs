@@ -6,11 +6,6 @@ using std::vector;
 
 namespace midend {
 
-//Node::Node(const OpDef& op_def, Scope* s)
-  //: op_def_(op_def), located_(s), stmt_(NULL){
-  //located_->AddNode(this);
-//}
-
 Node::Node(Scope* located) : 
   located_(located), inputs_(0), outputs_(0), stmt_(NULL) {
   located->AddNode(this);
@@ -103,6 +98,7 @@ Statement* SingleNode::Compile(
 Statement* GraphNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
+    OpImpl* op = CreateOp(op_def());
     OpContext* ctxt = sess->GetContext(this);
 
     VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
@@ -125,6 +121,7 @@ Statement* GraphNode::Compile(
     Statement* istmt = isn->Compile(gsess_);
 
     stmt_ = new GraphStatement(lstmt, istmt, gs);
+    dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }
   return stmt_;

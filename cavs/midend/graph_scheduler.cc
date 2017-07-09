@@ -33,7 +33,7 @@ int GraphScheduler::GetJobId() {
 }
 
 //parent-idx form
-void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
+int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   //Get()->parent_ids_ = std::move(parent_ids);
   VLOG(V_DEBUG) << "Loading graph...";
   CHECK(parent_ids.dims() == 2) << parent_ids.debug_info();
@@ -47,11 +47,13 @@ void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   }
   VLOG(V_DEBUG) << "Loading graph...";
 
+  int total_length = 0;
   for (int i = 0; i < parent_ids.dims(0); i++) {
     VLOG(V_DEBUG) << i;
     const int *start = parent_ids.data<int>() + i*parent_ids.dims(1);
     const int *end   = parent_ids.data<int>() + (i+1)*parent_ids.dims(1);
     int real_length = std::find(start, end, -1) + 1 - start;
+    total_length += real_length;
     VLOG(V_DEBUG) << real_length;
     parent_ids_[i].assign(start, start + real_length);
     child_ids_[i].resize(real_length);
@@ -64,6 +66,7 @@ void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   sample_id_ = 0;
   batch_ = parent_ids_.size();
   CHECK(activate_leaf_.empty());
+  return total_length;
 }
 
 void GraphScheduler::ActiveLeaf(int sample_id) {

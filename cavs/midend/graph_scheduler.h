@@ -16,11 +16,14 @@ class GraphScheduler {
   inline bool InodeEmpty() const { return activate_inode_.empty(); }
   void ActiveLeaf(int sample_id);
   void ActiveNext();
-  void LoadGraph(const Tensor& parent_ids);
+  int LoadGraph(const Tensor& parent_ids);
   int GetJobId();
   inline int batch() const { return batch_; }
-  inline void SetMessage(const Tensor* t) { message_passer_ = *t; }
-  inline const Tensor& GetMessage() const { return message_passer_; }
+
+  inline void SetMessagePasser(const Tensor* t) { message_passer_ = *t; }
+  inline const Tensor& GetMessagePasser() const { return message_passer_; }
+  inline void SetMessagePusher(const Tensor* t) { message_pusher_ = *t; }
+  inline const Tensor& GetMessagePusher() const { return message_pusher_; }
 
 
   bool isLeaf(int id) {
@@ -49,6 +52,7 @@ class GraphScheduler {
   int sample_id_;
   int batch_;
   Tensor message_passer_;
+  Tensor message_pusher_;
 };
 
 class BatchedGraphScheduler : public GraphScheduler {

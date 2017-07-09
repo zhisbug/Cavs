@@ -22,7 +22,7 @@ class GraphGatherOp : public OpImpl {
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Gather Operator needs further runtime support";
     GraphScheduler* gs = context->graph_scheduler();
-    const Tensor& inp = gs->GetMessage();
+    const Tensor& inp = gs->GetMessagePasser();
     CHECK(inp.count() == count_);
     Tensor* out = context->Output(0);
     CHECK(out->count() == inp.count())
@@ -59,8 +59,7 @@ class GraphScatterOp : public OpImpl {
                               inp.count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
     GraphScheduler* gs = context->graph_scheduler();
-    gs->SetMessage(out);
-
+    gs->SetMessagePasser(out);
   }
 };
 
@@ -83,6 +82,7 @@ class GraphPushOp : public OpImpl {
                               inp.data<T>(),
                               inp.count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
+    gs->SetMessagePusher(out);
   }
 };
 
@@ -113,8 +113,19 @@ class GraphOutputOp : public OpImpl {
  public:
   explicit GraphOutputOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
-    //do nothing now...
-    LOG(FATAL) << "graphoutput Operator needs further runtime support";
+    //LOG(FATAL) << "graphoutput Operator needs further runtime support";
+    GraphScheduler* gs = context->graph_scheduler();
+    const Tensor& inp = gs->GetMessagePusher();
+    Tensor* out = context->Output(0);
+    CHECK(out->count() == inp.count())
+          << "Input count:\t" << inp.count()
+          << "\t" << inp.debug_size() << "Bytes\n"
+          << "Output count:\t" << out->count() 
+          << "\t" << out->debug_size() << "Bytes";
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>(),
+                              inp.count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
   }
 };
 

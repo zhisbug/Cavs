@@ -11,12 +11,14 @@ GraphStatement::GraphStatement(Statement* leaf, Statement* inode, GraphScheduler
 }
 
 void GraphStatement::Run() {
-  //CHECK(op_);
+  CHECK(op_);
   CHECK(ctxt_);
   CHECK(leaf_);
   CHECK(inode_);
   CHECK(gscheduler_);
-  gscheduler_->LoadGraph(ctxt_->Input(0));
+
+  int output_length = gscheduler_->LoadGraph(ctxt_->Input(0));
+  CHECK(output_length > 0);
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->ActiveLeaf(i);
     while (!gscheduler_->LeafEmpty()) {
@@ -32,6 +34,11 @@ void GraphStatement::Run() {
       gscheduler_->ActiveNext();
     }
   }
+
+  ctxt_->SetDynDim(output_length);
+  ExprStatement::Run();
+  //ctxt_->ScaleTensor();
+  //op_->Compute(ctxt_);
   VLOG(V_DEBUG) << "Graphoutput done";
 }
 
