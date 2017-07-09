@@ -11,25 +11,33 @@ namespace backend {
 template <typename T>
 class GraphGatherOp : public OpImpl {
  public:
-  explicit GraphGatherOp(const OpDef& def) : OpImpl(def) {
-    child_idx_ = GetSingleArg<int>(def, "Child");
-    CHECK(child_idx_ >= 0);
-    offset_ = GetSingleArg<int>(def, "Offset");
-    CHECK(offset_ >= 0);
+  explicit GraphGatherOp(const OpDef& def) : OpImpl(def), count_(1) {
+    CHECK(def.input_size()  == 0);
+    CHECK(def.output_size() == 1);
+    CHECK(def.shape_size()  == 1);
+    for (auto d : def.shape(0).dim())
+      count_ *= d;
   }
 
   void Compute(OpContext* context) override {
-    LOG(FATAL) << "Gather Operator needs further runtime support";
-    //int job_id = GraphScheduler::GetJobId();
-    //int child_id = GraphScheduler::child_id(job_id, child_idx_);
-    //Tensor* out = context->Output(0);
-    //checkCudaError(cudaMemcpy(out->mutable_data<T>(), GraphScheduler::buffer(child_id)+offset_*sizeof(T), 
-                              //out->count()*sizeof(T), cudaMemcpyDeviceToDevice));
+    //LOG(FATAL) << "Gather Operator needs further runtime support";
+    GraphScheduler* gs = context->graph_scheduler();
+    const Tensor& inp = gs->GetMessage();
+    CHECK(inp.count() == count_);
+    Tensor* out = context->Output(0);
+    CHECK(out->count() == inp.count())
+          << "Input count:\t" << inp.count()
+          << "\t" << inp.debug_size() << "Bytes\n"
+          << "Output count:\t" << out->count() 
+          << "\t" << out->debug_size() << "Bytes";
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>(),
+                              inp.count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
   }
 
  private:
-  int child_idx_;
-  int offset_;
+  int count_;
 };
 
 template <typename T>
@@ -39,11 +47,6 @@ class GraphScatterOp : public OpImpl {
 
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Scatter Operator needs further runtime support";
-    //int job_id = GraphScheduler::GetJobId();
-    //const Tensor& inp = context->Input(0);
-    //GraphScheduler::SetUnit(inp.count()*sizeof(T));
-    //checkCudaError(cudaMemcpy(GraphScheduler::buffer(job_id), inp.data<T>(),
-                              //inp.count()*sizeof(T), cudaMemcpyDeviceToDevice));
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
     CHECK(out->count() == inp.count())
@@ -55,6 +58,9 @@ class GraphScatterOp : public OpImpl {
                               inp.data<T>(),
                               inp.count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
+    GraphScheduler* gs = context->graph_scheduler();
+    gs->SetMessage(out);
+
   }
 };
 

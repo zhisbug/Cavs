@@ -68,6 +68,7 @@ void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
 
 void GraphScheduler::ActiveLeaf(int sample_id) {
   CHECK(activate_leaf_.empty());
+  CHECK(sample_id < batch_);
   for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
     if (child_ids_[sample_id][i].empty())
       activate_leaf_.push_back(i);

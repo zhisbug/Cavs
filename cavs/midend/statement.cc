@@ -26,10 +26,10 @@ void GraphStatement::Run() {
     }
     while (!gscheduler_->InodeEmpty()) {
       VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      //inode_->Run();
+      sleep(2);
+      inode_->Run();
       gscheduler_->ActiveNext();
     }
-    LOG(FATAL) << "here";
   }
 }
 
