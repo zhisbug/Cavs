@@ -143,11 +143,12 @@ Tensor::Tensor(const std::string& name, const Tensor& t) {
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
-  buf_    = t.buf_;
-  shape_  = t.shape_;
-  offset_ = t.offset_;
-  name_   = t.name_;
-  type_   = t.type_;
+  buf_     = t.buf_;
+  shape_   = t.shape_;
+  offset_  = t.offset_;
+  name_    = t.name_;
+  type_    = t.type_;
+  dynamic_ = t.dynamic_;
   return *this;
 }
 
@@ -155,7 +156,6 @@ Tensor& Tensor::operator =(const Tensor& t) {
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
   type_ = type;
-  //shape_.reset(new TensorShape(shape));
   shape_ = shape;
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
@@ -163,7 +163,6 @@ void Tensor::Rebase(Allocator *a,
 void Tensor::Rebase(Allocator *a, 
         DataType type, TensorShape&& shape) {
   type_ = type;
-  //shape_.reset(new TensorShape(std::move(shape)));
   shape_ = std::move(shape);
   CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
@@ -179,7 +178,6 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
     new_counts *= dim;
   CHECK(new_counts == count() || shape.dim(0) == -1)
        << new_counts << "\tvs\t" << count();
-  //shape_.reset(new TensorShape(shape));
   shape_ = TensorShape(shape);
 }
 
@@ -190,7 +188,6 @@ void Tensor::Reshape(const vector<int>& dims) {
     new_counts *= dim;
   CHECK(new_counts == count() || dims[0] == -1)
        << new_counts << "\tvs\t" << count();
-  //shape_.reset(new TensorShape(dims));
   shape_ = TensorShape(dims);
 }
 
@@ -208,6 +205,14 @@ void Tensor::Resize(const TensorShapeDef& shape) {
     buf_->Resize(new_counts);
   }
   shape_ = TensorShape(shape);
+}
+
+bool Tensor::ScaleDynmicDimension(int new_dim) {
+  CHECK(dynamic_);
+  if (shape_.dim(0) < new_dim) {
+    shape_.SetDim(0, new_dim);   
+    buf_->Resize(shape_.n_elements());
+  }
 }
 
 bool Tensor::SetOffsetWithId(int id) {

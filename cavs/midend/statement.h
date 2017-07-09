@@ -52,11 +52,12 @@ class ExprStatement : public Statement {
     VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
     VLOG(V_TIMING) << "--------------------------------------";
     VLOG(V_TIMING) << "Context Info \n"   << ctxt_->debug_info();
+    //for data-dependent variable support(variable and placeholder should have the same batch_id)
     ctxt_->SetRound(round());
+    //for function support(the function body should get the offset of the whole buffer)
     ctxt_->SetTensorOffset();
-    //if (dynamic_exist()) {
-      //ctxt_->ScaleTensor(dynamic_dim());
-    //}
+    //for dynamic tensor size support(the tensor size may vary during iterations)
+    ctxt_->ScaleTensor();
     op_->Compute(ctxt_);
     VLOG(V_TIMING) << "======================================";
   }

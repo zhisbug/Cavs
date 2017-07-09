@@ -3,10 +3,13 @@
 #include <string>
 
 using std::string;
+using std::unordered_map;
 
 namespace midend {
 
-std::unordered_map<std::string, void*> OpContext::repo_;
+unordered_map<string, void*> OpContext::repo_;
+int OpContext::dyn_dim_ = -1;
+
 
 void OpContext::SetTensorOffset() {
   if (gs_) {

@@ -21,16 +21,18 @@ void GraphStatement::Run() {
     gscheduler_->ActiveLeaf(i);
     while (!gscheduler_->LeafEmpty()) {
       VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
+      //sleep(1);
       leaf_->Run();
       gscheduler_->ActiveNext();
     }
     while (!gscheduler_->InodeEmpty()) {
       VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      sleep(2);
+      //sleep(1);
       inode_->Run();
       gscheduler_->ActiveNext();
     }
   }
+  VLOG(V_DEBUG) << "Graphoutput done";
 }
 
 } //namespace midend

@@ -12,7 +12,7 @@ namespace midend {
 
 class OpContext {
  public:
-  OpContext() : round_(0),/* dyn_dim_(0),*/ gs_(NULL) {}
+  OpContext() : round_(0), gs_(NULL) {}
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
   inline int InputSize() const;
@@ -28,9 +28,9 @@ class OpContext {
   }
   inline GraphScheduler* graph_scheduler() { return gs_; }
   void SetTensorOffset();
-  //inline void ResetDynDim() { CHECK(dyn_dim_ > 0); dyn_dim_ = 0; }
-  //inline int dyn_dim() const { return dyn_dim_; }
-  //inline void ScaleTensor(int new_dim);
+  inline void ScaleTensor();
+  inline static int dyn_dim() { return dyn_dim_; }
+  inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
@@ -39,7 +39,7 @@ class OpContext {
   std::vector<Tensor> outputs_;
   int round_;
   GraphScheduler* gs_;
-  //int dyn_dim_;
+  static int dyn_dim_;
 };
 
 inline const Tensor& OpContext::Input(int idx) const {
@@ -69,28 +69,18 @@ inline void OpContext::AppendOutput(const Tensor& t) {
   outputs_.push_back(t); 
 }
 
-//inline void OpContext::ScaleTensor(int new_dim) {
-  //bool scaled = false;
-  //for (auto& t : inputs_) {
-    //if (t.IsDynamicSize()) {
-      ////we assume only one input tensor size is dynamic
-      //CHECK(!scaled);
-      //scaled = true;
-    //} 
-  //}
-
-  //bool will_scale = false;
-  //for (auto& t : outputs_) {
-    //if (t.IsDynamicSize()) {
-      ////we assume only one output tensor size is dynamic
-      //CHECK(!will_scale);
-      //will_scale = true;
-      //t.ScaleShape(new_dim);
-    //} 
-  //}
-
-  //CHECK(!(scaled ^ will_scale));
-//}
+inline void OpContext::ScaleTensor() {
+  for (auto& t : inputs_) {
+    if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
+      t.ScaleDynmicDimension(dyn_dim());
+    } 
+  }
+  for (auto& t : outputs_) {
+    if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
+      t.ScaleDynmicDimension(dyn_dim());
+    } 
+  }
+}
 
 } //namespace midend
         
