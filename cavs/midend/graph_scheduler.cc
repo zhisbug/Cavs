@@ -7,15 +7,18 @@ using std::vector;
 
 namespace midend {
 
-void GraphScheduler::ActiveItsParent(int id) {
+void GraphScheduler::ActiveNext() {
+  int id = GetJobId();
   if (isLeaf(id)) {
     CHECK(id == activate_leaf_.front());
     activate_inode_.push_back(parent_id(id));
+    activate_leaf_.pop_front();
   }else {
     CHECK(id == activate_inode_.front());
     if (parent_id(id) != -1) {
       activate_inode_.push_back(parent_id(id));
     }
+    activate_inode_.pop_front();
   }
 }
 
@@ -44,7 +47,6 @@ void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   }
   VLOG(V_DEBUG) << "Loading graph...";
 
-  CHECK(activate_leaf_.empty());
   for (int i = 0; i < parent_ids.dims(0); i++) {
     VLOG(V_DEBUG) << i;
     const int *start = parent_ids.data<int>() + i*parent_ids.dims(1);
@@ -54,14 +56,23 @@ void GraphScheduler::LoadGraph(const Tensor& parent_ids) {
     parent_ids_[i].assign(start, start + real_length);
     child_ids_[i].resize(real_length);
     for (int j = 0; j < real_length-1; j++) {
-      VLOG(V_DEBUG) << parent_ids_[i][j];
       child_ids_[i][parent_ids_[i][j]].push_back(j);
-      if (child_ids_[i][j].empty())
-        activate_leaf_.push_back(j);
+      //if (child_ids_[i][j].empty())
+        //activate_leaf_.push_back(j);
     }
   }
   sample_id_ = 0;
-  VLOG(V_DEBUG) << "Loading graph ended...";
+  batch_ = parent_ids_.size();
+  CHECK(activate_leaf_.empty());
+}
+
+void GraphScheduler::ActiveLeaf(int sample_id) {
+  CHECK(activate_leaf_.empty());
+  for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
+    if (child_ids_[sample_id][i].empty())
+      activate_leaf_.push_back(i);
+  }
+  sample_id_ = sample_id;
 }
 
 } //namespace midend

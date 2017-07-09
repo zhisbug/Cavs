@@ -17,11 +17,19 @@ void GraphStatement::Run() {
   CHECK(inode_);
   CHECK(gscheduler_);
   gscheduler_->LoadGraph(ctxt_->Input(0));
-  while (!gscheduler_->LeafEmpty()) {
-    leaf_->Run();
-  }
-  while (!gscheduler_->InodeEmpty()) {
-    inode_->Run();
+  for (int i = 0; i < gscheduler_->batch(); i++) {
+    gscheduler_->ActiveLeaf(i);
+    while (!gscheduler_->LeafEmpty()) {
+      VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
+      leaf_->Run();
+      gscheduler_->ActiveNext();
+    }
+    while (!gscheduler_->InodeEmpty()) {
+      VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
+      //inode_->Run();
+      gscheduler_->ActiveNext();
+    }
+    LOG(FATAL) << "here";
   }
 }
 

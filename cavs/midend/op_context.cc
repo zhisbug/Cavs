@@ -11,7 +11,6 @@ std::unordered_map<std::string, void*> OpContext::repo_;
 void OpContext::SetTensorOffset() {
   if (gs_) {
     int job_id = gs_->GetJobId();
-    VLOG(V_DEBUG) << "here" << job_id;
     for (auto& t : inputs_) {
       if (!t.SetOffsetWithId(job_id))
         VLOG(V_DEBUG) << t.name() << " must be a global tensor, "

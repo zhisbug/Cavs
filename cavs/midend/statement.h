@@ -51,7 +51,7 @@ class ExprStatement : public Statement {
     VLOG(V_TIMING) << "Running Operator " << op_->DebugInfo(V_TIMING);
     VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
     VLOG(V_TIMING) << "--------------------------------------";
-    VLOG(V_TIMING) << "Context Info \n" << ctxt_->debug_info();
+    VLOG(V_TIMING) << "Context Info \n"   << ctxt_->debug_info();
     ctxt_->SetRound(round());
     ctxt_->SetTensorOffset();
     //if (dynamic_exist()) {

@@ -11,17 +11,15 @@ namespace midend {
 
 class GraphScheduler {
  public:
-  GraphScheduler() : parent_ids_(0), sample_id_(0) {}
-  void ActiveItsParent(int id);
-  int GetJobId();
-  bool LeafEmpty() {
-    return activate_leaf_.empty(); 
-  }
-  bool InodeEmpty() {
-    return activate_inode_.empty(); 
-  }
-  //static void LoadGraph(std::vector<int>&& parent_ids);
+  GraphScheduler() : parent_ids_(0), batch_(0), sample_id_(0) {}
+  bool LeafEmpty() const { return activate_leaf_.empty(); } 
+  bool InodeEmpty() const { return activate_inode_.empty(); }
+  void ActiveLeaf(int sample_id);
+  void ActiveNext();
   void LoadGraph(const Tensor& parent_ids);
+  int GetJobId();
+  int batch() const { return batch_; }
+
   bool isLeaf(int id) {
     CHECK(sample_id_ < child_ids_.size());
     CHECK(id < child_ids_[sample_id_].size());
@@ -46,6 +44,7 @@ class GraphScheduler {
   std::vector<std::vector<int>> parent_ids_;
   std::vector<std::vector<std::vector<int>>> child_ids_;
   int sample_id_;
+  int batch_;
 };
 
 class BatchedGraphScheduler : public GraphScheduler {
