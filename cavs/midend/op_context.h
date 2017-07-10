@@ -28,7 +28,7 @@ class OpContext {
   }
   inline GraphScheduler* graph_scheduler() { return gs_; }
   void SetTensorOffset();
-  inline void ScaleTensor();
+  void ScaleTensor();
   inline static int dyn_dim() { return dyn_dim_; }
   inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
 
@@ -67,20 +67,6 @@ inline void OpContext::AppendInput(const Tensor& t) {
 
 inline void OpContext::AppendOutput(const Tensor& t) {
   outputs_.push_back(t); 
-}
-
-inline void OpContext::ScaleTensor() {
-  for (auto& t : inputs_) {
-    if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
-      t.ScaleDynamicDimension(dyn_dim());
-    } 
-  }
-  for (auto& t : outputs_) {
-    if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
-      VLOG(V_DEBUG) << t.debug_info() << "\nnew_dim: " << dyn_dim();
-      t.ScaleDynamicDimension(dyn_dim());
-    } 
-  }
 }
 
 } //namespace midend

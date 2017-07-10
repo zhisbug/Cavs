@@ -120,6 +120,7 @@ Statement* GraphNode::Compile(
     isn->SetContainedScope(inode);
     Statement* istmt = isn->Compile(gsess_);
 
+    ctxt->SetGraphScheduler(gs);
     stmt_ = new GraphStatement(lstmt, istmt, gs);
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);

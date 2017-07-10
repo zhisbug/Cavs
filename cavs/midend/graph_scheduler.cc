@@ -28,7 +28,7 @@ int GraphScheduler::GetJobId() {
   }else if (!activate_inode_.empty()) {
     return activate_inode_.front();
   }else {
-    LOG(FATAL) << "Non job left";
+    return -1;
   }
 }
 

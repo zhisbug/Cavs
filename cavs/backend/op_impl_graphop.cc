@@ -114,7 +114,6 @@ class GraphOutputOp : public OpImpl {
   explicit GraphOutputOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "graphoutput Operator needs further runtime support";
-    LOG(FATAL) << "here";
     GraphScheduler* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetMessagePusher();

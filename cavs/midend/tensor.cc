@@ -180,8 +180,10 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
-  CHECK(new_counts == count() || shape.dim(0) == -1)
-       << new_counts << "\tvs\t" << count();
+  if (new_counts != count()) {
+    CHECK(shape.dim(0) == -1) << new_counts << "\tvs\t" << count();
+    dynamic_ = true;
+  }
   shape_ = TensorShape(shape);
 }
 
@@ -216,10 +218,11 @@ void Tensor::Resize(const TensorShapeDef& shape) {
 
 bool Tensor::ScaleDynamicDimension(int new_dim) {
   CHECK(dynamic_);
-  if (shape_.dim(0) < new_dim) {
-    shape_.SetDim(0, new_dim);   
-    size_t new_size = shape_.n_elements();
-    CASES(type_, new_size *= sizeof(T));
+  int old_dim = shape_.dim(0);
+  shape_.SetDim(0, new_dim);   
+  size_t new_size = shape_.n_elements();
+  CASES(type_, new_size *= sizeof(T));
+  if (old_dim < new_dim && buf_->size() < new_size) {
     CHECK_NOTNULL(buf_.get());
     //VLOG(V_DEBUG) << "Resizing " << new_size << " Bytes";
     buf_->Resize(new_size);
