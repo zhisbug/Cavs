@@ -57,6 +57,7 @@ class ExprStatement : public Statement {
     //for function support(the function body should get the offset of the whole buffer)
     ctxt_->SetTensorOffset();
     //for dynamic tensor size support(the tensor size may vary during iterations)
+    VLOG(V_DEBUG) << "Before ScaleTensor";
     ctxt_->ScaleTensor();
     op_->Compute(ctxt_);
     VLOG(V_TIMING) << "======================================";

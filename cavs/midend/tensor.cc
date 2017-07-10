@@ -32,14 +32,15 @@ template <typename T>
 class TensorBuffer : public TensorBufferBase {
  public:
   TensorBuffer(Allocator* alloc, size_t elem) 
-      : TensorBufferBase(alloc), elem_(elem) {
-    data_ = alloc->Allocate<T>(elem_);   
+      : TensorBufferBase(alloc), data_(NULL), elem_(elem) {
+    if (elem_ > 0)
+      data_ = alloc->Allocate<T>(elem_);   
   }
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   FORCE_INLINE void* data() const override { return data_; }
   FORCE_INLINE size_t size() const override { return elem_*sizeof(T); }
   //FORCE_INLINE size_t count() const override { return elem_; }
-  FORCE_INLINE void* Resize(int size) override { 
+  FORCE_INLINE void* Resize(size_t size) override { 
     CHECK(size % sizeof(T) == 0);
     CHECK(size != elem_*sizeof(T));
     if (data_) { alloc_->Deallocate<T>(data_); }
@@ -117,6 +118,7 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     dynamic_ = true; 
     shape_ = shape;
+    Rebase(a, type, TensorShape({0}));
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, shape);
@@ -131,6 +133,7 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     dynamic_ = true; 
     shape_ = std::move(shape);
+    Rebase(a, type, TensorShape({0}));
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, std::move(shape));
@@ -202,7 +205,10 @@ void Tensor::Resize(const TensorShapeDef& shape) {
   for (auto& dim : shape.dim())
     new_counts *= dim;
   if (new_counts > shape_.n_elements()) {
-    buf_->Resize(new_counts);
+    size_t new_size = new_counts;
+    CASES(type_, new_size *= sizeof(T));
+    CHECK_NOTNULL(buf_.get());
+    buf_->Resize(new_size);
   }
   shape_ = TensorShape(shape);
 }
@@ -211,13 +217,18 @@ bool Tensor::ScaleDynmicDimension(int new_dim) {
   CHECK(dynamic_);
   if (shape_.dim(0) < new_dim) {
     shape_.SetDim(0, new_dim);   
-    buf_->Resize(shape_.n_elements());
+    size_t new_size = shape_.n_elements();
+    CASES(type_, new_size *= sizeof(T));
+    CHECK_NOTNULL(buf_.get());
+    //VLOG(V_DEBUG) << "Resizing " << new_size << " Bytes";
+    buf_->Resize(new_size);
   }
 }
 
 bool Tensor::SetOffsetWithId(int id) {
   size_t unit = count();
   CASES(type_, unit *= sizeof(T));
+  CHECK_NOTNULL(buf_.get());
   if (unit == buf_->size()) {
     return false; 
   }else {

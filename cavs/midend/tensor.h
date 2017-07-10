@@ -22,7 +22,7 @@ class TensorBufferBase {
   virtual ~TensorBufferBase() {}
   virtual void* data() const = 0;
   virtual size_t size() const = 0;
-  virtual void* Resize(int size) = 0;
+  virtual void* Resize(size_t size) = 0;
 
  protected:
   Allocator* const alloc_;

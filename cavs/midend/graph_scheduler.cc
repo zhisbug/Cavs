@@ -45,14 +45,15 @@ int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
     CHECK(parent_ids_.size() == parent_ids.dims(0));
     CHECK(child_ids_.size() == parent_ids.dims(0));
   }
-  VLOG(V_DEBUG) << "Loading graph...";
 
+  VLOG(V_DEBUG) << parent_ids.dims(1);
   int total_length = 0;
   for (int i = 0; i < parent_ids.dims(0); i++) {
     VLOG(V_DEBUG) << i;
     const int *start = parent_ids.data<int>() + i*parent_ids.dims(1);
     const int *end   = parent_ids.data<int>() + (i+1)*parent_ids.dims(1);
     int real_length = std::find(start, end, -1) + 1 - start;
+    CHECK(real_length <= parent_ids.dims(1));
     total_length += real_length;
     VLOG(V_DEBUG) << real_length;
     parent_ids_[i].assign(start, start + real_length);
@@ -66,6 +67,7 @@ int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   sample_id_ = 0;
   batch_ = parent_ids_.size();
   CHECK(activate_leaf_.empty());
+  VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
 }
 

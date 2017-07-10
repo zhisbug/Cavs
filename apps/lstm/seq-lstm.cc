@@ -8,7 +8,7 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       20,    "batch");
+DEFINE_int32 (batch,       2,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
@@ -133,9 +133,9 @@ int main(int argc, char* argv[]) {
     }
   }
 
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch}, "CPU");
-  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
-  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_timestep, FLAGS_batch});
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep}, "CPU");
+  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep});
+  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep});
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());

@@ -77,9 +77,11 @@ inline void OpContext::ScaleTensor() {
   }
   for (auto& t : outputs_) {
     if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
+      VLOG(V_DEBUG) << t.debug_info() << "\nnew_dim: " << dyn_dim();
       t.ScaleDynmicDimension(dyn_dim());
     } 
   }
+  VLOG(V_DEBUG) << "here";
 }
 
 } //namespace midend

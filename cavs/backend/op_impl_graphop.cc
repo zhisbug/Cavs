@@ -114,11 +114,13 @@ class GraphOutputOp : public OpImpl {
   explicit GraphOutputOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "graphoutput Operator needs further runtime support";
+    LOG(FATAL) << "here";
     GraphScheduler* gs = context->graph_scheduler();
+    CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetMessagePusher();
     Tensor* out = context->Output(0);
-    CHECK(out->count() == inp.count())
-          << "Input count:\t" << inp.count()
+    //CHECK(out->count() == inp.count())
+    VLOG(V_DEBUG)      << "Input count:\t" << inp.count()
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
