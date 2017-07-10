@@ -18,23 +18,23 @@ class Statement {
   virtual void Run() = 0;
   inline static void IncRound() {
     round_++;
-    dynamic_exist_ = false;
+    //dynamic_exist_ = false;
   }
 
  protected:
   inline static int round() { return round_; }
-  inline static void TrigerDimChange(int new_dim) {
-    CHECK(new_dim != dynamic_dim_); 
-    dynamic_dim_ = new_dim;
-    dynamic_exist_ = true;
-  }
-  inline static int  dynamic_dim()   { return dynamic_dim_;   }
-  inline static bool dynamic_exist() { return dynamic_exist_; }
+  //inline static void TrigerDimChange(int new_dim) {
+    //CHECK(new_dim != dynamic_dim_); 
+    //dynamic_dim_ = new_dim;
+    //dynamic_exist_ = true;
+  //}
+  //inline static int  dynamic_dim()   { return dynamic_dim_;   }
+  //inline static bool dynamic_exist() { return dynamic_exist_; }
 
  private:
-  static int  round_;
-  static int  dynamic_dim_;
-  static bool dynamic_exist_;
+  static int round_;
+  //static int  dynamic_dim_;
+  //static bool dynamic_exist_;
 };
 
 class ExprStatement : public Statement {
@@ -44,26 +44,10 @@ class ExprStatement : public Statement {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
   }
-  inline void Run() override {
-    CHECK(op_);
-    CHECK(ctxt_);
-    VLOG(V_TIMING) << "======================================";
-    VLOG(V_TIMING) << "Running Operator " << op_->DebugInfo(V_TIMING);
-    VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
-    VLOG(V_TIMING) << "--------------------------------------";
-    VLOG(V_TIMING) << "Context Info \n"   << ctxt_->debug_info();
-    //for data-dependent variable support(variable and placeholder should have the same batch_id)
-    ctxt_->SetRound(round());
-    //for function support(the function body should get the offset of the whole buffer)
-    ctxt_->SetTensorOffset();
-    //for dynamic tensor size support(the tensor size may vary during iterations)
-    VLOG(V_DEBUG) << "Before ScaleTensor";
-    ctxt_->ScaleTensor();
-    op_->Compute(ctxt_);
-    VLOG(V_TIMING) << "======================================";
-  }
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
+
+  void Run() override;
 
  protected:
   ExprStatement() : op_(NULL), ctxt_(NULL) {}
@@ -90,6 +74,7 @@ class BasicBlock : public Statement {
       }
     }
   }
+
   inline Statement* AppendStmt(Statement* stmt) {
     CHECK(stmt);
     stmts_.push_back(stmt); 
@@ -103,7 +88,8 @@ class BasicBlock : public Statement {
 
 class GraphStatement : public ExprStatement {
  public:
-  GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs);
+  GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
+    : ExprStatement(), leaf_(leaf), inode_(inode), gscheduler_(gs) {}
 
   void Run() override;
 

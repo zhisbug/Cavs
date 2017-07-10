@@ -3,11 +3,29 @@
 namespace midend {
 
 int Statement::round_ = 0;
-int Statement::dynamic_dim_ = -1;
-bool Statement::dynamic_exist_ = false;
+//int Statement::dynamic_dim_ = -1;
+//bool Statement::dynamic_exist_ = false;
 
-GraphStatement::GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
-    : ExprStatement(), leaf_(leaf), inode_(inode), gscheduler_(gs) {
+void ExprStatement::Run() {
+  CHECK(op_);
+  CHECK(ctxt_);
+  VLOG(V_TIMING) << "======================================";
+  VLOG(V_TIMING) << "Running Operator " << op_->DebugInfo(V_TIMING);
+  VLOG(V_DEBUG)  << "Running Operator " << op_->DebugInfo(V_DEBUG);
+  VLOG(V_TIMING) << "--------------------------------------";
+  VLOG(V_TIMING) << "Context Info \n"   << ctxt_->debug_info();
+  //for data-dependent variable support(variable and placeholder should have the same batch_id)
+  ctxt_->SetRound(round());
+  //for function support(the function body should get the offset of the whole buffer)
+  VLOG(V_DEBUG) << "here";
+  ctxt_->SetTensorOffset();
+  VLOG(V_DEBUG) << "here";
+  //for dynamic tensor size support(the tensor size may vary during iterations)
+  //VLOG(V_DEBUG) << "Before ScaleTensor";
+  ctxt_->ScaleTensor();
+  VLOG(V_DEBUG) << "here";
+  op_->Compute(ctxt_);
+  VLOG(V_TIMING) << "======================================";
 }
 
 void GraphStatement::Run() {

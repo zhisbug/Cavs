@@ -118,7 +118,8 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     dynamic_ = true; 
     shape_ = shape;
-    Rebase(a, type, TensorShape({0}));
+    CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
+    //Rebase(a, type, TensorShape({0}));
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, shape);
@@ -133,7 +134,7 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     dynamic_ = true; 
     shape_ = std::move(shape);
-    Rebase(a, type, TensorShape({0}));
+    CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
   }else {
     CHECK(shape.n_elements() > 0);
     Rebase(a, type, std::move(shape));
@@ -213,7 +214,7 @@ void Tensor::Resize(const TensorShapeDef& shape) {
   shape_ = TensorShape(shape);
 }
 
-bool Tensor::ScaleDynmicDimension(int new_dim) {
+bool Tensor::ScaleDynamicDimension(int new_dim) {
   CHECK(dynamic_);
   if (shape_.dim(0) < new_dim) {
     shape_.SetDim(0, new_dim);   

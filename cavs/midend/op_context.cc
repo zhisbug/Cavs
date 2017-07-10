@@ -10,7 +10,6 @@ namespace midend {
 unordered_map<string, void*> OpContext::repo_;
 int OpContext::dyn_dim_ = -1;
 
-
 void OpContext::SetTensorOffset() {
   if (gs_) {
     int job_id = gs_->GetJobId();

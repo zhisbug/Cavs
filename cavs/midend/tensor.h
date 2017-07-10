@@ -89,7 +89,7 @@ class Tensor {
   void Reshape(const std::vector<int>& dims);
   void Reshape(const Tensor& t);
   void Resize(const TensorShapeDef& shape);
-  bool ScaleDynmicDimension(int new_dim);
+  bool ScaleDynamicDimension(int new_dim);
   template <typename T>
     T* mutable_data() const {
       return reinterpret_cast<T*>((char*)(buf_->data()) + offset_); 
@@ -124,6 +124,7 @@ FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {
   shape_.resize(shape.dim_size());
   n_elements_ = 1;    
   for (int idx = 0; idx < shape.dim_size(); idx++) {
+    CHECK(shape.dim(idx) != 0);
     shape_[idx] = shape.dim(idx);
     n_elements_ *= shape.dim(idx); 
   }
@@ -133,7 +134,8 @@ FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {
 FORCE_INLINE TensorShape::TensorShape(const std::vector<int>& shape) 
     : shape_(shape) {
   n_elements_ = 1;    
-  for (const int dim : shape) {
+  for (int dim : shape) {
+    CHECK(dim != 0);
     n_elements_ *= dim; 
   }
 }
@@ -161,11 +163,13 @@ FORCE_INLINE TensorShape& TensorShape::operator =(TensorShape&& b) {
 
 FORCE_INLINE void TensorShape::SetDim(int d, int size) {
   CHECK(dim() > d);
+  CHECK(size != 0);
   n_elements_ = n_elements_/shape_[d]*size;
   shape_[d] = size;
 }
 
 FORCE_INLINE void TensorShape::AddDim(int size) {
+  CHECK(size != 0);
   shape_.push_back(size);
   if (0 == n_elements_) n_elements_ = 1;
   n_elements_ *= size;
