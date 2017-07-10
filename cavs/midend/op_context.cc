@@ -34,13 +34,12 @@ void OpContext::ScaleTensor() {
       t.ScaleDynamicDimension(dyn_dim());
     } 
   }
-  VLOG(V_DEBUG) << "here";
   for (auto& t : outputs_) {
-    VLOG(V_DEBUG) << t.IsDynamicSize();
-    VLOG(V_DEBUG) << t.dims(0);
-    VLOG(V_DEBUG) << dyn_dim();
+    //VLOG(V_DEBUG) << t.IsDynamicSize();
+    //VLOG(V_DEBUG) << t.dims(0);
+    //VLOG(V_DEBUG) << dyn_dim();
     if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
-      VLOG(V_DEBUG) << t.debug_info() << "\nnew_dim: " << dyn_dim();
+      //VLOG(V_DEBUG) << t.debug_info() << "\nnew_dim: " << dyn_dim();
       t.ScaleDynamicDimension(dyn_dim());
     } 
   }

@@ -93,10 +93,18 @@ class GraphStatement : public ExprStatement {
 
   void Run() override;
 
- private:
+ protected:
   Statement* leaf_;
   Statement* inode_;
   GraphScheduler* gscheduler_;
+};
+
+class GraphGradStatement : public GraphStatement {
+ public:
+  GraphGradStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
+    : GraphStatement(leaf, inode, gs) {}
+
+  void Run() override;
 };
 
 } //namespace midend

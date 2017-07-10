@@ -22,16 +22,11 @@ class GraphSession;
 
 class Node {
  public:
-  virtual Statement* Compile(SessionBase* sess) {
-    return NULL;
-  }
+  virtual Statement* Compile(SessionBase* sess) = 0;
   virtual bool IsSingleNode()  const { return false; }
   virtual bool IsScopedNode()  const { return false; }
-  virtual std::string name()   const = 0;
-  std::string scoped_name()    const;
 
   inline Scope* scope() const { return located_; }
-
   inline Edge*                     input(int idx)       const;
   inline const std::vector<Edge*>& input()              const;
   inline int                       input_size()         const;
@@ -39,13 +34,14 @@ class Node {
   inline const std::vector<Edge*>& output()             const;
   inline int                       output_size()        const;
   inline const std::vector<Edge*>& control_dependency() const;
-
-  std::vector<TensorShapeDef> input_shapes() const;
+  std::vector<TensorShapeDef>      input_shapes()       const;
 
   void AddInput(const Edge* e);
   void AddOutput(const Edge* e);
   void AddControlDependency(const Edge* e);
 
+  virtual std::string name()   const = 0;
+  std::string scoped_name()    const;
   virtual std::string debug_info() const;
 
  protected:
@@ -91,8 +87,23 @@ class GraphNode : public SingleNode {
   GraphNode(const OpDef& op_def, Scope* s)
     : SingleNode(op_def, s), gsess_(NULL) {}
   Statement* Compile(SessionBase* sess) override;
+  friend class GraphGradNode;
+
  private:
   GraphSession* gsess_;
+}; 
+
+class GraphGradNode : public GraphNode {
+ public:
+  GraphGradNode(const OpDef& op_def, Scope* s)
+    : GraphNode(op_def, s), forward_node_(NULL) {}
+  Statement* Compile(SessionBase* sess) override;
+  void SetGraphForwardNode(GraphNode* n) {
+    forward_node_ = n; 
+    gsess_ = n->gsess_;
+  }
+ private:
+  GraphNode* forward_node_;
 }; 
 
 //The ScopedNode is defined as a group of nodes

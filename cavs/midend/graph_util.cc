@@ -237,9 +237,10 @@ void GraphUtil::GenGradient(Scope* loss_scope,
       CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       VLOG(V_DEBUG) << "Backwarding for "
                     << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
+      SingleNode* grad_node = NULL;
       for (auto& iter : grads[i]) {
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
-        SingleNode* grad_node = loss_scope->AddOp(iter.second);
+        grad_node = loss_scope->AddOp(iter.second);
         CHECK(grad_node);
         VLOG(V_DEBUG) << "Getting input shape...";
         const vector<TensorShapeDef>& inputs = 

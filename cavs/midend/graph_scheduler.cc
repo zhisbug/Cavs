@@ -9,32 +9,54 @@ namespace midend {
 
 void GraphScheduler::ActiveNext() {
   int id = GetJobId();
-  if (isLeaf(id)) {
-    CHECK(id == activate_leaf_.front());
-    activate_inode_.push_back(parent_id(id));
-    activate_leaf_.pop_front();
-  }else {
-    CHECK(id == activate_inode_.front());
-    if (parent_id(id) != -1) {
+  if (isForward_) {
+    if (isLeaf(id)) {
+      CHECK(id == activate_leaf_.front());
       activate_inode_.push_back(parent_id(id));
+      activate_leaf_.pop_front();
+    }else {
+      CHECK(id == activate_inode_.front());
+      if (parent_id(id) != -1) {
+        activate_inode_.push_back(parent_id(id));
+      }
+      activate_inode_.pop_front();
     }
-    activate_inode_.pop_front();
+  }else {
+    if (!isLeaf(id)) {
+      CHECK(id == activate_inode_.front());
+      for (auto& i : child_id(id)) {
+        if (isLeaf(i))
+          activate_leaf_.push_back(i);
+        else
+          activate_inode_.push_back(i);
+      }
+      activate_inode_.pop_front();
+    }else {
+      CHECK(id == activate_leaf_.front());
+      activate_leaf_.pop_front();
+    }
   }
 }
 
 int GraphScheduler::GetJobId() {
-  if (!activate_leaf_.empty()) {
-    return activate_leaf_.front();
-  }else if (!activate_inode_.empty()) {
-    return activate_inode_.front();
+  if (isForward_) {
+    if (!activate_leaf_.empty()) {
+      return activate_leaf_.front();
+    }else if (!activate_inode_.empty()) {
+      return activate_inode_.front();
+    }
   }else {
-    return -1;
+    if (!activate_inode_.empty()) {
+      return activate_inode_.front();
+    }else if (!activate_leaf_.empty()) {
+      return activate_leaf_.front();
+    }
   }
+  return -1;
 }
 
 //parent-idx form
 int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
-  //Get()->parent_ids_ = std::move(parent_ids);
   VLOG(V_DEBUG) << "Loading graph...";
   CHECK(parent_ids.dims() == 2) << parent_ids.debug_info();
   CHECK(parent_ids.device_type() == CPU);
@@ -60,23 +82,37 @@ int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
     child_ids_[i].resize(real_length);
     for (int j = 0; j < real_length-1; j++) {
       child_ids_[i][parent_ids_[i][j]].push_back(j);
-      //if (child_ids_[i][j].empty())
-        //activate_leaf_.push_back(j);
     }
   }
-  sample_id_ = 0;
   batch_ = parent_ids_.size();
+  isForward_ = true;
   CHECK(activate_leaf_.empty());
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
 }
 
-void GraphScheduler::ActiveLeaf(int sample_id) {
+void GraphScheduler::ReverseGraph() {
+  CHECK(batch_ > 0);
+  CHECK(parent_ids_.size() > 0);
+  isForward_ = false;
+}
+
+void GraphScheduler::ActiveFirstWorkset(int sample_id) {
   CHECK(activate_leaf_.empty());
+  CHECK(activate_inode_.empty());
   CHECK(sample_id < batch_);
-  for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
-    if (child_ids_[sample_id][i].empty())
-      activate_leaf_.push_back(i);
+  if (isForward_) {
+    for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
+      if (child_ids_[sample_id][i].empty()) {
+        activate_leaf_.push_back(i);
+      }
+    }
+  }else {
+    for (int i = parent_ids_[sample_id].size()-1; i >= 0; i--) {
+      if (parent_ids_[sample_id][i] < 0) {
+        activate_inode_.push_back(i);
+      }
+    }
   }
   sample_id_ = sample_id;
 }

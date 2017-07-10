@@ -264,11 +264,6 @@ string Scope::debug_info() const {
   return ret;
 }
 
-//Scope* global_scope() {
-  //static Scope* s = new Scope(NULL, "global");
-  //return s;
-//}
-
 Scope* main_scope() {
   static Scope* s = new Scope(NULL, "main");
   return s;

@@ -118,14 +118,14 @@ class GraphOutputOp : public OpImpl {
     CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetMessagePusher();
     Tensor* out = context->Output(0);
-    //CHECK(out->count() == inp.count())
-    VLOG(V_DEBUG)      << "Input count:\t" << inp.count()
+    CHECK(out->debug_size() == inp.debug_size())
+          << "Input count:\t" << inp.count()
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
     checkCudaError(cudaMemcpy(out->mutable_data<T>(),
                               inp.data<T>(),
-                              inp.count()*sizeof(T),
+                              out->count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
   }
 };
@@ -135,7 +135,6 @@ class GraphOutputGradOp : public OpImpl {
  public:
   explicit GraphOutputGradOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
-    //do nothing now...
     LOG(FATAL) << "graphoutputgrad Operator needs further runtime support";
   }
 };

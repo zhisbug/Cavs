@@ -110,6 +110,8 @@ Statement* GraphNode::Compile(
 
     Scope* leaf = main_scope()->FindChildScope("Leaf");
     CHECK_NOTNULL(leaf);
+    //we should add the generated scopednode into main_scope()
+    //because only main_scope may not be wrapped up into a ScopedNode and executed.
     ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
     lsn->SetContainedScope(leaf);
     Statement* lstmt = lsn->Compile(gsess_);
@@ -122,6 +124,37 @@ Statement* GraphNode::Compile(
 
     ctxt->SetGraphScheduler(gs);
     stmt_ = new GraphStatement(lstmt, istmt, gs);
+    dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
+    dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
+  }
+  return stmt_;
+}
+
+Statement* GraphGradNode::Compile(
+    SessionBase* sess) {
+  if (!stmt_) {
+    OpImpl* op = CreateOp(op_def());
+    OpContext* ctxt = sess->GetContext(this);
+
+    CHECK_NOTNULL(forward_node_);
+    CHECK_NOTNULL(gsess_);
+
+    Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));
+    CHECK_NOTNULL(leaf);
+    //we should add the generated scopednode into main_scope()
+    //because only main_scope may not be wrapped up into a ScopedNode and executed.
+    ScopedNode* lsn = new ScopedNode(main_scope(), GetGradientName("Leaf"), 1);
+    lsn->SetContainedScope(leaf);
+    Statement* lstmt = lsn->Compile(gsess_);
+
+    Scope* inode = main_scope()->FindChildScope("Inode")->FindChildScope(GetGradientName("Inode"));
+    CHECK_NOTNULL(inode);
+    ScopedNode* isn = new ScopedNode(main_scope(), GetGradientName("Inode"), 1);
+    isn->SetContainedScope(inode);
+    Statement* istmt = isn->Compile(gsess_);
+
+    ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    stmt_ = new GraphStatement(lstmt, istmt, gsess_->graph_scheduler());
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }

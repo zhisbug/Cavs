@@ -54,7 +54,6 @@ class Scope {
   std::unordered_map<Node*, int> node2idx_;
 };
 
-//Scope* global_scope();
 Scope* main_scope();
 
 } //namespace midend
