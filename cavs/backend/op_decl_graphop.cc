@@ -47,6 +47,7 @@ class GatherOpDecl : public ExtractOpDecl {
  public:
   GatherOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << op_def_.DebugString();
     //It needs further design!!!!!
     OpDef scatter;
     OpDefBuilder("Scatter")

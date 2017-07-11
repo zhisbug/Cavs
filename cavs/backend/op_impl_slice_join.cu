@@ -13,7 +13,7 @@ class SliceOpImpl : public OpImpl {
  public:
   explicit SliceOpImpl(const OpDef& def) :
     OpImpl(def), split_(-1), index_(-1), offset_(-1), stride_(-1) {
-    //CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
+    CHECK(!GetSingleArg<bool>(op_def_, "ShareMemory", false));
     if (GetSingleArg(def, "Split", 0) != 0) {
       split_ = GetSingleArg<int>(def, "Split"); 
       index_ = GetSingleArg<int>(def, "Index"); 
@@ -60,22 +60,47 @@ class ConcatOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     Tensor* out = context->Output(0);
     CHECK(out->count() > 0);
-    int input_count = 0;
+    int copied_count = 0;
     for (int i = 0; i < context->InputSize(); i++) {
       const Tensor& inp = context->Input(i);
       CHECK(inp.count() > 0);
-      CHECK(input_count + inp.count() <= out->count());
-      checkCudaError(cudaMemcpy(out->mutable_data<T>()+inp.count(),
+      CHECK(copied_count + inp.count() <= out->count());
+      checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count,
                                 inp.data<T>(),
                                 inp.count()*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
-      input_count += inp.count();
+      copied_count += inp.count();
     } 
-    CHECK(out->count() == input_count);
+    CHECK(out->count() == copied_count);
   }
 };
 
-REGISTER_OP_IMPL_BUILDER(Key("Slice").Device("GPU"),  SliceOpImpl<float>);
-REGISTER_OP_IMPL_BUILDER(Key("Concat").Device("GPU"), ConcatOpImpl<float>);
+template <typename T>
+class SliceAllOpImpl : public OpImpl {
+ public:
+  explicit SliceAllOpImpl(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    CHECK(context->InputSize() == context->OutputSize()+1);
+    const Tensor& input = context->Input(0);
+    CHECK(input.count() > 0);
+    int copied_count = 0;
+    for (int i = 0; i < context->OutputSize(); i++) {
+      const Tensor& inp_check = context->Input(i+1);
+      Tensor* out = context->Output(i);
+      CHECK(inp_check.count() == out->count());
+      CHECK(copied_count + out->count() <= input.count());
+      checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                                input.data<T>()+copied_count,
+                                out->count()*sizeof(T),
+                                cudaMemcpyDeviceToDevice));
+      copied_count += out->count();
+    } 
+    CHECK(input.count() == copied_count);
+  }
+};
+
+REGISTER_OP_IMPL_BUILDER(Key("Slice").Device("GPU"),    SliceOpImpl<float>);
+REGISTER_OP_IMPL_BUILDER(Key("Concat").Device("GPU"),   ConcatOpImpl<float>);
+REGISTER_OP_IMPL_BUILDER(Key("SliceAll").Device("GPU"), SliceAllOpImpl<float>);
 
 } //namespace backend

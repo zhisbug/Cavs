@@ -13,7 +13,7 @@ class SliceOpDecl : public OpDecl {
     //It should not be shared memory, because the slice is not
     //guaranteed to be continous, although currently only continous
     //slice is supported
-    //CHECK(GetSingleArg<bool>(op_def_, "ShareMemory"));
+    CHECK(!GetSingleArg<bool>(op_def_, "ShareMemory", false));
     if (GetSingleArg(def, "Split", 0) != 0) {
       split_ = GetSingleArg<int>(def, "Split"); 
       index_ = GetSingleArg<int>(def, "Index"); 
@@ -57,8 +57,8 @@ class SliceOpDecl : public OpDecl {
     sdef.add_dim(count);
 
     out_shape->push_back(sdef);
-    VLOG(V_DEBUG) << out_shape->at(0).DebugString();
-    VLOG(V_DEBUG) << op_def_.DebugString();
+    //VLOG(V_DEBUG) << out_shape->at(0).DebugString();
+    //VLOG(V_DEBUG) << op_def_.DebugString();
   }
 
  private:
