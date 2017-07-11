@@ -136,7 +136,12 @@ Statement* GraphGradNode::Compile(
     OpImpl* op = CreateOp(op_def());
     OpContext* ctxt = sess->GetContext(this);
 
+    VLOG(V_DEBUG) << "Compiling GraphGradNode:\t" << op_def().name();
     CHECK_NOTNULL(forward_node_);
+    //when the graphgrad node is compiled,
+    //the graph node must have been compile already
+    //that means its graph session has been set
+    gsess_ = forward_node_->gsess_;
     CHECK_NOTNULL(gsess_);
 
     Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));

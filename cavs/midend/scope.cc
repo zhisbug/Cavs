@@ -104,10 +104,11 @@ SingleNode* Scope::AddOp(const OpDef& op_def) {
   if (op_def.name() == "GraphOutput") {
     AddGraphOpTransformation(&new_def, op_def);
     node = new GraphNode(new_def, this);
+  }else if (op_def.name() == GetGradientName("GraphOutput")) {
+    node = new GraphGradNode(new_def, this);
   }else {
     node = new SingleNode(new_def, this);
   }
-
 
   VLOG(V_DEBUG) << "Adding node \t" << node->debug_info()
                 << "\tTo Scope " << name() << "\n"

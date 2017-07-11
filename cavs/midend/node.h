@@ -100,7 +100,6 @@ class GraphGradNode : public GraphNode {
   Statement* Compile(SessionBase* sess) override;
   void SetGraphForwardNode(GraphNode* n) {
     forward_node_ = n; 
-    gsess_ = n->gsess_;
   }
  private:
   GraphNode* forward_node_;
