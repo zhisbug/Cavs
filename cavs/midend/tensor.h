@@ -20,8 +20,9 @@ class TensorBufferBase {
   TensorBufferBase(Allocator* alloc) : alloc_(alloc) {}
   FORCE_INLINE DeviceType device_type() const { return alloc_->type(); }
   virtual ~TensorBufferBase() {}
-  virtual void* data() const = 0;
+  virtual void* data()  const = 0;
   virtual size_t size() const = 0;
+  virtual void InitWithZero(size_t start, size_t stride) = 0;
   virtual void* Resize(size_t size) = 0;
 
  protected:
@@ -69,16 +70,16 @@ class Tensor {
   Tensor& operator =(const Tensor& t);
 
   inline DeviceType device_type() const { return buf_->device_type(); }
-  inline DataType data_type()     const { return type_; }
-  inline std::string name()       const { return name_; }
-  inline bool empty()             const { return buf_ == nullptr; }
-  inline bool IsDynamicSize()     const { return dynamic_; }
-  inline void SetAsDynamic() { dynamic_= true; }
+  inline std::string name()       const { return name_;               }
+  inline bool empty()             const { return buf_ == nullptr;     }
+  inline bool IsDynamicSize()     const { return params_->dynamic;    }
+  inline DataType data_type()     const { return params_->type;       }
+  //inline void SetAsDynamic() { dynamic_= true; }
   //for opeators
-  inline size_t count()    const { return shape_.n_elements(); }
-  inline int dims()        const { return shape_.dim(); }
-  inline int dims(int idx) const { return shape_.dim(idx); }
-  inline size_t debug_size() const { return buf_->size(); }
+  inline size_t count()      const { return shape_.n_elements(); }
+  inline int dims()          const { return shape_.dim();        }
+  inline int dims(int idx)   const { return shape_.dim(idx);     }
+  inline size_t debug_size() const { return buf_->size();        }
 
   //allocate a new buffer
   void Rebase(Allocator *a, DataType type, const TensorShape& shape);
@@ -92,15 +93,19 @@ class Tensor {
   bool ScaleDynamicDimension(int new_dim);
   template <typename T>
     T* mutable_data() const {
-      return reinterpret_cast<T*>((char*)(buf_->data()) + offset_); 
+      return reinterpret_cast<T*>((char*)(buf_->data()) + params_->offset); 
   }
   template <typename T>
     const T* data() const {
-      return reinterpret_cast<T*>((char*)(buf_->data()) + offset_); 
+      return reinterpret_cast<T*>((char*)(buf_->data()) + params_->offset); 
   }
+
+  void SetZeroInitEnforced();
+  bool ZeroInitEnforced() const;
+  bool InitWithZero(int iteration);
   bool SetOffsetWithId(int id);
 
-  inline bool IsSharedWith(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
+  //inline bool IsSharedWith(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
   void SyncWith(const Tensor& t);
 
   std::string debug_info() const;
@@ -109,14 +114,22 @@ class Tensor {
 
   friend class TensorCApi;
 
+  struct Params {
+    Params() : offset(0), dynamic(false), zero_init_enforced(false),
+               iteration(0), type(DataType(0)) {}
+    size_t offset;
+    //if a tensor is dynamic at first, it is dynamic at last
+    bool dynamic;
+    bool zero_init_enforced;
+    int iteration;
+    DataType type;
+  };
+
  private:
   std::shared_ptr<TensorBufferBase> buf_;
+  std::shared_ptr<Params> params_;
   TensorShape shape_;
-  size_t offset_;
   std::string name_;
-  DataType type_;
-  //if a tensor is dynamic at first, it is dynamic at last
-  bool dynamic_;
 };
 
 FORCE_INLINE TensorShape::TensorShape(const TensorShapeDef& shape) {

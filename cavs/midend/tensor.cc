@@ -37,9 +37,12 @@ class TensorBuffer : public TensorBufferBase {
       data_ = alloc->Allocate<T>(elem_);   
   }
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
-  FORCE_INLINE void* data() const override { return data_; }
+  FORCE_INLINE void* data() const override  { return data_; }
   FORCE_INLINE size_t size() const override { return elem_*sizeof(T); }
-  //FORCE_INLINE size_t count() const override { return elem_; }
+  FORCE_INLINE void InitWithZero(size_t start, size_t stride) override {
+    CHECK(start + stride <= size());
+    alloc_->InitWithZero(data()+start, stride);
+  }
   FORCE_INLINE void* Resize(size_t size) override { 
     CHECK(size % sizeof(T) == 0);
     CHECK(size != elem_*sizeof(T));
@@ -66,7 +69,7 @@ string Tensor::debug_info() const {
   string ret; 
   ret += "\nname: " + name_;
   ret += "\nshape: " + shape_.debug_info();
-  ret += "\ntype: " + std::to_string(type_);
+  ret += "\ntype: " + std::to_string(params_->type);
   return ret;
 }
 
@@ -106,38 +109,40 @@ void Tensor::DebugNumerical<float>() const {
   }
 }
 
-Tensor::Tensor() :
-  buf_(nullptr), offset_(0), name_(""),
-  type_(DataType(0)), dynamic_(false) {}
+Tensor::Tensor() : buf_(nullptr), name_(""), params_(nullptr) {}
+  //type_(DataType(0)), dynamic_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
-        DataType type, const TensorShape& shape) 
-    : buf_(nullptr), offset_(0), name_(name),
-      type_(type), dynamic_(false) {
+               DataType type, const TensorShape& shape) 
+    : buf_(nullptr), name_(name) {
+  params_.reset(new Params());
+  params_->type = type;
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
-    dynamic_ = true; 
+    params_->dynamic = true;
     shape_ = shape;
-    CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
-    //Rebase(a, type, TensorShape({0}));
+    //CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
+    CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
   }else {
     CHECK(shape.n_elements() > 0);
-    Rebase(a, type, shape);
+    Rebase(a, params_->type, shape);
   }
 }
 
 Tensor::Tensor(const string& name, Allocator *a, 
-        DataType type, TensorShape&& shape) 
-    : buf_(nullptr), offset_(0), name_(name),
-      type_(type), dynamic_(false) {
+               DataType type, TensorShape&& shape) 
+    : buf_(nullptr), name_(name) {
+  params_.reset(new Params());
+  params_->type = type;
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
-    dynamic_ = true; 
+    params_->dynamic = true;
     shape_ = std::move(shape);
-    CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
+    //CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
+    CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
   }else {
     CHECK(shape.n_elements() > 0);
-    Rebase(a, type, std::move(shape));
+    Rebase(a, params_->type, std::move(shape));
   }
 }
 
@@ -147,32 +152,33 @@ Tensor::Tensor(const std::string& name, const Tensor& t) {
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
-  buf_     = t.buf_;
-  shape_   = t.shape_;
-  offset_  = t.offset_;
-  name_    = t.name_;
-  type_    = t.type_;
-  dynamic_ = t.dynamic_;
+  buf_    = t.buf_;
+  shape_  = t.shape_;
+  name_   = t.name_;
+  params_ = t.params_;
   return *this;
 }
 
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
-  type_ = type;
+  params_->type = type;
   shape_ = shape;
-  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
+  //CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
+  CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, TensorShape&& shape) {
-  type_ = type;
+  params_->type = type;
   shape_ = std::move(shape);
-  CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
+  //CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
+  CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
 }
 
 void Tensor::Rebase(Allocator *a, const Tensor& t) {
-  Rebase(a, t.type_, t.shape_);
+  CHECK_NOTNULL(t.params_.get());
+  Rebase(a, t.params_->type, t.shape_);
 }
 
 void Tensor::Reshape(const TensorShapeDef& shape) {
@@ -182,7 +188,8 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
     new_counts *= dim;
   if (new_counts != count()) {
     CHECK(shape.dim(0) == -1) << new_counts << "\tvs\t" << count();
-    dynamic_ = true;
+    //dynamic_ = true;
+    params_->dynamic = true;
   }
   shape_ = TensorShape(shape);
 }
@@ -209,7 +216,7 @@ void Tensor::Resize(const TensorShapeDef& shape) {
     new_counts *= dim;
   if (new_counts > shape_.n_elements()) {
     size_t new_size = new_counts;
-    CASES(type_, new_size *= sizeof(T));
+    CASES(params_->type, new_size *= sizeof(T));
     CHECK_NOTNULL(buf_.get());
     buf_->Resize(new_size);
   }
@@ -217,11 +224,11 @@ void Tensor::Resize(const TensorShapeDef& shape) {
 }
 
 bool Tensor::ScaleDynamicDimension(int new_dim) {
-  CHECK(dynamic_);
+  CHECK(params_->dynamic);
   int old_dim = shape_.dim(0);
   shape_.SetDim(0, new_dim);   
   size_t new_size = shape_.n_elements();
-  CASES(type_, new_size *= sizeof(T));
+  CASES(params_->type, new_size *= sizeof(T));
   if (old_dim < new_dim && buf_->size() < new_size) {
     CHECK_NOTNULL(buf_.get());
     //VLOG(V_DEBUG) << "Resizing " << new_size << " Bytes";
@@ -229,16 +236,41 @@ bool Tensor::ScaleDynamicDimension(int new_dim) {
   }
 }
 
+void Tensor::SetZeroInitEnforced() {
+  CHECK_NOTNULL(params_.get());
+  params_->zero_init_enforced = true;
+}
+
+bool Tensor::ZeroInitEnforced() const {
+  CHECK_NOTNULL(params_.get());
+  return params_->zero_init_enforced;
+}
+
+bool Tensor::InitWithZero(int iteration) {
+  CHECK_NOTNULL(params_.get());
+  size_t unit = count();
+  CASES(params_->type, unit *= sizeof(T));
+  if (params_->iteration == iteration-1) {
+    buf_->InitWithZero(params_->offset, unit);
+    params_->iteration++;
+    return true;
+  }else if (params_->iteration == iteration) {
+    return false;
+  }else {
+    LOG(FATAL) <<  "Illegal iteration";
+  }
+}
+
 bool Tensor::SetOffsetWithId(int id) {
   size_t unit = count();
-  CASES(type_, unit *= sizeof(T));
+  CASES(params_->type, unit *= sizeof(T));
   CHECK_NOTNULL(buf_.get());
   if (unit == buf_->size()) {
     return false; 
   }else {
     size_t offset = unit*id; 
     CHECK(offset < buf_->size()); 
-    offset_ = offset;
+    params_->offset = offset;
     return true;
   }
 }
@@ -249,7 +281,7 @@ void Tensor::SyncWith(const Tensor& t) {
   CHECK(t.buf_ && buf_);
   CHECK(t.shape_.n_elements() > 0 && shape_.n_elements() > 0);
   size_t size = count();
-  CASES(type_, size*= sizeof(T));
+  CASES(params_->type, size*= sizeof(T));
   CHECK(size <= t.buf_->size());
   //cudaMemcpyDefault can remove such a complexity
   //but for development, specified it clearly is better.

@@ -11,11 +11,14 @@ class CPUAllocator : public Allocator {
  public:
   CPUAllocator() 
       : Allocator(DeviceTypeToString(CPU), CPU) {}
-  void* AllocateRaw(size_t nbytes) {
+  void* AllocateRaw(size_t nbytes) override {
     return malloc(nbytes); 
   }
-  void DeallocateRaw(void* buf) {
+  void DeallocateRaw(void* buf) override {
     free(buf);
+  }
+  void InitWithZero(void* buf, size_t nbytes) override {
+    memset(buf, 0, nbytes);
   }
 };
 

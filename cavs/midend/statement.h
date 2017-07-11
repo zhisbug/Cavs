@@ -18,23 +18,13 @@ class Statement {
   virtual void Run() = 0;
   inline static void IncRound() {
     round_++;
-    //dynamic_exist_ = false;
   }
 
  protected:
   inline static int round() { return round_; }
-  //inline static void TrigerDimChange(int new_dim) {
-    //CHECK(new_dim != dynamic_dim_); 
-    //dynamic_dim_ = new_dim;
-    //dynamic_exist_ = true;
-  //}
-  //inline static int  dynamic_dim()   { return dynamic_dim_;   }
-  //inline static bool dynamic_exist() { return dynamic_exist_; }
 
  private:
   static int round_;
-  //static int  dynamic_dim_;
-  //static bool dynamic_exist_;
 };
 
 class ExprStatement : public Statement {

@@ -19,8 +19,9 @@ void ExprStatement::Run() {
   //for function support(the function body should get the offset of the whole buffer)
   ctxt_->SetTensorOffset();
   //for dynamic tensor size support(the tensor size may vary during iterations)
-  //VLOG(V_DEBUG) << "Before ScaleTensor";
   ctxt_->ScaleTensor();
+  //for some gradient tensor, the original value must be set to 0 
+  ctxt_->SetZero();
   op_->Compute(ctxt_);
   VLOG(V_TIMING) << "======================================";
 }

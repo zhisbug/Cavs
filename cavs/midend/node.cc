@@ -190,11 +190,11 @@ Statement* ScopedNode::Compile(
   if (!stmt_) {
     VLOG(V_DEBUG) << "Compiling ScopeNode:\t"  << scoped_name();
     VLOG(V_DEBUG) << "It is located in scope " << scope()->scoped_name();
-    VLOG(V_DEBUG) << "It contains a scope "    << contained_->name();
+    VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
     for (auto* node : nodes_) {
-      VLOG(V_DEBUG) << "\tCompiling\t" << name()
-                    << "\t in Scope: " << contained_->name();
+      VLOG(V_DEBUG) << "\tCompiling\t" << node->name()
+                    << "\t in Scope: " << contained_->scoped_name();
       Statement* stmt = node->Compile(sess);
       CHECK(stmt) << node->debug_info();
       bb->AppendStmt(stmt);

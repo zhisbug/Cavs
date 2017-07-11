@@ -42,9 +42,14 @@ OpContext* GraphSession::GetContext(const Node* node) {
   }
 
   for (auto* output : node->output()) {
+    //Session of the function is the first to support "sharing" input model.
+    //That means, one tensor is fed as the input of two different operators. 
+    //This is the case of LSTM because C is both scattered and fed to compute H
+    //For the backward, that means dC is calculated twice in two operators.
+    //And therefore these two dCs should be accumulated.
     const Tensor* t = GetTensor(TensorNameInFunctionContext(output));
     //all the outputs of the operators in the function are unique
-    CHECK(!t);
+    CHECK(!t) << node->debug_info();
     const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
     //all the outputs of the operators in the function are unique
     CHECK(!upper_t);

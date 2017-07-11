@@ -27,14 +27,17 @@ class OpContext {
     gs_ = gs;
   }
   inline GraphScheduler* graph_scheduler() { return gs_; }
+  inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
+
   void SetTensorOffset();
   void ScaleTensor();
-  inline static int dyn_dim() { return dyn_dim_; }
-  inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
+  void SetZero();
+
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
  private:
+  inline static int dyn_dim() { return dyn_dim_; }
   std::vector<Tensor> inputs_;
   std::vector<Tensor> outputs_;
   int round_;

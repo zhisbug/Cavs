@@ -20,6 +20,9 @@ class GPUAllocator : public Allocator {
   void DeallocateRaw(void* buf) override {
     checkCudaError(cudaFree(buf));
   }
+  void InitWithZero(void* buf, size_t nbytes) override {
+    checkCudaError(cudaMemset(buf, 0, nbytes));
+  }
 };
 
 Allocator* gpu_allocator() {

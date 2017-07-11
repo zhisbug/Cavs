@@ -11,20 +11,19 @@ unordered_map<string, void*> OpContext::repo_;
 int OpContext::dyn_dim_ = -1;
 
 void OpContext::SetTensorOffset() {
-  if (gs_) {
-    int job_id = -1;
-    if ((job_id = gs_->GetJobId()) >= 0) {
-      for (auto& t : inputs_) {
-        if (!t.SetOffsetWithId(job_id))
-          VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
-                        << "and referenced as an input in a function";
-      }
-      for (auto& t : outputs_) {
-        if (!t.SetOffsetWithId(job_id))
-          VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
-                        << "and referenced as an output in a function";
-      }
+  if (gs_ && gs_->GetJobId() >= 0) {
+    int job_id = gs_->GetJobId();
+    for (auto& t : inputs_) {
+      if (!t.SetOffsetWithId(job_id))
+        VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
+                      << "and referenced as an input in a function";
     }
+    for (auto& t : outputs_) {
+      if (!t.SetOffsetWithId(job_id))
+        VLOG(V_DEBUG) << t.name() << " must be a global tensor, "
+                      << "and referenced as an output in a function";
+    }
+    
   }
 }
 
@@ -35,13 +34,17 @@ void OpContext::ScaleTensor() {
     } 
   }
   for (auto& t : outputs_) {
-    //VLOG(V_DEBUG) << t.IsDynamicSize();
-    //VLOG(V_DEBUG) << t.dims(0);
-    //VLOG(V_DEBUG) << dyn_dim();
     if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
-      //VLOG(V_DEBUG) << t.debug_info() << "\nnew_dim: " << dyn_dim();
       t.ScaleDynamicDimension(dyn_dim());
     } 
+  }
+}
+
+void OpContext::SetZero() {
+  for (auto& t : outputs_) {
+    if (t.ZeroInitEnforced()) {
+      t.InitWithZero(round());
+    }
   }
 }
 

@@ -19,6 +19,7 @@ class Allocator {
 
   virtual void* AllocateRaw(size_t nbytes) = 0;
   virtual void DeallocateRaw(void* buf) = 0;
+  virtual void InitWithZero(void* buf, size_t nbytes) = 0;
 
   template <typename T>
   T* Allocate(size_t n_elements) {
@@ -47,6 +48,9 @@ class TrackingAllocator : public Allocator {
   FORCE_INLINE size_t capacity() const { return capacity_; }
   void* AllocateRaw(size_t nbytes) override;
   void DeallocateRaw(void* buf) override;
+  FORCE_INLINE void InitWithZero(void* buf, size_t nbytes) override {
+    allocator_->InitWithZero(buf, nbytes);
+  }
 
  private:
   Allocator* allocator_;
