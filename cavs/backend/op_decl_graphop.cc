@@ -44,8 +44,16 @@ class PullOpDecl : public ExtractOpDecl {
  public:
   PullOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << op_def_.DebugString();
+    //LOG(FATAL) << op_def_.DebugString();
     OpDef scatter;
+    //the shape of pull op is specified during defination,
+    //but that of push op is inferenced through shape-inference function.
+    //the input of pull operator is the lower layer output(full unit tensor)
+    //the output of pull operator is the current layer inner input(partial unit tensor)
+    //the input of push operator is the current layer inner error signal(partial unit tensor)
+    //the output of push operator is the lower layer error signal(full unit tensor)
+    //we do not need to care that push op will put the output to messagepusher,
+    //because it is not time-consuming(tensor inner-pointer tranformation).
     OpDefBuilder("Push")
       .Input(GetGradientName(op_def_.output(0)))
       .Output(GetGradientName(op_def_.input(0)))
@@ -94,23 +102,37 @@ class ScatterOpDecl : public EmitOpDecl {
 
 class PushOpDecl : public EmitOpDecl {
  public:
-  PushOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+  PushOpDecl(const OpDef& def) : EmitOpDecl(def) {
+    output_name_ = GetSingleArg<string>(def, "OutputName");
+    CHECK(output_name_.length());
+  }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     EmitOpDecl::ShapeInference(out_shape, inputs);
     CHECK(inputs.size() == 1);
   }
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << op_def_.DebugString();
+    //LOG(FATAL) << op_def_.DebugString();
+    //the shape of pull op is specified during defination,
+    //but that of push op is inferenced through shape-inference function.
+    //To generate the pull operator, we must assemble the shape iterm.
+    //the input of push operator is the current layer inner output(partial unit tensor)
+    //the output of push operator is another partial unit tensor(p1)
+    //the upper layer full unit tensor is copied from p1 in graphoutput operator
+    //the input of pull operator should be the backward error signal of upper layer,
+    //its name is packed in the frontend
+    //the output of pull operator is the current layer inner error signal(partial unit tensor).
     OpDef pull;
     OpDefBuilder("Pull")
-      .Input("Pull_Backward_"+std::to_string(GetHash(op_def_)))
+      .Input(GetGradientName(output_name_))
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)
       .Device(op_def_)
       .Finalize(&pull);
     grad->push_back(pull);
   }
+ private:
+  string output_name_;
 };
 
 class GraphOutputOpDecl : public OpDecl {

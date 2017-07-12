@@ -4,12 +4,16 @@
 #include "cavs/frontend/cxx/sym.h"
 
 #include <vector>
+#include <string>
 
 class GraphSupport {
  public:
   GraphSupport(const Sym& graph_ph, const Sym& vertex_ph) : 
     raw_graph_(graph_ph), raw_vertex_(vertex_ph),
-    __internal_unit(0) {}
+    __internal_unit(0) {
+    static int id = 1000; 
+    output_name_ = "GraphOutput_" + std::to_string(id++);
+  }
   //virtual void Inode() = 0; 
   //virtual void Leaf() = 0;
   virtual void Node() = 0;
@@ -24,6 +28,7 @@ class GraphSupport {
  private:
   Sym raw_graph_;
   Sym raw_vertex_;
+  std::string output_name_;
   std::vector<int> __internal_unit;
 };
 

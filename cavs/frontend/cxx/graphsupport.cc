@@ -77,7 +77,10 @@ Sym GraphSupport::Output() {
                 .AttrSingle("Wavefront", true)
                 .AttrSingle("MaxGraphNodeCount", max_graph_node_count)
                 .Finalize();
-  return Sym(def);
+  Sym s(def);
+  CHECK(s.def().output_size() == 1);
+  s.mutable_def()->set_output(0, output_name_);
+  return s;
 }
 
 Sym GraphSupport::Gather(int child,
@@ -116,7 +119,7 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                //.Shape()
+                .AttrSingle("OutputName", output_name_)
                 .Finalize();
   Sym AddToFunction(def);
 }

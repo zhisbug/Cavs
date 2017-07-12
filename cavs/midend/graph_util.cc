@@ -430,7 +430,6 @@ void GraphUtil::ComputeGradientForFunction(
       VLOG(V_DEBUG) << func_scope->typological_sorted_nodes_[i]->debug_info();
     }
   }
-  LOG(FATAL) << "Pause here";
 
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradientForFunction(func_grad_scope, critical_path, grads, func_scope);
