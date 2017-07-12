@@ -107,7 +107,7 @@ void ActivationOpCudnnGrad<T, mode>::Compute(OpContext* context) {
 
   CHECK(x.dims() == y.dims());
   CHECK(x.dims() < 5) << x.dims();
-  CHECK(x.dims() > 1) << x.dims();
+  CHECK(x.dims() > 0) << x.dims();
 
   //I don't know why cudnn has this bug(in NdTensor support)...
   //it can be one-dimension

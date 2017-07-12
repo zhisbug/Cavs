@@ -274,7 +274,8 @@ bool Tensor::InitWithZero(int iteration) {
   }else if (params_->iteration == iteration) {
     return false;
   }else {
-    LOG(FATAL) <<  "Illegal iteration";
+    LOG(FATAL) <<  "Illegal iteration: "
+               << params_->iteration << " vs " << iteration;
   }
 }
 

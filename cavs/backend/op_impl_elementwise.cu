@@ -26,8 +26,8 @@ REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
 REGISTER_OP_IMPL_BUILDER(Key("Equal").Device("GPU"),
     CudaBinaryOpInstance(math::Equal, float));
 
-//Currently, we assume all slicing are seperate
+//For partial-add, we have reset the augend tensor to 0 in each iteration
 REGISTER_OP_IMPL_BUILDER(Key("PartialAdd").Device("GPU"),
-    CudaPartialUnaryOpInstance(math::Assign, float));
+    CudaPartialAddBinaryOpInstance(math::Add, float));
 
 } //namespace backend

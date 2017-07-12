@@ -41,10 +41,10 @@ class BinaryOp : public OpImpl {
 };
 
 template <typename FUNCTOR, typename T>
-class PartialUnaryOp : public UnaryOp<FUNCTOR, T> {
+class PartialAddBinaryOp : public BinaryOp<FUNCTOR, T> {
  public:
-  explicit PartialUnaryOp(const OpDef& def)
-    : UnaryOp<FUNCTOR, T>(def),
+  explicit PartialAddBinaryOp(const OpDef& def)
+    : BinaryOp<FUNCTOR, T>(def),
       split_(-1), index_(-1), offset_(-1), stride_(-1) {
     if (GetSingleArg(def, "Split", 0) != 0) {
       //dynamic slicing
@@ -61,6 +61,8 @@ class PartialUnaryOp : public UnaryOp<FUNCTOR, T> {
     }
   }
   void Compute(OpContext* context) override {
+    //The partialadd(+=) operator behaves like a binary operation
+    //But it actually has one input, and the output is both input and output
     const Tensor& inp = context->Input(0);
     //inp.DebugNumerical<T>();
     Tensor* out = context->Output(0);
@@ -68,13 +70,15 @@ class PartialUnaryOp : public UnaryOp<FUNCTOR, T> {
     //inp is the small tensor and out is the big one
     if (split_ > 0) {
       //it means the dynamic slicing
-      CHECK(inp.count() % split_ == 0) << inp.count() << "\t" << split_;
-      stride_ = inp.count() / split_;
+      CHECK(out->count() % split_ == 0) << out->count() << "\t" << split_;
+      stride_ = out->count() / split_;
       offset_ = stride_ * index_;
     }
     CHECK(inp.count() == stride_);
-    FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_, 
-        inp.data<T>(), stride_);
+    //FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_, 
+        //inp.data<T>(), stride_);
+    FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_,
+        out->mutable_data<T>()+offset_, stride_, inp.data<T>(), inp.count());
     //out->DebugNumerical<T>();
   }
 

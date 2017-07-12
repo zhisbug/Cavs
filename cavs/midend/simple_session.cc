@@ -97,13 +97,12 @@ void SimpleSession::Run(const vector<string>& output_names,
   FeedInput(input_names, input_tensors);
   VLOG(V_TIMING) << "Executing...";
   for (auto* exe : executors_[HashString(output_names)]) {
-    exe->IncRound();
     exe->Run();
   }
   VLOG(V_TIMING) << "Fetching output..";
   FetchOutput(output_names, output_tensors);
   VLOG(V_TIMING) << "Execution completed";
-  //round_++;
+  Statement::IncRound();
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,

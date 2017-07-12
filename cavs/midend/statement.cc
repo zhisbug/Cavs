@@ -68,13 +68,13 @@ void GraphGradStatement::Run() {
     gscheduler_->ActiveFirstWorkset(i);
     while (!gscheduler_->InodeEmpty()) {
       VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      sleep(1);
+      sleep(3);
       inode_->Run();
       gscheduler_->ActiveNext();
     }
     while (!gscheduler_->LeafEmpty()) {
       VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
-      sleep(1);
+      sleep(3);
       leaf_->Run();
       gscheduler_->ActiveNext();
     }
