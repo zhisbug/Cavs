@@ -65,72 +65,6 @@ namespace midend {
   //return (*fwd_path)[node];
 //}
 
-
-//void GroupClosedSet(
-    //const vector<string>& vars,
-    //const Edge* loss,
-    //const string& solver,
-    //const float lr,
-    //const float clip,
-    //const string& proj,
-    //Scope* loss_scope) {
-  //unordered_map<const Node*, bool> recalculate;
-  //for (auto& var_name : vars) {
-    //VLOG(V_DEBUG) << var_name;
-    //const Edge* var = loss_scope->FindEdge(var_name);
-    //list<const Node*> newly_traversed;
-    //TraverseCriticalPath(loss_scope, loss, var,
-        //&recalculate, &newly_traversed);
-  //}
-
-  //if (clip > 0) {
-    //vector<string> outputs;
-    //vector<TensorShapeDef> outputs_shape;
-    //for (auto& var_name : vars) {
-      //outputs.emplace_back(GetGradientName(var_name));
-      //const Edge* var = loss_scope->FindEdge(var_name);
-      //outputs_shape.emplace_back(var->shape());
-    //}
-    //OpDef clipper;  
-    //OpDefBuilder("Clip")
-      //.Input(outputs)
-      //.Output(outputs)
-      //.Shape(outputs_shape)
-      //.Device("GPU")
-      //.AttrSingle<float>("clip", clip)
-      //.Finalize(&clipper);
-    ////loss_scope->AddNode(clipper);
-    //loss_scope->AddOp(clipper);
-  //}
-
-  //for (auto& var_name : vars) {
-    //const Edge* var = loss_scope->FindEdge(var_name);
-    //OpDef update;  
-    //OpDefBuilder(solver)
-      //.Input(var_name)
-      //.Input(GetGradientName(var_name))
-      //.Output(var_name)
-      //.Shape(var->shape())
-      //.AttrSingle<float>("Learning_rate", lr)
-      //.Device("GPU")
-      //.Finalize(&update);
-    ////loss_scope->AddNode(update);
-    //loss_scope->AddOp(update);
-
-    //if (proj.length() > 0) {
-      //OpDef projection;  
-      //OpDefBuilder(proj)
-        //.Input(var_name)
-        //.Output(var_name)
-        //.Shape(var->shape())
-        //.Device("GPU")
-        //.Finalize(&projection);
-      ////loss_scope->AddNode(projection);
-      //loss_scope->AddOp(projection);
-    //}
-  //}
-//}
-
 OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
   CHECK(node->IsSingleNode());
   const vector<OpDef>& grads = 
@@ -156,8 +90,8 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
   CHECK(loss->scope() == scope);
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
   CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
-  LOG_IF(INFO, curr->dst_size() > 1) << curr->debug_info();
-  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->debug_info();
+  LOG_IF(INFO, curr->dst_size() > 1) << curr->scoped_name();
+  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->scoped_name();
   CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
   if (curr == loss) {
     int idx = scope->node2idx_.at(curr->src(0));
@@ -455,6 +389,14 @@ void GraphUtil::ComputeGradientForFunction(
   for (auto* node : func_scope->typological_sorted_nodes_) {
     VLOG(V_DEBUG) << node->debug_info();
     if (node->name() == "Gather") {
+      CHECK(func_scope->node2idx_.find(node) != func_scope->node2idx_.end());
+      critical_path[func_scope->node2idx_.at(node)] = true;
+      //Gather node is special, because it is a source node without input
+      //so PartialGrad can not be applied to the Gather node differentiation
+      const vector<OpDef>& grad_defs = 
+        ::backend::MakeGradient(dynamic_cast<const SingleNode*>(node)->op_def()); 
+      CHECK(grad_defs.size() == 1);
+      grads.at(func_scope->node2idx_.at(node)).emplace(GetHash(grad_defs[0]), grad_defs[0]);
       CHECK(node->output_size() == 1);
       origins.push_back(node->output(0));
     }
@@ -469,12 +411,26 @@ void GraphUtil::ComputeGradientForFunction(
 
   for (auto* o_edge : origins) {
     for (auto* t_edge : terminals) {
-      if (!GenCriticalPath(&critical_path, &grads, o_edge, t_edge, func_scope)) {
+      vector<bool> cpath_each(critical_path.size(), false);
+      vector<unordered_map<size_t, OpDef>> grads_each(grads.size());
+      if (!GenCriticalPath(&cpath_each, &grads_each, o_edge, t_edge, func_scope)) {
         LOG(FATAL) << o_edge->name()
                    << "\tis not a trainable variable in function";
       }
+      for (int i = 0; i < critical_path.size(); i++) {
+        critical_path[i] = critical_path[i] || cpath_each[i];
+        grads[i].insert(grads_each[i].begin(), grads_each[i].end());
+      }
     }
   }
+
+  for (int i = 0; i < critical_path.size(); i++) {
+    if (critical_path[i]) {
+      VLOG(V_DEBUG) << i << "\tth operator:";
+      VLOG(V_DEBUG) << func_scope->typological_sorted_nodes_[i]->debug_info();
+    }
+  }
+  LOG(FATAL) << "Pause here";
 
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradientForFunction(func_grad_scope, critical_path, grads, func_scope);

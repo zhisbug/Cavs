@@ -73,7 +73,7 @@ class ScatterOpDecl : public EmitOpDecl {
          << def.DebugString();
   }
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << op_def_.DebugString();
+    //LOG(FATAL) << op_def_.DebugString();
     OpDef gather;
     //For tree-lstm, we only scatter the result to one parent,
     //so we need only gather the diff from one parent(offset == 0)
