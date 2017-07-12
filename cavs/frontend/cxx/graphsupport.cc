@@ -71,7 +71,7 @@ Sym GraphSupport::Gather(int child,
                 .Device(raw_vertex_.device())
                 .Shape(shape)
                 .AttrSingle("Child", child)
-                .AttrSingle("Offset", 0)
+                //.AttrSingle("Offset", 0)
                 .Finalize();
   if (__internal_unit.empty()) {
     __internal_unit = shape; 

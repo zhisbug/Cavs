@@ -22,7 +22,10 @@ class GraphScheduler {
   inline int batch() const { return batch_; }
 
   inline void SetMessagePasser(const Tensor* t) { message_passer_ = *t; }
-  inline const Tensor& GetMessagePasser() const { return message_passer_; }
+  inline const Tensor& GetMessagePasser(int id) {
+    message_passer_.SetOffsetWithId(0);
+    return message_passer_; 
+  }
   inline void SetMessagePusher(const Tensor* t) { message_pusher_ = *t; }
   inline const Tensor& GetMessagePusher() {
     message_pusher_.SetOffsetWithId(0);

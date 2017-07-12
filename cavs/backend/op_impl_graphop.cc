@@ -2,6 +2,7 @@
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/midend/tensor.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/op_util.h"
 
 using ::midend::Tensor;
 using ::midend::GraphScheduler;
@@ -17,12 +18,17 @@ class GraphGatherOp : public OpImpl {
     CHECK(def.shape_size()  == 1);
     for (auto d : def.shape(0).dim())
       count_ *= d;
+    child_offset_ = GetSingleArg<int>(def, "Child");
+    CHECK(child_offset_ >= 0);
   }
 
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Gather Operator needs further runtime support";
     GraphScheduler* gs = context->graph_scheduler();
-    const Tensor& inp = gs->GetMessagePasser();
+    int job_id = gs->GetJobId();
+    CHECK(gs->child_id(job_id).size() > child_offset_);
+    int child_id = gs->child_id(job_id).at(child_offset_);
+    const Tensor& inp = gs->GetMessagePasser(child_id);
     CHECK(inp.count() == count_);
     Tensor* out = context->Output(0);
     CHECK(out->count() == inp.count())
@@ -38,6 +44,7 @@ class GraphGatherOp : public OpImpl {
 
  private:
   int count_;
+  int child_offset_;
 };
 
 template <typename T>
