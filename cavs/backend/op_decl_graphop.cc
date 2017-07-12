@@ -26,7 +26,10 @@ class GatherOpDecl : public ExtractOpDecl {
  public:
   GatherOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << op_def_.DebugString();
+    //LOG(FATAL) << op_def_.DebugString();
+    //for the scatter output, the name is arbitary
+    //because the output tensor is set to(share memory with)
+    //the message passer tensor during runtime.
     OpDef scatter;
     OpDefBuilder("Scatter")
       .Input(GetGradientName(op_def_.output(0)))
@@ -74,9 +77,11 @@ class ScatterOpDecl : public EmitOpDecl {
   }
   void MakeGradient(vector<OpDef>* grad) override {
     //LOG(FATAL) << op_def_.DebugString();
-    OpDef gather;
     //For tree-lstm, we only scatter the result to one parent,
     //so we need only gather the diff from one parent(offset == 0)
+    //gather is a source operator with no inputs,
+    //its running input comes from graph scheduler
+    OpDef gather;
     OpDefBuilder("Gather")
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)

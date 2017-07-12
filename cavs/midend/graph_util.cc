@@ -119,14 +119,14 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
         }
       }else {
         const OpDef& def = PartialGrad(node, curr->name());
-        VLOG(V_DEBUG) << "CHECKING whether this partial is already inserted\t"
-                      << def.DebugString();
+        //VLOG(V_DEBUG) << "CHECKING whether this partial is already inserted\t"
+                      //<< def.DebugString();
         size_t hashcode = GetHash(def);
         if (grads->at(idx).find(hashcode) == grads->at(idx).end()) {
-          VLOG(V_DEBUG) << "CHECKING RESULT: False\n";
+          //VLOG(V_DEBUG) << "CHECKING RESULT: False\n";
           grads->at(idx).emplace(hashcode, def);
         }else {
-          VLOG(V_DEBUG) << "CHECKING RESULT: True\n";
+          //VLOG(V_DEBUG) << "CHECKING RESULT: True\n";
         }
         inpath = true;
       }
