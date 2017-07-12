@@ -159,7 +159,7 @@ Statement* GraphGradNode::Compile(
     Statement* istmt = isn->Compile(gsess_);
 
     ctxt->SetGraphScheduler(gsess_->graph_scheduler());
-    stmt_ = new GraphStatement(lstmt, istmt, gsess_->graph_scheduler());
+    stmt_ = new GraphGradStatement(lstmt, istmt, gsess_->graph_scheduler());
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }

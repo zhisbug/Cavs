@@ -64,18 +64,17 @@ void GraphGradStatement::Run() {
   CHECK(gscheduler_);
 
   gscheduler_->ReverseGraph();
-  //CHECK(output_length > 0);
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->ActiveFirstWorkset(i);
     while (!gscheduler_->InodeEmpty()) {
       VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      //sleep(1);
+      sleep(1);
       inode_->Run();
       gscheduler_->ActiveNext();
     }
     while (!gscheduler_->LeafEmpty()) {
       VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
-      //sleep(1);
+      sleep(1);
       leaf_->Run();
       gscheduler_->ActiveNext();
     }

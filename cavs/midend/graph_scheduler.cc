@@ -59,7 +59,7 @@ int GraphScheduler::GetJobId() {
 int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   VLOG(V_DEBUG) << "Loading graph...";
   CHECK(parent_ids.dims() == 2) << parent_ids.debug_info();
-  CHECK(parent_ids.device_type() == CPU);
+  CHECK(parent_ids.device_type() == CPU) << parent_ids.debug_info();
   if (parent_ids_.empty() && child_ids_.empty()) {
     parent_ids_.resize(parent_ids.dims(0)); 
     child_ids_.resize(parent_ids.dims(0)); 
