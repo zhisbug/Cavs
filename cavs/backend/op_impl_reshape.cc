@@ -18,7 +18,9 @@ class ReshapeOpImpl : public OpImpl {
     const Tensor& x = context->Input(0);
     Tensor* y = context->Output(0);
     CHECK(y->dims() > 0);
-    CHECK(x.count() == y->count() || y->dims(0) == -1);
+    CHECK(x.count() == y->count() || y->dims(0) == -1)
+         << x.name() << "\t" << x.count() << "\t" << x.debug_size() << "Bytes\n"
+         << y->name() << "\t" << y->count() << "\t" << y->debug_size() << "Bytes\n";
     x.DebugNumerical<float>();
     y->DebugNumerical<float>();
   }

@@ -39,9 +39,8 @@ class TensorBuffer : public TensorBufferBase {
   ~TensorBuffer() override { alloc_->Deallocate<T>(data_); }
   FORCE_INLINE void* data() const override  { return data_; }
   FORCE_INLINE size_t size() const override { return elem_*sizeof(T); }
-  FORCE_INLINE void InitWithZero(size_t start, size_t stride) override {
-    CHECK(start + stride <= size());
-    alloc_->InitWithZero(data()+start, stride);
+  FORCE_INLINE void InitWithZero() override {
+    alloc_->InitWithZero(data(), size());
   }
   FORCE_INLINE void* Resize(size_t size) override { 
     CHECK(size % sizeof(T) == 0);
@@ -146,9 +145,18 @@ Tensor::Tensor(const string& name, Allocator *a,
   }
 }
 
+//for sharing buffer operators like reshape
 Tensor::Tensor(const std::string& name, const Tensor& t) {
-  *this = t;
+  //*this = t;
+  buf_ = t.buf_;
   name_ = name;
+  shape_  = t.shape_;
+  params_.reset(new Params());
+  params_->type = t.params_->type;
+  //I don't know whether it is necessary for the followings
+  params_->offset = t.params_->offset;
+  params_->dynamic = t.params_->dynamic;
+  params_->zero_init_enforced = t.params_->zero_init_enforced;
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
@@ -162,6 +170,8 @@ Tensor& Tensor::operator =(const Tensor& t) {
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
+  //CHECK_NOTNULL(params_.get());
+  if (!params_)  params_.reset(new Params());
   params_->type = type;
   shape_ = shape;
   //CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
@@ -170,6 +180,8 @@ void Tensor::Rebase(Allocator *a,
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, TensorShape&& shape) {
+  //CHECK_NOTNULL(params_.get());
+  if (!params_)  params_.reset(new Params());
   params_->type = type;
   shape_ = std::move(shape);
   //CASES(type, buf_.reset(new TensorBuffer<T>(a, shape_.n_elements())));
@@ -183,6 +195,7 @@ void Tensor::Rebase(Allocator *a, const Tensor& t) {
 
 void Tensor::Reshape(const TensorShapeDef& shape) {
   CHECK(shape.dim_size() > 0);
+  CHECK_NOTNULL(params_.get());
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
@@ -196,6 +209,7 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
 
 void Tensor::Reshape(const vector<int>& dims) {
   CHECK(!dims.empty());
+  CHECK_NOTNULL(params_.get());
   int new_counts = 1;
   for (auto& dim : dims)
     new_counts *= dim;
@@ -206,11 +220,13 @@ void Tensor::Reshape(const vector<int>& dims) {
 
 void Tensor::Reshape(const Tensor& t) {
   CHECK(t.count() == count());
+  CHECK_NOTNULL(params_.get());
   shape_ = t.shape_;
 }
 
 //the shape may be less than the real buffer size
 void Tensor::Resize(const TensorShapeDef& shape) {
+  CHECK_NOTNULL(params_.get());
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
@@ -224,6 +240,7 @@ void Tensor::Resize(const TensorShapeDef& shape) {
 }
 
 bool Tensor::ScaleDynamicDimension(int new_dim) {
+  CHECK_NOTNULL(params_.get());
   CHECK(params_->dynamic);
   int old_dim = shape_.dim(0);
   shape_.SetDim(0, new_dim);   
@@ -251,7 +268,7 @@ bool Tensor::InitWithZero(int iteration) {
   size_t unit = count();
   CASES(params_->type, unit *= sizeof(T));
   if (params_->iteration == iteration-1) {
-    buf_->InitWithZero(params_->offset, unit);
+    buf_->InitWithZero();
     params_->iteration++;
     return true;
   }else if (params_->iteration == iteration) {
@@ -262,6 +279,7 @@ bool Tensor::InitWithZero(int iteration) {
 }
 
 bool Tensor::SetOffsetWithId(int id) {
+  CHECK_NOTNULL(params_.get());
   size_t unit = count();
   CASES(params_->type, unit *= sizeof(T));
   CHECK_NOTNULL(buf_.get());
@@ -281,6 +299,7 @@ void Tensor::SyncWith(const Tensor& t) {
   CHECK(t.buf_ && buf_);
   CHECK(t.shape_.n_elements() > 0 && shape_.n_elements() > 0);
   size_t size = count();
+  CHECK_NOTNULL(params_.get());
   CASES(params_->type, size*= sizeof(T));
   CHECK(size <= t.buf_->size());
   //cudaMemcpyDefault can remove such a complexity

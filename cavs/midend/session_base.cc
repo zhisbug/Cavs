@@ -39,7 +39,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
   for (auto* input : node->input()) {
     const Tensor* t = GetTensor(input->scoped_name()); 
     CHECK(t) << "Getting " << input->scoped_name();
-    ctxt->AppendInput(*t);
+    ctxt->AppendInput(t);
   }
   for (auto* output : node->output()) {
     const Tensor* t = GetTensor(output->scoped_name());
@@ -79,7 +79,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
     }
     t = GetTensor(output->scoped_name());
     CHECK(t) << t->debug_info();
-    ctxt->AppendOutput(*t);
+    ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;
 }

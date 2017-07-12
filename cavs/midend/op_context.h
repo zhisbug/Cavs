@@ -17,8 +17,8 @@ class OpContext {
   inline Tensor* Output(int idx);
   inline int InputSize() const;
   inline int OutputSize() const;
-  inline void AppendInput(const Tensor& t);
-  inline void AppendOutput(const Tensor& t);
+  inline void AppendInput(const Tensor* t);
+  inline void AppendOutput(Tensor* t);
 
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
@@ -38,8 +38,8 @@ class OpContext {
   static std::unordered_map<std::string, void*> repo_;
  private:
   inline static int dyn_dim() { return dyn_dim_; }
-  std::vector<Tensor> inputs_;
-  std::vector<Tensor> outputs_;
+  std::vector<const Tensor*> inputs_;
+  std::vector<Tensor*> outputs_;
   int round_;
   GraphScheduler* gs_;
   static int dyn_dim_;
@@ -48,12 +48,12 @@ class OpContext {
 inline const Tensor& OpContext::Input(int idx) const {
   CHECK(idx < inputs_.size())
     << idx << "\t" << inputs_.size();
-  return inputs_.at(idx); 
+  return *(inputs_.at(idx)); 
 }
 
 inline Tensor* OpContext::Output(int idx) { 
   CHECK(idx < outputs_.size());
-  return &(outputs_.at(idx)); 
+  return outputs_.at(idx); 
 }
 
 inline int OpContext::InputSize() const {
@@ -64,11 +64,11 @@ inline int OpContext::OutputSize() const {
   return outputs_.size();
 }
 
-inline void OpContext::AppendInput(const Tensor& t) {
+inline void OpContext::AppendInput(const Tensor* t) {
   inputs_.push_back(t);
 }
 
-inline void OpContext::AppendOutput(const Tensor& t) {
+inline void OpContext::AppendOutput(Tensor* t) {
   outputs_.push_back(t); 
 }
 
