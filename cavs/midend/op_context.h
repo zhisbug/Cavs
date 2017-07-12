@@ -33,6 +33,7 @@ class OpContext {
   void ScaleTensor();
   void SetZero();
 
+  //friend class GraphGradNode;
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;

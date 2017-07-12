@@ -23,7 +23,7 @@ class GraphScheduler {
 
   inline void SetMessagePasser(const Tensor* t) { message_passer_ = *t; }
   inline const Tensor& GetMessagePasser(int id) {
-    message_passer_.SetOffsetWithId(0);
+    message_passer_.SetOffsetWithId(id);
     return message_passer_; 
   }
   inline void SetMessagePusher(const Tensor* t) { message_pusher_ = *t; }

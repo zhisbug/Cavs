@@ -99,7 +99,7 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                //.Shape(s.shape(0))
+                .Shape()
                 .Finalize();
   Sym AddToFunction(def);
 }
@@ -110,7 +110,7 @@ void GraphSupport::Scatter(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .Shape(__internal_unit)
+                .Shape(__internal_unit) //is this really needed?
                 .Finalize();
   Sym AddToFunction(def);
 }

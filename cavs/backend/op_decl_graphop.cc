@@ -12,10 +12,6 @@ class ExtractOpDecl : public OpDecl {
     CHECK(def.shape_size() == 1)
          << def.DebugString();
   }
-  
-  void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << "Not implemented yet";
-  }
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
@@ -26,32 +22,15 @@ class ExtractOpDecl : public OpDecl {
   }
 };
 
-class EmitOpDecl : public OpDecl {
- public:
-  EmitOpDecl(const OpDef& def) : OpDecl(def) {}
-  
-  void MakeGradient(vector<OpDef>* grad) override {
-    LOG(FATAL) << "Not implemented yet";
-  }
-
-  void ShapeInference(vector<TensorShapeDef>* out_shape,
-    const vector<TensorShapeDef>& inputs) override {
-    CHECK(out_shape->empty());
-    CHECK(inputs.size() > 0);
-    out_shape->resize(1);
-    out_shape->at(0) = inputs[0];
-  }
-};
-
 class GatherOpDecl : public ExtractOpDecl {
  public:
   GatherOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
     LOG(FATAL) << op_def_.DebugString();
-    //It needs further design!!!!!
     OpDef scatter;
     OpDefBuilder("Scatter")
-      .Input(GetGradientName(op_def_.input(0)))
+      .Input(GetGradientName(op_def_.output(0)))
+      .Output("Scatter_Backward_"+std::to_string(GetHash(op_def_)))
       .Device(op_def_)
       .Finalize(&scatter);
     grad->push_back(scatter);
@@ -61,7 +40,31 @@ class GatherOpDecl : public ExtractOpDecl {
 class PullOpDecl : public ExtractOpDecl {
  public:
   PullOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
+  void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << op_def_.DebugString();
+    OpDef scatter;
+    OpDefBuilder("Push")
+      .Input(GetGradientName(op_def_.output(0)))
+      .Output(GetGradientName(op_def_.input(0)))
+      .Device(op_def_)
+      .Finalize(&scatter);
+    grad->push_back(scatter);
+  }
 };
+
+class EmitOpDecl : public OpDecl {
+ public:
+  EmitOpDecl(const OpDef& def) : OpDecl(def) {}
+  
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(out_shape->empty());
+    CHECK(inputs.size() > 0);
+    out_shape->resize(1);
+    out_shape->at(0) = inputs[0];
+  }
+};
+
 
 class ScatterOpDecl : public EmitOpDecl {
  public:
@@ -70,11 +73,14 @@ class ScatterOpDecl : public EmitOpDecl {
          << def.DebugString();
   }
   void MakeGradient(vector<OpDef>* grad) override {
-    //It needs further design!!!!!
+    LOG(FATAL) << op_def_.DebugString();
     OpDef gather;
+    //For tree-lstm, we only scatter the result to one parent,
+    //so we need only gather the diff from one parent(offset == 0)
     OpDefBuilder("Gather")
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)
+      .AttrSingle("Child", 0)
       .Device(op_def_)
       .Finalize(&gather);
     grad->push_back(gather);
@@ -84,6 +90,22 @@ class ScatterOpDecl : public EmitOpDecl {
 class PushOpDecl : public EmitOpDecl {
  public:
   PushOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    EmitOpDecl::ShapeInference(out_shape, inputs);
+    CHECK(inputs.size() == 1);
+  }
+  void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << op_def_.DebugString();
+    OpDef pull;
+    OpDefBuilder("Pull")
+      .Input("Pull_Backward_"+std::to_string(GetHash(op_def_)))
+      .Output(GetGradientName(op_def_.input(0)))
+      .Shape(op_def_)
+      .Device(op_def_)
+      .Finalize(&pull);
+    grad->push_back(pull);
+  }
 };
 
 class GraphOutputOpDecl : public OpDecl {

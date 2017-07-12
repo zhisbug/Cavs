@@ -107,6 +107,7 @@ Statement* GraphNode::Compile(
     CHECK(max_graph_node_count > 0);
     GraphScheduler* gs = new GraphScheduler();
     gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
+    //gsess_->SetOutputTensor(ctxt->Output(0));
 
     Scope* leaf = main_scope()->FindChildScope("Leaf");
     CHECK_NOTNULL(leaf);
@@ -143,6 +144,7 @@ Statement* GraphGradNode::Compile(
     //that means its graph session has been set
     gsess_ = forward_node_->gsess_;
     CHECK_NOTNULL(gsess_);
+    //gsess_->SetOutputGradTensor(ctxt->inputs_(0));
 
     Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));
     CHECK_NOTNULL(leaf);

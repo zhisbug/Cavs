@@ -167,6 +167,13 @@ Tensor& Tensor::operator =(const Tensor& t) {
   return *this;
 }
 
+//bool Tensor::ShareBufWith(const Tensor& t) {
+  //if (buf_.size() == t.buf_.size()) {
+    //buf_ = t.buf_;
+    //return true;
+  //}else
+    //return false;
+//}
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {

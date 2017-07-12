@@ -105,7 +105,7 @@ class Tensor {
   bool InitWithZero(int iteration);
   bool SetOffsetWithId(int id);
 
-  //inline bool IsSharedWith(const Tensor& t) const { return buf_ && t.buf_ && buf_ == t.buf_; }
+  //bool ShareBufWith(const Tensor& t);
   void SyncWith(const Tensor& t);
 
   std::string debug_info() const;
