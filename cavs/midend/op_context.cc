@@ -12,7 +12,7 @@ int OpContext::dyn_dim_ = -1;
 
 void OpContext::SetTensorOffset() {
   int job_id = 0;
-  if (gs_ && (job_id = gs_->GetJobId()) >= 0) {
+  if (gs_ && (job_id = gs_->GetCurrentJobId()) >= 0) {
     //input'id should be set, think about the graphoutput_grad case
     //we dont't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer

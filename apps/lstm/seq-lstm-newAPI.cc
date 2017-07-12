@@ -55,7 +55,7 @@ class SeqModel : public GraphSupport {
     bf = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+3*FLAGS_hidden, FLAGS_hidden);
   }
 
-  void Inode() override {
+  void Node() override {
     Sym child = Gather(0, {2*FLAGS_hidden});
     Sym child_h, child_c;
     tie(child_h, child_c) = child.Split2();
@@ -78,23 +78,6 @@ class SeqModel : public GraphSupport {
 
     Scatter(Sym::Concat({h, c}));
     Push(h);
-  }
-
-  void Leaf() override {
-    Sym x = Pull(0, {1});
-    x = x.EmbeddingLookup(embedding);
-    Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden});
-    Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
-            + Sym::MatMul(h0.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
-    Sym u, i, o, f;
-    tie(u, i, o, f) = tmp.Split4();
-    i = (i+bi).Sigmoid();
-    o = (o+bo).Sigmoid();
-    u = (u+bu).Tanh();
-    Sym c = i * u;
-    Sym h = o * Sym::Tanh(c);
-    Push(h);
-    Scatter(Sym::Concat({h, c}));
   }
 
  private:

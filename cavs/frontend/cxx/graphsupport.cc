@@ -8,46 +8,63 @@ using std::string;
 using std::vector;
 
 Sym GraphSupport::Output() {
-  VLOG(V_DEBUG) << "Generating inode and leaf functions";
-  vector<int> inode_shape;
+  VLOG(V_DEBUG) << "Generating node functions";
+  vector<int> node_shape;
+  //{
+    //FuncConf::FuncDefineBegin("Inode");
+    //this->Inode();
+    //FunctionDef fi = FuncConf::FuncDefineEnd("Inode");
+    //VLOG(V_DEBUG) << fi.DebugString();
+    //string serialization;
+    //fi.SerializeToString(&serialization);
+
+    //int *dim = NULL;
+    //size_t dim_length = 0;
+    //C_AddFunction(serialization.c_str(), serialization.length(),
+                  //&dim, &dim_length);
+    //CHECK(dim_length > 0);
+    //inode_shape = vector<int>(dim, dim+dim_length);
+    //free(dim);
+  //}
+
+  //vector<int> leaf_shape;
+  //{
+    //FuncConf::FuncDefineBegin("Leaf");
+    //this->Leaf();
+    //FunctionDef fl = FuncConf::FuncDefineEnd("Leaf");
+    //string serialization;
+    //fl.SerializeToString(&serialization);
+
+    //int *dim = NULL;
+    //size_t dim_length = 0;
+    //C_AddFunction(serialization.c_str(), serialization.length(),
+                  //&dim, &dim_length);
+    //leaf_shape = vector<int>(dim, dim+dim_length);
+    //CHECK(dim_length > 0);
+    //free(dim);
+  //}
+  //CHECK(inode_shape == leaf_shape);
+  
   {
-    FuncConf::FuncDefineBegin("Inode");
-    this->Inode();
-    FunctionDef fi = FuncConf::FuncDefineEnd("Inode");
-    VLOG(V_DEBUG) << fi.DebugString();
+    FuncConf::FuncDefineBegin("Node");
+    this->Node();
+    FunctionDef func = FuncConf::FuncDefineEnd("Node");
+    VLOG(V_DEBUG) << func.DebugString();
     string serialization;
-    fi.SerializeToString(&serialization);
+    func.SerializeToString(&serialization);
 
     int *dim = NULL;
     size_t dim_length = 0;
     C_AddFunction(serialization.c_str(), serialization.length(),
                   &dim, &dim_length);
     CHECK(dim_length > 0);
-    inode_shape = vector<int>(dim, dim+dim_length);
+    node_shape = vector<int>(dim, dim+dim_length);
     free(dim);
   }
 
-  vector<int> leaf_shape;
-  {
-    FuncConf::FuncDefineBegin("Leaf");
-    this->Leaf();
-    FunctionDef fl = FuncConf::FuncDefineEnd("Leaf");
-    string serialization;
-    fl.SerializeToString(&serialization);
-
-    int *dim = NULL;
-    size_t dim_length = 0;
-    C_AddFunction(serialization.c_str(), serialization.length(),
-                  &dim, &dim_length);
-    leaf_shape = vector<int>(dim, dim+dim_length);
-    CHECK(dim_length > 0);
-    free(dim);
-  }
-
-  CHECK(inode_shape == leaf_shape);
-  CHECK(!inode_shape.empty());
+  CHECK(!node_shape.empty());
   int one_node_output_size = 1;
-  for (int d : inode_shape) one_node_output_size *= d;
+  for (int d : node_shape) one_node_output_size *= d;
   int max_graph_node_count = 1;
   for (int d : raw_graph_.shape(0)) max_graph_node_count *= d;
 
@@ -99,7 +116,7 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .Shape()
+                //.Shape()
                 .Finalize();
   Sym AddToFunction(def);
 }

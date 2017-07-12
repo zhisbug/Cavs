@@ -67,7 +67,8 @@ void Scope::AddGraphOpTransformation(OpDef* new_def, const OpDef& def) {
   set<string> inputs;
   for (auto& i : new_def->input())
     inputs.insert(i);
-  for (auto&& func : {"Inode", "Leaf"}) {
+  //for (auto&& func : {"Inode", "Leaf"}) {
+  for (auto&& func : {"Node"}) {
     const Scope* func_scope = FindChildScope(func);
     //the function may defined in the current scope(current scope == main)
     //or the ancestor scope(current scope == optimizer)

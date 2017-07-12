@@ -13,8 +13,6 @@
 class Session {
  public:
   Session(std::string name = "SimpleSession") {
-    //s_ = C_NewSessionWithDG(
-        //name.c_str(), name.length(), C_GetDefaultDG());
     s_ = C_NewSession(
         name.c_str(), name.length());
   }

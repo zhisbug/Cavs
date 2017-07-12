@@ -78,21 +78,26 @@ class BasicBlock : public Statement {
 
 class GraphStatement : public ExprStatement {
  public:
-  GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
-    : ExprStatement(), leaf_(leaf), inode_(inode), gscheduler_(gs) {}
+  //GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
+    //: ExprStatement(), leaf_(leaf), inode_(inode), gscheduler_(gs) {}
+  GraphStatement(Statement* node_func, GraphScheduler* gs)
+    : ExprStatement(), node_func_(node_func), gscheduler_(gs) {}
 
   void Run() override;
 
  protected:
-  Statement* leaf_;
-  Statement* inode_;
+  //Statement* leaf_;
+  //Statement* inode_;
+  Statement* node_func_;
   GraphScheduler* gscheduler_;
 };
 
 class GraphGradStatement : public GraphStatement {
  public:
-  GraphGradStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
-    : GraphStatement(leaf, inode, gs) {}
+  //GraphGradStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
+    //: GraphStatement(leaf, inode, gs) {}
+  GraphGradStatement(Statement* node_func, GraphScheduler* gs)
+    : GraphStatement(node_func, gs) {}
 
   void Run() override;
 };

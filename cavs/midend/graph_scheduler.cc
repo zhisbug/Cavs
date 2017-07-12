@@ -8,51 +8,70 @@ using std::vector;
 namespace midend {
 
 void GraphScheduler::ActiveNext() {
-  int id = GetJobId();
+  int id = GetCurrentJobId();
+  CHECK(id >= 0);
   if (isForward_) {
-    if (isLeaf(id)) {
-      CHECK(id == activate_leaf_.front());
-      activate_inode_.push_back(parent_id(id));
-      activate_leaf_.pop_front();
-    }else {
-      CHECK(id == activate_inode_.front());
-      if (parent_id(id) != -1) {
-        activate_inode_.push_back(parent_id(id));
-      }
-      activate_inode_.pop_front();
+    int pid = parent_id(id);
+    if (pid != -1 && !activated_workset_[pid]) {
+      pending_workset_.push_back(pid);
+      activated_workset_[pid] = true;
     }
   }else {
-    if (!isLeaf(id)) {
-      CHECK(id == activate_inode_.front());
-      for (auto& i : child_id(id)) {
-        if (isLeaf(i))
-          activate_leaf_.push_back(i);
-        else
-          activate_inode_.push_back(i);
+    for (auto& cid : child_id(id)) {
+      if (!activated_workset_[cid]) {
+        pending_workset_.push_back(cid);
+        activated_workset_[cid] = true;
       }
-      activate_inode_.pop_front();
-    }else {
-      CHECK(id == activate_leaf_.front());
-      activate_leaf_.pop_front();
     }
   }
+  pending_workset_.pop_front();
+  //if (isForward_) {
+    //if (isLeaf(id)) {
+      //CHECK(id == activate_leaf_.front());
+      //activate_inode_.push_back(parent_id(id));
+      //activate_leaf_.pop_front();
+    //}else {
+      //CHECK(id == activate_inode_.front());
+      //if (parent_id(id) != -1) {
+        //activate_inode_.push_back(parent_id(id));
+      //}
+      //activate_inode_.pop_front();
+    //}
+  //}else {
+    //if (!isLeaf(id)) {
+      //CHECK(id == activate_inode_.front());
+      //for (auto& i : child_id(id)) {
+        //if (isLeaf(i))
+          //activate_leaf_.push_back(i);
+        //else
+          //activate_inode_.push_back(i);
+      //}
+      //activate_inode_.pop_front();
+    //}else {
+      //CHECK(id == activate_leaf_.front());
+      //activate_leaf_.pop_front();
+    //}
+  //}
 }
 
-int GraphScheduler::GetJobId() {
-  if (isForward_) {
-    if (!activate_leaf_.empty()) {
-      return activate_leaf_.front();
-    }else if (!activate_inode_.empty()) {
-      return activate_inode_.front();
-    }
-  }else {
-    if (!activate_inode_.empty()) {
-      return activate_inode_.front();
-    }else if (!activate_leaf_.empty()) {
-      return activate_leaf_.front();
-    }
-  }
-  return -1;
+int GraphScheduler::GetCurrentJobId() {
+  //if (isForward_) {
+    //if (!activate_leaf_.empty()) {
+      //return activate_leaf_.front();
+    //}else if (!activate_inode_.empty()) {
+      //return activate_inode_.front();
+    //}
+  //}else {
+    //if (!activate_inode_.empty()) {
+      //return activate_inode_.front();
+    //}else if (!activate_leaf_.empty()) {
+      //return activate_leaf_.front();
+    //}
+  //}
+  if (!empty())
+    return pending_workset_.front();
+  else
+    return -1;
 }
 
 //parent-idx form
@@ -86,7 +105,7 @@ int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
   }
   batch_ = parent_ids_.size();
   isForward_ = true;
-  CHECK(activate_leaf_.empty());
+  CHECK(pending_workset_.empty());
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
 }
@@ -95,22 +114,27 @@ void GraphScheduler::ReverseGraph() {
   CHECK(batch_ > 0);
   CHECK(parent_ids_.size() > 0);
   isForward_ = false;
+  std::fill(activated_workset_.begin(), activated_workset_.end(), false);
 }
 
 void GraphScheduler::ActiveFirstWorkset(int sample_id) {
-  CHECK(activate_leaf_.empty());
-  CHECK(activate_inode_.empty());
+  //CHECK(activate_leaf_.empty());
+  //CHECK(activate_inode_.empty());
+  CHECK(pending_workset_.empty());
+  activated_workset_.resize(parent_ids_[sample_id].size(), false);
   CHECK(sample_id < batch_);
   if (isForward_) {
     for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
       if (child_ids_[sample_id][i].empty()) {
-        activate_leaf_.push_back(i);
+        pending_workset_.push_back(i);
+        activated_workset_[i] = true;
       }
     }
   }else {
     for (int i = parent_ids_[sample_id].size()-1; i >= 0; i--) {
       if (parent_ids_[sample_id][i] < 0) {
-        activate_inode_.push_back(i);
+        pending_workset_.push_back(i);
+        activated_workset_[i] = true;
       }
     }
   }

@@ -40,55 +40,58 @@ class TreeModel : public GraphSupport {
     bf     = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+3*FLAGS_hidden, FLAGS_hidden);
   }
 
-  void Inode() override {
-    Sym child_l = Gather(0, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_r = Gather(1, {FLAGS_hidden, FLAGS_hidden});
-    Sym child_hl, child_cl;
-    tie(child_hl, child_cl) = child_l.Split2();
-    Sym child_hr, child_cr;
-    tie(child_hr, child_cr) = child_r.Split2();
-    Sym x        = Pull(0, {FLAGS_input_size});
-
-    Sym xh = Sym::Concat({x, child_hl+child_hr});
-    Sym tmp = Sym::MatMul(xh, UW_uio);
-    Sym u, i, o;
-    tie(u, i, o) = tmp.Split3();
-    Sym xhl = Sym::Concat({x, child_hl});
-    Sym xhr = Sym::Concat({x, child_hr});
-    Sym fl = Sym::MatMul(xhl, UW_f);
-    Sym fr = Sym::MatMul(xhr, UW_f);
-
-    i = (i+bi).Sigmoid();
-    o = (o+bo).Sigmoid();
-    u = (u+bu).Tanh();
-    fl = (fl+bf).Sigmoid();
-    fr = (fr+bf).Sigmoid();
-
-    Sym f = Sym::Concat({fl, fr});
-    Sym child_c = Sym::Concat({child_cl, child_cr});
-    Sym c = i * u + Sym::Reduce_sum(f*child_c, 0);
-    Sym h = o * Sym::Tanh(c);
-
-    Scatter(Sym::Concat({h, c}));
-    Push(h);
+  void Node() override {
+    LOG(FATAL) << "need further implementation";
   }
+  //void Inode() override {
+    //Sym child_l = Gather(0, {FLAGS_hidden, FLAGS_hidden});
+    //Sym child_r = Gather(1, {FLAGS_hidden, FLAGS_hidden});
+    //Sym child_hl, child_cl;
+    //tie(child_hl, child_cl) = child_l.Split2();
+    //Sym child_hr, child_cr;
+    //tie(child_hr, child_cr) = child_r.Split2();
+    //Sym x        = Pull(0, {FLAGS_input_size});
 
-  void Leaf() override {
-    Sym x = Pull(0, {FLAGS_input_size});
-    x = x.EmbeddingLookup(embedding);
-    Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden*FLAGS_hidden});
-    Sym xh = Sym::Concat({x, h0});
-    Sym tmp = Sym::MatMul(xh, UW_uio);
-    Sym u, i, o;
-    tie(u, i, o) = tmp.Split3();
-    i = (i+bi).Sigmoid();
-    o = (o+bo).Sigmoid();
-    u = (u+bu).Tanh();
-    Sym c = i * u;
-    Sym h = o * Sym::Tanh(c);
-    Push(h);
-    Scatter(Sym::Concat({h, c}));
-  }
+    //Sym xh = Sym::Concat({x, child_hl+child_hr});
+    //Sym tmp = Sym::MatMul(xh, UW_uio);
+    //Sym u, i, o;
+    //tie(u, i, o) = tmp.Split3();
+    //Sym xhl = Sym::Concat({x, child_hl});
+    //Sym xhr = Sym::Concat({x, child_hr});
+    //Sym fl = Sym::MatMul(xhl, UW_f);
+    //Sym fr = Sym::MatMul(xhr, UW_f);
+
+    //i = (i+bi).Sigmoid();
+    //o = (o+bo).Sigmoid();
+    //u = (u+bu).Tanh();
+    //fl = (fl+bf).Sigmoid();
+    //fr = (fr+bf).Sigmoid();
+
+    //Sym f = Sym::Concat({fl, fr});
+    //Sym child_c = Sym::Concat({child_cl, child_cr});
+    //Sym c = i * u + Sym::Reduce_sum(f*child_c, 0);
+    //Sym h = o * Sym::Tanh(c);
+
+    //Scatter(Sym::Concat({h, c}));
+    //Push(h);
+  //}
+
+  //void Leaf() override {
+    //Sym x = Pull(0, {FLAGS_input_size});
+    //x = x.EmbeddingLookup(embedding);
+    //Sym h0 = Sym::Constant(DT_FLOAT, 0, {FLAGS_hidden*FLAGS_hidden});
+    //Sym xh = Sym::Concat({x, h0});
+    //Sym tmp = Sym::MatMul(xh, UW_uio);
+    //Sym u, i, o;
+    //tie(u, i, o) = tmp.Split3();
+    //i = (i+bi).Sigmoid();
+    //o = (o+bo).Sigmoid();
+    //u = (u+bu).Tanh();
+    //Sym c = i * u;
+    //Sym h = o * Sym::Tanh(c);
+    //Push(h);
+    //Scatter(Sym::Concat({h, c}));
+  //}
 
  private:
   Sym UW_uio;

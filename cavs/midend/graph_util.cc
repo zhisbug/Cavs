@@ -261,7 +261,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         CHECK_NOTNULL(grad_node);
         CHECK(gnode_map.find(i) != gnode_map.end());
         dynamic_cast<GraphGradNode*>(grad_node)->SetGraphForwardNode(gnode_map[i]);
-        for (auto&& func_name : {"Leaf", "Inode"}) {
+        for (auto&& func_name : {"Node"}) {
           //find the childscope of father or ancestor(optimizer case)
           VLOG(V_DEBUG) << "Compute Gradient for " << func_name << "...";
           const Scope* func_scope = s_->FindChildScope(func_name);

@@ -109,22 +109,28 @@ Statement* GraphNode::Compile(
     gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
     //gsess_->SetOutputTensor(ctxt->Output(0));
 
-    Scope* leaf = main_scope()->FindChildScope("Leaf");
-    CHECK_NOTNULL(leaf);
-    //we should add the generated scopednode into main_scope()
-    //because only main_scope may not be wrapped up into a ScopedNode and executed.
-    ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
-    lsn->SetContainedScope(leaf);
-    Statement* lstmt = lsn->Compile(gsess_);
+    //Scope* leaf = main_scope()->FindChildScope("Leaf");
+    //CHECK_NOTNULL(leaf);
+    ////we should add the generated scopednode into main_scope()
+    ////because only main_scope may not be wrapped up into a ScopedNode and executed.
+    //ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
+    //lsn->SetContainedScope(leaf);
+    //Statement* lstmt = lsn->Compile(gsess_);
 
-    Scope* inode = main_scope()->FindChildScope("Inode");
-    CHECK_NOTNULL(inode);
-    ScopedNode* isn = new ScopedNode(main_scope(), "Inode", 1);
-    isn->SetContainedScope(inode);
-    Statement* istmt = isn->Compile(gsess_);
+    //Scope* inode = main_scope()->FindChildScope("Inode");
+    //CHECK_NOTNULL(inode);
+    //ScopedNode* isn = new ScopedNode(main_scope(), "Inode", 1);
+    //isn->SetContainedScope(inode);
+    //Statement* istmt = isn->Compile(gsess_);
+    
+    Scope* node_func = main_scope()->FindChildScope("Node");
+    CHECK_NOTNULL(node_func);
+    ScopedNode* sn = new ScopedNode(main_scope(), "Node", 1);
+    sn->SetContainedScope(node_func);
+    Statement* node_func_stmt = sn->Compile(gsess_);
 
     ctxt->SetGraphScheduler(gs);
-    stmt_ = new GraphStatement(lstmt, istmt, gs);
+    stmt_ = new GraphStatement(node_func_stmt, gs);
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }
@@ -146,22 +152,28 @@ Statement* GraphGradNode::Compile(
     CHECK_NOTNULL(gsess_);
     //gsess_->SetOutputGradTensor(ctxt->inputs_(0));
 
-    Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));
-    CHECK_NOTNULL(leaf);
-    //we should add the generated scopednode into main_scope()
-    //because only main_scope may not be wrapped up into a ScopedNode and executed.
-    ScopedNode* lsn = new ScopedNode(main_scope(), GetGradientName("Leaf"), 1);
-    lsn->SetContainedScope(leaf);
-    Statement* lstmt = lsn->Compile(gsess_);
+    //Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));
+    //CHECK_NOTNULL(leaf);
+    ////we should add the generated scopednode into main_scope()
+    ////because only main_scope may not be wrapped up into a ScopedNode and executed.
+    //ScopedNode* lsn = new ScopedNode(main_scope(), GetGradientName("Leaf"), 1);
+    //lsn->SetContainedScope(leaf);
+    //Statement* lstmt = lsn->Compile(gsess_);
 
-    Scope* inode = main_scope()->FindChildScope("Inode")->FindChildScope(GetGradientName("Inode"));
-    CHECK_NOTNULL(inode);
-    ScopedNode* isn = new ScopedNode(main_scope(), GetGradientName("Inode"), 1);
-    isn->SetContainedScope(inode);
-    Statement* istmt = isn->Compile(gsess_);
+    //Scope* inode = main_scope()->FindChildScope("Inode")->FindChildScope(GetGradientName("Inode"));
+    //CHECK_NOTNULL(inode);
+    //ScopedNode* isn = new ScopedNode(main_scope(), GetGradientName("Inode"), 1);
+    //isn->SetContainedScope(inode);
+    //Statement* istmt = isn->Compile(gsess_);
+    
+    Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
+    CHECK_NOTNULL(node_grad_func);
+    ScopedNode* sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
+    sn->SetContainedScope(node_grad_func);
+    Statement* node_grad_stmt = sn->Compile(gsess_);
 
     ctxt->SetGraphScheduler(gsess_->graph_scheduler());
-    stmt_ = new GraphGradStatement(lstmt, istmt, gsess_->graph_scheduler());
+    stmt_ = new GraphGradStatement(node_grad_stmt, gsess_->graph_scheduler());
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }

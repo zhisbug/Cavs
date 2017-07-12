@@ -10,8 +10,9 @@ class GraphSupport {
   GraphSupport(const Sym& graph_ph, const Sym& vertex_ph) : 
     raw_graph_(graph_ph), raw_vertex_(vertex_ph),
     __internal_unit(0) {}
-  virtual void Inode() = 0; 
-  virtual void Leaf() = 0;
+  //virtual void Inode() = 0; 
+  //virtual void Leaf() = 0;
+  virtual void Node() = 0;
   Sym Output();
 
  protected:

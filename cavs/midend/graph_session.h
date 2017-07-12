@@ -14,8 +14,8 @@ class GraphSession : public SessionBase {
   GraphSession(SessionBase* sb, const Scope* rs,
       GraphScheduler* gs, int max_graph_node_count)
     : global_sess_(sb), running_scope_(rs), 
-      gscheduler_(gs), MAX_NODE_(max_graph_node_count),
-      output_(NULL), output_grad_(NULL) {}
+      gscheduler_(gs), MAX_NODE_(max_graph_node_count) {}
+      /*output_(NULL), output_grad_(NULL)*/
   const Tensor* GetTensor(const std::string& name, bool recursive = false) const override;
   OpContext* GetContext(const Node* node) override;
   std::string TensorNameInFunctionContext(const Edge* e) const;

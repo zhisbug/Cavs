@@ -12,14 +12,15 @@ namespace midend {
 class GraphScheduler {
  public:
   GraphScheduler() : parent_ids_(0), batch_(0), sample_id_(0), isForward_(true) {}
-  inline bool LeafEmpty() const { return activate_leaf_.empty(); } 
-  inline bool InodeEmpty() const { return activate_inode_.empty(); }
+  //inline bool LeafEmpty() const { return activate_leaf_.empty(); } 
+  //inline bool InodeEmpty() const { return activate_inode_.empty(); }
   void ActiveFirstWorkset(int sample_id);
   void ActiveNext();
   int LoadGraph(const Tensor& parent_ids);
   void ReverseGraph();
-  int GetJobId();
+  int GetCurrentJobId();
   inline int batch() const { return batch_; }
+  inline bool empty() const { return pending_workset_.empty(); }
 
   inline void SetMessagePasser(const Tensor* t) { message_passer_ = *t; }
   inline const Tensor& GetMessagePasser(int id) {
@@ -49,9 +50,10 @@ class GraphScheduler {
   }
 
  private:
-  //static GraphScheduler* Get() { static GraphScheduler gs; return &gs; }
-  std::list<int> activate_leaf_;
-  std::list<int> activate_inode_;
+  //std::list<int> activate_leaf_;
+  //std::list<int> activate_inode_;
+  std::list<int> pending_workset_;
+  std::vector<bool> activated_workset_;
   std::vector<std::vector<int>> parent_ids_;
   std::vector<std::vector<std::vector<int>>> child_ids_;
   int sample_id_;
