@@ -37,24 +37,13 @@ void GraphStatement::Run() {
   int output_length = gscheduler_->LoadGraph(ctxt_->Input(0));
   CHECK(output_length > 0);
   for (int i = 0; i < gscheduler_->batch(); i++) {
-    gscheduler_->ActiveFirstWorkset(i);
-    //while (!gscheduler_->LeafEmpty()) {
-      //VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
-      ////sleep(1);
-      //leaf_->Run();
-      //gscheduler_->ActiveNext();
-    //}
-    //while (!gscheduler_->InodeEmpty()) {
-      //VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      ////sleep(1);
-      //inode_->Run();
-      //gscheduler_->ActiveNext();
-    //}
+    gscheduler_->TrigerBatchId(i);
     while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId();
-      //sleep(1);
+      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
+                    << " in batch_id: " << i;
+      sleep(2);
       node_func_->Run();
-      gscheduler_->ActiveNext();
+      gscheduler_->ActivateNext();
     }
   }
 
@@ -75,24 +64,13 @@ void GraphGradStatement::Run() {
 
   gscheduler_->ReverseGraph();
   for (int i = 0; i < gscheduler_->batch(); i++) {
-    gscheduler_->ActiveFirstWorkset(i);
-    //while (!gscheduler_->InodeEmpty()) {
-      //VLOG(V_DEBUG) << "doing inode job_id: " << gscheduler_->GetJobId();
-      //sleep(3);
-      //inode_->Run();
-      //gscheduler_->ActiveNext();
-    //}
-    //while (!gscheduler_->LeafEmpty()) {
-      //VLOG(V_DEBUG) << "doing leaf job_id: " << gscheduler_->GetJobId();
-      //sleep(3);
-      //leaf_->Run();
-      //gscheduler_->ActiveNext();
-    //}
+    gscheduler_->TrigerBatchId(i);
     while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId();
-      //sleep(3);
+      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
+                    << " in batch_id: " << i;
+      sleep(2);
       node_func_->Run();
-      gscheduler_->ActiveNext();
+      gscheduler_->ActivateNext();
     }
   }
   VLOG(V_DEBUG) << "Graphoutput done";

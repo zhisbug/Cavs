@@ -7,7 +7,7 @@ using std::vector;
 
 namespace midend {
 
-void GraphScheduler::ActiveNext() {
+void GraphScheduler::ActivateNext() {
   int id = GetCurrentJobId();
   CHECK(id >= 0);
   if (isForward_) {
@@ -55,19 +55,6 @@ void GraphScheduler::ActiveNext() {
 }
 
 int GraphScheduler::GetCurrentJobId() {
-  //if (isForward_) {
-    //if (!activate_leaf_.empty()) {
-      //return activate_leaf_.front();
-    //}else if (!activate_inode_.empty()) {
-      //return activate_inode_.front();
-    //}
-  //}else {
-    //if (!activate_inode_.empty()) {
-      //return activate_inode_.front();
-    //}else if (!activate_leaf_.empty()) {
-      //return activate_leaf_.front();
-    //}
-  //}
   if (!empty())
     return pending_workset_.front();
   else
@@ -117,11 +104,12 @@ void GraphScheduler::ReverseGraph() {
   std::fill(activated_workset_.begin(), activated_workset_.end(), false);
 }
 
-void GraphScheduler::ActiveFirstWorkset(int sample_id) {
+void GraphScheduler::TrigerBatchId(int sample_id) {
   //CHECK(activate_leaf_.empty());
   //CHECK(activate_inode_.empty());
   CHECK(pending_workset_.empty());
   activated_workset_.resize(parent_ids_[sample_id].size(), false);
+  std::fill(activated_workset_.begin(), activated_workset_.end(), false);
   CHECK(sample_id < batch_);
   if (isForward_) {
     for (int i = 0; i < parent_ids_[sample_id].size(); i++) {

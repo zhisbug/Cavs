@@ -14,8 +14,8 @@ class GraphScheduler {
   GraphScheduler() : parent_ids_(0), batch_(0), sample_id_(0), isForward_(true) {}
   //inline bool LeafEmpty() const { return activate_leaf_.empty(); } 
   //inline bool InodeEmpty() const { return activate_inode_.empty(); }
-  void ActiveFirstWorkset(int sample_id);
-  void ActiveNext();
+  void TrigerBatchId(int sample_id);
+  void ActivateNext();
   int LoadGraph(const Tensor& parent_ids);
   void ReverseGraph();
   int GetCurrentJobId();
