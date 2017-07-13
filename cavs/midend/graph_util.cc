@@ -400,13 +400,24 @@ void GraphUtil::ComputeGradientForFunction(
       CHECK(node->output_size() == 1);
       origins.push_back(node->output(0));
     }
-    if (node->name() == "Push" || node->name() == "Scatter") {
+    //for each optimizer/functionGrad, there must be a starting point
+    //it is either a constant op(init = 1) or a buffer fetcher op
+    if (node->name() == "Push") {
+      OpDef fetchUpperGradOp;
+      OpDefBuilder("FetchUpperGrad")
+        .Output(GetGradientName(node->output(0)->name()))
+        .Shape(node->output(0)->shape())
+        .Device("GPU")
+        .Finalize(&fetchUpperGradOp);
+      func_grad_scope->AddOp(fetchUpperGradOp);
+      CHECK(node->output_size() == 1);
+      terminals.push_back(node->output(0));
+    }
+    if (node->name() == "Scatter") {
       CHECK(node->output_size() == 1);
       terminals.push_back(node->output(0));
     }
   }
-  //For leaf nodes, no gather operations.
-  //CHECK(origins.size() >= 1);
   CHECK(terminals.size() == 2) << terminals.size();
 
   for (auto* o_edge : origins) {
@@ -424,12 +435,12 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
-  for (int i = 0; i < critical_path.size(); i++) {
-    if (critical_path[i]) {
-      VLOG(V_DEBUG) << i << "\tth operator:";
-      VLOG(V_DEBUG) << func_scope->typological_sorted_nodes_[i]->debug_info();
-    }
-  }
+  //for (int i = 0; i < critical_path.size(); i++) {
+    //if (critical_path[i]) {
+      //VLOG(V_DEBUG) << i << "\tth operator:";
+      //VLOG(V_DEBUG) << func_scope->typological_sorted_nodes_[i]->debug_info();
+    //}
+  //}
 
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradientForFunction(func_grad_scope, critical_path, grads, func_scope);

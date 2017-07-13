@@ -77,10 +77,9 @@ Sym GraphSupport::Output() {
                 .AttrSingle("Wavefront", true)
                 .AttrSingle("MaxGraphNodeCount", max_graph_node_count)
                 .Finalize();
-  Sym s(def);
-  CHECK(s.def().output_size() == 1);
-  s.mutable_def()->set_output(0, output_name_);
-  return s;
+
+  //def.add_output(output_name_);
+  return Sym(def);
 }
 
 Sym GraphSupport::Gather(int child,
@@ -93,12 +92,11 @@ Sym GraphSupport::Gather(int child,
                 .AttrSingle("Child", child)
                 //.AttrSingle("Offset", 0)
                 .Finalize();
-  if (__internal_unit.empty()) {
-    __internal_unit = shape; 
-  }else {
-    CHECK(__internal_unit == shape);
-  }
-
+  //if (__internal_unit.empty()) {
+    //__internal_unit = shape; 
+  //}else {
+    //CHECK(__internal_unit == shape);
+  //}
   return Sym(def);
 }
 
@@ -119,18 +117,18 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .AttrSingle("OutputName", output_name_)
+                //.AttrSingle("OutputName", output_name_)
                 .Finalize();
   Sym AddToFunction(def);
 }
 
 void GraphSupport::Scatter(const Sym& s) {
-  CHECK(!__internal_unit.empty());
+  //CHECK(!__internal_unit.empty());
   OpDef def = OpDefBuilder("Scatter")
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                .Shape(__internal_unit) //is this really needed?
+                //.Shape(__internal_unit) //is this really needed?
                 .Finalize();
   Sym AddToFunction(def);
 }

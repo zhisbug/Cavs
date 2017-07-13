@@ -40,6 +40,11 @@ class GatherOpDecl : public ExtractOpDecl {
   }
 };
 
+class FetchUpperGradOpDecl : public ExtractOpDecl {
+ public:
+  FetchUpperGradOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
+};
+
 class PullOpDecl : public ExtractOpDecl {
  public:
   PullOpDecl(const OpDef& def) : ExtractOpDecl(def) {}
@@ -79,11 +84,11 @@ class EmitOpDecl : public OpDecl {
 
 class ScatterOpDecl : public EmitOpDecl {
  public:
-  ScatterOpDecl(const OpDef& def) : EmitOpDecl(def) {
-    CHECK(def.shape_size() == 1)
-         << def.DebugString();
-  }
+  ScatterOpDecl(const OpDef& def) : EmitOpDecl(def) {}
   void MakeGradient(vector<OpDef>* grad) override {
+    //for the frontend, shape item can be omitted
+    //but it must be inferenced and set in midend for gradient generation
+    CHECK(op_def_.shape_size() == 1) << op_def_.DebugString();
     //LOG(FATAL) << op_def_.DebugString();
     //For tree-lstm, we only scatter the result to one parent,
     //so we need only gather the diff from one parent(offset == 0)
@@ -103,8 +108,8 @@ class ScatterOpDecl : public EmitOpDecl {
 class PushOpDecl : public EmitOpDecl {
  public:
   PushOpDecl(const OpDef& def) : EmitOpDecl(def) {
-    output_name_ = GetSingleArg<string>(def, "OutputName");
-    CHECK(output_name_.length());
+    //output_name_ = GetSingleArg<string>(def, "OutputName");
+    //CHECK(output_name_.length());
   }
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
@@ -120,19 +125,19 @@ class PushOpDecl : public EmitOpDecl {
     //the output of push operator is another partial unit tensor(p1)
     //the upper layer full unit tensor is copied from p1 in graphoutput operator
     //the input of pull operator should be the backward error signal of upper layer,
-    //its name is packed in the frontend
+    //its value is set with a starting op(fetchuppergradop)
     //the output of pull operator is the current layer inner error signal(partial unit tensor).
     OpDef pull;
     OpDefBuilder("Pull")
-      .Input(GetGradientName(output_name_))
+      .Input(GetGradientName(op_def_.output(0)))
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)
       .Device(op_def_)
       .Finalize(&pull);
     grad->push_back(pull);
   }
- private:
-  string output_name_;
+ //private:
+  //string output_name_;
 };
 
 class GraphOutputOpDecl : public OpDecl {
@@ -185,11 +190,12 @@ class GraphOutputGradOpDecl : public EmitOpDecl {
   }
 };
 
-REGISTER_OP_DECL_BUILDER("Gather",      GatherOpDecl     );
-REGISTER_OP_DECL_BUILDER("Pull",        PullOpDecl       );
-REGISTER_OP_DECL_BUILDER("Scatter",     ScatterOpDecl    );
-REGISTER_OP_DECL_BUILDER("Push",        PushOpDecl       );
-REGISTER_OP_DECL_BUILDER("GraphOutput", GraphOutputOpDecl);
+REGISTER_OP_DECL_BUILDER("Gather",         GatherOpDecl        );
+REGISTER_OP_DECL_BUILDER("Pull",           PullOpDecl          );
+REGISTER_OP_DECL_BUILDER("Scatter",        ScatterOpDecl       );
+REGISTER_OP_DECL_BUILDER("Push",           PushOpDecl          );
+REGISTER_OP_DECL_BUILDER("FetchUpperGrad", FetchUpperGradOpDecl);
+REGISTER_OP_DECL_BUILDER("GraphOutput",    GraphOutputOpDecl   );
 REGISTER_OP_DECL_BUILDER(GetGradientName("GraphOutput"), GraphOutputGradOpDecl);
 
 } //namespace backend

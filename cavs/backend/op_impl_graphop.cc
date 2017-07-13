@@ -116,6 +116,25 @@ class GraphPullOp : public OpImpl {
 };
 
 template <typename T>
+class FetchUpperGradOp : public OpImpl {
+ public:
+  explicit FetchUpperGradOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    LOG(FATAL) << "here";
+    GraphScheduler* gs = context->graph_scheduler();
+    const Tensor& inp = gs->GetMessagePusher();
+    Tensor* out = context->Output(0);
+    CHECK(out->count() < inp.count());
+    CHECK(out->debug_size() == inp.debug_size());
+    out->SetOffsetWithId(0);
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>(),
+                              inp.count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
+  }
+};
+
+template <typename T>
 class GraphOutputOp : public OpImpl {
  public:
   explicit GraphOutputOp(const OpDef& def) : OpImpl(def) {}
@@ -152,5 +171,6 @@ REGISTER_OP_IMPL_BUILDER(Key("Pull").Device("GPU"),    GraphPullOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Push").Device("GPU"),    GraphPushOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Scatter").Device("GPU"), GraphScatterOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Gather").Device("GPU"),  GraphGatherOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key("FetchUpperGrad").Device("GPU"), FetchUpperGradOp<float>);
 
 } //namespace backend

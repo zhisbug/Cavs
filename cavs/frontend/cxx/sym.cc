@@ -16,7 +16,8 @@ Sym::Sym(const OpDef& op_def) {
   node_->op_def = op_def;
 
   static int id_ = 0;
-  mutable_def()->add_output(op_name() + "_" + std::to_string(id_++));
+  if (def().output_size() == 0)
+    mutable_def()->add_output(op_name() + "_" + std::to_string(id_++));
 
   if (FuncConf::CheckInFunc()) {
     CHECK(op_name() != "Optimizer");
