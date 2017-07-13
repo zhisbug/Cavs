@@ -11,13 +11,13 @@ void GraphScheduler::ActiveNext() {
   int id = GetCurrentJobId();
   CHECK(id >= 0);
   if (isForward_) {
-    int pid = parent_id(id);
+    int pid = parent_ids_[sample_id_][id];
     if (pid != -1 && !activated_workset_[pid]) {
       pending_workset_.push_back(pid);
       activated_workset_[pid] = true;
     }
   }else {
-    for (auto& cid : child_id(id)) {
+    for (auto& cid : child_ids_[sample_id_][id]) {
       if (!activated_workset_[cid]) {
         pending_workset_.push_back(cid);
         activated_workset_[cid] = true;

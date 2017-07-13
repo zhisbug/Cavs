@@ -71,6 +71,8 @@ void GraphGradStatement::Run() {
   CHECK(node_func_);
   CHECK(gscheduler_);
 
+  ExprStatement::Run();
+
   gscheduler_->ReverseGraph();
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->ActiveFirstWorkset(i);
@@ -93,9 +95,6 @@ void GraphGradStatement::Run() {
       gscheduler_->ActiveNext();
     }
   }
-
-  //ctxt_->SetDynDim(output_length);
-  ExprStatement::Run();
   VLOG(V_DEBUG) << "Graphoutput done";
 }
 
