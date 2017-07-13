@@ -20,8 +20,9 @@ REGISTER_OP_IMPL_BUILDER(Key("Square").Device("GPU"),
     CudaUnaryOpInstance(math::Square, float));
 REGISTER_OP_IMPL_BUILDER(Key("Scal").Device("GPU"),
     CudaBinaryOpInstance(math::Mul, float));
-/*REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),*/
-    /*CudaUnaryOpInstance(math::Assign, float));*/
+//Fill is the backward operator of reduction operator
+REGISTER_OP_IMPL_BUILDER(Key("Fill").Device("GPU"),
+    CudaUnaryOpInstance(math::Assign, float));
 
 REGISTER_OP_IMPL_BUILDER(Key("Equal").Device("GPU"),
     CudaBinaryOpInstance(math::Equal, float));
