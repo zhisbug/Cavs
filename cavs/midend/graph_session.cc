@@ -65,8 +65,9 @@ OpContext* GraphSession::GetContext(const Node* node) {
         //and only share output(0) with input(0)
         //CHECK(node->inputs_size() == 1); //reshape need two inputs
         CHECK(node->output_size() == 1); 
+        CHECK_NOTNULL(GetTensor(TensorNameInFunctionContext(node->input(0)), true));
         Tensor out(TensorNameInFunctionContext(output),
-            *GetTensor(TensorNameInFunctionContext(node->input(0))));
+            *GetTensor(TensorNameInFunctionContext(node->input(0)), true));
         out.Reshape(output->shape());
         LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
