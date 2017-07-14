@@ -113,6 +113,7 @@ class Tensor {
   void DebugNumerical() const;
 
   friend class TensorCApi;
+  friend class SessionBase;
 
   struct Params {
     Params() : offset(0), dynamic(false), zero_init_enforced(false),

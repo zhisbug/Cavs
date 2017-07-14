@@ -37,8 +37,11 @@ void SessionBase::InsertTensor(const Tensor& t){
   scoped_tensor_map_[t.name()] = t;
   string tensor_name = t.name().substr(t.name().find_last_of(":")+1);
   CHECK(tensor_name.length());
-  CHECK(raw_tensor_map_.find(tensor_name) == raw_tensor_map_.end());
-  raw_tensor_map_[tensor_name] = t;
+  if (raw_tensor_map_.find(tensor_name) != raw_tensor_map_.end()) {
+    CHECK(raw_tensor_map_.at(tensor_name).buf_.get() == t.buf_.get());
+  }else {
+    raw_tensor_map_[tensor_name] = t;
+  }
 }
 
 OpContext* SessionBase::GetContext(const Node* node) {
