@@ -50,7 +50,8 @@ class LSTMGradOpDecl : public OpDecl{
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(inputs.size() == 4);
-    out_shape->resize(3);
+    CHECK(out_shape->empty());
+    out_shape->resize(2);
     out_shape->at(0) = inputs[2];
     out_shape->at(1) = inputs[3];
   };

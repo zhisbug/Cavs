@@ -180,7 +180,7 @@ void GraphUtil::GenGradient(Scope* loss_scope,
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
         grad_node = loss_scope->AddOp(iter.second);
         CHECK(grad_node);
-        VLOG(V_DEBUG) << "Getting input shape...";
+        VLOG(V_DEBUG) << "Getting input shape..." << grad_node->debug_info();
         const vector<TensorShapeDef>& inputs = 
           grad_node->input_shapes();
         VLOG(V_DEBUG) << "Shaping Inference...";

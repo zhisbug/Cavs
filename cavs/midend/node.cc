@@ -59,7 +59,8 @@ void SingleNode::SetShape(
     const vector<TensorShapeDef>& def) {
   CHECK(def.size() == outputs_.size())
       << "in shapes:\t" << def.size()
-      << "\tneeded shapes:\t" << outputs_.size();
+      << "\tneeded shapes:\t" << outputs_.size()
+      << "\nnode info: " << op_def_.DebugString();
   op_def_.clear_shape();
   for (int i = 0; i < outputs_.size(); i++) {
     outputs_[i]->SetShape(def[i]);
