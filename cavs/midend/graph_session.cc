@@ -1,6 +1,7 @@
 #include "cavs/midend/graph_session.h"
 
 using std::string;
+using std::unordered_map;
 
 namespace midend {
 
@@ -8,8 +9,8 @@ namespace midend {
 //But for graph/function node, the original scope is only it defination scope
 //its running scope may be belongs to the optimizer scope
 string GraphSession::TensorNameInFunctionContext(const Edge* e) const {
-  CHECK_NOTNULL(running_scope_);
-  return running_scope_->scoped_name() + ":" + e->name();
+  CHECK_NOTNULL(scope_);
+  return scope_->scoped_name() + ":" + name_ + ":" + e->name();
 }
 
 const Tensor* GraphSession::GetTensor(const string& name, bool recursive) const {
@@ -99,6 +100,24 @@ OpContext* GraphSession::GetContext(const Node* node) {
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;
+}
+
+namespace __internal {
+  static unordered_map<string, GraphSession*> graph_sess_pool;
+}
+
+GraphSession* GetGraphSession(const string& name) {
+  return (__internal::graph_sess_pool.find(name) == __internal::graph_sess_pool.end()) ?
+          NULL : __internal::graph_sess_pool.at(name);
+}
+
+bool InsertGraphSession(const std::string& name, GraphSession* sess) {
+  if (__internal::graph_sess_pool.find(name) != __internal::graph_sess_pool.end()) {
+    return false;
+  }else {
+    __internal::graph_sess_pool.emplace(name, sess); 
+    return true;
+  }
 }
 
 } //namespace midend

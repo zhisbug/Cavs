@@ -142,16 +142,16 @@ void GraphUtil::GenGradient(Scope* loss_scope,
   CHECK(critical_path.size() == grads.size());
   CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
   VLOG(V_DEBUG) << "Forwarding...";
-  unordered_map<int, GraphNode*> gnode_map;
+  //unordered_map<int, GraphNode*> gnode_map;
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
       VLOG(V_DEBUG) << "[" << i << "]:\n"
                     << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
       CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       SingleNode* node = loss_scope->AddOp(dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def());
-      if (node->IsGraphOp()) {
-        gnode_map[i] = dynamic_cast<GraphNode*>(node);
-      }
+      //if (node->IsGraphOp()) {
+        //gnode_map[i] = dynamic_cast<GraphNode*>(node);
+      //}
       //we have to loose this constraint because of dependency support
       //the dependent node does not need to backward.
       //CHECK(!grads[i].empty());
@@ -193,8 +193,8 @@ void GraphUtil::GenGradient(Scope* loss_scope,
 
       if (dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->IsGraphOp()) {
         CHECK_NOTNULL(grad_node);
-        CHECK(gnode_map.find(i) != gnode_map.end());
-        dynamic_cast<GraphGradNode*>(grad_node)->SetGraphForwardNode(gnode_map[i]);
+        //CHECK(gnode_map.find(i) != gnode_map.end());
+        //dynamic_cast<GraphGradNode*>(grad_node)->SetGraphForwardNode(gnode_map[i]);
         for (auto&& func_name : {"Node"}) {
           //find the childscope of father or ancestor(optimizer case)
           VLOG(V_DEBUG) << "Compute Gradient for " << func_name << "...";

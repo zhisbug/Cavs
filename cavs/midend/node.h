@@ -80,29 +80,30 @@ class SingleNode : public Node {
 
  protected:
   OpDef op_def_;
+ private:
+  SessionBase* sess_debug_;
 }; 
 
 class GraphNode : public SingleNode {
  public:
-  GraphNode(const OpDef& op_def, Scope* s)
-    : SingleNode(op_def, s), gsess_(NULL) {}
+  GraphNode(const OpDef& op_def, Scope* s);
   Statement* Compile(SessionBase* sess) override;
-  friend class GraphGradNode;
+  //friend class GraphGradNode;
 
  private:
   GraphSession* gsess_;
 }; 
 
-class GraphGradNode : public GraphNode {
+class GraphGradNode : public SingleNode {
  public:
-  GraphGradNode(const OpDef& op_def, Scope* s)
-    : GraphNode(op_def, s), forward_node_(NULL) {}
+  GraphGradNode(const OpDef& op_def, Scope* s);
+    //: GraphNode(op_def, s)[>, forward_node_(NULL)<] {}
   Statement* Compile(SessionBase* sess) override;
-  void SetGraphForwardNode(GraphNode* n) {
-    forward_node_ = n; 
-  }
+  //void SetGraphForwardNode(GraphNode* n) {
+    //forward_node_ = n; 
+  //}
  private:
-  GraphNode* forward_node_;
+  GraphSession* gsess_;
 }; 
 
 //The ScopedNode is defined as a group of nodes

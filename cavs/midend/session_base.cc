@@ -12,24 +12,33 @@ namespace midend {
 const Tensor* SessionBase::GetTensor(
     const string& name, bool recursive) const {
   if (!recursive) {
-    return (tensor_map_.find(name) == tensor_map_.end()) ?
-            NULL : &(tensor_map_.at(name));
+    return (scoped_tensor_map_.find(name) == scoped_tensor_map_.end()) ?
+            NULL : &(scoped_tensor_map_.at(name));
   }else {
     CHECK(name.find_last_of(":") != string::npos);
     string tensor_name = name.substr(name.find_last_of(":")+1);
-    string scope_name  = name.substr(0, name.find_last_of(":"));
-    while (tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end()
-        && scope_name.find_last_of(":") != string::npos) {
-      scope_name = scope_name.substr(0, scope_name.find_last_of(":")); 
-    }
-    return tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end() ?
-           NULL : &(tensor_map_.at(scope_name+":"+tensor_name));
+    CHECK(tensor_name.length());
+    //string scope_name  = name.substr(0, name.find_last_of(":"));
+    //while (tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end()
+        //&& scope_name.find_last_of(":") != string::npos) {
+      //scope_name = scope_name.substr(0, scope_name.find_last_of(":")); 
+    //}
+    //return tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end() ?
+           //NULL : &(tensor_map_.at(scope_name+":"+tensor_name));
+    return raw_tensor_map_.find(tensor_name) == raw_tensor_map_.end() ?
+           NULL : &(raw_tensor_map_.at(tensor_name));
   }
 }
 
 void SessionBase::InsertTensor(const Tensor& t){
-  CHECK(tensor_map_.count(t.name()) == 0);
-  tensor_map_[t.name()] = t;
+  CHECK(t.name().find_last_of(":") != string::npos) 
+       << "tensor name must be a scoped name: " << t.name();
+  CHECK(scoped_tensor_map_.find(t.name()) == scoped_tensor_map_.end());
+  scoped_tensor_map_[t.name()] = t;
+  string tensor_name = t.name().substr(t.name().find_last_of(":")+1);
+  CHECK(tensor_name.length());
+  CHECK(raw_tensor_map_.find(tensor_name) == raw_tensor_map_.end());
+  raw_tensor_map_[tensor_name] = t;
 }
 
 OpContext* SessionBase::GetContext(const Node* node) {
@@ -44,8 +53,6 @@ OpContext* SessionBase::GetContext(const Node* node) {
   for (auto* output : node->output()) {
     const Tensor* t = GetTensor(output->scoped_name());
     if (!t) {
-      //LOG(INFO) << output->name() << "???";
-      //LOG(INFO) << (GetTensor(output->name()) == NULL) << "???";
       const Tensor* upper_t = GetTensor(output->scoped_name(), true);
       if (upper_t) {
         LOG(INFO) << "Found underlying tensor(" << upper_t->name()
@@ -86,7 +93,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
 
 string SessionBase::debug_info() const {
   string ret;
-  for (auto& one_pair : tensor_map_)
+  for (auto& one_pair : scoped_tensor_map_)
     ret += one_pair.first + "\t";
   return ret;
 }

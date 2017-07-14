@@ -41,7 +41,7 @@ void GraphStatement::Run() {
     while (!gscheduler_->empty()) {
       VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
                     << " in batch_id: " << i;
-      sleep(2);
+      //sleep(2);
       node_func_->Run();
       gscheduler_->ActivateNext();
     }
@@ -68,7 +68,7 @@ void GraphGradStatement::Run() {
     while (!gscheduler_->empty()) {
       VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
                     << " in batch_id: " << i;
-      sleep(2);
+      //sleep(2);
       node_func_->Run();
       gscheduler_->ActivateNext();
     }

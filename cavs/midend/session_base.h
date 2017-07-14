@@ -26,7 +26,8 @@ class SessionBase {
   void InsertTensor(const Tensor& t);
   std::string debug_info() const ;
  protected:
-  std::unordered_map<std::string, Tensor> tensor_map_;
+  std::unordered_map<std::string, Tensor> raw_tensor_map_;
+  std::unordered_map<std::string, Tensor> scoped_tensor_map_;
 };
 
 SessionBase* GetSession(const std::string& name);

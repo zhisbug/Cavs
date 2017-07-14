@@ -196,7 +196,9 @@ void Scope::AddEdge(const Edge* edge) {
   CHECK(edge->scope() == this);
   const string& name = edge->name();
   CHECK(edge_table_.find(name) == edge_table_.end())
-      << "Adding duplicated Edge: \"" << name << "\"";
+      << "Adding duplicated Edge: \"" << name << "\"\n"
+      << edge->debug_info() << "In scope:\n"
+      << debug_info();
   edge_table_[name] = const_cast<Edge*>(edge);
 }
 
@@ -253,9 +255,9 @@ string Scope::debug_info() const {
     ret += node->debug_info();
     ret += "\n\n";
   }
-  for (auto& child: children_) {
-    ret += child.second->debug_info();
-  }
+  //for (auto& child: children_) {
+    //ret += child.second->debug_info();
+  //}
 
   ret += "--------------in edges-----------------------\n";
   for (auto& e : in_edges_) {

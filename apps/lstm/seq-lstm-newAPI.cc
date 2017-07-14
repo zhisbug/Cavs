@@ -8,14 +8,14 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       2,    "batch");
-DEFINE_int32 (input_size,  10000, "input size");
-DEFINE_int32 (timestep,    20,    "timestep");
-DEFINE_int32 (hidden,      200,   "hidden size");
-DEFINE_int32 (epoch,       1,    "epochs");
-DEFINE_int32 (iters,       1, "iterations");
-DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
-DEFINE_double(lr,          1.f,   "learning rate");
+DEFINE_int32 (batch,       20,       "batch");
+DEFINE_int32 (input_size,  10000,    "input size");
+DEFINE_int32 (timestep,    20,       "timestep");
+DEFINE_int32 (hidden,      200,      "hidden size");
+DEFINE_int32 (epoch,       1,        "epochs");
+DEFINE_int32 (iters,       99999,    "iterations");
+DEFINE_double(init_scale,  0.1f,     "init random scale of variables");
+DEFINE_double(lr,          1.f,      "learning rate");
 DEFINE_string(file_docs,
     "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
     "ptb_file");
@@ -99,7 +99,6 @@ int main(int argc, char* argv[]) {
   vector<vector<float>> label_ph;
   vector<vector<int>> graph_ph;
   const int sample_len = data_len/FLAGS_batch;
-  cout << "sample_len = " << sample_len << endl;;
   input_ph.resize(sample_len/FLAGS_timestep); 
   label_ph.resize(sample_len/FLAGS_timestep); 
   graph_ph.resize(sample_len/FLAGS_timestep); 
@@ -133,16 +132,27 @@ int main(int argc, char* argv[]) {
 
   Session sess;
   LOG(INFO) << "here";
-  int iterations = FLAGS_iters;
+  int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       //sess.run({train}, {{input,input_ph[j%input_ph.size()].data()},
                          //{label,label_ph[j%label_ph.size()].data()}});
-      sess.Run({train}, {{graph, graph_ph[j%graph_ph.size()].data()},
-                         {label, label_ph[j%label_ph.size()].data()},
+      sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+                         {label,    label_ph[j%label_ph.size()].data()},
                          {word_idx, input_ph[j%input_ph.size()].data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
+    float sum = 0.f;
+    for (int j = 0; j < iterations; j++) {
+      sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+                              {label,    label_ph[j%label_ph.size()].data()},
+                              {word_idx, input_ph[j%input_ph.size()].data()}});
+      float ppx = *(float*)(perplexity.eval());
+      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                << "\tPPX:\t" << exp(ppx);
+      sum += *(float*)(perplexity.eval());
+    }
+    LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   return 0;

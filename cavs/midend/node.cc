@@ -52,8 +52,7 @@ string SingleNode::debug_info() const {
 }
 
 SingleNode::SingleNode(const OpDef& op_def, Scope* s)
-  : Node(s), op_def_(op_def) {
-}
+  : Node(s), op_def_(op_def), sess_debug_(NULL) {}
 
 void SingleNode::SetShape(
     const vector<TensorShapeDef>& def) {
@@ -71,6 +70,11 @@ void SingleNode::SetShape(
 Statement* SingleNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
+    {
+      CHECK(!sess_debug_ || sess_debug_ == sess) 
+          << "currently, we only support one node is compiled by one session";
+      sess_debug_ = sess;
+    }
     OpImpl* op = NULL;
     if (sess->session_type() == SessionBase::MPI &&
         (op_def().name() == "Variable" ||
@@ -96,6 +100,9 @@ Statement* SingleNode::Compile(
   return stmt_;
 }
 
+GraphNode::GraphNode(const OpDef& op_def, Scope* s)
+  : SingleNode(op_def, s), gsess_(NULL) {}
+
 Statement* GraphNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
@@ -103,39 +110,42 @@ Statement* GraphNode::Compile(
     OpContext* ctxt = sess->GetContext(this);
 
     VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
-    CHECK(!gsess_);
-    int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
-    CHECK(max_graph_node_count > 0);
-    GraphScheduler* gs = new GraphScheduler();
-    gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
-    //gsess_->SetOutputTensor(ctxt->Output(0));
+    //CHECK(!gsess_);
+    //int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
+    //CHECK(max_graph_node_count > 0);
+    //GraphScheduler* gs = new GraphScheduler();
+    //gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
+    ////gsess_->SetOutputTensor(ctxt->Output(0));
+    if (!(gsess_ = GetGraphSession(op_def_.output(0)))) {
+      int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
+      CHECK(max_graph_node_count > 0);
+      //GraphScheduler* gs = new GraphScheduler();
+      gsess_ = new GraphSession(sess, op_def_.output(0), max_graph_node_count);
+      InsertGraphSession(op_def_.output(0), gsess_);
+    }
 
-    //Scope* leaf = main_scope()->FindChildScope("Leaf");
-    //CHECK_NOTNULL(leaf);
-    ////we should add the generated scopednode into main_scope()
-    ////because only main_scope may not be wrapped up into a ScopedNode and executed.
-    //ScopedNode* lsn = new ScopedNode(main_scope(), "Leaf", 1);
-    //lsn->SetContainedScope(leaf);
-    //Statement* lstmt = lsn->Compile(gsess_);
-
-    //Scope* inode = main_scope()->FindChildScope("Inode");
-    //CHECK_NOTNULL(inode);
-    //ScopedNode* isn = new ScopedNode(main_scope(), "Inode", 1);
-    //isn->SetContainedScope(inode);
-    //Statement* istmt = isn->Compile(gsess_);
-    
-    Scope* node_func = main_scope()->FindChildScope("Node");
-    CHECK_NOTNULL(node_func);
-    ScopedNode* sn = new ScopedNode(main_scope(), "Node", 1);
-    sn->SetContainedScope(node_func);
+    CHECK(!main_scope()->FindNode("Node")->IsSingleNode());
+    ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindNode("Node"));
+    if (!sn) {
+      Scope* node_func = main_scope()->FindChildScope("Node");
+      CHECK_NOTNULL(node_func);
+      sn = new ScopedNode(main_scope(), "Node", 1);
+      sn->SetContainedScope(node_func);
+    }
+    CHECK_NOTNULL(gsess_);
     Statement* node_func_stmt = sn->Compile(gsess_);
 
-    ctxt->SetGraphScheduler(gs);
-    stmt_ = new GraphStatement(node_func_stmt, gs);
+    ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    stmt_ = new GraphStatement(node_func_stmt, gsess_->graph_scheduler());
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
   }
   return stmt_;
+}
+
+GraphGradNode::GraphGradNode(const OpDef& op_def, Scope* s)
+  : SingleNode(op_def, s), gsess_(NULL) {
+  CHECK_NOTNULL(gsess_ = GetGraphSession(GetOriginName(op_def.input(0))));
 }
 
 Statement* GraphGradNode::Compile(
@@ -145,12 +155,12 @@ Statement* GraphGradNode::Compile(
     OpContext* ctxt = sess->GetContext(this);
 
     VLOG(V_DEBUG) << "Compiling GraphGradNode:\t" << op_def().name();
-    CHECK_NOTNULL(forward_node_);
+    //CHECK_NOTNULL(forward_node_);
     //when the graphgrad node is compiled,
     //the graph node must have been compile already
     //that means its graph session has been set
-    gsess_ = forward_node_->gsess_;
-    CHECK_NOTNULL(gsess_);
+    //gsess_ = forward_node_->gsess_;
+    //CHECK_NOTNULL(gsess_);
     //gsess_->SetOutputGradTensor(ctxt->inputs_(0));
 
     //Scope* leaf = main_scope()->FindChildScope("Leaf")->FindChildScope(GetGradientName("Leaf"));
@@ -167,10 +177,15 @@ Statement* GraphGradNode::Compile(
     //isn->SetContainedScope(inode);
     //Statement* istmt = isn->Compile(gsess_);
     
-    Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
-    CHECK_NOTNULL(node_grad_func);
-    ScopedNode* sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
-    sn->SetContainedScope(node_grad_func);
+    CHECK(main_scope()->FindChildScope("Node"));
+    CHECK(!main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node"))->IsSingleNode());
+    ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node")));
+    if (!sn){
+      Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
+      CHECK_NOTNULL(node_grad_func);
+      sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
+      sn->SetContainedScope(node_grad_func);
+    }
     Statement* node_grad_stmt = sn->Compile(gsess_);
 
     ctxt->SetGraphScheduler(gsess_->graph_scheduler());
