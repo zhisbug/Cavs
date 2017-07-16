@@ -94,8 +94,10 @@ class GraphPushOp : public OpImpl {
 
     T* out_ptr = out->mutable_data<T>();
     //if out tensor is a global tensor(in the backward of pull)
-    if (!out->SetOffsetWithId(gs->GetJobId()))
+    //in tensor must be local
+    if (out->IsFullShape()) {
       out_ptr += inp.count()*gs->GetJobId();
+    }
     checkCudaError(cudaMemcpy(out_ptr,
                               inp.data<T>(),
                               inp.count()*sizeof(T),
@@ -120,12 +122,14 @@ class GraphPullOp : public OpImpl {
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
 
-    //if out tensor is a global tensor(a potential implementation of backward of push)
-    T* out_ptr = out->mutable_data<T>();
-    if (!out->SetOffsetWithId(gs->GetJobId()))
-      out_ptr += out->count()*gs->GetJobId();
-    checkCudaError(cudaMemcpy(out_ptr,
-                              inp.data<T>() + out->count()*gs->GetJobId(), 
+    //out tensor must be local
+    //if in tensor is a global tensor(in the backward of pull)
+    const T* inp_ptr = inp.data<T>();
+    if (inp.IsFullShape()) {
+      inp_ptr += out->count()*gs->GetJobId();
+    }
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp_ptr,
                               out->count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
     inp.DebugNumerical<T>();
@@ -144,7 +148,13 @@ class FetchUpperGradOp : public OpImpl {
     Tensor* out = context->Output(0);
     CHECK(out->count() < inp.count());
     CHECK(out->debug_size() == inp.debug_size());
+    VLOG(V_DEBUG) << "here";
+    CHECK(inp.IsFullShape());
+    VLOG(V_DEBUG) << "here";
+    CHECK(!out->IsFullShape());
+    VLOG(V_DEBUG) << "here";
     out->SetOffsetWithId(0);
+    VLOG(V_DEBUG) << "here";
     checkCudaError(cudaMemcpy(out->mutable_data<T>(),
                               inp.data<T>(),
                               inp.count()*sizeof(T),

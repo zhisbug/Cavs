@@ -14,12 +14,17 @@ void ExprStatement::Run() {
   VLOG(V_TIMING) << "Context Info \n"   << ctxt_->debug_info();
   //for data-dependent variable support(variable and placeholder should have the same batch_id)
   ctxt_->SetRound(round());
+  VLOG(V_TIMING) << "Setting Round-------------------------";
   //for function support(the function body should get the offset of the whole buffer)
+  VLOG(V_TIMING) << "Setting Offset------------------------";
   ctxt_->SetTensorOffset();
   //for dynamic tensor size support(the tensor size may vary during iterations)
+  VLOG(V_TIMING) << "Setting Scale-------------------------";
   ctxt_->ScaleTensor();
   //for some gradient tensor, the original value must be set to 0 
+  VLOG(V_TIMING) << "Setting Zero--------------------------";
   ctxt_->SetZero();
+  VLOG(V_TIMING) << "Computing-----------------------------";
   op_->Compute(ctxt_);
   VLOG(V_TIMING) << "======================================";
 }

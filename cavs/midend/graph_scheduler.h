@@ -25,7 +25,8 @@ class GraphScheduler {
   }
   inline void SetMessagePusher(const Tensor t) { message_pusher_ = t; }
   inline const Tensor& GetMessagePusher() {
-    message_pusher_.SetOffsetWithId(0);
+    if (!message_pusher_.IsFullShape())
+      message_pusher_.SetOffsetWithId(0);
     return message_pusher_; 
   }
 

@@ -286,19 +286,22 @@ bool Tensor::InitWithZero(int iteration) {
   }
 }
 
-bool Tensor::SetOffsetWithId(int id) {
+bool Tensor::IsFullShape() const {
   CHECK_NOTNULL(params_.get());
   size_t unit = count();
   CASES(params_->type, unit *= sizeof(T));
   CHECK_NOTNULL(buf_.get());
-  if (unit == buf_->size()) {
-    return false; 
-  }else {
-    size_t offset = unit*id; 
-    CHECK(offset < buf_->size()); 
-    params_->offset = offset;
-    return true;
-  }
+  CHECK(buf_->size() % unit == 0);
+  return buf_->size() == unit;
+}
+
+void Tensor::SetOffsetWithId(int id) {
+  CHECK(!IsFullShape());
+  size_t unit = count();
+  CASES(params_->type, unit *= sizeof(T));
+  size_t offset = unit*id; 
+  CHECK(offset < buf_->size()); 
+  params_->offset = offset;
 }
 
 

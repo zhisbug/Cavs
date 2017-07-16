@@ -17,16 +17,21 @@ void OpContext::SetTensorOffset() {
     //we dont't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer
     for (auto* t : inputs_) {
-      if (!const_cast<Tensor*>(t)->SetOffsetWithId(job_id))
+      if (!(t->IsFullShape())) {
+        const_cast<Tensor*>(t)->SetOffsetWithId(job_id);
+      }else {
         VLOG(V_DEBUG) << t->name() << " must be a global tensor, "
                       << "and referenced as an input in a function";
+      }
     }
     for (auto* t : outputs_) {
-      if (!t->SetOffsetWithId(job_id)) 
+      if (!(t->IsFullShape())) {
+        t->SetOffsetWithId(job_id);
+      }else {
         VLOG(V_DEBUG) << t->name() << " must be a global tensor, "
                       << "and referenced as an output in a function";
+      }
     }
-    
   }
 }
 

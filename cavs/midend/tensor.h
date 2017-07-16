@@ -103,7 +103,8 @@ class Tensor {
   void SetZeroInitEnforced();
   bool ZeroInitEnforced() const;
   bool InitWithZero(int iteration);
-  bool SetOffsetWithId(int id);
+  void SetOffsetWithId(int id);
+  bool IsFullShape() const;
 
   //bool ShareBufWith(const Tensor& t);
   void SyncWith(const Tensor& t);
