@@ -56,9 +56,9 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
       input.data<T>(), embedding_matrix.data<T>(),
       embedding_size);
 
-  //A.DebugNumerical<T>();
-  //B.DebugNumerical<T>();
-  //C->DebugNumerical<T>();
+  input.DebugNumerical<T>();
+  embedding_matrix.DebugNumerical<T>();
+  embedding->DebugNumerical<T>();
 }
 
 template <typename T>

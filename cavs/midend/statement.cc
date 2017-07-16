@@ -3,8 +3,6 @@
 namespace midend {
 
 int Statement::round_ = 0;
-//int Statement::dynamic_dim_ = -1;
-//bool Statement::dynamic_exist_ = false;
 
 void ExprStatement::Run() {
   CHECK(op_);
@@ -39,7 +37,7 @@ void GraphStatement::Run() {
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->TrigerBatchId(i);
     while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
+      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
                     << " in batch_id: " << i;
       //sleep(2);
       node_func_->Run();
@@ -66,7 +64,7 @@ void GraphGradStatement::Run() {
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->TrigerBatchId(i);
     while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetCurrentJobId()
+      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
                     << " in batch_id: " << i;
       //sleep(2);
       node_func_->Run();

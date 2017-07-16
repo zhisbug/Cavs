@@ -9,11 +9,11 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       20,    "batch");
+DEFINE_int32 (batch,       4,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    20,    "timestep");
 DEFINE_int32 (hidden,      200,   "hidden size");
-DEFINE_int32 (lstm_layers, 2,     "stacked lstm layers");
+DEFINE_int32 (lstm_layers, 1,     "stacked lstm layers");
 DEFINE_int32 (epoch,       10,    "epochs");
 DEFINE_int32 (iters,       99999, "iterations");
 DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
@@ -100,16 +100,16 @@ int main(int argc, char* argv[]) {
                          {label,label_ph[j%label_ph.size()].data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
-    float sum = 0.f;
-    for (int j = 0; j < iterations; j++) {
-      sess.Run({perplexity}, {{input,input_ph[j%input_ph.size()].data()},
-                              {label,label_ph[j%label_ph.size()].data()}});
-      float ppx = *(float*)(perplexity.eval());
-      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                << "\tPPX:\t" << exp(ppx);
-      sum += *(float*)(perplexity.eval());
-    }
-    LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    //float sum = 0.f;
+    //for (int j = 0; j < iterations; j++) {
+      //sess.Run({perplexity}, {{input,input_ph[j%input_ph.size()].data()},
+                              //{label,label_ph[j%label_ph.size()].data()}});
+      //float ppx = *(float*)(perplexity.eval());
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                //<< "\tPPX:\t" << exp(ppx);
+      //sum += *(float*)(perplexity.eval());
+    //}
+    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   free(input_data);

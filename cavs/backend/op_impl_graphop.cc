@@ -26,10 +26,10 @@ class GraphGatherOp : public OpImpl {
     //LOG(FATAL) << "Gather Operator needs further runtime support";
     Tensor* out = context->Output(0);
     GraphScheduler* gs = context->graph_scheduler();
-    int job_id = gs->GetCurrentJobId();
-    if (gs->HasChild(job_id)) {
-      CHECK(gs->child_id(job_id).size() > child_offset_);
-      int child_id = gs->child_id(job_id).at(child_offset_);
+    //int job_id = gs->GetCurrentJobId();
+    if (gs->HasChild()) {
+      CHECK(gs->child_id().size() > child_offset_);
+      int child_id = gs->child_id().at(child_offset_);
       const Tensor& inp = gs->GetMessagePasser(child_id);
       CHECK(inp.count() == count_);
       CHECK(out->count() == inp.count())
@@ -91,7 +91,12 @@ class GraphPushOp : public OpImpl {
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
-    checkCudaError(cudaMemcpy(out->mutable_data<T>() + inp.count()*gs->GetCurrentJobId(),
+
+    T* out_ptr = out->mutable_data<T>();
+    //if out tensor is a global tensor(in the backward of pull)
+    if (!out->SetOffsetWithId(gs->GetJobId()))
+      out_ptr += inp.count()*gs->GetJobId();
+    checkCudaError(cudaMemcpy(out_ptr,
                               inp.data<T>(),
                               inp.count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
@@ -114,10 +119,17 @@ class GraphPullOp : public OpImpl {
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                              inp.data<T>() + out->count()*gs->GetCurrentJobId(), 
+
+    //if out tensor is a global tensor(a potential implementation of backward of push)
+    T* out_ptr = out->mutable_data<T>();
+    if (!out->SetOffsetWithId(gs->GetJobId()))
+      out_ptr += out->count()*gs->GetJobId();
+    checkCudaError(cudaMemcpy(out_ptr,
+                              inp.data<T>() + out->count()*gs->GetJobId(), 
                               out->count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
+    inp.DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 

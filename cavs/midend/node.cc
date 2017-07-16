@@ -161,28 +161,23 @@ Statement* GraphGradNode::Compile(
     //CHECK_NOTNULL(gsess_);
     //gsess_->SetOutputGradTensor(ctxt->inputs_(0));
 
-    VLOG(V_DEBUG) << "here";
     CHECK_NOTNULL(gsess_ = GetGraphSession(GetOriginName(op_def_.input(0))));
     
     CHECK(main_scope()->FindChildScope("Node"));
     //CHECK(!main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node"))->IsSingleNode());
     ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node")));
-    VLOG(V_DEBUG) << "here";
     if (!sn){
       Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
       CHECK_NOTNULL(node_grad_func);
       sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
       sn->SetContainedScope(node_grad_func);
     }
-    VLOG(V_DEBUG) << "here";
     Statement* node_grad_stmt = sn->Compile(gsess_);
 
     ctxt->SetGraphScheduler(gsess_->graph_scheduler());
     stmt_ = new GraphGradStatement(node_grad_stmt, gsess_->graph_scheduler());
-    VLOG(V_DEBUG) << "here";
     dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
     dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
-    VLOG(V_DEBUG) << "here";
   }
   return stmt_;
 }

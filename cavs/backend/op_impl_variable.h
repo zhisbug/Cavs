@@ -151,7 +151,7 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     }else {
       Bcast<BCASTFUNCTOR>(out->mutable_data<T>(), out->count(), 0);
     }
-    //out->DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 
@@ -207,7 +207,7 @@ void DDVOpImpl<FILLFUNCTOR, T, MPIEnable>::Compute(OpContext* context) {
           out->count()*sizeof(T), 
           cudaMemcpyHostToDevice));
     curr_idx_ = next_idx;
-    //out->DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 }
 

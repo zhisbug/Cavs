@@ -7,8 +7,15 @@ using std::vector;
 
 namespace midend {
 
+int GraphScheduler::ToGlobalId(int local_id) const {
+  //the version of seq-lstm requirements, will be loosened soon
+  CHECK(parent_ids_[0].size() == parent_ids_[1].size());
+  return sample_id_*parent_ids_[0].size() + local_id;
+}
+
 void GraphScheduler::ActivateNext() {
-  int id = GetCurrentJobId();
+  CHECK(!empty());
+  int id = pending_workset_.front();
   CHECK(id >= 0);
   if (isForward_) {
     int pid = parent_ids_[sample_id_][id];
@@ -25,40 +32,14 @@ void GraphScheduler::ActivateNext() {
     }
   }
   pending_workset_.pop_front();
-  //if (isForward_) {
-    //if (isLeaf(id)) {
-      //CHECK(id == activate_leaf_.front());
-      //activate_inode_.push_back(parent_id(id));
-      //activate_leaf_.pop_front();
-    //}else {
-      //CHECK(id == activate_inode_.front());
-      //if (parent_id(id) != -1) {
-        //activate_inode_.push_back(parent_id(id));
-      //}
-      //activate_inode_.pop_front();
-    //}
-  //}else {
-    //if (!isLeaf(id)) {
-      //CHECK(id == activate_inode_.front());
-      //for (auto& i : child_id(id)) {
-        //if (isLeaf(i))
-          //activate_leaf_.push_back(i);
-        //else
-          //activate_inode_.push_back(i);
-      //}
-      //activate_inode_.pop_front();
-    //}else {
-      //CHECK(id == activate_leaf_.front());
-      //activate_leaf_.pop_front();
-    //}
-  //}
 }
 
-int GraphScheduler::GetCurrentJobId() {
-  if (!empty())
-    return pending_workset_.front();
-  else
+int GraphScheduler::GetJobId() const {
+  if (!empty()) {
+    return ToGlobalId(pending_workset_.front());
+  }else {
     return -1;
+  }
 }
 
 //parent-idx form
@@ -127,6 +108,35 @@ void GraphScheduler::TrigerBatchId(int sample_id) {
     }
   }
   sample_id_ = sample_id;
+}
+
+bool GraphScheduler::HasChild() const {
+  CHECK(!empty());
+  int id = pending_workset_.front();
+  if (isForward_) {
+    CHECK(id < child_ids_[sample_id_].size());
+    return !child_ids_[sample_id_][id].empty();
+  }else{
+    CHECK(id < parent_ids_[sample_id_].size());
+    return (parent_ids_[sample_id_][id] != -1);
+  }
+}
+
+vector<int> GraphScheduler::child_id() const {
+  CHECK(!empty());
+  int parent_id = pending_workset_.front();
+  CHECK(HasChild())
+    << "parent_id[" << parent_id
+    << "] of sample_id["  << sample_id_ << "] has no children";
+  if (isForward_) {
+    vector<int> ret;
+    for (auto i : child_ids_[sample_id_][parent_id])
+      ret.push_back(ToGlobalId(i));
+    return ret;
+  }else {
+    CHECK(parent_id < parent_ids_[sample_id_].size());
+    return { ToGlobalId(parent_ids_[sample_id_][parent_id]) };
+  }
 }
 
 } //namespace midend

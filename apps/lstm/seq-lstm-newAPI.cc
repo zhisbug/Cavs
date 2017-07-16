@@ -8,7 +8,7 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       20,       "batch");
+DEFINE_int32 (batch,       4,       "batch");
 DEFINE_int32 (input_size,  10000,    "input size");
 DEFINE_int32 (timestep,    20,       "timestep");
 DEFINE_int32 (hidden,      200,      "hidden size");
@@ -142,17 +142,17 @@ int main(int argc, char* argv[]) {
                          {word_idx, input_ph[j%input_ph.size()].data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
-    float sum = 0.f;
-    for (int j = 0; j < iterations; j++) {
-      sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                              {label,    label_ph[j%label_ph.size()].data()},
-                              {word_idx, input_ph[j%input_ph.size()].data()}});
-      float ppx = *(float*)(perplexity.eval());
-      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                << "\tPPX:\t" << exp(ppx);
-      sum += *(float*)(perplexity.eval());
-    }
-    LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    //float sum = 0.f;
+    //for (int j = 0; j < iterations; j++) {
+      //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+                              //{label,    label_ph[j%label_ph.size()].data()},
+                              //{word_idx, input_ph[j%input_ph.size()].data()}});
+      //float ppx = *(float*)(perplexity.eval());
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                //<< "\tPPX:\t" << exp(ppx);
+      //sum += *(float*)(perplexity.eval());
+    //}
+    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   return 0;
