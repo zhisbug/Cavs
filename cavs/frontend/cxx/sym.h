@@ -64,6 +64,7 @@ class Sym {
   static Sym Tanh(const Sym& a, string device = "GPU");
   static Sym Flatten(const Sym& a);
   static Sym Slice(const Sym& a, int offset, int stride);
+  static Sym Mirror(const Sym& a);
   //multi return value 
   static std::tuple<Sym, Sym> Split2(const Sym& a);
   static std::tuple<Sym, Sym, Sym> Split3(const Sym& a);
@@ -121,6 +122,7 @@ class Sym {
   Sym Tanh()    { return Tanh(*this);    }
   Sym Flatten() { return Flatten(*this); }
   Sym Slice(int offset, int stride) { return Slice(*this, offset, stride); }
+  Sym Mirror()  { return Mirror(*this); }
   //multi return value 
   std::tuple<Sym, Sym> Split2()           { return Split2(*this); }
   std::tuple<Sym, Sym, Sym> Split3()      { return Split3(*this); }

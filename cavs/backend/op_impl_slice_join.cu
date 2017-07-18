@@ -84,6 +84,7 @@ class SliceAllOpImpl : public OpImpl {
   void Compute(OpContext* context) override {
     CHECK(context->InputSize() == context->OutputSize()+1);
     const Tensor& input = context->Input(0);
+    input.DebugNumerical<T>();
     CHECK(input.count() > 0);
     int copied_count = 0;
     for (int i = 0; i < context->OutputSize(); i++) {
@@ -96,6 +97,7 @@ class SliceAllOpImpl : public OpImpl {
                                 out->count()*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
       copied_count += out->count();
+      out->DebugNumerical<T>();
     } 
     CHECK(input.count() == copied_count);
   }

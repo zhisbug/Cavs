@@ -28,7 +28,9 @@ REGISTER_OP_IMPL_BUILDER(Key("Equal").Device("GPU"),
     CudaBinaryOpInstance(math::Equal, float));
 
 //For partial-add, we have reset the augend tensor to 0 in each iteration
-REGISTER_OP_IMPL_BUILDER(Key("PartialAdd").Device("GPU"),
-    CudaPartialAddBinaryOpInstance(math::Add, float));
+REGISTER_OP_IMPL_BUILDER(Key("Accumulate").Device("GPU"),
+    CudaAccumulateBinaryOpInstance(math::Add, float));
+REGISTER_OP_IMPL_BUILDER(Key("PartialAccumulate").Device("GPU"),
+    CudaPartialAccumulateBinaryOpInstance(math::Add, float));
 
 } //namespace backend

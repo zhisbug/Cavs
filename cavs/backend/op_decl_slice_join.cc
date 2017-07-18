@@ -30,7 +30,7 @@ class SliceOpDecl : public OpDecl {
   void MakeGradient(vector<OpDef>* grad) override {
     CHECK(grad->size() == 0);
     OpDef slice;
-    OpDefBuilder("PartialAdd")
+    OpDefBuilder("PartialAccumulate")
       .Input(GetGradientName(op_def_.output(0)))
       .Input(op_def_.input(0))
       .Output(GetGradientName(op_def_.input(0)))
@@ -135,9 +135,9 @@ class SliceAllOpDecl : public OpDecl {
   }
 };
 
-class PartialAddOpDecl : public OpDecl {
+class PartialAccumulateOpDecl : public OpDecl {
  public:
-  PartialAddOpDecl(const OpDef& def) : OpDecl(def) {
+  PartialAccumulateOpDecl(const OpDef& def) : OpDecl(def) {
     CHECK(def.input_size() == 2); 
     CHECK(def.output_size() == 1); 
   }
@@ -150,9 +150,53 @@ class PartialAddOpDecl : public OpDecl {
   }
 };
 
+class MirrorOpDecl : public OpDecl {
+ public:
+  MirrorOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(def.input_size() == 1); 
+    CHECK(def.output_size() == 1); 
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 1);
+    CHECK(out_shape->empty());
+    out_shape->push_back(inputs[0]);
+  }
+
+  void MakeGradient(vector<OpDef>* grad) override {
+    CHECK(grad->empty());
+    OpDef accu;
+    OpDefBuilder("Accumulate")
+      .Input(GetGradientName(op_def_.output(0)))
+      .Output(GetGradientName(op_def_.input(0)))
+      .Device(op_def_)
+      .Finalize(&accu);
+    grad->push_back(accu);
+  }
+
+};
+
+class AccumulateOpDecl : public OpDecl {
+ public:
+  AccumulateOpDecl(const OpDef& def) : OpDecl(def) {
+    CHECK(def.input_size() == 1); 
+    CHECK(def.output_size() == 1); 
+  }
+
+  void ShapeInference(vector<TensorShapeDef>* out_shape,
+    const vector<TensorShapeDef>& inputs) override {
+    CHECK(inputs.size() == 1);
+    CHECK(out_shape->empty());
+    out_shape->push_back(inputs[0]);
+  }
+};
+
 REGISTER_OP_DECL_BUILDER("Slice" , SliceOpDecl );
 REGISTER_OP_DECL_BUILDER("Concat", ConcatOpDecl);
 REGISTER_OP_DECL_BUILDER("SliceAll"  , SliceAllOpDecl  );
-REGISTER_OP_DECL_BUILDER("PartialAdd", PartialAddOpDecl);
+REGISTER_OP_DECL_BUILDER("PartialAccumulate", PartialAccumulateOpDecl);
+REGISTER_OP_DECL_BUILDER("Mirror", MirrorOpDecl);
+REGISTER_OP_DECL_BUILDER("Accumulate", AccumulateOpDecl);
 
 } //namespace backend

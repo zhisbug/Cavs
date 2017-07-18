@@ -81,8 +81,8 @@ class SeqModel : public GraphSupport {
     Sym c = i * u + f*child_c;
     Sym h = o * Sym::Tanh(c);
 
-    Scatter(Sym::Concat({h, c}));
-    Push(h);
+    Scatter(Sym::Concat({h.Mirror(), c}));
+    Push(h.Mirror());
   }
 
  private:

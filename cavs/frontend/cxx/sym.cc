@@ -316,6 +316,16 @@ Sym Sym::Slice(const Sym& a, int offset, int stride) {
   return Sym(def);
 }
 
+Sym Sym::Mirror(const Sym& a) {
+  OpDef def = OpDefBuilder("Mirror")
+                .Input(a.output(0))
+                .Dtype(a.type())
+                .AttrSingle("ShareMemory", true)
+                .Device(a.device())
+                .Finalize();
+  return Sym(def);
+}
+
 std::tuple<Sym, Sym> Sym::Split2(const Sym& a) {
   OpDef def[2];
   for (int i = 0; i < 2; i++) {

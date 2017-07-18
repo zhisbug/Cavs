@@ -152,6 +152,7 @@ class FunctionPushArgOp : public OpImpl {
     GraphScheduler* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
     gs->SetFuncArg(inp);
+    inp.DebugNumerical<T>();
   }
 };
 
@@ -170,6 +171,7 @@ class FunctionPopRetOp : public OpImpl {
                               inp.data<T>(),
                               out->count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
+    out->DebugNumerical<T>();
   }
 };
 

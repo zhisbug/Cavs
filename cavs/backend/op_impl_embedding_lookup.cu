@@ -111,9 +111,9 @@ void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
       input.data<T>(), dY.data<T>(),
       embedding_size);
 
-  //A.DebugNumerical<T>();
-  //B.DebugNumerical<T>();
-  //C->DebugNumerical<T>();
+  dY.DebugNumerical<T>();
+  input.DebugNumerical<T>();
+  dMatrix->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("EmbeddingLookup").Device("GPU"), EmbeddingLookupOp<float>);

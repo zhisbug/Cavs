@@ -108,8 +108,10 @@ struct CUDABinaryConstScalarFunctor {
     UnaryOp<CUDAUnaryConstScalarFunctor<math<dtype>, dtype>, dtype>
 #define CudaBinaryOpInstance(math, dtype)   \
     BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
-#define CudaPartialAddBinaryOpInstance(math, dtype)    \
-    PartialAddBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+#define CudaAccumulateBinaryOpInstance(math, dtype)    \
+    AccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+#define CudaPartialAccumulateBinaryOpInstance(math, dtype)    \
+    PartialAccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
 
 } //namespace backend
 

@@ -437,12 +437,19 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
-  //for (int i = 0; i < critical_path.size(); i++) {
-    //if (critical_path[i]) {
+  for (int i = 0; i < critical_path.size(); i++) {
+    if (critical_path[i]) {
       //VLOG(V_DEBUG) << i << "\tth operator:";
-      //VLOG(V_DEBUG) << func_scope->typological_sorted_nodes_[i]->debug_info();
-    //}
-  //}
+      Node* node = func_scope->typological_sorted_nodes_[i];
+      CHECK(node->output_size() == 1);
+      if (node->output(0)->dst_size(true) > 1) {
+        VLOG(V_DEBUG) << "=============HHH==================";
+        VLOG(V_DEBUG) << node->output(0)->debug_info();
+        VLOG(V_DEBUG) << "=============HHH==================";
+        //sleep(3);
+      }
+    }
+  }
 
   VLOG(V_DEBUG) << "Generating gradient...";
   GenGradientForFunction(func_grad_scope, critical_path, grads, func_scope);

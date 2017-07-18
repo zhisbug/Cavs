@@ -110,10 +110,7 @@ class ScatterOpDecl : public EmitOpDecl {
 
 class PushOpDecl : public EmitOpDecl {
  public:
-  PushOpDecl(const OpDef& def) : EmitOpDecl(def) {
-    //output_name_ = GetSingleArg<string>(def, "OutputName");
-    //CHECK(output_name_.length());
-  }
+  PushOpDecl(const OpDef& def) : EmitOpDecl(def) {}
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     EmitOpDecl::ShapeInference(out_shape, inputs);
