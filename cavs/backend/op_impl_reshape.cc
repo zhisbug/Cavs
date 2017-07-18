@@ -41,6 +41,7 @@ void FlattenOp::Compute(OpContext* context) {
   CHECK(x.count() == y->count());
 }
 
+template <typename T>
 class ReshapeLikeOp : public ReshapeOpImpl {
  public:
   explicit ReshapeLikeOp(const OpDef& def) :
@@ -48,7 +49,8 @@ class ReshapeLikeOp : public ReshapeOpImpl {
   void Compute(OpContext* context) override;
 };
 
-void ReshapeLikeOp::Compute(OpContext* context) {
+template <typename T>
+void ReshapeLikeOp<T>::Compute(OpContext* context) {
   const Tensor& dy = context->Input(0);
   const Tensor& x  = context->Input(1);
   Tensor* dx = context->Output(0);
@@ -57,9 +59,10 @@ void ReshapeLikeOp::Compute(OpContext* context) {
   CHECK(x.dims() == dx->dims());
   for (int i = 0; i < x.dims(); i++)
     CHECK(x.dims(i) == dx->dims(i));
-
-  dy.DebugNumerical<float>();
-  dx->DebugNumerical<float>();
+  //checkCudaError(cudaMemcpy(dx->mutable_data<T>(), dy.data<T>(),
+                            //dy.count()*sizeof(T), cudaMemcpyDeviceToDevice));
+  dy.DebugNumerical<T>();
+  dx->DebugNumerical<T>();
 }
 
 class ExpandDimsOpImpl : public ReshapeOpImpl {
@@ -95,9 +98,9 @@ REGISTER_OP_IMPL_BUILDER(Key("Reshape").Device("GPU"), ReshapeOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Reshape").Device("CPU"), ReshapeOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Flatten").Device("GPU"), FlattenOp);
 REGISTER_OP_IMPL_BUILDER(Key("Flatten").Device("CPU"), FlattenOp);
-REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("GPU"), ReshapeLikeOp);
-REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("CPU"), ReshapeLikeOp);
 REGISTER_OP_IMPL_BUILDER(Key("Expand_dims").Device("GPU"), ExpandDimsOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Expand_dims").Device("CPU"), ExpandDimsOpImpl);
+REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("GPU"), ReshapeLikeOp<float>);
+//REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("CPU"), ReshapeLikeOp<float>);
 
 } //namespace backend

@@ -54,10 +54,10 @@ class SeqModel : public GraphSupport {
                             Sym::Zeros());
     U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);
     W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);
-    bu = LSTM_b.Slice(0, FLAGS_hidden);
-    bo = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
-    bi = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
-    bf = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
+    bi = LSTM_b.Slice(0, FLAGS_hidden);
+    bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
+    bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
+    bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
   }
 
   void Node() override {
@@ -65,18 +65,18 @@ class SeqModel : public GraphSupport {
     Sym child_h, child_c;
     tie(child_h, child_c) = child.Split2();
     Sym x       = Pull(0, {1});
-    x           = x.EmbeddingLookup(embedding);
+    x           = x.EmbeddingLookup(embedding.Mirror());
 
-    Sym tmp = Sym::MatMul(x, U.Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
-            + Sym::MatMul(child_h.Expand_dims(0), W.Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
+    Sym tmp = Sym::MatMul(x, U.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
+            + Sym::MatMul(child_h.Expand_dims(0), W.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
 
-    Sym u, i, o, f;
-    tie(u, i, o, f) = tmp.Split4();
+    Sym i, f, u, o;
+    tie(i, f, u, o) = tmp.Split4();
 
-    i = (i+bi).Sigmoid();//sigmoid_30
-    o = (o+bo).Sigmoid();//sigmoid_32
-    u = (u+bu).Tanh();//tanh_34
-    f = (f+bf).Sigmoid();
+    i = (i+bi.Mirror()).Sigmoid();//sigmoid_30
+    f = (f+bf.Mirror()).Sigmoid();//sigmoid_32
+    u = (u+bu.Mirror()).Tanh();//tanh_34
+    o = (o+bo.Mirror()).Sigmoid();
 
     Sym c = i * u + f*child_c; //add_39
     Sym h = o * Sym::Tanh(c.Mirror())/*tanh_41*/;//mul_42

@@ -2,7 +2,6 @@
 #include "cavs/util/types.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
-#include "cavs/util/mpi_types.h"
 
 #include <iomanip>
 
@@ -97,14 +96,18 @@ void Tensor::DebugNumerical<float>() const {
     for (int i = 0; i < 40 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
-    for (int i = 0; i < count(); i++) {
-      if (isnan(res[i]) || res[i] > 1.f) {
-        //if (name() == "global:Optimizer0:Variable2_grad") {
-             //VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
-                     //<< std::setprecision(15) << res[i];
-        //}
+    L2_norm = 0;
+    checksum  = 0;
+    if (name() == "main:Optimizer_12:Variable_3_grad") {
+      for (int i = 0; i < 800; i++) {
+        VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
+                << std::setprecision(15) << res[i];
+        L2_norm += res[i]*res[i]; 
+        checksum += res[i];
       }
-      CHECK(!isnan(res[i])) << name() << ":\t" << i << "\t" << res[i];
+      VLOG(V_EXHAUSTIVE_DEBUG) << name()
+        << "\tL2 Norm:\t" << L2_norm
+        << "\t checksum:\t" << checksum;
     }
   }
 }

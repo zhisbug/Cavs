@@ -14,7 +14,7 @@ DEFINE_int32 (input_size,  10000, "input size");
 DEFINE_int32 (timestep,    4,    "timestep");
 DEFINE_int32 (hidden,      10,   "hidden size");
 DEFINE_int32 (lstm_layers, 1,     "stacked lstm layers");
-DEFINE_int32 (epoch,       10,    "epochs");
+DEFINE_int32 (epoch,       1,    "epochs");
 DEFINE_int32 (iters,       99999, "iterations");
 DEFINE_double(init_scale,  0.1f,   "init random scale of variables");
 DEFINE_double(lr,          1.f,   "learning rate");
