@@ -35,6 +35,7 @@ class GraphScheduler {
     func_ret_ = t;
   }
   inline const Tensor& GetFuncRet() {
+    func_ret_.SetOffsetWithId(0);
     return func_ret_; 
   }
 

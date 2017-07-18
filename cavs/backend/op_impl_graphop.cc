@@ -142,6 +142,37 @@ class GraphPullOp : public OpImpl {
   }
 };
 
+template <typename T>
+class FunctionPushArgOp : public OpImpl {
+ public:
+  explicit FunctionPushArgOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    //LOG(FATAL) << "here";
+    const Tensor& inp = context->Input(0);
+    GraphScheduler* gs = context->graph_scheduler();
+    CHECK_NOTNULL(gs);
+    gs->SetFuncArg(inp);
+  }
+};
+
+template <typename T>
+class FunctionPopRetOp : public OpImpl {
+ public:
+  explicit FunctionPopRetOp(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    //LOG(FATAL) << "here";
+    GraphScheduler* gs = context->graph_scheduler();
+    CHECK_NOTNULL(gs);
+    const Tensor& inp = gs->GetFuncRet();
+    Tensor* out = context->Output(0);
+    CHECK(inp.count() <= out->count());
+    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              inp.data<T>(),
+                              out->count()*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
+  }
+};
+
 //template <typename T>
 //class FetchUpperGradOp : public OpImpl {
  //public:
@@ -209,6 +240,7 @@ REGISTER_OP_IMPL_BUILDER(Key("Pull").Device("GPU"),    GraphPullOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Push").Device("GPU"),    GraphPushOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Scatter").Device("GPU"), GraphScatterOp<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Gather").Device("GPU"),  GraphGatherOp<float>);
-//REGISTER_OP_IMPL_BUILDER(Key("FetchUpperGrad").Device("GPU"), FetchUpperGradOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key("FunctionPushArg").Device("GPU"), FunctionPushArgOp<float>);
+REGISTER_OP_IMPL_BUILDER(Key("FunctionPopRet").Device("GPU"), FunctionPopRetOp<float>);
 
 } //namespace backend
