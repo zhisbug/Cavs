@@ -86,7 +86,7 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
     const Edge* curr,
     const Edge* loss,
     const Scope* scope) {
-  CHECK(curr->scope() == scope);
+  CHECK(curr->scope() == scope) << curr->scoped_name();
   CHECK(loss->scope() == scope);
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
   CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
@@ -384,8 +384,8 @@ void GraphUtil::ComputeGradientForFunction(
   CHECK(func_scope);
   vector<bool> critical_path(func_scope->typological_sorted_nodes_.size(), false);
   vector<unordered_map<size_t, OpDef>> grads(func_scope->typological_sorted_nodes_.size());
-  vector<Edge*> origins;
-  vector<Edge*> terminals;
+  set<Edge*> origins;
+  set<Edge*> terminals;
   VLOG(V_DEBUG) << "Computing gradient for function";
   for (auto* node : func_scope->typological_sorted_nodes_) {
     VLOG(V_DEBUG) << node->debug_info();
@@ -399,24 +399,12 @@ void GraphUtil::ComputeGradientForFunction(
       CHECK(grad_defs.size() == 1);
       grads.at(func_scope->node2idx_.at(node)).emplace(GetHash(grad_defs[0]), grad_defs[0]);
       CHECK(node->output_size() == 1);
-      origins.push_back(node->output(0));
+      origins.insert(node->output(0));
     }
-    //for each optimizer/functionGrad, there must be a starting point
-    //it is either a constant op(init = 1) or a buffer fetcher op
-    //if (node->name() == "Push") {
-      //OpDef fetchUpperGradOp;
-      //OpDefBuilder("FetchUpperGrad")
-        //.Output(GetGradientName(node->output(0)->name()))
-        //.Shape(node->output(0)->shape())
-        //.Device("GPU")
-        //.Finalize(&fetchUpperGradOp);
-      //func_grad_scope->AddOp(fetchUpperGradOp);
-      //CHECK(node->output_size() == 1);
-      //terminals.push_back(node->output(0));
-    //}
+
     if (node->name() == "Push" || node->name() == "Scatter") {
       CHECK(node->output_size() == 1);
-      terminals.push_back(node->output(0));
+      terminals.insert(node->output(0));
     }
   }
   CHECK(origins.size() == 2) << origins.size();
@@ -433,6 +421,28 @@ void GraphUtil::ComputeGradientForFunction(
       for (int i = 0; i < critical_path.size(); i++) {
         critical_path[i] = critical_path[i] || cpath_each[i];
         grads[i].insert(grads_each[i].begin(), grads_each[i].end());
+      }
+    }
+  }
+
+  for (auto& edge: func_scope->in_edges_) {
+    for (auto* node : edge.second->dst()) {
+      if (node->scope() == func_scope) {
+        CHECK(node->output_size() == 1);
+        vector<bool> cpath_each(critical_path.size(), false);
+        vector<unordered_map<size_t, OpDef>> grads_each(grads.size());
+        for (auto* t_edge : terminals) {
+          if (GenCriticalPath(&cpath_each, &grads_each, node->output(0), t_edge, func_scope)) {
+            for (int i = 0; i < critical_path.size(); i++) {
+              critical_path[i] = critical_path[i] || cpath_each[i];
+              grads[i].insert(grads_each[i].begin(), grads_each[i].end());
+            }
+            CHECK(func_scope->node2idx_.find(node) != func_scope->node2idx_.end());
+            critical_path[func_scope->node2idx_.at(node)] = true;
+            OpDef def = PartialGrad(node, edge.second->name());
+            grads.at(func_scope->node2idx_.at(node)).emplace(GetHash(def), def);
+          }
+        }
       }
     }
   }
