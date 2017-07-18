@@ -8,6 +8,9 @@ REGISTER_OP_IMPL_BUILDER(Key("Abs").Device("GPU"),
     CudaUnaryOpInstance(math::Abs, float));
 REGISTER_OP_IMPL_BUILDER(Key("Neg").Device("GPU"),
     CudaUnaryOpInstance(math::Neg, float));
+REGISTER_OP_IMPL_BUILDER(Key("Assign").Device("GPU"),
+    CudaUnaryOpInstance(math::Assign, float));
+
 REGISTER_OP_IMPL_BUILDER(Key("Add").Device("GPU"),
     CudaBinaryOpInstance(math::Add, float));
 REGISTER_OP_IMPL_BUILDER(Key("Sub").Device("GPU"),

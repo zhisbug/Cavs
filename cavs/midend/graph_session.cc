@@ -93,7 +93,9 @@ OpContext* GraphSession::GetContext(const Node* node) {
             LOG(FATAL) << "wrong dimension" << output->shape().DebugString();
           }
         }else {
-          CHECK(output->isVariable() && output->isGradient());
+          //CHECK(output->isVariable() && output->isGradient());
+          //the above is wrong when deducing the backward of W.reshape.matmul 
+          CHECK(output->isGradient());
           shape = TensorShape(output->shape());
         }
 

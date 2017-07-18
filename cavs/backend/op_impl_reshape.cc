@@ -99,7 +99,5 @@ REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("GPU"), ReshapeLikeOp);
 REGISTER_OP_IMPL_BUILDER(Key("ReshapeLike").Device("CPU"), ReshapeLikeOp);
 REGISTER_OP_IMPL_BUILDER(Key("Expand_dims").Device("GPU"), ExpandDimsOpImpl);
 REGISTER_OP_IMPL_BUILDER(Key("Expand_dims").Device("CPU"), ExpandDimsOpImpl);
-REGISTER_OP_IMPL_BUILDER(Key("Assign").Device("GPU"), ReshapeOpImpl);
-REGISTER_OP_IMPL_BUILDER(Key("Assign").Device("CPU"), ReshapeOpImpl);
 
 } //namespace backend
