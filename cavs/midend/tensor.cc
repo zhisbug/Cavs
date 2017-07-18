@@ -90,6 +90,7 @@ void Tensor::DebugNumerical<float>() const {
       L2_norm += res[i]*res[i]; 
       checksum += res[i];
     }
+    VLOG(V_DEBUG) << "pointer-addr:\t" << buf_.get();
     VLOG(V_EXHAUSTIVE_DEBUG) << name()
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;

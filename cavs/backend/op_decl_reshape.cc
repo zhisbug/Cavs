@@ -85,9 +85,18 @@ class ExpandDimsOpDecl : public ReshapeOpDecl {
   int axis_;
 };
 
+class AssignOpDecl: public ReshapeOpDecl {
+ public:
+  AssignOpDecl(const OpDef& def) : ReshapeOpDecl(def) {}
+  void MakeGradient(vector<OpDef>* grad) override {
+    LOG(FATAL) << "Unsupported now";
+  }
+};
+
 REGISTER_OP_DECL_BUILDER("Reshape",     ReshapeOpDecl);
 REGISTER_OP_DECL_BUILDER("Flatten",     FlattenOpDecl);
 REGISTER_OP_DECL_BUILDER("ReshapeLike", ReshapeLikeOpDecl);
 REGISTER_OP_DECL_BUILDER("Expand_dims", ExpandDimsOpDecl);
+REGISTER_OP_DECL_BUILDER("Assign",      AssignOpDecl);
 
 } //namespace backend

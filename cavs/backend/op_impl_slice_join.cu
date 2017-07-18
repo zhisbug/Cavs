@@ -103,8 +103,17 @@ class SliceAllOpImpl : public OpImpl {
   }
 };
 
+class MirrorOpImpl : public OpImpl {
+ public:
+  explicit MirrorOpImpl(const OpDef& def) : OpImpl(def) {}
+  void Compute(OpContext* context) override {
+    //do nothing 
+  }
+};
+
 REGISTER_OP_IMPL_BUILDER(Key("Slice").Device("GPU"),    SliceOpImpl<float>);
 REGISTER_OP_IMPL_BUILDER(Key("Concat").Device("GPU"),   ConcatOpImpl<float>);
 REGISTER_OP_IMPL_BUILDER(Key("SliceAll").Device("GPU"), SliceAllOpImpl<float>);
+REGISTER_OP_IMPL_BUILDER(Key("Mirror").Device("GPU"), MirrorOpImpl);
 
 } //namespace backend

@@ -1,7 +1,7 @@
-#include "cavs/backend/op_impl_assign.h"
+//#include "cavs/backend/op_impl_assign.h"
 
-namespace backend {
+//namespace backend {
 
-REGISTER_OP_IMPL_BUILDER(Key("Assign").Device("GPU"), OpImplAssign);
+//REGISTER_OP_IMPL_BUILDER(Key("Assign").Device("GPU"), OpImplAssign);
 
-}
+//}

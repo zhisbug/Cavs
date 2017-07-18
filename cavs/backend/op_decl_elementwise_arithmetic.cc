@@ -4,23 +4,23 @@ using std::vector;
 
 namespace backend {
 
-class AssignOpDecl : public UnaryOpDecl {
- public:
-  explicit AssignOpDecl(const OpDef& def) : UnaryOpDecl(def) {}
-  void MakeGradient(vector<OpDef>* grad) override {
-    grad->clear();
-    CHECK(op_def_.input_size() == 1);
-    CHECK(op_def_.output_size() == 1);
-    OpDef assign_def;
-    OpDefBuilder("Assign")
-      .Input(GetGradientName(op_def_.output(0)))
-      .Output(GetGradientName(op_def_.input(0)))
-      .Shape(op_def_)
-      .Device(op_def_)
-      .Finalize(&assign_def);
-    grad->push_back(std::move(assign_def));
-  }
-};
+//class AssignOpDecl : public UnaryOpDecl {
+ //public:
+  //explicit AssignOpDecl(const OpDef& def) : UnaryOpDecl(def) {}
+  //void MakeGradient(vector<OpDef>* grad) override {
+    //grad->clear();
+    //CHECK(op_def_.input_size() == 1);
+    //CHECK(op_def_.output_size() == 1);
+    //OpDef assign_def;
+    //OpDefBuilder("Assign")
+      //.Input(GetGradientName(op_def_.output(0)))
+      //.Output(GetGradientName(op_def_.input(0)))
+      //.Shape(op_def_)
+      //.Device(op_def_)
+      //.Finalize(&assign_def);
+    //grad->push_back(std::move(assign_def));
+  //}
+//};
 
 class AddOpDecl : public BinaryOpDecl {
  public:
@@ -37,6 +37,7 @@ class AddOpDecl : public BinaryOpDecl {
           .Output(GetGradientName(op_def_.input(i)))
           .Shape(op_def_)
           .Device(op_def_)
+          .AttrSingle("ShareMemory", true)
           .Finalize(&assign_def);
         grad->push_back(std::move(assign_def));
       }
@@ -58,6 +59,7 @@ class SubOpDecl : public BinaryOpDecl {
         .Output(GetGradientName(op_def_.input(0)))
         .Shape(op_def_)
         .Device(op_def_)
+        .AttrSingle("ShareMemory", true)
         .Finalize(&assign_def);
       grad->push_back(std::move(assign_def));
     }
@@ -185,7 +187,7 @@ class SquareGradOpDecl : public BinaryOpDecl {
   //no gradient
 };
 
-REGISTER_OP_DECL_BUILDER("Assign", AssignOpDecl);
+//REGISTER_OP_DECL_BUILDER("Assign", AssignOpDecl);
 REGISTER_OP_DECL_BUILDER("Add", AddOpDecl);
 REGISTER_OP_DECL_BUILDER("Equal", BinaryOpDecl);
 REGISTER_OP_DECL_BUILDER("Sub", SubOpDecl);

@@ -73,16 +73,16 @@ class SeqModel : public GraphSupport {
     Sym u, i, o, f;
     tie(u, i, o, f) = tmp.Split4();
 
-    i = (i+bi).Sigmoid();
-    o = (o+bo).Sigmoid();
-    u = (u+bu).Tanh();
+    i = (i+bi).Sigmoid();//sigmoid_30
+    o = (o+bo).Sigmoid();//sigmoid_32
+    u = (u+bu).Tanh();//tanh_34
     f = (f+bf).Sigmoid();
 
-    Sym c = i * u + f*child_c;
-    Sym h = o * Sym::Tanh(c);
+    Sym c = i * u + f*child_c; //add_39
+    Sym h = o * Sym::Tanh(c.Mirror())/*tanh_41*/;//mul_42
 
-    Scatter(Sym::Concat({h.Mirror(), c}));
-    Push(h.Mirror());
+    Scatter(Sym::Concat({h.Mirror()/*mirror_43*/, c.Mirror()/*mirror_44*/}));
+    Push(h.Mirror()/*mirror_47*/);
   }
 
  private:

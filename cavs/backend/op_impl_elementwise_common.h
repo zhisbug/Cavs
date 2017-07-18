@@ -53,8 +53,8 @@ class AccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
     CHECK(inp.count() == out->count());
     FUNCTOR::Compute(out->mutable_data<T>(), out->count(),
         out->mutable_data<T>(), out->count(), inp.data<T>(), inp.count());
-    //inp.DebugNumerical<T>();
-    //out->DebugNumerical<T>();
+    inp.DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 
@@ -82,7 +82,6 @@ class PartialAccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
     //The partialadd(+=) operator behaves like a binary operation
     //But it actually has one input, and the output is both input and output
     const Tensor& inp = context->Input(0);
-    //inp.DebugNumerical<T>();
     Tensor* out = context->Output(0);
 
     //inp is the small tensor and out is the big one
@@ -95,7 +94,8 @@ class PartialAccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
     CHECK(inp.count() == stride_);
     FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_,
         out->mutable_data<T>()+offset_, stride_, inp.data<T>(), inp.count());
-    //out->DebugNumerical<T>();
+    inp.DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 
  private:
