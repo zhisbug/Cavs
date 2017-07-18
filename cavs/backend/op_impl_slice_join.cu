@@ -70,8 +70,10 @@ class ConcatOpImpl : public OpImpl {
                                 inp.count()*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
       copied_count += inp.count();
+      inp.DebugNumerical<T>();
     } 
     CHECK(out->count() == copied_count);
+    out->DebugNumerical<T>();
   }
 };
 

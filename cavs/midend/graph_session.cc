@@ -57,7 +57,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
       ////all the outputs of the operators in the function are unique
       //CHECK(!t) << node->debug_info();
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
-      CHECK(!upper_t);
+      CHECK(!upper_t || (output->isGradient() && output->isVariable())) << upper_t->debug_info();
       //We assume we do not support reshape operators in the body of a function
       if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
@@ -72,18 +72,22 @@ OpContext* GraphSession::GetContext(const Node* node) {
         LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
       }else {
-        //Since the users write the think-like-a-vertex function,
-        //we assume each output is one-dimension, without batching
-        CHECK(output->shape().dim_size() == 1 ||
-              (output->shape().dim_size() == 2 && output->shape().dim(0) == 1));
         TensorShape shape;
-        shape.AddDim(MAX_NODE_);
-        if (output->shape().dim_size() == 1) {
-          shape.AddDim(output->shape().dim(0));
-        }else if (output->shape().dim_size() == 2 && output->shape().dim(0) == 1) {
-          shape.AddDim(output->shape().dim(1));
+        if (output->shape().dim_size() == 1 ||
+           (output->shape().dim_size() == 2 && output->shape().dim(0) == 1)) {
+          //Since the users write the think-like-a-vertex function,
+          //we assume each output is one-dimension, without batching
+          shape.AddDim(MAX_NODE_);
+          if (output->shape().dim_size() == 1) {
+            shape.AddDim(output->shape().dim(0));
+          }else if (output->shape().dim_size() == 2 && output->shape().dim(0) == 1) {
+            shape.AddDim(output->shape().dim(1));
+          }else {
+            LOG(FATAL) << "wrong dimension" << output->shape().DebugString();
+          }
         }else {
-          LOG(FATAL) << "wrong dimension" << output->shape().DebugString();
+          CHECK(output->isVariable() && output->isGradient());
+          shape = TensorShape(output->shape());
         }
 
         Allocator* alloc = GetAllocator(op_def); 

@@ -388,7 +388,7 @@ void GraphUtil::ComputeGradientForFunction(
   vector<Edge*> terminals;
   for (auto* node : func_scope->typological_sorted_nodes_) {
     VLOG(V_DEBUG) << node->debug_info();
-    if (node->name() == "Gather") {
+    if (node->name() == "Gather" || node->name() == "Pull") {
       CHECK(func_scope->node2idx_.find(node) != func_scope->node2idx_.end());
       critical_path[func_scope->node2idx_.at(node)] = true;
       //Gather node is special, because it is a source node without input
@@ -418,6 +418,7 @@ void GraphUtil::ComputeGradientForFunction(
       terminals.push_back(node->output(0));
     }
   }
+  CHECK(origins.size() == 2) << origins.size();
   CHECK(terminals.size() == 2) << terminals.size();
 
   for (auto* o_edge : origins) {

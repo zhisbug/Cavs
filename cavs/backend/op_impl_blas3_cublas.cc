@@ -54,9 +54,9 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   MatMulMatCublasWrapper<T>(TransA, TransB,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
       0, C->mutable_data<T>());
-  //A.DebugNumerical<T>();
-  //B.DebugNumerical<T>();
-  //C->DebugNumerical<T>();
+  A.DebugNumerical<T>();
+  B.DebugNumerical<T>();
+  C->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("MatMul").Device("GPU"), MatMulMatOpCublas<float>);

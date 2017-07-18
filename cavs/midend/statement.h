@@ -76,29 +76,54 @@ class BasicBlock : public Statement {
   std::vector<Statement*> stmts_;
 };
 
-class GraphStatement : public ExprStatement {
+class FunctionCallStatement : public Statement {
  public:
-  //GraphStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
-    //: ExprStatement(), leaf_(leaf), inode_(inode), gscheduler_(gs) {}
-  GraphStatement(Statement* node_func, GraphScheduler* gs)
-    : ExprStatement(), node_func_(node_func), gscheduler_(gs) {}
+  ~FunctionCallStatement() {
+    if (push_arg_stmt_)   free(push_arg_stmt_);
+    if (pop_ret_stmt_)    free(pop_ret_stmt_);
+    if (global_ctxt_)     free(global_ctxt_);
+  }
+  inline void SetPushArgStatement(ExprStatement* push_arg) {
+    push_arg_stmt_ = push_arg; 
+  }
+  inline void SetPopRetStatement(ExprStatement* pop_ret) {
+    pop_ret_stmt_ = pop_ret; 
+  }
+  inline void SetGlobalContext(OpContext* ctxt) {
+    global_ctxt_ = ctxt;
+  }
 
+  void Run() override {
+    CHECK_NOTNULL(push_arg_stmt_);
+    CHECK_NOTNULL(pop_ret_stmt_);
+    CHECK_NOTNULL(global_ctxt_);
+  }
+
+ protected:
+  FunctionCallStatement()
+    : push_arg_stmt_(NULL), pop_ret_stmt_(NULL), global_ctxt_(NULL) {}
+  ExprStatement* push_arg_stmt_;
+  ExprStatement* pop_ret_stmt_;
+  OpContext *global_ctxt_;
+  //OpImpl *push_op_, *pop_op_;
+  //OpContext *push_ctxt_, *pop_ctxt_;
+};
+
+class GraphStatement : public FunctionCallStatement {
+ public:
+  GraphStatement(Statement* node_func, GraphScheduler* gs)
+    : node_func_(node_func), gscheduler_(gs) {}
   void Run() override;
 
  protected:
-  //Statement* leaf_;
-  //Statement* inode_;
   Statement* node_func_;
   GraphScheduler* gscheduler_;
 };
 
 class GraphGradStatement : public GraphStatement {
  public:
-  //GraphGradStatement(Statement* leaf, Statement* inode, GraphScheduler* gs)
-    //: GraphStatement(leaf, inode, gs) {}
   GraphGradStatement(Statement* node_func, GraphScheduler* gs)
     : GraphStatement(node_func, gs) {}
-
   void Run() override;
 };
 

@@ -8,10 +8,10 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       4,       "batch");
+DEFINE_int32 (batch,       1,       "batch");
 DEFINE_int32 (input_size,  10000,    "input size");
-DEFINE_int32 (timestep,    20,       "timestep");
-DEFINE_int32 (hidden,      200,      "hidden size");
+DEFINE_int32 (timestep,    4,       "timestep");
+DEFINE_int32 (hidden,      10,      "hidden size");
 DEFINE_int32 (epoch,       1,        "epochs");
 DEFINE_int32 (iters,       99999,    "iterations");
 DEFINE_double(init_scale,  0.1f,     "init random scale of variables");
@@ -42,17 +42,22 @@ class SeqModel : public GraphSupport {
  public:
   SeqModel(const Sym& graph_ph, const Sym& vertex_ph) :
     GraphSupport(graph_ph, vertex_ph) {
-    int var_size  = 2*4*(FLAGS_hidden*(FLAGS_hidden+1));
+    int w_size  = 2*4*FLAGS_hidden*FLAGS_hidden;
+    int b_size  = 4*FLAGS_hidden;
     embedding  = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    Sym LSTM_w = Sym::Variable(DT_FLOAT, {var_size},
-                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+    Sym LSTM_w = Sym::Variable(DT_FLOAT, {w_size},
+                            //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                            Sym::Ones());
+    Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size},
+                            //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                            Sym::Zeros());
     U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);
     W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);
-    bu = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden, FLAGS_hidden);
-    bo = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+FLAGS_hidden, FLAGS_hidden);
-    bi = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+2*FLAGS_hidden, FLAGS_hidden);
-    bf = LSTM_w.Slice(2*4*FLAGS_hidden*FLAGS_hidden+3*FLAGS_hidden, FLAGS_hidden);
+    bu = LSTM_b.Slice(0, FLAGS_hidden);
+    bo = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
+    bi = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
+    bf = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
   }
 
   void Node() override {
@@ -147,6 +152,17 @@ int main(int argc, char* argv[]) {
       //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
                               //{label,    label_ph[j%label_ph.size()].data()},
                               //{word_idx, input_ph[j%input_ph.size()].data()}});
+      //float ppx = *(float*)(perplexity.eval());
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                //<< "\tPPX:\t" << exp(ppx);
+      //sum += *(float*)(perplexity.eval());
+    //}
+    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    //float sum = 0.f;
+    //for (int j = 0; j < iterations; j++) {
+      //sess.Run({perplexity, train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+                         //{label,    label_ph[j%label_ph.size()].data()},
+                         //{word_idx, input_ph[j%input_ph.size()].data()}});
       //float ppx = *(float*)(perplexity.eval());
       //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
                 //<< "\tPPX:\t" << exp(ppx);

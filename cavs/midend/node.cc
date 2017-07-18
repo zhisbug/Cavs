@@ -1,5 +1,6 @@
 #include "cavs/midend/node.h"
 #include "cavs/midend/graph_session.h"
+#include "cavs/util/op_def_builder.h"
 
 using std::string;
 using std::vector;
@@ -94,7 +95,7 @@ Statement* SingleNode::Compile(
     CHECK(ctxt) << op_def().DebugString();
     CHECK(op) << op_def().DebugString();
     CHECK(ctxt) << op_def().DebugString();
-    ExprStatement* expr_stmt =  new ExprStatement(op, ctxt);
+    ExprStatement* expr_stmt = new ExprStatement(op, ctxt);
     CHECK(expr_stmt);
     stmt_ = expr_stmt;
   }
@@ -107,16 +108,26 @@ GraphNode::GraphNode(const OpDef& op_def, Scope* s)
 Statement* GraphNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    OpImpl* op = CreateOp(op_def());
     OpContext* ctxt = sess->GetContext(this);
+    ExprStatement* push_arg_stmt = NULL;
+    ExprStatement* pop_ret_stmt = NULL;
+    OpDef push_arg_def;
+    OpDefBuilder("FunctionPushArg")
+      .Input(this->input(1)->name())
+      .Device("GPU")
+      .Finalize(&push_arg_def);
+    OpImpl *push_arg_op = CreateOp(push_arg_def);
+    OpDef pop_ret_def;
+    OpDefBuilder("FunctionPopRet")
+      .Output(this->output(0)->name())
+      .Device("GPU")
+      .Finalize(&pop_ret_def);
+    OpImpl *pop_ret_op = CreateOp(pop_ret_def);
+    OpContext* push_ctxt = ctxt->ExtractContext({1}, {});
+    OpContext* pop_ctxt  = ctxt->ExtractContext({}, {0});
+    
 
     VLOG(V_DEBUG) << "Compiling GraphNode:\t" << op_def().name();
-    //CHECK(!gsess_);
-    //int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
-    //CHECK(max_graph_node_count > 0);
-    //GraphScheduler* gs = new GraphScheduler();
-    //gsess_ = new GraphSession(sess, located_, gs, max_graph_node_count);
-    ////gsess_->SetOutputTensor(ctxt->Output(0));
     if (!(gsess_ = GetGraphSession(op_def_.output(0)))) {
       int max_graph_node_count = GetSingleArg<int>(op_def_, "MaxGraphNodeCount");
       CHECK(max_graph_node_count > 0);
@@ -135,10 +146,14 @@ Statement* GraphNode::Compile(
     CHECK_NOTNULL(gsess_);
     Statement* node_func_stmt = sn->Compile(gsess_);
 
-    ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    push_arg_stmt = new ExprStatement(push_arg_op, push_ctxt);
+    pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
     stmt_ = new GraphStatement(node_func_stmt, gsess_->graph_scheduler());
-    dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
-    dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
+    dynamic_cast<GraphStatement*>(stmt_)->SetGlobalContext(ctxt);
+    dynamic_cast<GraphStatement*>(stmt_)->SetPushArgStatement(push_arg_stmt);
+    dynamic_cast<GraphStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
   }
   return stmt_;
 }
@@ -149,22 +164,33 @@ GraphGradNode::GraphGradNode(const OpDef& op_def, Scope* s)
 Statement* GraphGradNode::Compile(
     SessionBase* sess) {
   if (!stmt_) {
-    OpImpl* op = CreateOp(op_def());
+    //OpImpl* op = CreateOp(op_def());
+    //OpContext* ctxt = sess->GetContext(this);
     OpContext* ctxt = sess->GetContext(this);
+    ExprStatement* push_arg_stmt = NULL;
+    ExprStatement* pop_ret_stmt = NULL;
+    OpDef push_arg_def;
+    OpDefBuilder("FunctionPushArg")
+      .Input(this->input(0)->name())
+      .Device("GPU")
+      .Finalize(&push_arg_def);
+    OpImpl *push_arg_op = CreateOp(push_arg_def);
+    OpDef pop_ret_def;
+    OpDefBuilder("FunctionPopRet")
+      .Output(this->output(0)->name())
+      .Device("GPU")
+      .Finalize(&pop_ret_def);
+    OpImpl* pop_ret_op   = CreateOp(pop_ret_def);
+    OpContext* push_ctxt = ctxt->ExtractContext({0}, {});
+    OpContext* pop_ctxt  = ctxt->ExtractContext({}, {0});
 
     VLOG(V_DEBUG) << "Compiling GraphGradNode:\t" << op_def().name();
-    //CHECK_NOTNULL(forward_node_);
     //when the graphgrad node is compiled,
     //the graph node must have been compile already
     //that means its graph session has been set
-    //gsess_ = forward_node_->gsess_;
-    //CHECK_NOTNULL(gsess_);
-    //gsess_->SetOutputGradTensor(ctxt->inputs_(0));
-
     CHECK_NOTNULL(gsess_ = GetGraphSession(GetOriginName(op_def_.input(0))));
     
     CHECK(main_scope()->FindChildScope("Node"));
-    //CHECK(!main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node"))->IsSingleNode());
     ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node")));
     if (!sn){
       Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
@@ -174,10 +200,14 @@ Statement* GraphGradNode::Compile(
     }
     Statement* node_grad_stmt = sn->Compile(gsess_);
 
-    ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+    push_arg_stmt = new ExprStatement(push_arg_op, push_ctxt);
+    pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
     stmt_ = new GraphGradStatement(node_grad_stmt, gsess_->graph_scheduler());
-    dynamic_cast<GraphStatement*>(stmt_)->SetOp(op);
-    dynamic_cast<GraphStatement*>(stmt_)->SetContext(ctxt);
+    dynamic_cast<GraphGradStatement*>(stmt_)->SetGlobalContext(ctxt);
+    dynamic_cast<GraphGradStatement*>(stmt_)->SetPushArgStatement(push_arg_stmt);
+    dynamic_cast<GraphGradStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
   }
   return stmt_;
 }

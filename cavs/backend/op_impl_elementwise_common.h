@@ -31,12 +31,12 @@ class BinaryOp : public OpImpl {
   void Compute(OpContext* context) override {
     const Tensor& inp0 = context->Input(0);
     const Tensor& inp1 = context->Input(1);
-    //inp0.DebugNumerical<T>();
-    //inp1.DebugNumerical<T>();
+    inp0.DebugNumerical<T>();
+    inp1.DebugNumerical<T>();
     Tensor* out = context->Output(0);
     FUNCTOR::Compute(out->mutable_data<T>(), out->count(), 
         inp0.data<T>(), inp0.count(), inp1.data<T>(), inp1.count());
-    //out->DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 

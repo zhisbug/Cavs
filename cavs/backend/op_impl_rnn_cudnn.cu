@@ -324,8 +324,8 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
           LOG(INFO) << i;
         }
         CHECK(buf);
-        if (false && (g == 1 || g == 5))
-          checkCudaError(cudaMemset(buf, 0, count*sizeof(T)));
+        /*if (false && (g == 1 || g == 5))*/
+        checkCudaError(cudaMemset(buf, 0, count*sizeof(T)));
       }
     }
     checkCUDNNError(cudnnDestroyFilterDescriptor(desc));

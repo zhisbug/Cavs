@@ -158,14 +158,14 @@ class GraphOutputOpDecl : public OpDecl {
     CHECK(op_def_.output_size() == 1) << op_def_.DebugString();
     vector<string> var;
     vector<string> var_grad;
-    for (int i = 2; i < op_def_.input_size(); i++) {
+    for (int i = 1; i < op_def_.input_size(); i++) {
       var.push_back(op_def_.input(i));
       var_grad.push_back(GetGradientName(op_def_.input(i)));
     }
     OpDef graphout_grad;
     OpDefBuilder(GetGradientName("GraphOutput"))
-      //.Input(op_def_.input(0))
-      //.Input(op_def_.input(1))
+      //op_def_.input(0) is graph-structure
+      //op_def_.input(1) is underlying layer output
       .Input(GetGradientName(op_def_.output(0)))
       .Input(var)
       //Output should be the gradient of the variable
@@ -183,8 +183,8 @@ class GraphOutputGradOpDecl : public EmitOpDecl {
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {
     CHECK(out_shape->empty());
-    CHECK(inputs.size() > 1);
-    for (int i = 1; i < inputs.size(); i++) {
+    CHECK(inputs.size() > 2);
+    for (int i = 2; i < inputs.size(); i++) {
       out_shape->push_back(inputs[i]);
     }
   }

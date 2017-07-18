@@ -20,6 +20,7 @@ class EmbeddingLookupOpDecl : public OpDecl{
       .Input(op_def_.input(0))
       .Input(op_def_.input(1))
       .Output(GetGradientName(op_def_.input(1)))
+      .Output(GetGradientName(op_def_.input(0)))
       .Device(op_def_)
       .Finalize(&embed_grad);
     grad->push_back(std::move(embed_grad));
@@ -46,6 +47,7 @@ class EmbeddingLookupGradOpDecl : public OpDecl{
     CHECK(inputs.size() == 3);
     CHECK(out_shape->empty());
     out_shape->push_back(inputs[2]);
+    out_shape->push_back(inputs[1]);
   };
 };
 

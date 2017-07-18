@@ -9,10 +9,10 @@
 
 using namespace std;
 
-DEFINE_int32 (batch,       4,    "batch");
+DEFINE_int32 (batch,       1,    "batch");
 DEFINE_int32 (input_size,  10000, "input size");
-DEFINE_int32 (timestep,    20,    "timestep");
-DEFINE_int32 (hidden,      200,   "hidden size");
+DEFINE_int32 (timestep,    4,    "timestep");
+DEFINE_int32 (hidden,      10,   "hidden size");
 DEFINE_int32 (lstm_layers, 1,     "stacked lstm layers");
 DEFINE_int32 (epoch,       10,    "epochs");
 DEFINE_int32 (iters,       99999, "iterations");
@@ -79,7 +79,8 @@ int main(int argc, char* argv[]) {
   Sym embedding = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym LSTM_w    = Sym::Variable(DT_FLOAT, {var_size},
-                                Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                                //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                                Sym::Ones());
   Sym weight    = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                 Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias      = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
@@ -103,6 +104,16 @@ int main(int argc, char* argv[]) {
     //float sum = 0.f;
     //for (int j = 0; j < iterations; j++) {
       //sess.Run({perplexity}, {{input,input_ph[j%input_ph.size()].data()},
+                              //{label,label_ph[j%label_ph.size()].data()}});
+      //float ppx = *(float*)(perplexity.eval());
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                //<< "\tPPX:\t" << exp(ppx);
+      //sum += *(float*)(perplexity.eval());
+    //}
+    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    //float sum = 0.f;
+    //for (int j = 0; j < iterations; j++) {
+      //sess.Run({train, perplexity}, {{input,input_ph[j%input_ph.size()].data()},
                               //{label,label_ph[j%label_ph.size()].data()}});
       //float ppx = *(float*)(perplexity.eval());
       //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j

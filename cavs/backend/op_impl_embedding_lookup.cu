@@ -88,6 +88,7 @@ void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
   const Tensor& dY = context->Input(0);
   const Tensor& input = context->Input(1);
   Tensor* dMatrix= context->Output(0);
+  //we don't calculate the dX, because dX is not passed backward
 
   CHECK(dMatrix->dims() == 2);
   int vocabulary_size = dMatrix->dims(0);

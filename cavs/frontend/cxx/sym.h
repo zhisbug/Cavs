@@ -100,7 +100,7 @@ class Sym {
   //debug operations
   static void DumpGraph();
   void print();
-  const  void* eval() const;
+  const void* eval() const;
   //////////////////////////////////////////////////////////////////////////////
   //unary operation
   Sym Abs()            { return Abs(*this);          }

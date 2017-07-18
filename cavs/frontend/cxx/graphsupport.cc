@@ -10,40 +10,6 @@ using std::vector;
 Sym GraphSupport::Output() {
   VLOG(V_DEBUG) << "Generating node functions";
   vector<int> node_shape;
-  //{
-    //FuncConf::FuncDefineBegin("Inode");
-    //this->Inode();
-    //FunctionDef fi = FuncConf::FuncDefineEnd("Inode");
-    //VLOG(V_DEBUG) << fi.DebugString();
-    //string serialization;
-    //fi.SerializeToString(&serialization);
-
-    //int *dim = NULL;
-    //size_t dim_length = 0;
-    //C_AddFunction(serialization.c_str(), serialization.length(),
-                  //&dim, &dim_length);
-    //CHECK(dim_length > 0);
-    //inode_shape = vector<int>(dim, dim+dim_length);
-    //free(dim);
-  //}
-
-  //vector<int> leaf_shape;
-  //{
-    //FuncConf::FuncDefineBegin("Leaf");
-    //this->Leaf();
-    //FunctionDef fl = FuncConf::FuncDefineEnd("Leaf");
-    //string serialization;
-    //fl.SerializeToString(&serialization);
-
-    //int *dim = NULL;
-    //size_t dim_length = 0;
-    //C_AddFunction(serialization.c_str(), serialization.length(),
-                  //&dim, &dim_length);
-    //leaf_shape = vector<int>(dim, dim+dim_length);
-    //CHECK(dim_length > 0);
-    //free(dim);
-  //}
-  //CHECK(inode_shape == leaf_shape);
   
   {
     FuncConf::FuncDefineBegin("Node");
@@ -78,7 +44,6 @@ Sym GraphSupport::Output() {
                 .AttrSingle("MaxGraphNodeCount", max_graph_node_count)
                 .Finalize();
 
-  //def.add_output(output_name_);
   return Sym(def);
 }
 
@@ -90,20 +55,14 @@ Sym GraphSupport::Gather(int child,
                 .Device(raw_vertex_.device())
                 .Shape(shape)
                 .AttrSingle("Child", child)
-                //.AttrSingle("Offset", 0)
                 .Finalize();
-  //if (__internal_unit.empty()) {
-    //__internal_unit = shape; 
-  //}else {
-    //CHECK(__internal_unit == shape);
-  //}
   return Sym(def);
 }
 
 Sym GraphSupport::Pull(int offset,
     const std::vector<int>& shape) {
   OpDef def = OpDefBuilder("Pull")
-                .Input(raw_vertex_.output(0))
+                //.Input(raw_vertex_.output(0))
                 .Dtype(raw_vertex_.type())
                 .Device(raw_vertex_.device())
                 .Shape(shape)
@@ -117,18 +76,15 @@ void GraphSupport::Push(const Sym& s) {
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                //.AttrSingle("OutputName", output_name_)
                 .Finalize();
   Sym AddToFunction(def);
 }
 
 void GraphSupport::Scatter(const Sym& s) {
-  //CHECK(!__internal_unit.empty());
   OpDef def = OpDefBuilder("Scatter")
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
-                //.Shape(__internal_unit) //is this really needed?
                 .Finalize();
   Sym AddToFunction(def);
 }

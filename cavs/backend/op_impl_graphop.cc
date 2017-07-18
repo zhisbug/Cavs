@@ -30,6 +30,7 @@ class GraphGatherOp : public OpImpl {
     if (gs->HasChild()) {
       CHECK(gs->child_id().size() > child_offset_);
       int child_id = gs->child_id().at(child_offset_);
+      VLOG(V_DEBUG) << "Gathering Child_id:" << child_id;
       const Tensor& inp = gs->GetMessagePasser(child_id);
       CHECK(inp.count() == count_);
       CHECK(out->count() == inp.count())
@@ -42,6 +43,7 @@ class GraphGatherOp : public OpImpl {
                                 inp.count()*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
     }else {
+      VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
       checkCudaError(cudaMemset(out->mutable_data<T>(),
                                 0,
                                 out->count()*sizeof(T)));
@@ -103,6 +105,8 @@ class GraphPushOp : public OpImpl {
                               inp.count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
     gs->SetMessagePusher(*out);
+    inp.DebugNumerical<T>();
+    //out->DebugNumerical<T>();
   }
 };
 
@@ -146,15 +150,11 @@ class FetchUpperGradOp : public OpImpl {
     GraphScheduler* gs = context->graph_scheduler();
     const Tensor& inp = gs->GetMessagePusher();
     Tensor* out = context->Output(0);
-    CHECK(out->count() < inp.count());
+    CHECK(out->count() < inp.count()) << out->count() << "\t" << inp.count();
     CHECK(out->debug_size() == inp.debug_size());
-    VLOG(V_DEBUG) << "here";
     CHECK(inp.IsFullShape());
-    VLOG(V_DEBUG) << "here";
     CHECK(!out->IsFullShape());
-    VLOG(V_DEBUG) << "here";
     out->SetOffsetWithId(0);
-    VLOG(V_DEBUG) << "here";
     checkCudaError(cudaMemcpy(out->mutable_data<T>(),
                               inp.data<T>(),
                               inp.count()*sizeof(T),
@@ -172,6 +172,8 @@ class GraphOutputOp : public OpImpl {
     CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetMessagePusher();
     Tensor* out = context->Output(0);
+    CHECK(!inp.IsFullShape());
+    CHECK(out->IsFullShape());
     CHECK(out->debug_size() == inp.debug_size())
           << "Input count:\t" << inp.count()
           << "\t" << inp.debug_size() << "Bytes\n"
@@ -181,6 +183,8 @@ class GraphOutputOp : public OpImpl {
                               inp.data<T>(),
                               out->count()*sizeof(T),
                               cudaMemcpyDeviceToDevice));
+    inp.DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 
@@ -194,6 +198,7 @@ class GraphOutputGradOp : public OpImpl {
     GraphScheduler* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
     gs->SetMessagePusher(dy);
+    dy.DebugNumerical<T>();
   }
 };
 

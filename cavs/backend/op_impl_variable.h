@@ -93,12 +93,18 @@ inline void VariableOpImpl<FILLFUNCTOR, T, BCASTFUNCTOR>::Compute(OpContext* con
     FILLFUNCTOR(op_def_).Compute(out->mutable_data<T>(), out->count());
     //{
       //vector<float> buf;
-      //buf.resize(out->count(), 1);
+      //buf.resize(out->count(), 0);
       //FILE *fp = NULL;
-      //if (op_def_.output(0) == "Variable0") {
-        //fp = fopen("/users/shizhenx/projects/swCaffe/conv1", "rb");  
+      //if (op_def_.output(0) == "Variable_5") {
+        //fp = fopen("/users/shizhenx/projects/lstm_cuda/embedding.bin", "wb");  
+        //checkCudaError(cudaMemcpy(buf.data(),
+                                  //out->mutable_data<float>(),
+                                  //out->count()*sizeof(float),
+                                  //cudaMemcpyDeviceToHost));
         //CHECK(fp);
-        //LOG(INFO) << "v0";
+        //CHECK(fwrite(buf.data(), sizeof(float), out->count(), fp) == out->count());
+        //VLOG(V_DEBUG) << op_def_.DebugString();
+        //fclose(fp);
       //}
       //if (op_def_.output(0) == "Variable2") {
         //fp = fopen("/users/shizhenx/projects/swCaffe/conv2", "rb");  

@@ -74,17 +74,17 @@ void Scope::AddGraphOpTransformation(OpDef* new_def, const OpDef& def) {
     //or the ancestor scope(current scope == optimizer)
     CHECK_NOTNULL(func_scope);
     for (auto& iter : func_scope->in_edges_) {
-      //if (iter.second->isStateful()) {
-        //trainable_vars.insert(iter.second->name()); 
-      //}
-      inputs.insert(iter.second->name());
+      if (inputs.find(iter.second->name()) == inputs.end()) {
+        new_def->add_input(iter.second->name()); 
+        inputs.insert(iter.second->name());
+      }
     }
   }
 
-  new_def->clear_input(); 
-  for (auto& s : inputs) {
-    new_def->add_input(s); 
-  }
+  //new_def->clear_input(); 
+  //for (auto& s : inputs) {
+    //new_def->add_input(s); 
+  //}
   VLOG(V_DEBUG) << "new graph output info" << new_def->DebugString();
 }
 

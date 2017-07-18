@@ -19,7 +19,9 @@ class OpContext {
   inline int OutputSize() const;
   inline void AppendInput(const Tensor* t);
   inline void AppendOutput(Tensor* t);
+  inline OpContext* ExtractContext(const std::vector<int>& inp, const std::vector<int>& out);
 
+  //the followings are all optimizations
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
   inline void SetGraphScheduler(GraphScheduler* gs) {
@@ -35,6 +37,7 @@ class OpContext {
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
+
  private:
   inline static int dyn_dim() { return dyn_dim_; }
   std::vector<const Tensor*> inputs_;
@@ -69,6 +72,19 @@ inline void OpContext::AppendInput(const Tensor* t) {
 
 inline void OpContext::AppendOutput(Tensor* t) {
   outputs_.push_back(t); 
+}
+
+inline OpContext* OpContext::ExtractContext(const std::vector<int>& inp, const std::vector<int>& out) {
+  OpContext* ret = new OpContext();
+  for (int i : inp) {
+    CHECK(i < InputSize());
+    ret->AppendInput(inputs_[i]);
+  }
+  for (int i : out) {
+    CHECK(i < OutputSize());
+    ret->AppendOutput(outputs_[i]);
+  }
+  return ret;
 }
 
 } //namespace midend

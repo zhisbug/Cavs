@@ -82,8 +82,8 @@ void ActivationOpCudnn<T, mode>::Compute(OpContext* context) {
                   activation_desc_,
                   &alpha, x_desc_, x.data<T>(),
                   &beta, y_desc_, y->mutable_data<T>()));
-  /*x.DebugNumerical<T>();*/
-  /*y->DebugNumerical<T>();*/
+  x.DebugNumerical<T>();
+  y->DebugNumerical<T>();
 }
 
 template <typename T, cudnnActivationMode_t mode>

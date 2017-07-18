@@ -30,14 +30,13 @@ void ExprStatement::Run() {
 }
 
 void GraphStatement::Run() {
-  CHECK(op_);
-  CHECK(ctxt_);
-  //CHECK(leaf_);
-  //CHECK(inode_);
+  FunctionCallStatement::Run();
   CHECK(node_func_);
   CHECK(gscheduler_);
 
-  int output_length = gscheduler_->LoadGraph(ctxt_->Input(0));
+  push_arg_stmt_->Run();
+
+  int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   CHECK(output_length > 0);
   for (int i = 0; i < gscheduler_->batch(); i++) {
     gscheduler_->TrigerBatchId(i);
@@ -50,20 +49,17 @@ void GraphStatement::Run() {
     }
   }
 
-  ctxt_->SetDynDim(output_length);
-  ExprStatement::Run();
+  global_ctxt_->SetDynDim(output_length);
+  pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "Graphoutput done";
 }
 
 void GraphGradStatement::Run() {
-  CHECK(op_);
-  CHECK(ctxt_);
-  //CHECK(leaf_);
-  //CHECK(inode_);
+  FunctionCallStatement::Run();
   CHECK(node_func_);
   CHECK(gscheduler_);
 
-  ExprStatement::Run();
+  push_arg_stmt_->Run();
 
   gscheduler_->ReverseGraph();
   for (int i = 0; i < gscheduler_->batch(); i++) {
@@ -76,6 +72,8 @@ void GraphGradStatement::Run() {
       gscheduler_->ActivateNext();
     }
   }
+
+  pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "Graphoutput done";
 }
 

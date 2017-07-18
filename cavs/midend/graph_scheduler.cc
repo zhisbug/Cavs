@@ -9,7 +9,7 @@ namespace midend {
 
 int GraphScheduler::ToGlobalId(int local_id) const {
   //the version of seq-lstm requirements, will be loosened soon
-  CHECK(parent_ids_[0].size() == parent_ids_[1].size());
+  CHECK(parent_ids_[0].size() == parent_ids_[1].size() || parent_ids_.size() == 1);
   return sample_id_*parent_ids_[0].size() + local_id;
 }
 
