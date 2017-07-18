@@ -57,9 +57,16 @@ OpContext* GraphSession::GetContext(const Node* node) {
       ////all the outputs of the operators in the function are unique
       //CHECK(!t) << node->debug_info();
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
-      CHECK(!upper_t || (output->isGradient() && output->isVariable())) << upper_t->debug_info();
-      //We assume we do not support reshape operators in the body of a function
-      if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
+      //CHECK(!upper_t || (output->isGradient() && output->isVariable())) << upper_t->debug_info();
+      if (upper_t) {
+        VLOG(V_DEBUG) << "Found underlying tensor(" << upper_t->name()
+                      << "," << upper_t->count() << " elements"
+                      << ") for " << TensorNameInFunctionContext(output)
+                      << " with shape info: " << output->shape().DebugString();
+        VLOG(V_DEBUG) << "It must be the variable_grad(or its slice) tensor";
+        Tensor out(TensorNameInFunctionContext(output), *upper_t);
+        InsertTensor(out);
+      }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
         //and only share output(0) with input(0)
