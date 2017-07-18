@@ -177,9 +177,9 @@ class GraphOutputOpDecl : public OpDecl {
   }
 };
 
-class GraphOutputGradOpDecl : public EmitOpDecl {
+class GraphOutputGradOpDecl : public OpDecl {
  public:
-  GraphOutputGradOpDecl(const OpDef& def) : EmitOpDecl(def) {}
+  GraphOutputGradOpDecl(const OpDef& def) : OpDecl(def) {}
 
   void ShapeInference(vector<TensorShapeDef>* out_shape,
     const vector<TensorShapeDef>& inputs) override {

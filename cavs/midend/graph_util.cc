@@ -394,10 +394,8 @@ void GraphUtil::ComputeGradientForFunction(
       critical_path[func_scope->node2idx_.at(node)] = true;
       //Gather node is special, because it is a source node without input
       //so PartialGrad can not be applied to the Gather node differentiation
-      VLOG(V_DEBUG) << "here";
       const vector<OpDef>& grad_defs = 
         ::backend::MakeGradient(dynamic_cast<const SingleNode*>(node)->op_def()); 
-      VLOG(V_DEBUG) << "here";
       CHECK(grad_defs.size() == 1);
       grads.at(func_scope->node2idx_.at(node)).emplace(GetHash(grad_defs[0]), grad_defs[0]);
       CHECK(node->output_size() == 1);
@@ -405,18 +403,18 @@ void GraphUtil::ComputeGradientForFunction(
     }
     //for each optimizer/functionGrad, there must be a starting point
     //it is either a constant op(init = 1) or a buffer fetcher op
-    if (node->name() == "Push") {
-      OpDef fetchUpperGradOp;
-      OpDefBuilder("FetchUpperGrad")
-        .Output(GetGradientName(node->output(0)->name()))
-        .Shape(node->output(0)->shape())
-        .Device("GPU")
-        .Finalize(&fetchUpperGradOp);
-      func_grad_scope->AddOp(fetchUpperGradOp);
-      CHECK(node->output_size() == 1);
-      terminals.push_back(node->output(0));
-    }
-    if (node->name() == "Scatter") {
+    //if (node->name() == "Push") {
+      //OpDef fetchUpperGradOp;
+      //OpDefBuilder("FetchUpperGrad")
+        //.Output(GetGradientName(node->output(0)->name()))
+        //.Shape(node->output(0)->shape())
+        //.Device("GPU")
+        //.Finalize(&fetchUpperGradOp);
+      //func_grad_scope->AddOp(fetchUpperGradOp);
+      //CHECK(node->output_size() == 1);
+      //terminals.push_back(node->output(0));
+    //}
+    if (node->name() == "Push" || node->name() == "Scatter") {
       CHECK(node->output_size() == 1);
       terminals.push_back(node->output(0));
     }
