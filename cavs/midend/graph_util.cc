@@ -386,6 +386,7 @@ void GraphUtil::ComputeGradientForFunction(
   vector<unordered_map<size_t, OpDef>> grads(func_scope->typological_sorted_nodes_.size());
   vector<Edge*> origins;
   vector<Edge*> terminals;
+  VLOG(V_DEBUG) << "Computing gradient for function";
   for (auto* node : func_scope->typological_sorted_nodes_) {
     VLOG(V_DEBUG) << node->debug_info();
     if (node->name() == "Gather" || node->name() == "Pull") {
@@ -393,8 +394,10 @@ void GraphUtil::ComputeGradientForFunction(
       critical_path[func_scope->node2idx_.at(node)] = true;
       //Gather node is special, because it is a source node without input
       //so PartialGrad can not be applied to the Gather node differentiation
+      VLOG(V_DEBUG) << "here";
       const vector<OpDef>& grad_defs = 
         ::backend::MakeGradient(dynamic_cast<const SingleNode*>(node)->op_def()); 
+      VLOG(V_DEBUG) << "here";
       CHECK(grad_defs.size() == 1);
       grads.at(func_scope->node2idx_.at(node)).emplace(GetHash(grad_defs[0]), grad_defs[0]);
       CHECK(node->output_size() == 1);

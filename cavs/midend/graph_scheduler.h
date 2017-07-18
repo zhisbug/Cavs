@@ -23,11 +23,19 @@ class GraphScheduler {
     message_passer_.SetOffsetWithId(id);
     return message_passer_; 
   }
-  inline void SetMessagePusher(const Tensor t) { message_pusher_ = t; }
-  inline const Tensor& GetMessagePusher() {
-    if (!message_pusher_.IsFullShape())
-      message_pusher_.SetOffsetWithId(0);
-    return message_pusher_; 
+  inline void SetFuncArg(const Tensor t) { 
+    CHECK(t.IsFullShape());
+    func_arg_ = t;
+  }
+  inline const Tensor& GetFuncArg() {
+    return func_arg_; 
+  }
+  inline void SetFuncRet(const Tensor t) { 
+    CHECK(!t.IsFullShape());
+    func_ret_ = t;
+  }
+  inline const Tensor& GetFuncRet() {
+    return func_ret_; 
   }
 
   bool HasChild() const;
@@ -46,7 +54,8 @@ class GraphScheduler {
   int batch_;
   bool isForward_;
   Tensor message_passer_;
-  Tensor message_pusher_;
+  Tensor func_arg_;
+  Tensor func_ret_;
 };
 
 class BatchedGraphScheduler : public GraphScheduler {
