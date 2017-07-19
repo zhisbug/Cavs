@@ -168,10 +168,6 @@ class FunctionPopRetOp : public OpImpl {
     checkCudaError(cudaGetLastError());
     const Tensor& inp = gs->GetFuncRet();
     Tensor* out = context->Output(0);
-    LOG(INFO) << inp.count();
-    LOG(INFO) << out->count();
-    LOG(INFO) << inp.debug_info();
-    LOG(INFO) << out->debug_info();
     CHECK(inp.count() <= out->count());
     CHECK(inp.debug_size() == out->debug_size());
     checkCudaError(cudaMemcpy(out->mutable_data<T>(),
