@@ -49,15 +49,15 @@ class SeqModel : public GraphSupport {
     Sym LSTM_w = Sym::Variable(DT_FLOAT, {w_size},
                             //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
                             Sym::Ones());
-    Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size},
-                            //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-                            Sym::Zeros());
+    //Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size},
+                            ////Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                            //Sym::Zeros());
     U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);
     W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);
-    bi = LSTM_b.Slice(0, FLAGS_hidden);
-    bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
-    bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
-    bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
+    //bi = LSTM_b.Slice(0, FLAGS_hidden);
+    //bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
+    //bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
+    //bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
   }
 
   void Node() override {
@@ -73,16 +73,16 @@ class SeqModel : public GraphSupport {
     Sym i, f, u, o;
     tie(i, f, u, o) = tmp.Split4();
 
-    i = (i+bi.Mirror()).Sigmoid();//sigmoid_30
-    f = (f+bf.Mirror()).Sigmoid();//sigmoid_32
-    u = (u+bu.Mirror()).Tanh();//tanh_34
-    o = (o+bo.Mirror()).Sigmoid();
+    i = (i/*+bi.Mirror()*/).Sigmoid();//sigmoid_
+    f = (f/*+bf.Mirror()*/).Sigmoid();//sigmoid_
+    u = (u/*+bu.Mirror()*/).Tanh();//tanh_29
+    o = (o/*+bo.Mirror()*/).Sigmoid();
 
-    Sym c = i * u + f*child_c; //add_39
-    Sym h = o * Sym::Tanh(c.Mirror())/*tanh_41*/;//mul_42
+    Sym c = i * u + f/*sigmoid_28*/*child_c/*slice_10*/ /*mul_31*/; //add_33
+    Sym h = o * Sym::Tanh(c.Mirror()/*mirror_34*/)/*tanh_*/;//mul_36
 
-    Scatter(Sym::Concat({h.Mirror()/*mirror_43*/, c.Mirror()/*mirror_44*/}));
-    Push(h.Mirror()/*mirror_47*/);
+    Scatter(Sym::Concat({h.Mirror()/*mirror_37*/, c.Mirror()/*mirror_38*/}));
+    Push(h.Mirror()/*mirror_41*/);
   }
 
  private:
@@ -160,9 +160,9 @@ int main(int argc, char* argv[]) {
     //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
     //float sum = 0.f;
     //for (int j = 0; j < iterations; j++) {
-      //sess.Run({perplexity, train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                         //{label,    label_ph[j%label_ph.size()].data()},
-                         //{word_idx, input_ph[j%input_ph.size()].data()}});
+      //sess.Run({perplexity, train}, {{graph,    graph_ph[j%10].data()},
+                         //{label,    label_ph[j%10].data()},
+                         //{word_idx, input_ph[j%10].data()}});
       //float ppx = *(float*)(perplexity.eval());
       //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
                 //<< "\tPPX:\t" << exp(ppx);

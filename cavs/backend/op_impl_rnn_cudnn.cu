@@ -328,8 +328,45 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
         checkCudaError(cudaMemset(buf, 0, count*sizeof(T)));
       }
     }
+
     checkCUDNNError(cudnnDestroyFilterDescriptor(desc));
     this->initialized_ = true;
+  }
+
+  {
+    cudnnFilterDescriptor_t  desc;
+    checkCUDNNError(cudnnCreateFilterDescriptor(&desc));
+    for (int l = 0; l < this->num_layers_; l++) {
+      for (int g = 0; g < 8; g++) {
+        void *buf = NULL;
+        checkCUDNNError(cudnnGetRNNLinLayerBiasParams(
+              CudaCommon::cudnnHandle(),
+              this->rnn_desc_,
+              l,
+              this->x_desc_[0],
+              this->w_desc_,
+              context->Input(1).mutable_data<T>(),
+              g,
+              desc,
+              &buf));
+        cudnnDataType_t dt;
+        cudnnTensorFormat_t tf;
+        vector<int> dims(3);
+        int nbDims;
+        checkCUDNNError(cudnnGetFilterNdDescriptor(desc,
+              3, &dt, &tf, &nbDims, dims.data()));
+        LOG(INFO) << "Init bias...";
+        int count = 1;
+        for (auto i : dims) {
+          count *= i;
+          LOG(INFO) << i;
+        }
+        CHECK(buf);
+        /*if (false && (g == 1 || g == 5))*/
+        checkCudaError(cudaMemset(buf, 0, count*sizeof(T)));
+      }
+    }
+    checkCUDNNError(cudnnDestroyFilterDescriptor(desc));
   }
 
   {
@@ -373,9 +410,9 @@ void RNNOpCudnn<T>::Compute(OpContext* context) {
         this->y_desc_.data(),
         Y->mutable_data<T>(),
         this->hy_desc_,
-        nullptr, //this->rnn_hy_, //HY->mutable_data<T>(),
+        /*nullptr,*/ this->rnn_hy_, //HY->mutable_data<T>(),
         this->cy_desc_,
-        nullptr, //this->rnn_cy_, //CY->mutable_data<T>(),
+        /*nullptr,*/ this->rnn_cy_, //CY->mutable_data<T>(),
         this->rnn_workspace_,
         this->rnn_workspace_sizeInBytes_,
         this->rnn_trainningreserve_,

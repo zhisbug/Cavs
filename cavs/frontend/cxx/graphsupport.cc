@@ -44,6 +44,7 @@ Sym GraphSupport::Output() {
                 .AttrSingle("MaxGraphNodeCount", max_graph_node_count)
                 .Finalize();
 
+  VLOG(V_DEBUG) << "Generating node functions done";
   return Sym(def);
 }
 

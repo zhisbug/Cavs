@@ -56,7 +56,10 @@ void OpContext::ScaleTensor() {
 void OpContext::SetZero() {
   for (auto* t : outputs_) {
     if (t->ZeroInitEnforced()) {
+      VLOG(V_DEBUG) << "-------------------------------------------------------";
+      VLOG(V_DEBUG) << "Setting Zero for " << t->name() << " in round " << round();
       t->InitWithZero(round());
+      VLOG(V_DEBUG) << "-------------------------------------------------------";
     }
   }
 }

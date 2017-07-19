@@ -93,15 +93,16 @@ void Tensor::DebugNumerical<float>() const {
     VLOG(V_EXHAUSTIVE_DEBUG) << name()
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;
-    for (int i = 0; i < 40 && i < count(); i++)
+    for (int i = 0; i < 880 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
     L2_norm = 0;
     checksum  = 0;
-    if (name() == "main:Optimizer_12:Variable_3_grad") {
+    if (name() == "main:Optimizer_12:Variable_3_grad" ||
+        name() == "main:Variable_3") {
       for (int i = 0; i < 800; i++) {
-        VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
-                << std::setprecision(15) << res[i];
+        //VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
+                //<< std::setprecision(15) << res[i];
         L2_norm += res[i]*res[i]; 
         checksum += res[i];
       }
@@ -158,9 +159,16 @@ Tensor::Tensor(const std::string& name, const Tensor& t) {
   params_.reset(new Params());
   params_->type = t.params_->type;
   //I don't know whether it is necessary for the followings
-  params_->offset = t.params_->offset;
-  params_->dynamic = t.params_->dynamic;
-  params_->zero_init_enforced = t.params_->zero_init_enforced;
+  //After one-day debugging, I found assign operator(share memory)
+  //lead to one buffer initialized twice. It is a fatal bug.
+  //share memory is an optimization to avoid redudant memory copy/allocation
+  //but the output tensor should have its own behavior.
+  //So the following configuration should not be copied
+  //Actually, the reset shape is called 
+  //params_->offset = t.params_->offset;
+  //params_->dynamic = t.params_->dynamic;
+  //params_->zero_init_enforced = t.params_->zero_init_enforced;
+  //params_->iteration = t.params_->iteration;
 } 
 
 Tensor& Tensor::operator =(const Tensor& t) {
@@ -281,8 +289,10 @@ bool Tensor::InitWithZero(int iteration) {
   if (params_->iteration == iteration-1) {
     buf_->InitWithZero();
     params_->iteration++;
+    VLOG(V_DEBUG) << "Setting Zero for " << name() << " in round " << params_->iteration;
     return true;
   }else if (params_->iteration == iteration) {
+    VLOG(V_DEBUG) << "Has been Set Zero " << name() << " in round " << params_->iteration;
     return false;
   }else {
     LOG(FATAL) <<  "Illegal iteration: "

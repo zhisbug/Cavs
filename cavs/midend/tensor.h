@@ -117,14 +117,14 @@ class Tensor {
   friend class SessionBase;
 
   struct Params {
-    Params() : offset(0), dynamic(false), zero_init_enforced(false),
-               iteration(0), type(DataType(0)) {}
+    Params() : type(DataType(0)), offset(0), dynamic(false),
+               zero_init_enforced(false), iteration(0) {}
+    DataType type;
     size_t offset;
     //if a tensor is dynamic at first, it is dynamic at last
     bool dynamic;
     bool zero_init_enforced;
     int iteration;
-    DataType type;
   };
 
  private:

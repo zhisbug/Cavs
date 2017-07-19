@@ -27,13 +27,13 @@ class Sym {
   int                  output_size()   const;
   std::vector<string>  output()        const;
   std::vector<int>     shape(int idx)  const;
-  inline DataType      type()          const { return def().dtype();      }
-  inline DeviceType    device()        const { return def().device();     }
-  inline const string& op_name()       const { return def().name();       }
-  inline const OpDef&  def()           const { return node_->op_def;      }
-  inline OpDef*        mutable_def()         { return &(node_->op_def);   }
-  inline const void*   data()          const { return node_->raw_data;    }
-  inline void**        mutable_data()        { return &(node_->raw_data); }
+  inline DataType      type()          const { return def().dtype();                          }
+  inline DeviceType    device()        const { return def().device();                         }
+  inline const string& op_name()       const { return def().name();                           }
+  inline const OpDef&  def()           const { CHECK(node_.get()); return node_->op_def;      }
+  inline OpDef*        mutable_def()         { CHECK(node_.get()); return &(node_->op_def);   }
+  inline const void*   data()          const { CHECK(node_.get()); return node_->raw_data;    }
+  inline void**        mutable_data()        { CHECK(node_.get()); return &(node_->raw_data); }
 
   typedef std::pair<string, std::vector<OpDef::AttrDef>> ATTRIBUTE;
 

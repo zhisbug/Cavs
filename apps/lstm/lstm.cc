@@ -89,7 +89,8 @@ int main(int argc, char* argv[]) {
                        .Reshape({FLAGS_timestep*FLAGS_batch, FLAGS_hidden})
                        .FullyConnected(weight, bias)
                        .SoftmaxEntropyLoss(label.Reshape({FLAGS_timestep*FLAGS_batch,1}));
-  Sym train     = loss.Optimizer({}, FLAGS_lr, 5);
+  //Sym train     = loss.Optimizer({}, FLAGS_lr, 5);
+  Sym train     = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
   Session sess;
@@ -113,8 +114,8 @@ int main(int argc, char* argv[]) {
     //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
     //float sum = 0.f;
     //for (int j = 0; j < iterations; j++) {
-      //sess.Run({train, perplexity}, {{input,input_ph[j%input_ph.size()].data()},
-                              //{label,label_ph[j%label_ph.size()].data()}});
+      //sess.Run({train, perplexity}, {{input,input_ph[j%10].data()},
+                              //{label,label_ph[j%10].data()}});
       //float ppx = *(float*)(perplexity.eval());
       //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
                 //<< "\tPPX:\t" << exp(ppx);

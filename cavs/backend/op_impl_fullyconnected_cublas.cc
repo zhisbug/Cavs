@@ -146,6 +146,13 @@ void FullyConnectedGradOpCublas<T>::Compute(OpContext* context) {
       batchN, K, Out, 1.f, dY.data<T>(), W.data<T>(),
       0, dX->mutable_data<T>());
 
+  dY.DebugNumerical<T>();
+  X.DebugNumerical<T>();
+  W.DebugNumerical<T>();
+  B.DebugNumerical<T>();
+  dW->DebugNumerical<T>();
+  dB->DebugNumerical<T>();
+  dX->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("FullyConnected").Device("GPU"), FullyConnectedOpCublas<float>);
