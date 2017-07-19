@@ -76,7 +76,7 @@ class Tensor {
   inline DataType data_type()     const { return params_->type;       }
   //inline void SetAsDynamic() { dynamic_= true; }
   //for opeators
-  inline size_t count()      const { return shape_.n_elements(); }
+  inline int count()         const { return shape_.n_elements(); }
   inline int dims()          const { return shape_.dim();        }
   inline int dims(int idx)   const { return shape_.dim(idx);     }
   inline size_t debug_size() const { return buf_->size();        }

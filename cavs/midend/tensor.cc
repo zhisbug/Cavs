@@ -93,7 +93,7 @@ void Tensor::DebugNumerical<float>() const {
     VLOG(V_EXHAUSTIVE_DEBUG) << name()
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;
-    for (int i = 0; i < 880 && i < count(); i++)
+    for (int i = 0; i < 10 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
     L2_norm = 0;
@@ -218,11 +218,16 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
   int new_counts = 1;
   for (auto& dim : shape.dim())
     new_counts *= dim;
-  if (new_counts != count()) {
-    CHECK(shape.dim(0) == -1) << new_counts << "\tvs\t" << count();
-    //dynamic_ = true;
+  if (shape.dim(0) == -1) {
     params_->dynamic = true;
+  }else {
+    CHECK(new_counts == count());
   }
+  //if (new_counts != count()) {
+    //CHECK(shape.dim(0) == -1) << new_counts << "\tvs\t" << count();
+    ////dynamic_ = true;
+    //params_->dynamic = true;
+  //}
   shape_ = TensorShape(shape);
 }
 
@@ -232,14 +237,23 @@ void Tensor::Reshape(const vector<int>& dims) {
   int new_counts = 1;
   for (auto& dim : dims)
     new_counts *= dim;
-  CHECK(new_counts == count() || dims[0] == -1)
-       << new_counts << "\tvs\t" << count();
+  if (dims[0] == -1) {
+    params_->dynamic = true;
+  }else {
+    CHECK(new_counts == count());
+  }
+  //CHECK(new_counts == count() || dims[0] == -1)
+       //<< new_counts << "\tvs\t" << count();
   shape_ = TensorShape(dims);
 }
 
 void Tensor::Reshape(const Tensor& t) {
-  CHECK(t.count() == count());
   CHECK_NOTNULL(params_.get());
+  if (t.dims(0) == -1) {
+    params_->dynamic = true;
+  }else {
+    CHECK(t.count() == count());
+  }
   shape_ = t.shape_;
 }
 

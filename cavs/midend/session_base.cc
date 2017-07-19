@@ -63,6 +63,7 @@ OpContext* SessionBase::GetContext(const Node* node) {
                   << ") for " << output->scoped_name()
                   << " with shape info: " << output->shape().DebugString();
         Tensor out(output->scoped_name(), *upper_t);
+        out.Reshape(output->shape());
         InsertTensor(out);
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory

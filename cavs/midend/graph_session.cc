@@ -65,6 +65,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
                       << " with shape info: " << output->shape().DebugString();
         VLOG(V_DEBUG) << "It must be the variable_grad(or its slice) tensor";
         Tensor out(TensorNameInFunctionContext(output), *upper_t);
+        out.Reshape(output->shape());
         InsertTensor(out);
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
