@@ -68,7 +68,7 @@ class SeqModel : public GraphSupport {
     x           = x.EmbeddingLookup(embedding.Mirror());
 
     Sym tmp = Sym::MatMul(x, U.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
-            + Sym::MatMul(child_h.Expand_dims(0), W.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
+            + Sym::MatMul(child_h.Expand_dims(0), W.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}));//add_22
 
     Sym i, f, u, o;
     tie(i, f, u, o) = tmp.Split4();
