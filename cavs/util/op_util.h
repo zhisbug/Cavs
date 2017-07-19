@@ -22,3 +22,4 @@ size_t GetHash(const OpDef& op_def);
 
 bool IsVariableName(const std::string& edge);
 bool IsGradientName(const std::string& edge);
+bool IsStatefulName(const std::string& node);

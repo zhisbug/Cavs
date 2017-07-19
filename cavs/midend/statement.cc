@@ -52,7 +52,7 @@ void GraphStatement::Run() {
   }
 
   pop_ret_stmt_->Run();
-  VLOG(V_DEBUG) << "Graphoutput done";
+  VLOG(V_DEBUG) << "GraphOutput done";
 }
 
 void GraphGradStatement::Run() {
@@ -75,7 +75,7 @@ void GraphGradStatement::Run() {
   }
 
   pop_ret_stmt_->Run();
-  VLOG(V_DEBUG) << "Graphoutput done";
+  VLOG(V_DEBUG) << "GraphOutputGrad done";
 }
 
 } //namespace midend

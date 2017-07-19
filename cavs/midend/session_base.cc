@@ -90,6 +90,10 @@ OpContext* SessionBase::GetContext(const Node* node) {
     }
     t = GetTensor(output->scoped_name());
     CHECK(t) << t->debug_info();
+    if (node->IsStatefulOp()) {
+      CHECK(node->output_size() == 1);
+      const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
+    }
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;

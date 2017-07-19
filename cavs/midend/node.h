@@ -7,6 +7,7 @@
 #include "cavs/midend/statement.h"
 #include "cavs/proto/op_def.pb.h"
 #include "cavs/util/logging.h"
+#include "cavs/util/op_util.h"
 
 #include <string>
 #include <vector>
@@ -34,6 +35,7 @@ class Node {
   inline const std::vector<Edge*>& output()             const;
   inline int                       output_size()        const;
   inline const std::vector<Edge*>& control_dependency() const;
+  inline bool                      IsStatefulOp()       const;
   std::vector<TensorShapeDef>      input_shapes()       const;
 
   void AddInput(const Edge* e);
@@ -161,6 +163,10 @@ inline int Node::output_size() const {
 
 inline const std::vector<Edge*>& Node::control_dependency() const {
   return control_dependency_;
+}
+
+inline bool Node::IsStatefulOp() const {
+  return IsStatefulName(name());
 }
 
 } //namespace midend

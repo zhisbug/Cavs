@@ -42,6 +42,10 @@ bool IsGradientName(const string& edge) {
   return (edge.length() > 5 && edge.substr(edge.length()-5, 5) == "_grad");
 }
 
+bool IsStatefulName(const string& node) {
+  return (node == "Accumulate" || node == "PartialAccumulate");
+}
+
 #define INSTANTIATE_GETSINGLEARG(T, fieldname)      \
   template<>                                        \
   T GetSingleArg<T>(const OpDef& op_def,            \

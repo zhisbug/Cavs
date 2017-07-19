@@ -51,9 +51,9 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //So here we loose the constraint, if "t" exists, we set the tensor as
     //ZeroInitEnforced, and the computation is +=
     const Tensor* t = GetTensor(TensorNameInFunctionContext(output));
-    if (t) {
-      const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
-    }else {
+    //if (t) {
+      //const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
+    if (!t) {
       ////all the outputs of the operators in the function are unique
       //CHECK(!t) << node->debug_info();
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
@@ -111,6 +111,10 @@ OpContext* GraphSession::GetContext(const Node* node) {
         InsertTensor(out);
       }
       CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
+    }
+    if (node->IsStatefulOp()) {
+      CHECK(node->output_size() == 1);
+      const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
