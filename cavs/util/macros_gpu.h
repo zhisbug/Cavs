@@ -20,7 +20,7 @@
     do {                                         \
       cublasStatus_t err = (stmt);               \
       if (err != CUBLAS_STATUS_SUCCESS) {        \
-        LOG(FATAL) << "CUDA failure: "           \
+        LOG(FATAL) << "CUBLAS failure: "         \
                    << err;                       \
       }                                          \
     }while(0)
