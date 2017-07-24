@@ -1,3 +1,5 @@
+ADD_SUBDIRECTORY(runtime_compiler)
+
 FILE(GLOB curr_cxx_srcs *.cc)
 FILE(GLOB curr_test_srcs *_test.cc)
 FOREACH(test ${curr_test_srcs})

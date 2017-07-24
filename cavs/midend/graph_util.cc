@@ -142,19 +142,12 @@ void GraphUtil::GenGradient(Scope* loss_scope,
   CHECK(critical_path.size() == grads.size());
   CHECK(critical_path.size() == s_->typological_sorted_nodes_.size());
   VLOG(V_DEBUG) << "Forwarding...";
-  //unordered_map<int, GraphNode*> gnode_map;
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
       VLOG(V_DEBUG) << "[" << i << "]:\n"
                     << dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def().DebugString();
       CHECK(s_->typological_sorted_nodes_[i]->IsSingleNode());
       SingleNode* node = loss_scope->AddOp(dynamic_cast<SingleNode*>(s_->typological_sorted_nodes_[i])->op_def());
-      //if (node->IsGraphOp()) {
-        //gnode_map[i] = dynamic_cast<GraphNode*>(node);
-      //}
-      //we have to loose this constraint because of dependency support
-      //the dependent node does not need to backward.
-      //CHECK(!grads[i].empty());
     }else {
       CHECK(grads[i].empty());
     }
@@ -453,9 +446,9 @@ void GraphUtil::ComputeGradientForFunction(
       Node* node = func_scope->typological_sorted_nodes_[i];
       CHECK(node->output_size() == 1);
       if (node->output(0)->dst_size(true) > 1) {
-        VLOG(V_DEBUG) << "=============HHH==================";
+        //VLOG(V_DEBUG) << "=============HHH==================";
         VLOG(V_DEBUG) << node->output(0)->debug_info();
-        VLOG(V_DEBUG) << "=============HHH==================";
+        //VLOG(V_DEBUG) << "=============HHH==================";
         //sleep(3);
       }
     }

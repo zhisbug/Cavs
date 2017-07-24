@@ -1,3 +1,6 @@
+#ifndef CAVS_MIDEND_RUNTIME_COMPILER_CUDARTC_WRAPPER_H_
+#define CAVS_MIDEND_RUNTIME_COMPILER_CUDARTC_WRAPPER_H_
+
 #include "cavs/util/macros_gpu.h"
 
 #include <nvrtc.h>
@@ -25,7 +28,7 @@
 
 
 namespace midend {
-namespace cudaRTC {
+namespace RTC {
 
 class CudaRTCFunction {
  public:
@@ -96,5 +99,7 @@ class CudaRTCFunction {
   int flags_num_;
 };
 
-} //namespace cudaRTC
+} //namespace RTC
 } //namespace midend
+
+#endif

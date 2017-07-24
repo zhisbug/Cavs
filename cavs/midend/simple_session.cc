@@ -26,7 +26,7 @@ void SimpleSession::DepthSearch(Node* curr,
     //(*include)[curr] = true;
     VLOG(V_DEBUG) << curr->debug_info();
     if (curr->IsScopedNode())
-    include->insert(curr);
+      include->insert(curr);
     if (!isSource) {
       for (auto* edge : curr->input()) {
         CHECK(edge->src_size() == 1 || edge->isVariable());
