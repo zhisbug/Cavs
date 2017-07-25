@@ -71,6 +71,7 @@ class CudaRTCFunction {
     module_loaded_ = true;
     checkCUDADriverError(cuModuleGetFunction(&kernel_, module_, name.c_str()));
   }
+
   void Launch(const std::vector<void*>& outputs,
               const std::vector<void*>& inputs,
               unsigned int num_elements,

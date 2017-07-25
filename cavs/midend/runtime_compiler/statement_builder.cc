@@ -1,4 +1,5 @@
 #include "cavs/midend/runtime_compiler/statement_builder.h"
+#include "cavs/midend/runtime_compiler/code_generator.h"
 #include "cavs/util/logging.h"
 
 #include <vector>
@@ -12,31 +13,28 @@ using std::string;
 namespace midend {
 namespace RTC {
 
-Expression* buildExpression(const string& op, const Node* node) {
+ExprStatementBuilder& ExprStatementBuilder::SetNode(Node* node) {
   static unordered_map<string, string> bin_ops =
     {{"Add", "+"}, {"Minus", "-"}, {"Mul", "*"}};
-  static unordered_map<string, string> assign_ops =
-    {{"Assign", "="}};
-  if (bin_ops.find(op) != bin_ops.end()) {
+  string right_hand;
+  if (bin_ops.find(node->name()) != bin_ops.end()) {
     CHECK(node->input_size() == 2);
     CHECK(node->output_size() == 1);
-    return new BinaryExpression(op, node->input(0)->name(), node->input(1)->name());
-  }else if (assign_ops.find(op) != assign_ops.end()) {
-    CHECK(node->input_size() == 2);
-    CHECK(node->output_size() == 1);
-    return new AssignExpression(op, node->input(0)->name(), node->input(1)->name());
+    right_hand = BinaryExpression(bin_ops.at(node->name()),
+        CodeGenerator::PrefixedVar(node->input(0)->name()),
+        CodeGenerator::PrefixedVar(node->input(1)->name())).toCode();
   }else {
     LOG(FATAL) << "Wrong node";
   }
+  CHECK(!ae_);
+  ae_ = new AssignExpression("=",
+      CodeGenerator::PrefixedVar(node->output(0)->name()), 
+      right_hand);
+  return *this;
 }
 
-ExprStatement* buildExprStatement(Expression* e) {
-  CHECK(e->isAssignExpression());
-  return new ExprStatement(dynamic_cast<AssignExpression*>(e));
-}
-
-VarDeclStatement* buildVarDeclStatement(DataType t, AssignExpression* ae) {
-  return new VarDeclStatement(t, ae);
+string ExprStatementBuilder::toCode() const {
+  return ExprStatement(ae_).toCode(); 
 }
 
 } //namespace RTC

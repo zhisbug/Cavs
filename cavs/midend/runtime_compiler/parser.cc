@@ -40,7 +40,7 @@ int Parser::FindGroup(int id) const{
   return parent_id;
 }
 
-void Parser::GenerateGroup() {
+int Parser::GenerateGroup() {
   auto iter = nodes_->begin();
   for (int i = 0; i < nodes_->size(); i++, iter++) {
     if (isFusable(*iter)) {
@@ -70,11 +70,14 @@ void Parser::GenerateGroup() {
   for (auto& iter : group_info) {
     group_contents_.push_back(std::move(iter.second)); 
   }
+
+  return group_contents_.size();
 }
 
-void Parser::FuseGroup(int gid, list<Edge*>* in_edge, list<Edge*>* out_edge) {
+void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<Edge*>* out_edge) {
   //currently, we only fuse one group for accuracy testing
   CHECK(gid < group_contents_.size());
+  CHECK(nodes->empty());
   CHECK(in_edge->empty());
   CHECK(out_edge->empty());
   unordered_map<Edge*, int> out_edge_times;
@@ -99,6 +102,7 @@ void Parser::FuseGroup(int gid, list<Edge*>* in_edge, list<Edge*>* out_edge) {
       CHECK(out_edge_times.find(oe) == out_edge_times.end());
       out_edge_times[oe] = oe->dst_size(); 
     }
+    nodes->push_back(*std::next(nodes_->begin(), id));
   }
 
   for (auto iter : out_edge_times) {

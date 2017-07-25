@@ -17,10 +17,9 @@ namespace RTC {
 class Parser {
  public:
   Parser(std::list<Node*>* n);
-  void GenerateGroup();
-  void FuseGroup(int gid, std::list<Edge*>* in_edge, std::list<Edge*>* out_Edge);
+  int GenerateGroup();
+  void FuseGroup(int gid, std::list<Node*>* nodes, std::list<Edge*>* in_edges, std::list<Edge*>* out_Edges);
   void Finalize();
-  Expression* CreateExpression(Node* node) const;
 
 
  private:

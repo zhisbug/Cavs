@@ -19,6 +19,11 @@ void Edge::AddDst(Node* node) {
     same_scoped_dsts_.push_back(node);
 }
 
+DataType Edge::dtype() const {
+  CHECK(src_size() > 0 && src(0)->IsSingleNode());
+  return dynamic_cast<SingleNode*>(src(0))->op_def().dtype();
+}
+
 void Edge::AddSource(Node* node) {
   //we loose the constraint to gradients.
   //In the lstm cases, one tensor should be 

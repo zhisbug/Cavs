@@ -19,7 +19,7 @@ class Expression : public Base {
   Expression(std::string op) : op_(op) {}
   virtual bool isAssignExpression() const { return false; }
 
- private:
+ protected:
   std::string op_;
 };
 
@@ -28,7 +28,7 @@ class UnaryExpression : public Expression {
   UnaryExpression(std::string op, std::string operand)
     : Expression(op), operand_(operand) {}
   std::string toCode() const override {
-    LOG(FATAL) << "Not implemented yet";
+    return op_ + "(" + operand_ + ")";
   }
 
  private:
@@ -40,10 +40,10 @@ class BinaryExpression : public Expression {
   BinaryExpression(std::string op, std::string loperand, std::string roperand)
     : Expression(op), loperand_(loperand), roperand_(roperand) {}
   std::string toCode() const override {
-    LOG(FATAL) << "Not implemented yet";
+    return "(" + loperand_ + " " + op_ + " " + roperand_ + ")";
   }
 
- private:
+ protected:
   std::string loperand_;
   std::string roperand_;
 };
@@ -54,7 +54,7 @@ class AssignExpression : public BinaryExpression {
     : BinaryExpression(op, loperand, roperand) {}
   bool isAssignExpression() const override { return true; }
   std::string toCode() const override {
-    LOG(FATAL) << "Not implemented yet";
+    return loperand_ + " " + op_ + " " + roperand_;
   }
 };
 
@@ -69,21 +69,9 @@ class ExprStatement : public Statement {
  public:
   ExprStatement(AssignExpression* ae) : ae_(ae) {}
   std::string toCode() const override {
-    LOG(FATAL) << "Not implemented yet";
+    return ae_->toCode() + ";\n";
   }
  private:
-  AssignExpression* ae_;
-};
-
-class VarDeclStatement: public Statement {
- public:
-  VarDeclStatement(DataType t, AssignExpression* e)
-    : type_(t), ae_(e) {}
-  std::string toCode() const override {
-    LOG(FATAL) << "Not implemented yet";
-  }
- private:
-  DataType type_;
   AssignExpression* ae_;
 };
 

@@ -7,10 +7,16 @@
 namespace midend {
 namespace RTC {
 
-Expression* buildExpression(const std::string& op, const Node* node);
+class ExprStatementBuilder {
+ public:
+  ~ExprStatementBuilder() { if (ae_) free (ae_); }
+  ExprStatementBuilder& SetNode(Node* n);
+  std::string toCode() const;
 
-ExprStatement* buildExprStatement(Expression* e);
-ExprStatement* buildVarDeclStatement(AssignExpression* ae);
+ private:
+  AssignExpression* ae_;
+  DISALLOW_COPY_AND_ASSIGN(ExprStatementBuilder);
+};
 
 } //namespace RTC
 } //namespace midend

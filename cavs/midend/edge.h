@@ -40,6 +40,7 @@ class Edge {
 
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
+  DataType dtype() const;
 
   std::string debug_info() const;
 
@@ -85,10 +86,6 @@ inline void Edge::SetShape(const TensorShapeDef& def) {
 inline const TensorShapeDef& Edge::shape() const {
   return tensor_shape_; 
 }
-
-//inline void Edge::RemoveDst(Node* node) {
-  //std::remove(dsts_.begin(), dsts_.end(), node); 
-//}
 
 inline Node* Edge::src(int idx, bool within) const {
   CHECK(idx < src_size(within));
