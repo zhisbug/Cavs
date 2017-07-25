@@ -8,7 +8,7 @@ namespace RTC {
 
 class CodeGenerator {
  public:
-  CodeGenerator(std::list<Node*>* n) : parser_(n) {}
+  CodeGenerator(std::list<Node*>* n);
   static std::string PrefixedVar(std::string var) {
     return "tmp_" + var; 
   }

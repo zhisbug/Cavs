@@ -15,7 +15,7 @@ class ExprStatementBuilder {
 
  private:
   AssignExpression* ae_;
-  DISALLOW_COPY_AND_ASSIGN(ExprStatementBuilder);
+  //DISALLOW_COPY_AND_ASSIGN(ExprStatementBuilder);
 };
 
 } //namespace RTC
