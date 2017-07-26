@@ -40,7 +40,11 @@ namespace Ewise {
 
 string EwiseGenBodyThreadIndexing(const string& inner) {
   string idx = "const int idx = blockIdx.x * blockDim.x + threadIdx.x;\n";
-  idx += "if (idx < n_elements) {\n" + inner + "\n}";
+  idx += "if (idx < n_elements) {\n";
+  idx += "printf(\"%f, %f, %f\\n\", Placeholder_0[idx], Placeholder_1[idx], Placeholder_2[idx]);\n";
+  idx += inner;
+  idx += "\n}";
+
   return idx;
 }
 

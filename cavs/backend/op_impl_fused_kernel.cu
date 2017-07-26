@@ -33,7 +33,7 @@ void FusedKernelOpImpl<T>::Compute(OpContext* context) {
   vector<void*> inputs;
   const int num_elements = context->Input(0).count();
   for (int i = 0; i < context->OutputSize(); i++) {
-    outputs.push_back((void*)context->Output(i)->mutable_data<T>()); 
+    outputs.push_back((void*)(context->Output(i)->mutable_data<T>())); 
     CHECK(context->Output(i)->count() == num_elements);
   }
   for (int i = 0; i < context->InputSize(); i++) {
@@ -43,6 +43,12 @@ void FusedKernelOpImpl<T>::Compute(OpContext* context) {
   wrapper_.Launch(outputs, inputs, num_elements, 
       BLOCKS_PER_GRID(num_elements), 1, 1,
       THREADS_PER_BLOCK, 1, 1);
+  for (int i = 0; i < context->OutputSize(); i++) {
+    context->Output(i)->DebugNumerical<T>();
+  }
+  for (int i = 0; i < context->InputSize(); i++) {
+    context->Input(i).DebugNumerical<T>();
+  }
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("FusedKernel").Device("GPU"), FusedKernelOpImpl<float>);
