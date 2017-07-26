@@ -13,8 +13,7 @@
 class Session {
  public:
   Session(std::string name = "SimpleSession") {
-    s_ = C_NewSession(
-        name.c_str(), name.length());
+    s_ = C_NewSession(name.c_str(), name.length());
   }
 
   void Run(std::vector<Sym> outputs,
@@ -32,10 +31,13 @@ class Session {
 
 class MPISession : public Session {
  public:
-  MPISession(std::string name = "MPISession") 
-    : Session(name) {}
+  MPISession(std::string name = "MPISession") : Session(name) {}
+  //int id;
+};
 
-  int id;
+class FusionSession : public Session {
+ public:
+  FusionSession(std::string name = "FusionSession") : Session(name) {}
 };
 
 #endif

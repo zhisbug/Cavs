@@ -6,8 +6,8 @@
 using namespace std;
 
 int main() {
-  Sym A = Sym::Variable(C_FLOAT, {2, 3}, Sym::Ones()); 
-  Sym B = Sym::Placeholder(C_FLOAT, {2, 3});
+  Sym A = Sym::Variable(DT_FLOAT, {2, 3}, Sym::Ones()); 
+  Sym B = Sym::Placeholder(DT_FLOAT, {2, 3});
   Sym C = A * B;
   Sym D = C.Optimizer({A}, 0.1f, 2);
   Sym::DumpGraph();

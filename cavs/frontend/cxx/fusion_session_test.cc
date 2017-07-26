@@ -8,13 +8,18 @@ using namespace std;
 int main() {
   Sym A = Sym::Placeholder(DT_FLOAT, {2, 3}); 
   Sym B = Sym::Placeholder(DT_FLOAT, {2, 3});
-  Sym C = A + B;
+  Sym C = Sym::Placeholder(DT_FLOAT, {2, 3});
+  Sym D = A + B;
+  Sym E = C + D;
 
-  Session sess;
+  FusionSession sess;
   vector<float> A_data = {1, 2, 3, 4, 5, 6};
   vector<float> B_data = {6, 5, 4, 3, 2, 1};
-  sess.Run(C, {{A, A_data.data()}, {B, B_data.data()}});
-  C.print();
+  vector<float> C_data = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};
+  sess.Run({E}, {{A, A_data.data()},
+                 {B, B_data.data()},
+                 {C, C_data.data()}});
+  E.print();
   return 0;
 }
 
