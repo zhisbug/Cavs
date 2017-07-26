@@ -1,5 +1,4 @@
 #include "cavs/midend/runtime_compiler/parser.h"
-#include "cavs/util/op_def_builder.h"
 #include "cavs/util/logging.h"
 
 #include <algorithm>
@@ -108,36 +107,11 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
     out_edge->push_back(iter.first);
   }
 
-  {
-    vector<string> output_names;
-    vector<string> input_names;
-    vector<TensorShapeDef> output_shapes;
-    for (auto* e : *out_edge) {
-      output_names.push_back(e->name()); 
-      output_shapes.push_back(e->shape());
-    }
-    for (auto* e : *in_edge) {
-      input_names.push_back(e->name()); 
-    }
-
-    OpDef op_def;
-    OpDefBuilder("FusedKernel")
-      .Output(output_names)
-      .Input(input_names)
-      .Shape(output_shapes)
-      .Device("GPU")
-      .Finalize(&op_def);
-    Node* new_node = new SingleNode(op_def, nodes->front()->scope());
-    for (auto* e : *out_edge) {
-      new_node->AddOutput(e);
-    }
-    for (auto* e : *in_edge) {
-      new_node->AddInput(e);
-    }
-    fused_nodes_.push_back(new_node);
-  }
-
   remove_groups_.push_back(gid);
+}
+
+void Parser::AddFusedNode(Node* fused_node) {
+  fused_nodes_.push_back(fused_node);
 }
 
 void Parser::Finalize() {

@@ -20,6 +20,7 @@ class Parser {
   int GenerateGroup();
   void FuseGroup(int gid, std::list<Node*>* nodes,
                  std::list<Edge*>* in_edges, std::list<Edge*>* out_Edges);
+  void AddFusedNode(Node* fused_node);
   void Finalize();
 
  private:

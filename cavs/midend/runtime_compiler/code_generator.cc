@@ -1,10 +1,12 @@
 #include "cavs/midend/runtime_compiler/code_generator.h"
 #include "cavs/midend/runtime_compiler/statement_builder.h"
+#include "cavs/util/op_def_builder.h"
 #include "cavs/proto/types.pb.h"
 
 using std::string;
 using std::unordered_map;
 using std::list;
+using std::vector;
 
 namespace midend {
 namespace RTC {
@@ -12,11 +14,15 @@ namespace RTC {
 static unordered_map<int, string> DataTypeToString =
     {{DT_FLOAT, "float"}, {DT_DOUBLE, "double"}, {DT_INT32, "int"}};
 
-string GenDeclaration(const list<Edge*>& inputs, const list<Edge*>& outputs) {
+string GenKernelName() {
+  static int kernel_id = 0;
+  return "FusedKernel_" + std::to_string(kernel_id++);
+}
+
+string GenKernelDeclaration(const string& kernel_name,
+                            const list<Edge*>& inputs, const list<Edge*>& outputs) {
   string source = "extern \"C\" __global__ void ";
 
-  static int kernel_id = 0;
-  const string kernel_name = "FusedKernel_" + std::to_string(kernel_id++);
   source += kernel_name;
 
   string output_args = "(";
@@ -72,13 +78,45 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
 
   for (int i = 0; i < groups; i++) {
     parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);    
-    string source = GenDeclaration(in_edges, out_edges);
+    string name = GenKernelName();
+    string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
     for (auto* n : nodes) {
       func_body +=  ExprStatementBuilder().SetNode(n).toCode();
     }
     func_body += Ewise::EwiseGenBodyAssignOutput(out_edges);
     source += "{\n" + Ewise::EwiseGenBodyThreadIndexing(func_body) + "}\n";
+
+    {
+      vector<string> output_names;
+      vector<string> input_names;
+      vector<TensorShapeDef> output_shapes;
+      for (auto* e : out_edges) {
+        output_names.push_back(e->name()); 
+        output_shapes.push_back(e->shape());
+      }
+      for (auto* e : in_edges) {
+        input_names.push_back(e->name()); 
+      }
+
+      OpDef op_def;
+      OpDefBuilder("FusedKernel")
+        .Output(output_names)
+        .Input(input_names)
+        .Shape(output_shapes)
+        .AttrSingle("KernelName", name)
+        .AttrSingle("KernelSource", source)
+        .Device("GPU")
+        .Finalize(&op_def);
+      Node* new_node = new SingleNode(op_def, nodes.front()->scope());
+      for (auto* e : out_edges) {
+        new_node->AddOutput(e);
+      }
+      for (auto* e : in_edges) {
+        new_node->AddInput(e);
+      }
+      parser_.AddFusedNode(new_node);
+    }
     kernel_source_.push_back(source);
     in_edges.clear();
     out_edges.clear();
