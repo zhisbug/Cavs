@@ -24,7 +24,9 @@ void FusionSession::Compile(
     DepthSearch(node, &critical_path, &include);
   }
 
+  VLOG(V_DEBUG) << "Begin modifing the critical path";
   RTC::CodeGenerator generator(&critical_path);
+  VLOG(V_DEBUG) << "Modifing the critical path done";
 
   CHECK(executors_.find(HashString(output_names)) == executors_.end());
   vector<Statement*>* executor = &executors_[HashString(output_names)];

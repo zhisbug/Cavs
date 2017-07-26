@@ -2,7 +2,6 @@
 #define CAVS_MIDEND_RUNTIME_COMPILER_PARSER_H_
 
 #include "cavs/midend/node.h"
-#include "cavs/midend/runtime_compiler/expression.h"
 
 #include <list>
 #include <vector>

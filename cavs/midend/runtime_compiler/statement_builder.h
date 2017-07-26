@@ -7,10 +7,10 @@
 namespace midend {
 namespace RTC {
 
-class ExprStatementBuilder {
+class VarDeclStatementBuilder {
  public:
-  ~ExprStatementBuilder() { if (ae_) free (ae_); }
-  ExprStatementBuilder& SetNode(Node* n);
+  ~VarDeclStatementBuilder() { if (ae_) free (ae_); }
+  VarDeclStatementBuilder& SetNode(Node* n);
   std::string toCode() const;
 
  private:

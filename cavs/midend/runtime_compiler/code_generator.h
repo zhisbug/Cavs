@@ -9,13 +9,18 @@ namespace RTC {
 class CodeGenerator {
  public:
   CodeGenerator(std::list<Node*>* n);
-  static std::string PrefixedVar(std::string var) {
+  inline static std::string PrefixedVar(std::string var) {
     return "tmp_" + var; 
+  }
+  inline static std::string typeToString(DataType type) {
+    CHECK(DataTypeToString.find((int)type) != DataTypeToString.end());
+    return DataTypeToString.at((int)type);
   }
   
  private:
   std::vector<std::string> kernel_source_;
   Parser parser_;
+  static std::unordered_map<int, std::string> DataTypeToString;
 };
 
 } //namespace RTC

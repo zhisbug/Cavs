@@ -42,7 +42,7 @@ int Parser::FindGroup(int id) const{
 
 int Parser::GenerateGroup() {
   auto iter = nodes_->begin();
-  for (int i = 0; i < nodes_->size(); i++, iter++) {
+  for (int i = 0; i < nodes_->size() - 1; i++, iter++) {
     if (isFusable(*iter)) {
       CHECK((*iter)->output_size() == 1);
       Edge* edge = (*iter)->output(0);
@@ -92,7 +92,7 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
         if (out_edge_times[ie] == 0) {
           out_edge_times.erase(ie); 
         }
-      }else if (std::find(in_edge->begin(), in_edge->end(), ie) != in_edge->end()){
+      }else if (std::find(in_edge->begin(), in_edge->end(), ie) == in_edge->end()){
         in_edge->push_back(ie); 
       }
     }
@@ -107,6 +107,8 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
     out_edge->push_back(iter.first);
   }
 
+  CHECK(!in_edge->empty());
+  CHECK(!out_edge->empty());
   remove_groups_.push_back(gid);
 }
 

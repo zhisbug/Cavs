@@ -75,6 +75,9 @@ class SingleNode : public Node {
   inline const OpDef& op_def() const {
     return op_def_;
   }
+  inline DataType dtype() const {
+    return op_def_.dtype();
+  }
   inline std::string name() const override {
     return op_def_.name();
   }

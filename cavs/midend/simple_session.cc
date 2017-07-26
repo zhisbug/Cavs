@@ -57,6 +57,7 @@ void SimpleSession::Compile(
     const vector<string>& output_names) {
   list<Node*> critical_path;
   set<Node*> include;
+  VLOG(V_DEBUG) << "Searching Critical Path";
   for (auto& output : output_names) {
     Node* node = const_cast<Node*>(s_->FindNode(output));
     CHECK(node);

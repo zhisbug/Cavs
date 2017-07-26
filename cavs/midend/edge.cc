@@ -21,7 +21,7 @@ void Edge::AddDst(Node* node) {
 
 DataType Edge::dtype() const {
   CHECK(src_size() > 0 && src(0)->IsSingleNode());
-  return dynamic_cast<SingleNode*>(src(0))->op_def().dtype();
+  return dynamic_cast<SingleNode*>(src(0))->dtype();
 }
 
 void Edge::AddSource(Node* node) {

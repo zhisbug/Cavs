@@ -11,9 +11,6 @@ using std::vector;
 namespace midend {
 namespace RTC {
 
-static unordered_map<int, string> DataTypeToString =
-    {{DT_FLOAT, "float"}, {DT_DOUBLE, "double"}, {DT_INT32, "int"}};
-
 string GenKernelName() {
   static int kernel_id = 0;
   return "FusedKernel_" + std::to_string(kernel_id++);
@@ -27,11 +24,11 @@ string GenKernelDeclaration(const string& kernel_name,
 
   string output_args = "(";
   for (auto* e : outputs) {
-    output_args += DataTypeToString.at(e->dtype()) + " *" + e->name() + ", ";
+    output_args += CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
   }
   string input_args;
   for (auto* e : inputs) {
-    input_args += "const " + DataTypeToString.at(e->dtype()) + " *" + e->name() + ", ";
+    input_args += "const " + CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
   }
   input_args += "const int n_elements)\n";
   source += output_args + input_args;
@@ -50,7 +47,7 @@ string EwiseGenBodyThreadIndexing(const string& inner) {
 string EwiseGenBodyGetInput(const list<Edge*>& inputs) {
   string var_decl;
   for (auto* e : inputs) {
-    string type = DataTypeToString.at(e->dtype());
+    string type = CodeGenerator::typeToString(e->dtype());
     string var_name = CodeGenerator::PrefixedVar(e->name());
     string array_ref_name = e->name() + "[idx]";
     var_decl += type + " " + var_name + " = " + array_ref_name + ";\n";
@@ -71,18 +68,20 @@ string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
 } //namespace Ewise
 
 CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
+  VLOG(V_DEBUG) << "here---";
   int groups = parser_.GenerateGroup();
   list<Edge*> in_edges;
   list<Edge*> out_edges;
   list<Node*> nodes;
 
+  VLOG(V_DEBUG) << "here---";
   for (int i = 0; i < groups; i++) {
     parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);    
     string name = GenKernelName();
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
     for (auto* n : nodes) {
-      func_body +=  ExprStatementBuilder().SetNode(n).toCode();
+      func_body +=  VarDeclStatementBuilder().SetNode(n).toCode();
     }
     func_body += Ewise::EwiseGenBodyAssignOutput(out_edges);
     source += "{\n" + Ewise::EwiseGenBodyThreadIndexing(func_body) + "}\n";
@@ -124,6 +123,9 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
   }
   parser_.Finalize();
 }
+
+unordered_map<int, string> CodeGenerator::DataTypeToString =
+    {{DT_FLOAT, "float"}, {DT_DOUBLE, "double"}, {DT_INT32, "int"}};
 
 } //namespace RTC
 } //namespace midend

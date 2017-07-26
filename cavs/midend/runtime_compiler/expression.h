@@ -1,6 +1,7 @@
 #ifndef CAVS_MIDEND_RUNTIME_COMPILER_EXPRESSION_H_
 #define CAVS_MIDEND_RUNTIME_COMPILER_EXPRESSION_H_
 
+#include "cavs/midend/runtime_compiler/code_generator.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/proto/types.pb.h"
 
@@ -16,18 +17,20 @@ class Base {
 
 class Expression : public Base {
  public:
-  Expression(std::string op) : op_(op) {}
+  Expression(std::string op, DataType t) : op_(op), type_(t) {}
   virtual bool isAssignExpression() const { return false; }
+  DataType dtype() const { return type_; }
 
  protected:
   std::string op_;
+  DataType type_;
 };
 
 class UnaryExpression : public Expression {
  public:
-  UnaryExpression(std::string op, std::string operand)
-    : Expression(op), operand_(operand) {}
-  std::string toCode() const override {
+  UnaryExpression(std::string op, std::string operand, DataType t)
+    : Expression(op, t), operand_(operand) {}
+  inline std::string toCode() const override {
     return op_ + "(" + operand_ + ")";
   }
 
@@ -37,9 +40,10 @@ class UnaryExpression : public Expression {
 
 class BinaryExpression : public Expression {
  public:
-  BinaryExpression(std::string op, std::string loperand, std::string roperand)
-    : Expression(op), loperand_(loperand), roperand_(roperand) {}
-  std::string toCode() const override {
+  BinaryExpression(std::string op,
+      std::string loperand, std::string roperand, DataType t)
+    : Expression(op, t), loperand_(loperand), roperand_(roperand) {}
+  inline std::string toCode() const override {
     return "(" + loperand_ + " " + op_ + " " + roperand_ + ")";
   }
 
@@ -50,26 +54,31 @@ class BinaryExpression : public Expression {
 
 class AssignExpression : public BinaryExpression {
  public:
-  AssignExpression(std::string op, std::string loperand, std::string roperand)
-    : BinaryExpression(op, loperand, roperand) {}
+  AssignExpression(std::string op,
+      std::string loperand, std::string roperand, DataType t)
+    : BinaryExpression(op, loperand, roperand, t) {}
   bool isAssignExpression() const override { return true; }
-  std::string toCode() const override {
+  inline std::string toCode() const override {
     return loperand_ + " " + op_ + " " + roperand_;
   }
 };
 
 class Statement : public Base {
  public:
-  std::string toCode() const override {
+  Statement(DataType t) : type_(t) {}
+  inline std::string toCode() const override {
     LOG(FATAL) << "Not implemented yet";
   }
+
+ protected:
+  DataType type_;
 };
 
-class ExprStatement : public Statement {
+class VarDeclStatement : public Statement {
  public:
-  ExprStatement(AssignExpression* ae) : ae_(ae) {}
-  std::string toCode() const override {
-    return ae_->toCode() + ";\n";
+  VarDeclStatement(AssignExpression* ae) : ae_(ae), Statement(ae->dtype()) {}
+  inline std::string toCode() const override {
+    return CodeGenerator::typeToString(ae_->dtype()) + " " + ae_->toCode() + ";\n";
   }
  private:
   AssignExpression* ae_;
