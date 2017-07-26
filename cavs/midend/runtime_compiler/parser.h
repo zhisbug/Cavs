@@ -18,9 +18,9 @@ class Parser {
  public:
   Parser(std::list<Node*>* n);
   int GenerateGroup();
-  void FuseGroup(int gid, std::list<Node*>* nodes, std::list<Edge*>* in_edges, std::list<Edge*>* out_Edges);
+  void FuseGroup(int gid, std::list<Node*>* nodes,
+                 std::list<Edge*>* in_edges, std::list<Edge*>* out_Edges);
   void Finalize();
-
 
  private:
   int FindGroup(int id) const;
@@ -28,7 +28,8 @@ class Parser {
   std::unordered_map<Node*, int> node2idx_;
   std::vector<int> group_;
   std::vector<std::vector<int>> group_contents_;
-  std::set<int> remove_ids_;
+  std::vector<Node*> fused_nodes_;
+  std::vector<int> remove_groups_;
 };
 
 } //namespace RTC

@@ -1,8 +1,9 @@
-#ifndef CAVS_MIDEND_RUNTIME_COMPILER_CUDARTC_WRAPPER_H_
-#define CAVS_MIDEND_RUNTIME_COMPILER_CUDARTC_WRAPPER_H_
+#ifndef CAVS_BACKEND_CUDARTC_WRAPPER_H_
+#define CAVS_BACKEND_CUDARTC_WRAPPER_H_
 
 #include "cavs/util/macros_gpu.h"
 
+#include <cuda.h>
 #include <nvrtc.h>
 #include <vector>
 
@@ -15,28 +16,25 @@
       }                                         \
     }while(0)
 
-#define checkCUDADriverError(stmt)            \
-    do {                                      \
-      CUresult err = (stmt);                  \
-      if (err != CUDA_SUCCESS) {              \
-        const char* pStr;                     \
-        cuGetErrorString(err, &pStr);         \
-        LOG(FATAL) << "CUDA Driver failure: " \
-                   << *pStr;                  \
-      }                                       \
+#define checkCUDADriverError(stmt)              \
+    do {                                        \
+      CUresult err = (stmt);                    \
+      if (err != CUDA_SUCCESS) {                \
+        const char* pStr;                       \
+        cuGetErrorString(err, &pStr);           \
+        LOG(FATAL) << "CUDA Driver failure: "   \
+                   << *pStr;                    \
+      }                                         \
     }while(0)
 
 
-namespace midend {
+namespace backend {
 namespace RTC {
 
-class CudaRTCFunction {
+class CudaRTCWrapper {
  public:
-  CudaRTCFunction() : module_loaded_(false), kernel_(NULL) {
-    flags_num_ = 1;
-    compiler_flags_ = {"--gpu-architecture=compute_52"};
-  }
-  ~CudaRTCFunction() {
+  CudaRTCWrapper() : module_loaded_(false), kernel_(NULL) {}
+  ~CudaRTCWrapper() {
     if (module_loaded_) {
       checkCUDADriverError(cuModuleUnload(module_));
     }
@@ -46,7 +44,9 @@ class CudaRTCFunction {
     checkNVRTCError(nvrtcCreateProgram(&prog, src.c_str(),
                                        ("cavs_" + name + ".cu").c_str(),
                                        0, NULL, NULL));
-    nvrtcResult compile_result = nvrtcCompileProgram(prog, flags_num_, compiler_flags_);
+    const int flags_num = 1;
+    const char *compiler_flags[] = {"--gpu-architecture=compute_52"};
+    nvrtcResult compile_result = nvrtcCompileProgram(prog, flags_num, compiler_flags);
     if (compile_result != NVRTC_SUCCESS) {
       size_t log_size;
       checkNVRTCError(nvrtcGetProgramLogSize(prog, &log_size));
@@ -96,11 +96,9 @@ class CudaRTCFunction {
   CUmodule module_;
   bool module_loaded_;
   CUfunction kernel_;
-  const char *compiler_flags_[];
-  int flags_num_;
 };
 
 } //namespace RTC
-} //namespace midend
+} //namespace backend
 
 #endif

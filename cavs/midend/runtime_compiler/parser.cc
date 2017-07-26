@@ -1,4 +1,5 @@
 #include "cavs/midend/runtime_compiler/parser.h"
+#include "cavs/util/op_def_builder.h"
 #include "cavs/util/logging.h"
 
 #include <algorithm>
@@ -84,8 +85,6 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
   auto&& ids = group_contents_[gid];
   CHECK(ids.size() > 1);
   for (int id : ids) {
-    auto ret = remove_ids_.insert(id);
-    CHECK(ret.second);
     auto iter = std::next(nodes_->begin(), id);
     for (Edge* ie : (*iter)->input()) {
       if (out_edge_times.find(ie) != out_edge_times.end()) {
@@ -108,13 +107,50 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
   for (auto iter : out_edge_times) {
     out_edge->push_back(iter.first);
   }
+
+  {
+    vector<string> output_names;
+    vector<string> input_names;
+    vector<TensorShapeDef> output_shapes;
+    for (auto* e : *out_edge) {
+      output_names.push_back(e->name()); 
+      output_shapes.push_back(e->shape());
+    }
+    for (auto* e : *in_edge) {
+      input_names.push_back(e->name()); 
+    }
+
+    OpDef op_def;
+    OpDefBuilder("FusedKernel")
+      .Output(output_names)
+      .Input(input_names)
+      .Shape(output_shapes)
+      .Device("GPU")
+      .Finalize(&op_def);
+    Node* new_node = new SingleNode(op_def, nodes->front()->scope());
+    for (auto* e : *out_edge) {
+      new_node->AddOutput(e);
+    }
+    for (auto* e : *in_edge) {
+      new_node->AddInput(e);
+    }
+    fused_nodes_.push_back(new_node);
+  }
+
+  remove_groups_.push_back(gid);
 }
 
 void Parser::Finalize() {
-  CHECK(!remove_ids_.empty());
-  for (auto riter = remove_ids_.rbegin(); riter != remove_ids_.rend(); riter++) {
-    int id = *riter;     
-    nodes_->erase(std::next(nodes_->begin(), id));
+  CHECK(!remove_groups_.empty());
+  for (int i = remove_groups_.size()-1; i >= 0; i--) {
+    int gid = remove_groups_[i];
+    int last_node_pos = group_contents_[gid][group_contents_[gid].size()-1];
+    int new_node_pos = last_node_pos + 1;
+    nodes_->insert(std::next(nodes_->begin(), new_node_pos), fused_nodes_[i]);
+    for (int j = group_contents_[gid].size()-1; j >= 0; j--) {
+      int id = group_contents_[gid][j];
+      nodes_->erase(std::next(nodes_->begin(), id));
+    }
   }
 }
 
