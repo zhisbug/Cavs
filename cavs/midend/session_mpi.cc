@@ -21,11 +21,12 @@ class MPISession: public SimpleSession {
   //MPISession(const DepGraph* graph);
   MPISession();
   ~MPISession();
-  void Run(const vector<string>& output_names, 
-           vector<Tensor>* output_tensors,
-           const vector<string>& input_names,
-           const vector<Tensor>& input_tensors) override;
+  //void Run(const vector<string>& output_names, 
+           //vector<Tensor>* output_tensors,
+           //const vector<string>& input_names,
+           //const vector<Tensor>& input_tensors) override;
   int session_type() const override { return MPI; }
+
  private:
   void Compile(const vector<string>& output_names) override;
   void FetchOutput(const vector<string>& output_names,
@@ -83,15 +84,9 @@ void AddMPIOnPath(list<Node*>& critical_path) {
   }
 }
 
-//MPISession::MPISession(const DepGraph* graph)
-    //: SimpleSession(graph){
-  //MPI_Init(NULL, NULL);
-//}
-
 MPISession::MPISession() : SimpleSession(){
   MPI_Init(NULL, NULL);
 }
-
 
 MPISession::~MPISession() {
   MPI_Finalize();
@@ -127,13 +122,13 @@ void MPISession::Compile(
   return;
 }
 
-void MPISession::Run(const vector<string>& output_names,
-    vector<Tensor>* output_tensors,
-    const vector<string>& input_names,
-    const vector<Tensor>& input_tensors) {
-  SimpleSession::Run(output_names, output_tensors, input_names, input_tensors);
-  //LOG(INFO) << "round: " << round_;
-}
+//void MPISession::Run(const vector<string>& output_names,
+    //vector<Tensor>* output_tensors,
+    //const vector<string>& input_names,
+    //const vector<Tensor>& input_tensors) {
+  //SimpleSession::Run(output_names, output_tensors, input_names, input_tensors);
+  ////LOG(INFO) << "round: " << round_;
+//}
 
 void MPISession::FetchOutput(const vector<string>& output_names,
     vector<Tensor>* output_tensors) {

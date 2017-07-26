@@ -64,14 +64,6 @@ class OpTest {
 };
 
 OpTest ::OpTest(const OpDef& def) : op_def_(def) {
-  //node_ = new Node(def, main_scope());
-  //{
-    //Edge* edge = new Edge(def.output(0), main_scope());
-    //node_->AddOutput(edge);
-    //edge->AddSource(node_);
-    //edges_.push_back(edge);
-    //edge->SetShape(def.shape(0));
-  //}
   for (auto& i : def.input()) {
     Edge* edge = new Edge(i, main_scope());
   }
