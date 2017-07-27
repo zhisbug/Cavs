@@ -98,7 +98,7 @@ class ConcatOpDecl : public OpDecl {
 
     CHECK(inputs[0].dim_size() > 0);
     for (auto& s : inputs) {
-      LOG(INFO) << s.DebugString();
+      //LOG(INFO) << s.DebugString();
       CHECK(s.dim_size() == inputs[0].dim_size());
     }
 

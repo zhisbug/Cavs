@@ -16,6 +16,7 @@ class GraphSession : public SessionBase {
     CHECK(name_.length());
     gscheduler_ = new GraphScheduler();
     scope_ = main_scope();
+    if (sb->session_type() & FUSION)  this->AddType(FUSION);
   }
   const Tensor* GetTensor(const std::string& name, bool recursive = false) const override;
   OpContext* GetContext(const Node* node) override;

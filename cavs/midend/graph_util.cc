@@ -90,7 +90,7 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
   CHECK(loss->scope() == scope);
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
   CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
-  LOG_IF(INFO, curr->dst_size() > 1) << curr->scoped_name();
+  VLOG_IF(V_DEBUG, curr->dst_size() > 1) << curr->scoped_name();
   VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->scoped_name();
   CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
   if (curr == loss) {

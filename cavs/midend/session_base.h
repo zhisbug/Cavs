@@ -20,14 +20,17 @@ class SessionBase {
                    const std::vector<Tensor>& input_tensors) {
     LOG(FATAL) << "Base Session";
   }
-  enum { BASE=1, SIMPLE=2, MPI=3, FUSION=4, GRAPH=5 };
-  virtual int session_type() const { return BASE; }
+
+  enum SessionType { BASE=0, SIMPLE=1, MPI=2, FUSION=4, GRAPH=8 };
+  int session_type() const { return type_; }
+  void AddType(SessionType t) { type_ += (int)t; }
 
   void InsertTensor(const Tensor& t);
   std::string debug_info() const ;
  protected:
   std::unordered_map<std::string, Tensor> raw_tensor_map_;
   std::unordered_map<std::string, Tensor> scoped_tensor_map_;
+  int type_;
 };
 
 SessionBase* GetSession(const std::string& name);

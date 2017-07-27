@@ -78,7 +78,7 @@ Statement* SingleNode::Compile(
       sess_debug_ = sess;
     }
     OpImpl* op = NULL;
-    if (sess->session_type() == SessionBase::MPI &&
+    if ((sess->session_type() & SessionBase::MPI) &&
         (op_def().name() == "Variable" ||
          op_def().name() == "DDV" ||
          op_def().name() == "Data")) {
@@ -239,7 +239,7 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It is located in scope " << scope()->scoped_name();
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
-    if (sess->session_type() == SessionBase::FUSION) {
+    if ((sess->session_type() & SessionBase::FUSION)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path in ScopedNode";
       RTC::CodeGenerator generator(&nodes_);
       VLOG(V_DEBUG) << "Modifing the critical path done in ScopedNode";

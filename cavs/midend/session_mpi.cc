@@ -20,7 +20,7 @@ class MPISession: public SimpleSession {
  public:
   MPISession();
   ~MPISession();
-  int session_type() const override { return MPI; }
+  //int session_type() const override { return MPI; }
 
  private:
   void Compile(const vector<string>& output_names) override;
@@ -79,7 +79,8 @@ void AddMPIOnPath(list<Node*>& critical_path) {
   }
 }
 
-MPISession::MPISession() : SimpleSession(){
+MPISession::MPISession() : SimpleSession() {
+  type_ = (int)MPI;
   MPI_Init(NULL, NULL);
 }
 

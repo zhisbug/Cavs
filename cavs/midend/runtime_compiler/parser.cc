@@ -1,4 +1,5 @@
 #include "cavs/midend/runtime_compiler/parser.h"
+#include "cavs/midend/node.h"
 #include "cavs/util/logging.h"
 
 #include <algorithm>
@@ -27,10 +28,15 @@ bool isFusable(Node* node) {
 Parser::Parser(list<Node*>* n) : nodes_(n) {
   group_.resize(nodes_->size(), 0);
   auto iter = nodes_->begin();
+  VLOG(V_DEBUG) << "Number of nodes: " << nodes_->size();
   for (int i = 0; i < nodes_->size(); i++, iter++) {
     group_[i] = i; 
     CHECK(node2idx_.find(*iter) == node2idx_.end());
     node2idx_[*iter] = i;
+    if ((*iter)->IsSingleNode()) {
+      VLOG(V_DEBUG) << "ID:\t" << i;
+      VLOG(V_DEBUG) << dynamic_cast<SingleNode*>(*iter)->op_def().DebugString();
+    }
   }
 }
 
@@ -80,7 +86,6 @@ int Parser::GenerateGroup() {
 }
 
 void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<Edge*>* out_edge) {
-  //currently, we only fuse one group for accuracy testing
   CHECK(gid < group_contents_.size());
   CHECK(nodes->empty());
   CHECK(in_edge->empty());
@@ -122,7 +127,7 @@ void Parser::AddFusedNode(Node* fused_node) {
 }
 
 void Parser::Finalize() {
-  CHECK(!remove_groups_.empty());
+  CHECK(!(group_contents_.empty() ^ remove_groups_.empty()));
   for (int i = remove_groups_.size()-1; i >= 0; i--) {
     int gid = remove_groups_[i];
     int last_node_pos = group_contents_[gid][group_contents_[gid].size()-1];

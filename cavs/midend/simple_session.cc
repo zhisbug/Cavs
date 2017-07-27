@@ -13,8 +13,9 @@ using std::set;
 
 namespace midend {
 
-SimpleSession::SimpleSession()
-    : SessionBase(), s_(main_scope()) /*round_(0), */{}
+SimpleSession::SimpleSession() : SessionBase(), s_(main_scope()) {
+ type_ = (int)SIMPLE;
+}
 
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
@@ -24,7 +25,7 @@ void SimpleSession::DepthSearch(Node* curr,
 
   if (!accessed) {
     //(*include)[curr] = true;
-    VLOG(V_DEBUG) << curr->debug_info();
+    //VLOG(V_DEBUG) << curr->debug_info();
     if (curr->IsScopedNode())
       include->insert(curr);
     if (!isSource) {
