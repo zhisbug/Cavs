@@ -42,7 +42,7 @@ class SigmoidExpression : public VarRefExpression {
   SigmoidExpression(std::string operand, DataType t)
     : VarRefExpression(operand, t) {}
   inline std::string toCode() const override {
-    return "(1 / ( 1 + expf(-" + operand_ + ")))";
+    return "(1.f / ( 1.f + expf(-" + operand_ + ")))";
   }
 };
 

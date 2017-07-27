@@ -84,6 +84,7 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
     for (auto* n : nodes) {
+      VLOG(V_DEBUG) << dynamic_cast<SingleNode*>(n)->op_def().DebugString();
       func_body +=  VarDeclStatementBuilder().SetNode(n).toCode();
     }
     func_body += Ewise::EwiseGenBodyAssignOutput(out_edges);

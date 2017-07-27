@@ -17,9 +17,9 @@ VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
   static unordered_map<string, string> bin_ops =
     {{"Add", "+"}, {"Minus", "-"}, {"Mul", "*"}};
   static unordered_map<string, string> u_ops =
-    {{"Tanh", "tanf"}};
+    {{"Tanh", "tanhf"}};
   static vector<string> self_defined_ops =
-    {{"Sigmoid", "Mirror"}};
+    {"Sigmoid", "Mirror"};
   string right_hand;
   CHECK(node->IsSingleNode());
   if (bin_ops.find(node->name()) != bin_ops.end()) {
