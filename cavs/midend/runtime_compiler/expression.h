@@ -17,24 +17,45 @@ class Base {
 
 class Expression : public Base {
  public:
-  Expression(std::string op, DataType t) : op_(op), type_(t) {}
+  Expression(DataType t) : type_(t) {}
   virtual bool isAssignExpression() const { return false; }
   DataType dtype() const { return type_; }
 
  protected:
-  std::string op_;
   DataType type_;
+};
+
+class VarRefExpression : public Expression {
+ public:
+  VarRefExpression(std::string operand, DataType t) :
+    Expression(t), operand_(operand) {}
+  inline std::string toCode() const override {
+    return "( " + operand_ + " )";
+  }
+
+ protected:
+  std::string operand_;
+};
+
+class SigmoidExpression : public VarRefExpression {
+ public:
+  SigmoidExpression(std::string operand, DataType t)
+    : VarRefExpression(operand, t) {}
+  inline std::string toCode() const override {
+    return "(1 / ( 1 + expf(-" + operand_ + ")))";
+  }
 };
 
 class UnaryExpression : public Expression {
  public:
   UnaryExpression(std::string op, std::string operand, DataType t)
-    : Expression(op, t), operand_(operand) {}
+    : Expression(t), op_(op), operand_(operand) {}
   inline std::string toCode() const override {
     return op_ + "(" + operand_ + ")";
   }
 
- private:
+ protected:
+  std::string op_;
   std::string operand_;
 };
 
@@ -42,12 +63,13 @@ class BinaryExpression : public Expression {
  public:
   BinaryExpression(std::string op,
       std::string loperand, std::string roperand, DataType t)
-    : Expression(op, t), loperand_(loperand), roperand_(roperand) {}
+    : Expression(t), op_(op), loperand_(loperand), roperand_(roperand) {}
   inline std::string toCode() const override {
     return "(" + loperand_ + " " + op_ + " " + roperand_ + ")";
   }
 
  protected:
+  std::string op_;
   std::string loperand_;
   std::string roperand_;
 };

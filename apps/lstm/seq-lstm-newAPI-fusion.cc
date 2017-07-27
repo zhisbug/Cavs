@@ -49,39 +49,39 @@ class SeqModel : public GraphSupport {
     Sym LSTM_w = Sym::Variable(DT_FLOAT, {w_size},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size},
-                            //Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
                             Sym::Zeros());
-    U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);
-    W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);
-    bi = LSTM_b.Slice(0, FLAGS_hidden);
-    bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);
+    U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);//slice_8
+    W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);//slice_9
+    bi = LSTM_b.Slice(0, FLAGS_hidden);//slice_10
+    bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);//slice_11
     bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
     bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
   }
 
   void Node() override {
-    Sym child = Gather(0, {2*FLAGS_hidden});
-    Sym child_h, child_c;
+    Sym child = Gather(0, {2*FLAGS_hidden}); //gather_14
+    Sym child_h/*slice_16*/, child_c/*slice_15*/;
     tie(child_h, child_c) = child.Split2();
-    Sym x       = Pull(0, {1});
-    x           = x.EmbeddingLookup(embedding.Mirror());
+    Sym x       = Pull(0, {1}); //pull_17
+    x           = x.EmbeddingLookup(embedding.Mirror()/*mirror_18*/); //embeddinglookup_19
 
-    Sym tmp = Sym::MatMul(x, U.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}))
-            + Sym::MatMul(child_h.Expand_dims(0), W.Mirror().Reshape({FLAGS_hidden, 4*FLAGS_hidden}));
+    Sym tmp = Sym::MatMul(x, U.Mirror()/*mirror_24*/.Reshape({FLAGS_hidden, 4*FLAGS_hidden})/*reshape_25*/)/*matmul_26*/
+            + Sym::MatMul(child_h.Expand_dims(0)/*expand_dims_22*/,
+                          W/*slice_9*/.Mirror()/*mirror_20*/.Reshape({FLAGS_hidden, 4*FLAGS_hidden})/*reshape_21*/)/*MatMul_23*/;//add_27
 
     Sym i, f, u, o;
-    tie(i, f, u, o) = tmp.Split4();
+    tie(i/*slice_31*/, f/*slice_30*/, u/*slice_29*/, o/*slice_28*/) = tmp.Split4();
 
-    i = (i+bi.Mirror()).Sigmoid();
-    f = (f+bf.Mirror()).Sigmoid();
-    u = (u+bu.Mirror()).Tanh();
-    o = (o+bo.Mirror()).Sigmoid();
+    i = (i+bi.Mirror()/*mirror_32*/)/*add_33*/.Sigmoid();//sigmoid_34
+    f = (f+bf.Mirror()/*mirror_35*/)/*add_36*/.Sigmoid();//sigmoid_37
+    u = (u+bu.Mirror()/*mirror_38*/)/*add_39*/.Tanh();//tanh_40
+    o = (o+bo.Mirror()/*mirror_41*/)/*add_42*/.Sigmoid();//sigmoid_43
 
-    Sym c = i * u + f*child_c;
-    Sym h = o * Sym::Tanh(c.Mirror());
+    Sym c = i * u/*mul_45*/ + f*child_c/*mul_44*/;//add_46
+    Sym h = o * Sym::Tanh(c.Mirror()/*mirror_47*/)/*tanh_48*/;//mul_49
 
-    Scatter(Sym::Concat({h.Mirror(), c.Mirror()}));
-    Push(h.Mirror());
+    Scatter(Sym::Concat({h.Mirror()/*mirror_50*/, c.Mirror()/*mirror_51*/})/*concat_52*/);//scatter_53
+    Push(h.Mirror()/*mirror_54*/);//push_55
   }
 
  private:
@@ -144,17 +144,6 @@ int main(int argc, char* argv[]) {
                          {word_idx, input_ph[j%input_ph.size()].data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
-    //float sum = 0.f;
-    //for (int j = 0; j < iterations; j++) {
-      //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                              //{label,    label_ph[j%label_ph.size()].data()},
-                              //{word_idx, input_ph[j%input_ph.size()].data()}});
-      //float ppx = *(float*)(perplexity.eval());
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                //<< "\tPPX:\t" << exp(ppx);
-      //sum += *(float*)(perplexity.eval());
-    //}
-    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
     //float sum = 0.f;
     //for (int j = 0; j < iterations; j++) {
       //sess.Run({perplexity, train}, {{graph,    graph_ph[j%graph_ph.size()].data()},

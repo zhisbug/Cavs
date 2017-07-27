@@ -16,6 +16,10 @@ namespace RTC {
 VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
   static unordered_map<string, string> bin_ops =
     {{"Add", "+"}, {"Minus", "-"}, {"Mul", "*"}};
+  static unordered_map<string, string> u_ops =
+    {{"Tanh", "tanf"}};
+  static vector<string> self_defined_ops =
+    {{"Sigmoid", "Mirror"}};
   string right_hand;
   CHECK(node->IsSingleNode());
   if (bin_ops.find(node->name()) != bin_ops.end()) {
@@ -25,6 +29,25 @@ VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
         CodeGenerator::PrefixedVar(node->input(0)->name()),
         CodeGenerator::PrefixedVar(node->input(1)->name()),
         dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+  }else if (u_ops.find(node->name()) != u_ops.end()){
+    CHECK(node->input_size() == 1);
+    CHECK(node->output_size() == 1);
+    right_hand = UnaryExpression(u_ops.at(node->name()),
+        CodeGenerator::PrefixedVar(node->input(0)->name()),
+        dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+  }else if (std::find(self_defined_ops.begin(), self_defined_ops.end(), node->name())
+            != self_defined_ops.end()) {
+    CHECK(node->input_size() == 1);
+    CHECK(node->output_size() == 1);
+    if (node->name() == "Sigmoid") {
+      right_hand = SigmoidExpression(
+          CodeGenerator::PrefixedVar(node->input(0)->name()),
+          dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+    }else if (node->name() == "Mirror") {
+      right_hand = VarRefExpression(
+          CodeGenerator::PrefixedVar(node->input(0)->name()),
+          dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+    }
   }else {
     LOG(FATAL) << "Wrong node";
   }

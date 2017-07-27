@@ -15,8 +15,16 @@ using std::map;
 namespace midend {
 namespace RTC {
 
-bool isElementwise(string op) {
-  static vector<string> elementwise_ops = {"Add", "Minus", "Mul"};
+bool isElementwise(const string& op) {
+  static vector<string> elementwise_ops =
+    {"Add", "Minus", "Mul", "Tanh", "Mirror", "Sigmoid"};
+  return (std::find(elementwise_ops.begin(), elementwise_ops.end(), op)
+        != elementwise_ops.end());
+}
+
+bool isDeserved(const string& op) {
+  static vector<string> elementwise_ops =
+    {"Add", "Minus", "Mul", "Tanh", "Sigmoid"};
   return (std::find(elementwise_ops.begin(), elementwise_ops.end(), op)
         != elementwise_ops.end());
 }
@@ -25,7 +33,12 @@ bool isFusable(Node* node) {
   return node->IsSingleNode() && isElementwise(node->name());
 }
 
+bool isDeserved(Node* node) {
+  return node->IsSingleNode() && isDeserved(node->name());
+}
+
 Parser::Parser(list<Node*>* n) : nodes_(n) {
+  CHECK(!nodes_->empty());
   group_.resize(nodes_->size(), 0);
   auto iter = nodes_->begin();
   VLOG(V_DEBUG) << "Number of nodes: " << nodes_->size();
@@ -50,15 +63,19 @@ int Parser::FindGroup(int id) const{
 
 int Parser::GenerateGroup() {
   auto iter = nodes_->begin();
+  vector<int> fusion_benefit(nodes_->size(), 0);
   for (int i = 0; i < nodes_->size(); i++, iter++) {
     if (isFusable(*iter)) {
+      if (isDeserved(*iter)) fusion_benefit[i] += 1;
       CHECK((*iter)->output_size() == 1);
       Edge* edge = (*iter)->output(0);
       if (edge->dst_size() > 0) {
         Node* parent_node = edge->dst(0, true);
         CHECK(node2idx_.find(parent_node) != node2idx_.end());
         if (isFusable(parent_node)) {
+          CHECK(node2idx_.at(parent_node) > i);
           group_[i] = FindGroup(node2idx_.at(parent_node));
+          fusion_benefit[node2idx_.at(parent_node)] += fusion_benefit[i];
         }
         for (int j = 1; j < edge->dst_size(true); j++) {
           CHECK(node2idx_.find(edge->dst(j, true)) != node2idx_.end()); 
@@ -79,7 +96,9 @@ int Parser::GenerateGroup() {
   }
   for (auto& iter : group_info) {
     VLOG(V_DEBUG) << "GroupID:\t" << iter.first;
-    group_contents_.push_back(std::move(iter.second)); 
+    if (fusion_benefit[iter.first] > 1) {
+      group_contents_.push_back(std::move(iter.second)); 
+    }
   }
 
   return group_contents_.size();
