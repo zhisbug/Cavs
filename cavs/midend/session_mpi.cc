@@ -18,13 +18,8 @@ namespace midend {
 
 class MPISession: public SimpleSession {
  public:
-  //MPISession(const DepGraph* graph);
   MPISession();
   ~MPISession();
-  //void Run(const vector<string>& output_names, 
-           //vector<Tensor>* output_tensors,
-           //const vector<string>& input_names,
-           //const vector<Tensor>& input_tensors) override;
   int session_type() const override { return MPI; }
 
  private:

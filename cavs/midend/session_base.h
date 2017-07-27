@@ -20,7 +20,7 @@ class SessionBase {
                    const std::vector<Tensor>& input_tensors) {
     LOG(FATAL) << "Base Session";
   }
-  enum { BASE=1, SIMPLE=2, MPI=3, GRAPH=4 };
+  enum { BASE=1, SIMPLE=2, MPI=3, FUSION=4, GRAPH=5 };
   virtual int session_type() const { return BASE; }
 
   void InsertTensor(const Tensor& t);

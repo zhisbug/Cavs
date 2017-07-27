@@ -1,5 +1,6 @@
 #include "cavs/midend/node.h"
 #include "cavs/midend/graph_session.h"
+#include "cavs/midend/runtime_compiler/code_generator.h"
 #include "cavs/util/op_def_builder.h"
 
 using std::string;
@@ -238,6 +239,11 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It is located in scope " << scope()->scoped_name();
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
+    if (sess->session_type() == SessionBase::FUSION) {
+      VLOG(V_DEBUG) << "Begin modifing the critical path in ScopedNode";
+      RTC::CodeGenerator generator(&nodes_);
+      VLOG(V_DEBUG) << "Modifing the critical path done in ScopedNode";
+    }
     for (auto* node : nodes_) {
       VLOG(V_DEBUG) << "\tCompiling\t" << node->name()
                     << "\t in Scope: " << contained_->scoped_name();

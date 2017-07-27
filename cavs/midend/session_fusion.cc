@@ -10,6 +10,8 @@ using std::set;
 namespace midend {
 
 class FusionSession: public SimpleSession {
+ public:
+  int session_type() const override { return FUSION; }
  private:
   void Compile(const vector<string>& output_names) override;
 };
