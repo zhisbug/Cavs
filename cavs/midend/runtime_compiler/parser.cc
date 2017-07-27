@@ -2,12 +2,14 @@
 #include "cavs/util/logging.h"
 
 #include <algorithm>
+#include <map>
 
 using std::list;
 using std::vector;
 using std::set;
 using std::string;
 using std::unordered_map;
+using std::map;
 
 namespace midend {
 namespace RTC {
@@ -42,23 +44,25 @@ int Parser::FindGroup(int id) const{
 
 int Parser::GenerateGroup() {
   auto iter = nodes_->begin();
-  for (int i = 0; i < nodes_->size() - 1; i++, iter++) {
+  for (int i = 0; i < nodes_->size(); i++, iter++) {
     if (isFusable(*iter)) {
       CHECK((*iter)->output_size() == 1);
       Edge* edge = (*iter)->output(0);
-      Node* parent_node = edge->dst(0, true);
-      CHECK(node2idx_.find(parent_node) != node2idx_.end());
-      if (isFusable(parent_node)) {
-        group_[i] = FindGroup(node2idx_.at(parent_node));
-      }
-      for (int j = 1; j < edge->dst_size(true); j++) {
-        CHECK(node2idx_.find(edge->dst(j, true)) != node2idx_.end()); 
-        CHECK(node2idx_.at(edge->dst(j, true)) > node2idx_.at(parent_node));
+      if (edge->dst_size() > 0) {
+        Node* parent_node = edge->dst(0, true);
+        CHECK(node2idx_.find(parent_node) != node2idx_.end());
+        if (isFusable(parent_node)) {
+          group_[i] = FindGroup(node2idx_.at(parent_node));
+        }
+        for (int j = 1; j < edge->dst_size(true); j++) {
+          CHECK(node2idx_.find(edge->dst(j, true)) != node2idx_.end()); 
+          CHECK(node2idx_.at(edge->dst(j, true)) > node2idx_.at(parent_node));
+        }
       }
     }
   }
 
-  unordered_map<int, vector<int>> group_info;
+  map<int, vector<int>> group_info;
   CHECK(group_contents_.empty());
   for (int i = 0; i < nodes_->size(); i++) {
     if (group_[i] != i) {
@@ -68,6 +72,7 @@ int Parser::GenerateGroup() {
     }
   }
   for (auto& iter : group_info) {
+    VLOG(V_DEBUG) << "GroupID:\t" << iter.first;
     group_contents_.push_back(std::move(iter.second)); 
   }
 

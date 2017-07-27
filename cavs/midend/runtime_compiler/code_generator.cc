@@ -41,7 +41,7 @@ namespace Ewise {
 string EwiseGenBodyThreadIndexing(const string& inner) {
   string idx = "const int idx = blockIdx.x * blockDim.x + threadIdx.x;\n";
   idx += "if (idx < n_elements) {\n";
-  idx += "printf(\"%f, %f, %f\\n\", Placeholder_0[idx], Placeholder_1[idx], Placeholder_2[idx]);\n";
+  //idx += "printf(\"%f, %f, %f\\n\", Placeholder_0[idx], Placeholder_1[idx], Placeholder_2[idx]);\n";
   idx += inner;
   idx += "\n}";
 
@@ -72,13 +72,12 @@ string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
 } //namespace Ewise
 
 CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
-  VLOG(V_DEBUG) << "here---";
   int groups = parser_.GenerateGroup();
   list<Edge*> in_edges;
   list<Edge*> out_edges;
   list<Node*> nodes;
 
-  VLOG(V_DEBUG) << "here---";
+  VLOG(V_DEBUG) << groups << " Groups Found";
   for (int i = 0; i < groups; i++) {
     parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);    
     string name = GenKernelName();
@@ -125,6 +124,9 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
     out_edges.clear();
     nodes.clear();
   }
+
+  for (auto &s : kernel_source_) 
+    VLOG(V_DEBUG) << "KS: " << s;
   parser_.Finalize();
 }
 
