@@ -28,8 +28,9 @@ class Parser {
   std::unordered_map<Node*, int> node2idx_;
   std::vector<int> group_;
   std::vector<std::vector<int>> group_contents_;
+  std::vector<int> group_insert_pos_;
   std::vector<Node*> fused_nodes_;
-  std::vector<int> remove_groups_;
+  std::set<Node*> remove_nodes_;
 };
 
 } //namespace RTC
