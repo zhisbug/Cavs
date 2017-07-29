@@ -13,17 +13,18 @@ using std::string;
 namespace midend {
 namespace RTC {
 
-VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
+AssignStatementBuilder& AssignStatementBuilder::SetNode(Node* node) {
   static unordered_map<string, string> bin_ops =
     {{"Add", "+"}, {"Minus", "-"}, {"Mul", "*"}};
   static unordered_map<string, string> u_ops =
     {{"Tanh", "tanhf"}};
   static vector<string> ref_ops =
-    {"Assign", "Mirror"};
+    {"Assign", "Mirror", "Accumulate"};
   static vector<string> self_defined_ops =
-    {"Sigmoid"};
+    {"Sigmoid", "Tanh_grad", "Sigmoid_grad"};
   string right_hand;
   CHECK(node->IsSingleNode());
+  CHECK(!ae_);
   if (bin_ops.find(node->name()) != bin_ops.end()) {
     CHECK(node->input_size() == 2);
     CHECK(node->output_size() == 1);
@@ -44,11 +45,26 @@ VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
     right_hand = VarRefExpression(
         CodeGenerator::PrefixedVar(node->input(0)->name()),
         dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+    if (node->name() == "Accumulate") {
+      ae_ = new AssignAddExpression(
+          CodeGenerator::PrefixedVar(node->output(0)->name()), 
+          right_hand, dynamic_cast<SingleNode*>(node)->dtype());
+      return *this;
+    }
   }else if (std::find(self_defined_ops.begin(), self_defined_ops.end(), node->name())
             != self_defined_ops.end()) {
     if (node->name() == "Sigmoid") {
+      CHECK(node->input_size() == 1);
+      CHECK(node->output_size() == 1);
       right_hand = SigmoidExpression(
           CodeGenerator::PrefixedVar(node->input(0)->name()),
+          dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+    }else if (node->name() == "Tanh_grad" || node->name() == "Sigmoid_grad") {
+      CHECK(node->input_size() >= 2);
+      CHECK(node->output_size() == 1);
+      right_hand = TanhGradExpression(
+          CodeGenerator::PrefixedVar(node->input(0)->name()),
+          CodeGenerator::PrefixedVar(node->input(1)->name()),
           dynamic_cast<SingleNode*>(node)->dtype()).toCode();
     }else {
       LOG(FATAL) << "Wrong node";
@@ -56,11 +72,14 @@ VarDeclStatementBuilder& VarDeclStatementBuilder::SetNode(Node* node) {
   }else {
     LOG(FATAL) << "Wrong node";
   }
-  CHECK(!ae_);
-  ae_ = new AssignExpression("=",
+  ae_ = new AssignExpression(
       CodeGenerator::PrefixedVar(node->output(0)->name()), 
       right_hand, dynamic_cast<SingleNode*>(node)->dtype());
   return *this;
+}
+
+string AssignStatementBuilder::toCode() const {
+  return AssignStatement(ae_).toCode(); 
 }
 
 string VarDeclStatementBuilder::toCode() const {

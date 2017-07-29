@@ -1,6 +1,7 @@
 #include "cavs/midend/graph_session.h"
 
 using std::string;
+using std::vector;
 using std::unordered_map;
 
 namespace midend {
@@ -112,8 +113,13 @@ OpContext* GraphSession::GetContext(const Node* node) {
       }
       CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
     }
+    const vector<string>& zeros =
+      GetListArg<string>(dynamic_cast<const SingleNode*>(node)->op_def(), "ZeroEnforced");
     if (node->IsStatefulOp()) {
       CHECK(node->output_size() == 1);
+      const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
+    }else if (std::find(zeros.begin(), zeros.end(), output->name()) != zeros.end()) {
+      CHECK(node->name().substr(0, 11) == "FusedKernel");
       const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }
     ctxt->AppendOutput(const_cast<Tensor*>(t));

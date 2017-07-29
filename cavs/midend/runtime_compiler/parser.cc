@@ -19,14 +19,16 @@ namespace RTC {
 
 bool isElementwise(const string& op) {
   static vector<string> elementwise_ops =
-    {"Add", "Minus", "Mul", "Tanh", "Mirror", "Sigmoid", "Assign"};
+    {"Add", "Minus", "Mul", "Tanh", "Mirror", "Sigmoid",
+     "Assign", "Tanh_grad", "Sigmoid_grad", "Accumulate"};
   return (std::find(elementwise_ops.begin(), elementwise_ops.end(), op)
         != elementwise_ops.end());
 }
 
 bool isDeserved(const string& op) {
   static vector<string> elementwise_ops =
-    {"Add", "Minus", "Mul", "Tanh", "Sigmoid"};
+    {"Add", "Minus", "Mul", "Tanh", "Sigmoid",
+     "Tanh_grad", "Sigmoid_grad", "Accumulate"};
   return (std::find(elementwise_ops.begin(), elementwise_ops.end(), op)
         != elementwise_ops.end());
 }
@@ -145,7 +147,8 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
       }
     }
     for (Edge* oe : (*iter)->output()) {
-      CHECK(out_edge_times.find(oe) == out_edge_times.end());
+      //loose this constraint because of accumulate operator
+      //CHECK(out_edge_times.find(oe) == out_edge_times.end());
       out_edge_times[oe] = oe->dst_size(); 
     }
     nodes->push_back(*std::next(nodes_->begin(), id));

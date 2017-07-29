@@ -7,15 +7,19 @@
 namespace midend {
 namespace RTC {
 
-class VarDeclStatementBuilder {
+class AssignStatementBuilder {
  public:
-  ~VarDeclStatementBuilder() { if (ae_) free (ae_); }
-  VarDeclStatementBuilder& SetNode(Node* n);
-  std::string toCode() const;
+  ~AssignStatementBuilder() { if (ae_) free (ae_); }
+  AssignStatementBuilder& SetNode(Node* n);
+  virtual std::string toCode() const;
 
- private:
+ protected:
   AssignExpression* ae_;
-  //DISALLOW_COPY_AND_ASSIGN(ExprStatementBuilder);
+};
+
+class VarDeclStatementBuilder : public AssignStatementBuilder {
+ public:
+  std::string toCode() const override;
 };
 
 } //namespace RTC

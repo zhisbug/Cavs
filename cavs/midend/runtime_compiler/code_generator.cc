@@ -7,6 +7,7 @@ using std::string;
 using std::unordered_map;
 using std::list;
 using std::vector;
+using std::set;
 
 namespace midend {
 namespace RTC {
@@ -59,6 +60,14 @@ string EwiseGenBodyGetInput(const list<Edge*>& inputs) {
   return var_decl;
 }
 
+string EwiseGenBodyGetInput(const string& name, float init) {
+  string var_decl;
+  string type = CodeGenerator::typeToString(DT_FLOAT);
+  string var_name = CodeGenerator::PrefixedVar(name);
+  var_decl += type + " " + var_name + " = " + std::to_string(init) + ";\n";
+  return var_decl;
+}
+
 string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
   string array_assign;
   for (auto* e : outputs) {
@@ -83,9 +92,25 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
     string name = GenKernelName();
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
+    vector<string> stateful_output;
     for (auto* n : nodes) {
       VLOG(V_DEBUG) << dynamic_cast<SingleNode*>(n)->op_def().DebugString();
-      func_body +=  VarDeclStatementBuilder().SetNode(n).toCode();
+      if (n->IsStatefulOp() &&
+          std::find(stateful_output.begin(), stateful_output.end(), n->output(0)->name())
+            == stateful_output.end()) {
+        CHECK(n->output_size() == 1);
+        stateful_output.push_back(n->output(0)->name());
+        if (std::find(out_edges.begin(), out_edges.end(), n->output(0)) !=
+            out_edges.end()) {
+          func_body += Ewise::EwiseGenBodyGetInput({n->output(0)});
+        }else {
+          func_body += Ewise::EwiseGenBodyGetInput(n->output(0)->name(), 0);
+        }
+      }
+      if (!n->IsStatefulOp())
+        func_body +=  VarDeclStatementBuilder().SetNode(n).toCode();
+      else
+        func_body +=  AssignStatementBuilder().SetNode(n).toCode();
     }
     func_body += Ewise::EwiseGenBodyAssignOutput(out_edges);
     source += "{\n" + Ewise::EwiseGenBodyThreadIndexing(func_body) + "}\n";
@@ -109,6 +134,7 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
         .Shape(output_shapes)
         .AttrSingle("KernelName", name)
         .AttrSingle("KernelSource", source)
+        .AttrList<string>("ZeroEnforced", stateful_output)
         .Device("GPU")
         .Finalize(&op_def);
       Node* new_node = new SingleNode(op_def, nodes.front()->scope());

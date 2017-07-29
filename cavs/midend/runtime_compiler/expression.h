@@ -46,6 +46,30 @@ class SigmoidExpression : public VarRefExpression {
   }
 };
 
+class TanhGradExpression : public Expression {
+ public:
+  TanhGradExpression(std::string loperand, std::string roperand, DataType t)
+    : Expression(t), loperand_(loperand), roperand_(roperand) {}
+  inline std::string toCode() const override {
+    return "(" + loperand_ + " * (1 - " + roperand_ + "*" + roperand_ + "))";
+  }
+ private:
+  std::string loperand_;
+  std::string roperand_;
+};
+
+class SigmoidGradExpression : public Expression {
+ public:
+  SigmoidGradExpression(std::string loperand, std::string roperand, DataType t)
+    : Expression(t), loperand_(loperand), roperand_(roperand) {}
+  inline std::string toCode() const override {
+    return "(" + loperand_ + " * (" + roperand_ + "*(1-" + roperand_ + ")))";
+  }
+ private:
+  std::string loperand_;
+  std::string roperand_;
+};
+
 class UnaryExpression : public Expression {
  public:
   UnaryExpression(std::string op, std::string operand, DataType t)
@@ -74,14 +98,24 @@ class BinaryExpression : public Expression {
   std::string roperand_;
 };
 
+
 class AssignExpression : public BinaryExpression {
  public:
-  AssignExpression(std::string op,
-      std::string loperand, std::string roperand, DataType t)
-    : BinaryExpression(op, loperand, roperand, t) {}
+  AssignExpression(std::string loperand, std::string roperand, DataType t)
+    : BinaryExpression("=", loperand, roperand, t) {}
   bool isAssignExpression() const override { return true; }
   inline std::string toCode() const override {
-    return loperand_ + " " + op_ + " " + roperand_;
+    return loperand_ + " = " + roperand_;
+  }
+};
+
+class AssignAddExpression : public AssignExpression {
+ public:
+  AssignAddExpression(std::string loperand, std::string roperand, DataType t)
+    : AssignExpression(loperand, roperand, t) {}
+  bool isAssignExpression() const override { return true; }
+  inline std::string toCode() const override {
+    return loperand_ + " += " + roperand_;
   }
 };
 
@@ -96,14 +130,22 @@ class Statement : public Base {
   DataType type_;
 };
 
-class VarDeclStatement : public Statement {
+class AssignStatement : public Statement {
  public:
-  VarDeclStatement(AssignExpression* ae) : ae_(ae), Statement(ae->dtype()) {}
+  AssignStatement(AssignExpression* ae) : ae_(ae), Statement(ae->dtype()) {}
+  inline std::string toCode() const override {
+    return ae_->toCode() + ";\n";
+  }
+ protected:
+  AssignExpression* ae_;
+};
+
+class VarDeclStatement : public AssignStatement {
+ public:
+  VarDeclStatement(AssignExpression* ae) : AssignStatement(ae) {}
   inline std::string toCode() const override {
     return CodeGenerator::typeToString(ae_->dtype()) + " " + ae_->toCode() + ";\n";
   }
- private:
-  AssignExpression* ae_;
 };
 
 } //namespace RTC
