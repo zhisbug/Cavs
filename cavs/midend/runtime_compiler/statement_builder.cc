@@ -59,10 +59,17 @@ AssignStatementBuilder& AssignStatementBuilder::SetNode(Node* node) {
       right_hand = SigmoidExpression(
           CodeGenerator::PrefixedVar(node->input(0)->name()),
           dynamic_cast<SingleNode*>(node)->dtype()).toCode();
-    }else if (node->name() == "Tanh_grad" || node->name() == "Sigmoid_grad") {
+    }else if (node->name() == "Tanh_grad") {
       CHECK(node->input_size() >= 2);
       CHECK(node->output_size() == 1);
       right_hand = TanhGradExpression(
+          CodeGenerator::PrefixedVar(node->input(0)->name()),
+          CodeGenerator::PrefixedVar(node->input(1)->name()),
+          dynamic_cast<SingleNode*>(node)->dtype()).toCode();
+    }else if (node->name() == "Sigmoid_grad") {
+      CHECK(node->input_size() >= 2);
+      CHECK(node->output_size() == 1);
+      right_hand = SigmoidGradExpression(
           CodeGenerator::PrefixedVar(node->input(0)->name()),
           CodeGenerator::PrefixedVar(node->input(1)->name()),
           dynamic_cast<SingleNode*>(node)->dtype()).toCode();

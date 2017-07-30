@@ -132,10 +132,10 @@ void ActivationOpCudnnGrad<T, mode>::Compute(OpContext* context) {
                   x_desc_, x.data<T>(),
                   &beta,
                   x_desc_, dx->mutable_data<T>()));
-  /*dy.DebugNumerical<T>();*/
-  /*y.DebugNumerical<T>();*/
-  /*x.DebugNumerical<T>();*/
-  /*dx->DebugNumerical<T>();*/
+  dy.DebugNumerical<T>();
+  y.DebugNumerical<T>();
+  x.DebugNumerical<T>();
+  dx->DebugNumerical<T>();
 }
 
 REGISTER_OP_IMPL_BUILDER(Key("Relu").Device("GPU"),    ActivationOpCudnn<float, CUDNN_ACTIVATION_RELU>);
