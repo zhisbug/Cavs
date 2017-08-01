@@ -14,6 +14,7 @@ class SliceOpImpl : public OpImpl {
   explicit SliceOpImpl(const OpDef& def) :
     OpImpl(def), split_(-1), index_(-1), offset_(-1), stride_(-1) {
     CHECK(!GetSingleArg<bool>(op_def_, "ShareMemory", false));
+    CHECK((axis_ = GetSingleArg<int>(op_def_, "Axis", 0)) == 0);
     if (GetSingleArg(def, "Split", 0) != 0) {
       split_ = GetSingleArg<int>(def, "Split"); 
       index_ = GetSingleArg<int>(def, "Index"); 
@@ -33,6 +34,7 @@ class SliceOpImpl : public OpImpl {
   int stride_;
   int split_;
   int index_;
+  int axis_;
 };
 
 template <typename T>
@@ -47,10 +49,22 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
   }
   CHECK(stride_ == y->count());
 
-  checkCudaError(cudaMemcpy(y->mutable_data<T>(),
-                            x.data<T>()+offset_,
-                            stride_*sizeof(T),
-                            cudaMemcpyDeviceToDevice));
+  if (axis_ == 0 && x.IsDynamicSize() && x.dims() == 2) {
+    CHECK(y->IsDynamicSize());
+    CHECK(y->dims(0) == x.dims(0));
+    CHECK(y->dims() == 2);
+    for (int i = 0; i < x.dims(0); i++) {
+      checkCudaError(cudaMemcpy(y->mutable_data<T>()+i*stride_,
+                                x.data<T>()+offset_+i*x.dims(1),
+                                stride_*sizeof(T),
+                                cudaMemcpyDeviceToDevice));
+    }
+  }else {
+    checkCudaError(cudaMemcpy(y->mutable_data<T>(),
+                              x.data<T>()+offset_,
+                              stride_*sizeof(T),
+                              cudaMemcpyDeviceToDevice));
+  }
 }
 
 template <typename T>
@@ -65,16 +79,31 @@ class ConcatOpImpl : public OpImpl {
       const Tensor& inp = context->Input(i);
       CHECK(inp.count() > 0);
       CHECK(copied_count + inp.count() <= out->count());
-      checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count,
-                                inp.data<T>(),
-                                inp.count()*sizeof(T),
-                                cudaMemcpyDeviceToDevice));
+      if (axis_ == 0 && out->IsDynamicSize() && out->dims() == 2) {
+        CHECK(inp.dims(0) == out->dims(0));
+        CHECK(inp.IsDynamicSize());
+        CHECK(inp.dims() == 2);
+        for (int j = 0; j < out->dims(0); j++) {
+          checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count/out->dims(0)+j*out->dims(1),
+                                    inp.data<T>()+j*inp.dims(1),
+                                    inp.dims(1)*sizeof(T),
+                                    cudaMemcpyDeviceToDevice));
+        }
+      }else {
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count,
+                                  inp.data<T>(),
+                                  inp.count()*sizeof(T),
+                                  cudaMemcpyDeviceToDevice));
+      }
       copied_count += inp.count();
       inp.DebugNumerical<T>();
-    } 
+    }
     CHECK(out->count() == copied_count);
     out->DebugNumerical<T>();
   }
+
+ private:
+  int axis_;
 };
 
 template <typename T>
@@ -92,15 +121,30 @@ class SliceAllOpImpl : public OpImpl {
       Tensor* out = context->Output(i);
       CHECK(inp_check.count() == out->count());
       CHECK(copied_count + out->count() <= input.count());
-      checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                                input.data<T>()+copied_count,
-                                out->count()*sizeof(T),
-                                cudaMemcpyDeviceToDevice));
+      if (axis_ == 0 && input.IsDynamicSize() && input.dims() == 2) {
+        CHECK(out->dims(0) == input.dims(0));
+        CHECK(out->IsDynamicSize());
+        CHECK(out->dims() == 2);
+        for (int j = 0; j < input.dims(0); j++) {
+          checkCudaError(cudaMemcpy(out->mutable_data<T>()+j*out->dims(1),
+                                    input.data<T>()+copied_count/input.dims(0)+j*input.dims(1),
+                                    out->dims(1)*sizeof(T),
+                                    cudaMemcpyDeviceToDevice));
+        }
+      }else {
+        checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                                  input.data<T>()+copied_count,
+                                  out->count()*sizeof(T),
+                                  cudaMemcpyDeviceToDevice));
+      }
       copied_count += out->count();
       out->DebugNumerical<T>();
-    } 
+    }
     CHECK(input.count() == copied_count);
   }
+
+ private:
+  int axis_;
 };
 
 class MirrorOpImpl : public OpImpl {

@@ -21,7 +21,7 @@ class OpContext {
   inline void AppendOutput(Tensor* t);
   inline OpContext* ExtractContext(const std::vector<int>& inp, const std::vector<int>& out);
 
-  //the followings are all optimizations
+  //the followings are all about optimizations
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
   inline void SetGraphScheduler(GraphSchedulerBase* gs) {

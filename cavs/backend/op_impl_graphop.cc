@@ -29,6 +29,7 @@ class GraphGatherOp : public OpImpl {
     GraphSchedulerBase* gs = context->graph_scheduler();
     //int job_id = gs->GetCurrentJobId();
     const vector<int>& job_ids = gs->GetJobId();
+    context->SetDynDim(job_ids.size());
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
       if (gs->HasChild(gid)) {

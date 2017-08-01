@@ -38,8 +38,8 @@ void GraphStatement::Run() {
 
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   CHECK(output_length > 0);
-  global_ctxt_->SetDynDim(output_length);
-  global_ctxt_->ScaleTensor();
+  //we must clear the dynamic size in case previous ops have changed it;
+  global_ctxt_->SetDynDim(0);
   //for (int i = 0; i < gscheduler_->batch(); i++) {
     //gscheduler_->TrigerBatchId(i);
     //while (!gscheduler_->empty()) {
@@ -57,6 +57,9 @@ void GraphStatement::Run() {
     gscheduler_->ActivateNext();
   }
 
+  //we must set dynamic size for graphoutput here
+  global_ctxt_->SetDynDim(output_length);
+  global_ctxt_->ScaleTensor();
   pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutput done";
 }

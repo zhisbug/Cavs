@@ -14,9 +14,11 @@ class SliceOpDecl : public OpDecl {
     //guaranteed to be continous, although currently only continous
     //slice is supported
     CHECK(!GetSingleArg<bool>(op_def_, "ShareMemory", false));
+    //currently, we only support axis equals 0
+    CHECK(GetSingleArg<int>(op_def_, "Axis", 0) == 0);
     if (GetSingleArg(def, "Split", 0) != 0) {
-      split_ = GetSingleArg<int>(def, "Split"); 
-      index_ = GetSingleArg<int>(def, "Index"); 
+      split_ = GetSingleArg<int>(def, "Split");
+      index_ = GetSingleArg<int>(def, "Index");
       CHECK(split_ > 0);
       CHECK(index_ >= 0);
     }else {
@@ -70,7 +72,10 @@ class SliceOpDecl : public OpDecl {
 
 class ConcatOpDecl : public OpDecl {
  public:
-  ConcatOpDecl(const OpDef& def) : OpDecl(def) {}
+  ConcatOpDecl(const OpDef& def) : OpDecl(def) {
+    //currently, we only support axis equals 0
+    CHECK(GetSingleArg<int>(op_def_, "Axis", 0) == 0);
+  }
   
   void MakeGradient(vector<OpDef>* grad) override {
     //It needs further design!!!
@@ -87,6 +92,7 @@ class ConcatOpDecl : public OpDecl {
       .Input(input)
       .Output(input_grad)
       .Device(op_def_)
+      .Attr(op_def_)
       .Finalize(&slice_all);
     grad->push_back(slice_all);
   }

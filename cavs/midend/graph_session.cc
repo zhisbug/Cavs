@@ -52,6 +52,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //So here we loose the constraint, if "t" exists, we set the tensor as
     //ZeroInitEnforced, and the computation is +=
     const Tensor* t = GetTensor(TensorNameInFunctionContext(output));
+    bool dynamic_size = true;
     //if (t) {
       //const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     if (!t) {
@@ -68,6 +69,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
         Tensor out(TensorNameInFunctionContext(output), *upper_t);
         out.Reshape(output->shape());
         InsertTensor(out);
+        dynamic_size = false;
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
@@ -99,6 +101,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
           //the above is wrong when deducing the backward of W.reshape.matmul 
           CHECK(output->isGradient());
           shape = TensorShape(output->shape());
+          dynamic_size = false;
         }
 
         Allocator* alloc = GetAllocator(op_def); 
@@ -108,6 +111,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
                       << " with shape info: " << shape.debug_info();
         Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(shape));
         out.Resize(output->shape());
+        out.SetAsDynamic();
         VLOG(V_DEBUG) << out.debug_info();
         InsertTensor(out);
       }
@@ -122,6 +126,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
       CHECK(node->name().substr(0, 11) == "FusedKernel");
       const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }
+    if (dynamic_size) const_cast<Tensor*>(t)->SetAsDynamic();
+
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;

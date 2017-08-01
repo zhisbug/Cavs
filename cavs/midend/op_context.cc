@@ -14,7 +14,7 @@ void OpContext::SetTensorOffset() {
   if (gs_) {
     CHECK(!gs_->Terminate());
     //input'id should be set, think about the graphoutput_grad case
-    //we dont't change the value or the size of input tensor buffer,
+    //we don't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer
     for (auto* t : inputs_) {
       if (!(t->IsFullShape())) {

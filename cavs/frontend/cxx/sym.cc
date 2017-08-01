@@ -176,9 +176,6 @@ Sym Sym::DDV(DataType type, const vector<int>& shape, int batch,
 
 Sym Sym::Abs(const Sym& a, string device) {
   CHECK(a.output_size() == 1);
-  //Sym s("Abs", {a.node_->output_[0]},
-        //a.node_->type_, "", device);
-  //return s;
   OpDef def = OpDefBuilder("Abs")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -189,12 +186,6 @@ Sym Sym::Abs(const Sym& a, string device) {
 
 Sym Sym::Argmax(const Sym& a, int axis, string device) {
   CHECK(a.output_size() == 1);
-  //OpDef::AttrDef attr;
-  //attr.set_name("axis");
-  //attr.mutable_value()->set_i(axis);
-  //Sym s("Argmax", {a.node_->output_[0]},
-        //a.node_->type_, "", device, {}, {attr});
-  //return s;
   OpDef def = OpDefBuilder("Argmax")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -206,9 +197,6 @@ Sym Sym::Argmax(const Sym& a, int axis, string device) {
 
 Sym Sym::Square(const Sym& a, string device) {
   CHECK(a.output_size() == 1);
-  //Sym s("Square", {a.node_->output_[0]},
-        //a.node_->type_, "", device);
-  //return s;
   OpDef def = OpDefBuilder("Square")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -219,9 +207,6 @@ Sym Sym::Square(const Sym& a, string device) {
 
 Sym Sym::Reduce_mean(const Sym& a, string device) {
   CHECK(a.output_size() == 1);
-  //Sym s("Reduce_mean", {a.node_->output_[0]},
-        //a.node_->type_, "", device);
-  //return s;
   OpDef def = OpDefBuilder("Reduce_mean")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -232,9 +217,6 @@ Sym Sym::Reduce_mean(const Sym& a, string device) {
 
 Sym Sym::Reduce_sum(const Sym& a, string device) {
   CHECK(a.output_size() == 1);
-  //Sym s("Reduce_sum", {a.node_->output_[0]},
-        //a.node_->type_, "", device);
-  //return s;
   OpDef def = OpDefBuilder("Reduce_sum")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -245,27 +227,6 @@ Sym Sym::Reduce_sum(const Sym& a, string device) {
 
 Sym Sym::Maxpooling(const Sym& a,
     int HightWindow, int WidthWindow, string device) {
-  //vector<OpDef::AttrDef> attrs;
-  //{
-    //OpDef::AttrDef attr;
-    //attr.set_name("HightWindow");
-    //attr.mutable_value()->set_i(HightWindow);
-    //attrs.push_back(std::move(attr));
-  //}
-  //{
-    //OpDef::AttrDef attr;
-    //attr.set_name("WidthWindow");
-    //attr.mutable_value()->set_i(HightWindow);
-    //attrs.push_back(std::move(attr));
-  //}
-  //{
-    //OpDef::AttrDef attr;
-    //attr.set_name("PoolingMode");
-    //attr.mutable_value()->set_s("Max");
-    //attrs.push_back(std::move(attr));
-  //}
-  //return Sym("Pooling", {a.node_->output_[0]}, a.node_->type_, "",
-         //device, {}, attrs);
   OpDef def = OpDefBuilder("Pooling")
                 .Input(a.output(0))
                 .Dtype(a.type())
@@ -312,6 +273,7 @@ Sym Sym::Slice(const Sym& a, int offset, int stride) {
                 .Device(a.device())
                 .AttrSingle("Offset", offset)
                 .AttrSingle("Stride", stride)
+                .AttrSingle("Axis", 0)
                 .Finalize();
   return Sym(def);
 }
@@ -335,6 +297,7 @@ std::tuple<Sym, Sym> Sym::Split2(const Sym& a) {
                .Device(a.device())
                .AttrSingle("Split", 2)
                .AttrSingle("Index", i)
+               .AttrSingle("Axis", 0)
                .Finalize();
   }
   return std::make_tuple(Sym(def[0]), Sym(def[1]));
@@ -349,6 +312,7 @@ std::tuple<Sym, Sym, Sym> Sym::Split3(const Sym& a) {
                .Device(a.device())
                .AttrSingle("Split", 3)
                .AttrSingle("Index", i)
+               .AttrSingle("Axis", 0)
                .Finalize();
   }
   return std::make_tuple(Sym(def[0]), Sym(def[1]), Sym(def[2]));
@@ -363,6 +327,7 @@ std::tuple<Sym, Sym, Sym, Sym> Sym::Split4(const Sym& a) {
                .Device(a.device())
                .AttrSingle("Split", 4)
                .AttrSingle("Index", i)
+               .AttrSingle("Axis", 0)
                .Finalize();
   }
   return std::make_tuple(Sym(def[0]), Sym(def[1]), Sym(def[2]), Sym(def[3]));
@@ -614,6 +579,7 @@ Sym Sym::Concat(const vector<Sym>& syms, string device) {
                 .Input(inputs)
                 .Dtype(syms[0].type())
                 .Device(syms[0].device())
+                .AttrSingle("Axis", 0)
                 .Finalize();
   return Sym(def);
 }

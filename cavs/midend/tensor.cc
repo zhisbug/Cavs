@@ -125,7 +125,6 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     params_->dynamic = true;
     shape_ = shape;
-    //CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
     CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
   }else {
     CHECK(shape.n_elements() > 0);
@@ -142,7 +141,6 @@ Tensor::Tensor(const string& name, Allocator *a,
   if (shape.dim(0) == -1) {
     params_->dynamic = true;
     shape_ = std::move(shape);
-    //CASES(type, buf_.reset(new TensorBuffer<T>(a, 0)));
     CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
   }else {
     CHECK(shape.n_elements() > 0);
@@ -178,14 +176,6 @@ Tensor& Tensor::operator =(const Tensor& t) {
   params_ = t.params_;
   return *this;
 }
-
-//bool Tensor::ShareBufWith(const Tensor& t) {
-  //if (buf_.size() == t.buf_.size()) {
-    //buf_ = t.buf_;
-    //return true;
-  //}else
-    //return false;
-//}
 
 void Tensor::Rebase(Allocator *a, 
         DataType type, const TensorShape& shape) {
