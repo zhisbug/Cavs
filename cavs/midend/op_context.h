@@ -24,11 +24,11 @@ class OpContext {
   //the followings are all optimizations
   inline void SetRound(int r) { round_ = r; }
   inline int round() const { return round_; }
-  inline void SetGraphScheduler(GraphScheduler* gs) {
+  inline void SetGraphScheduler(GraphSchedulerBase* gs) {
     CHECK(gs_ == NULL && gs);
     gs_ = gs;
   }
-  inline GraphScheduler* graph_scheduler() { return gs_; }
+  inline GraphSchedulerBase* graph_scheduler() { return gs_; }
   inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
 
   void SetTensorOffset();
@@ -43,7 +43,7 @@ class OpContext {
   std::vector<const Tensor*> inputs_;
   std::vector<Tensor*> outputs_;
   int round_;
-  GraphScheduler* gs_;
+  GraphSchedulerBase* gs_;
   static int dyn_dim_;
 };
 

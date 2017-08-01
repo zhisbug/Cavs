@@ -40,15 +40,21 @@ void GraphStatement::Run() {
   CHECK(output_length > 0);
   global_ctxt_->SetDynDim(output_length);
   global_ctxt_->ScaleTensor();
-  for (int i = 0; i < gscheduler_->batch(); i++) {
-    gscheduler_->TrigerBatchId(i);
-    while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
-                    << " in batch_id: " << i;
-      //sleep(2);
-      node_func_->Run();
-      gscheduler_->ActivateNext();
-    }
+  //for (int i = 0; i < gscheduler_->batch(); i++) {
+    //gscheduler_->TrigerBatchId(i);
+    //while (!gscheduler_->empty()) {
+      //VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
+                    //<< " in batch_id: " << i;
+      ////sleep(2);
+      //node_func_->Run();
+      //gscheduler_->ActivateNext();
+    //}
+  //}
+  gscheduler_->Initialize();
+  while (!gscheduler_->Terminate()) {
+    VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    node_func_->Run();
+    gscheduler_->ActivateNext();
   }
 
   pop_ret_stmt_->Run();
@@ -63,15 +69,21 @@ void GraphGradStatement::Run() {
   push_arg_stmt_->Run();
 
   gscheduler_->ReverseGraph();
-  for (int i = 0; i < gscheduler_->batch(); i++) {
-    gscheduler_->TrigerBatchId(i);
-    while (!gscheduler_->empty()) {
-      VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
-                    << " in batch_id: " << i;
-      //sleep(2);
-      node_func_->Run();
-      gscheduler_->ActivateNext();
-    }
+  //for (int i = 0; i < gscheduler_->batch(); i++) {
+    //gscheduler_->TrigerBatchId(i);
+    //while (!gscheduler_->empty()) {
+      //VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
+                    //<< " in batch_id: " << i;
+      ////sleep(2);
+      //node_func_->Run();
+      //gscheduler_->ActivateNext();
+    //}
+  //}
+  gscheduler_->Initialize();
+  while (!gscheduler_->Terminate()) {
+    VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    node_func_->Run();
+    gscheduler_->ActivateNext();
   }
 
   pop_ret_stmt_->Run();

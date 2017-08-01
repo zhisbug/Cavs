@@ -7,136 +7,156 @@ using std::vector;
 
 namespace midend {
 
-int GraphScheduler::ToGlobalId(int local_id) const {
-  //the version of seq-lstm requirements, will be loosened soon
-  CHECK(parent_ids_[0].size() == parent_ids_[1].size() || parent_ids_.size() == 1);
-  return sample_id_*parent_ids_[0].size() + local_id;
-}
-
-void GraphScheduler::ActivateNext() {
-  CHECK(!empty());
-  int id = pending_workset_.front();
-  CHECK(id >= 0);
-  if (isForward_) {
-    int pid = parent_ids_[sample_id_][id];
-    if (pid != -1 && !activated_workset_[pid]) {
-      pending_workset_.push_back(pid);
-      activated_workset_[pid] = true;
-    }
-  }else {
-    for (auto& cid : child_ids_[sample_id_][id]) {
-      if (!activated_workset_[cid]) {
-        pending_workset_.push_back(cid);
-        activated_workset_[cid] = true;
-      }
-    }
-  }
-  pending_workset_.pop_front();
-}
-
-int GraphScheduler::GetJobId() const {
-  if (!empty()) {
-    return ToGlobalId(pending_workset_.front());
-  }else {
-    return -1;
-  }
-}
-
 //parent-idx form
-int GraphScheduler::LoadGraph(const Tensor& parent_ids) {
+int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   VLOG(V_DEBUG) << "Loading graph...";
-  CHECK(parent_ids.dims() == 2) << parent_ids.debug_info();
-  CHECK(parent_ids.device_type() == CPU) << parent_ids.debug_info();
-  if (parent_ids_.empty() && child_ids_.empty()) {
-    parent_ids_.resize(parent_ids.dims(0)); 
-    child_ids_.resize(parent_ids.dims(0)); 
+  CHECK(graph_struct.dims() == 2) << graph_struct.debug_info();
+  CHECK(graph_struct.device_type() == CPU) << graph_struct.debug_info();
+  if (batch_size_ == 0 && max_seq_length_ == 0) {
+    batch_size_ = graph_struct.dims(0);
+    max_seq_length_ = graph_struct.dims(1);
+    __forward_parents_ids_.resize(graph_struct.dims(0)); 
+    __forward_children_ids_.resize(graph_struct.dims(0)); 
+    activated_ids_.resize(batch_size_*max_seq_length_, false);
   }else {
-    CHECK(parent_ids_.size() == parent_ids.dims(0));
-    CHECK(child_ids_.size() == parent_ids.dims(0));
+    CHECK(batch_size_ == graph_struct.dims(0)); 
+    CHECK(max_seq_length_ == graph_struct.dims(1)); 
   }
 
-  VLOG(V_DEBUG) << parent_ids.dims(1);
   int total_length = 0;
-  for (int i = 0; i < parent_ids.dims(0); i++) {
+  for (int i = 0; i < graph_struct.dims(0); i++) {
     VLOG(V_DEBUG) << i;
-    const int *start = parent_ids.data<int>() + i*parent_ids.dims(1);
-    const int *end   = parent_ids.data<int>() + (i+1)*parent_ids.dims(1);
-    int real_length = std::find(start, end, -1) + 1 - start;
-    CHECK(real_length <= parent_ids.dims(1));
-    total_length += real_length;
-    VLOG(V_DEBUG) << real_length;
-    parent_ids_[i].assign(start, start + real_length);
-    child_ids_[i].resize(real_length);
-    for (int j = 0; j < real_length-1; j++) {
-      child_ids_[i][parent_ids_[i][j]].push_back(j);
+    const int *start = graph_struct.data<int>() + i*max_seq_length_;
+    int one_seq_length = std::find(start, start+max_seq_length_, -1) - start;
+    CHECK(one_seq_length <= max_seq_length_);
+    VLOG(V_DEBUG) << one_seq_length;
+    total_length += one_seq_length;
+    for (int j = 0; j < one_seq_length; j++) {
+      __forward_parents_ids_[toGlobalId(i, j)].resize(1);
+      __forward_parents_ids_[toGlobalId(i, j)][0] = *(start+j);
+      __forward_children_ids_[toGlobalId(i, j)].clear();
+    }
+    for (int j = 0; j < one_seq_length; j++) {
+      int parent = __forward_parents_ids_[toGlobalId(i,j)][0];
+      __forward_children_ids_[parent].push_back(toGlobalId(i, j));
     }
   }
-  batch_ = parent_ids_.size();
-  isForward_ = true;
-  CHECK(pending_workset_.empty());
+  //isForward_ = true;
+  parents_ = &__forward_parents_ids_;
+  children_ = &__forward_children_ids_;
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
 }
 
-void GraphScheduler::ReverseGraph() {
-  CHECK(batch_ > 0);
-  CHECK(parent_ids_.size() > 0);
-  isForward_ = false;
-  std::fill(activated_workset_.begin(), activated_workset_.end(), false);
+void GraphSchedulerBase::ReverseGraph() {
+  CHECK(batch_size_ > 0);
+  CHECK(max_seq_length_ > 0);
+  //isForward_ = false;
+  children_ = &__forward_parents_ids_;
+  parents_ = &__forward_children_ids_;
 }
 
-void GraphScheduler::TrigerBatchId(int sample_id) {
-  //CHECK(activate_leaf_.empty());
-  //CHECK(activate_inode_.empty());
-  CHECK(pending_workset_.empty());
-  activated_workset_.resize(parent_ids_[sample_id].size(), false);
-  std::fill(activated_workset_.begin(), activated_workset_.end(), false);
-  CHECK(sample_id < batch_);
-  if (isForward_) {
-    for (int i = 0; i < parent_ids_[sample_id].size(); i++) {
-      if (child_ids_[sample_id][i].empty()) {
-        pending_workset_.push_back(i);
-        activated_workset_[i] = true;
+void SerialGraphScheduler::Initialize() {
+  CHECK(Terminate());
+  std::fill(activated_ids_.begin(), activated_ids_.end(), false);
+  InitializeSample(0);
+  ready_to_execute_ids_[0] = pending_list_.front();
+}
+
+void SerialGraphScheduler::InitializeSample(int sid) {
+  //if (isForward_) {
+    //for (int i = 0; i < max_seq_length_; i++) {
+      //int gid = toGlobalId(sid, i);
+      //if (child_ids_[gid].empty() && !parent_ids_[gid].empty()) {
+        //pending_list_.push_back(gid);
+        //executed_ids_[gid] = true;
+      //}
+    //}
+  //}else {
+    //for (int i = max_seq_length_-1; i >= 0; i--) {
+      //int gid = toGlobalId(sid, i);
+      //if (parent_ids_[gid].empty() && !child_ids_[gid].empty()) {
+        //pending_list_.push_back(gid);
+        //executed_ids_[gid] = true;
+      //}
+    //}
+  //}
+  for (int i = 0; i < max_seq_length_; i++) {
+    int gid = toGlobalId(sid, i);
+    if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
+      pending_list_.push_back(gid);
+      activated_ids_[gid] = true;
+    }
+  }
+}
+
+void SerialGraphScheduler::ActivateNext() {
+  int gid = pending_list_.front();
+  //if (isForward_) {
+    //if (!parent_ids_[gid].empty()) {
+      //for (int pid : parent_ids_[gid]) {
+        //if (!executed_ids_[pid]) {
+          //pending_list_.push_back(pid);
+          //executed_ids_[pid] = true;
+        //}
+      //}
+    //}else if (toSampleId(gid) < batch_size()-1) {
+      //InitializeSample(toSampleId(gid)+1);
+    //}
+  //}else {
+    //if (!child_ids_[gid].empty()) {
+      //for (int cid : child_ids_[gid]) {
+        //if (!activated_workset_[cid]) {
+          //pending_list_.push_back(cid);
+          //activated_workset_[cid] = true;
+        //}
+      //}
+    //}else if (toSampleId(gid) < batch_size()-1) {
+      //InitializeSample(toSampleId(gid)+1);
+    //}
+  //}
+  if (!(*parents_)[gid].empty()) {
+    for (int pid : (*parents_)[gid]) {
+      if (!activated_ids_[pid]) {
+        pending_list_.push_back(pid);
+        activated_ids_[pid] = true;
       }
     }
-  }else {
-    for (int i = parent_ids_[sample_id].size()-1; i >= 0; i--) {
-      if (parent_ids_[sample_id][i] < 0) {
-        pending_workset_.push_back(i);
-        activated_workset_[i] = true;
+  }else if (toSampleId(gid) < batch_size()-1) {
+    InitializeSample(toSampleId(gid)+1);
+  }
+  pending_list_.pop_front();
+  ready_to_execute_ids_[0] = pending_list_.front();
+}
+
+void BatchGraphScheduler::Initialize() {
+  job2tensor_.resize(activated_ids_.size());
+  for (int sid = 0; sid < batch_size(); sid++) {
+    for (int i = 0; i < max_seq_length_; i++) {
+      int gid = toGlobalId(sid, i);
+      if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
+        activated_ids_[gid] = true;
+        ready_to_execute_ids_.push_back(gid);
+        job2tensor_[gid] = executed_jobs_ + (ready_to_execute_ids_.size()-1);
       }
     }
   }
-  sample_id_ = sample_id;
 }
 
-bool GraphScheduler::HasChild() const {
-  CHECK(!empty());
-  int id = pending_workset_.front();
-  if (isForward_) {
-    CHECK(id < child_ids_[sample_id_].size());
-    return !child_ids_[sample_id_][id].empty();
-  }else{
-    CHECK(id < parent_ids_[sample_id_].size());
-    return (parent_ids_[sample_id_][id] != -1);
+void BatchGraphScheduler::ActivateNext() {
+  vector<int> jobs_next_round;
+  for (int gid : ready_to_execute_ids_) {
+    for (int pid : (*parents_)[gid]) {
+      if (!activated_ids_[pid]) {
+        activated_ids_[pid] = true;
+        jobs_next_round.push_back(pid);
+      }
+    }
   }
-}
-
-vector<int> GraphScheduler::child_id() const {
-  CHECK(!empty());
-  int parent_id = pending_workset_.front();
-  CHECK(HasChild())
-    << "parent_id[" << parent_id
-    << "] of sample_id["  << sample_id_ << "] has no children";
-  if (isForward_) {
-    vector<int> ret;
-    for (auto i : child_ids_[sample_id_][parent_id])
-      ret.push_back(ToGlobalId(i));
-    return ret;
-  }else {
-    CHECK(parent_id < parent_ids_[sample_id_].size());
-    return { ToGlobalId(parent_ids_[sample_id_][parent_id]) };
-  }
+  executed_jobs_ += ready_to_execute_ids_.size();
+  ready_to_execute_ids_ = std::move(jobs_next_round);
+  if (ready_to_execute_ids_.empty())
+    executed_jobs_ = 0;
 }
 
 } //namespace midend

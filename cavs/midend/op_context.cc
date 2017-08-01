@@ -11,14 +11,14 @@ unordered_map<string, void*> OpContext::repo_;
 int OpContext::dyn_dim_ = -1;
 
 void OpContext::SetTensorOffset() {
-  int job_id = 0;
-  if (gs_ && (job_id = gs_->GetJobId()) >= 0) {
+  if (gs_) {
+    CHECK(!gs_->Terminate());
     //input'id should be set, think about the graphoutput_grad case
     //we dont't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer
     for (auto* t : inputs_) {
       if (!(t->IsFullShape())) {
-        const_cast<Tensor*>(t)->SetOffsetWithId(job_id);
+        const_cast<Tensor*>(t)->SetOffsetWithId(gs_->GetCurrentRoundOffset());
       }else {
         VLOG(V_DEBUG) << t->name() << " must be a global tensor, "
                       << "and referenced as an input in a function";
@@ -26,7 +26,7 @@ void OpContext::SetTensorOffset() {
     }
     for (auto* t : outputs_) {
       if (!(t->IsFullShape())) {
-        t->SetOffsetWithId(job_id);
+        t->SetOffsetWithId(gs_->GetCurrentRoundOffset());
       }else {
         VLOG(V_DEBUG) << t->name() << " must be a global tensor, "
                       << "and referenced as an output in a function";

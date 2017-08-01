@@ -111,18 +111,18 @@ class FunctionCallStatement : public Statement {
 
 class GraphStatement : public FunctionCallStatement {
  public:
-  GraphStatement(Statement* node_func, GraphScheduler* gs)
+  GraphStatement(Statement* node_func, GraphSchedulerBase* gs)
     : node_func_(node_func), gscheduler_(gs) {}
   void Run() override;
 
  protected:
   Statement* node_func_;
-  GraphScheduler* gscheduler_;
+  GraphSchedulerBase* gscheduler_;
 };
 
 class GraphGradStatement : public GraphStatement {
  public:
-  GraphGradStatement(Statement* node_func, GraphScheduler* gs)
+  GraphGradStatement(Statement* node_func, GraphSchedulerBase* gs)
     : GraphStatement(node_func, gs) {}
   void Run() override;
 };
