@@ -11,8 +11,7 @@ unordered_map<string, void*> OpContext::repo_;
 int OpContext::dyn_dim_ = -1;
 
 void OpContext::SetTensorOffset() {
-  if (gs_) {
-    CHECK(!gs_->Terminate());
+  if (gs_ && !gs_->Terminate()) {
     //input'id should be set, think about the graphoutput_grad case
     //we don't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer

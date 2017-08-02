@@ -15,8 +15,8 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   if (batch_size_ == 0 && max_seq_length_ == 0) {
     batch_size_ = graph_struct.dims(0);
     max_seq_length_ = graph_struct.dims(1);
-    __forward_parents_ids_.resize(graph_struct.dims(0)); 
-    __forward_children_ids_.resize(graph_struct.dims(0)); 
+    __forward_parents_ids_.resize(batch_size_*max_seq_length_); 
+    __forward_children_ids_.resize(batch_size_*max_seq_length_); 
     activated_ids_.resize(batch_size_*max_seq_length_, false);
   }else {
     CHECK(batch_size_ == graph_struct.dims(0)); 
@@ -24,21 +24,24 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   }
 
   int total_length = 0;
-  for (int i = 0; i < graph_struct.dims(0); i++) {
+  for (int i = 0; i < batch_size_; i++) {
     VLOG(V_DEBUG) << i;
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
-    int one_seq_length = std::find(start, start+max_seq_length_, -1) - start;
+    int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
     CHECK(one_seq_length <= max_seq_length_);
     VLOG(V_DEBUG) << one_seq_length;
     total_length += one_seq_length;
-    for (int j = 0; j < one_seq_length; j++) {
+    for (int j = 0; j < one_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
       __forward_parents_ids_[toGlobalId(i, j)][0] = *(start+j);
       __forward_children_ids_[toGlobalId(i, j)].clear();
     }
+    __forward_children_ids_[toGlobalId(i, one_seq_length-1)].clear();
     for (int j = 0; j < one_seq_length; j++) {
-      int parent = __forward_parents_ids_[toGlobalId(i,j)][0];
-      __forward_children_ids_[parent].push_back(toGlobalId(i, j));
+      if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
+        int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
+        __forward_children_ids_[parent].push_back(toGlobalId(i, j));
+      }
     }
   }
   //isForward_ = true;
