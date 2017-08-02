@@ -49,17 +49,19 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //This is the case of LSTM because C is both scattered and fed to compute H
     //For the backward, that means dC is calculated twice in two operators.
     //And therefore these two dCs should be accumulated.
-    //So here we loose the constraint, if "t" exists, we set the tensor as
-    //ZeroInitEnforced, and the computation is +=
     const Tensor* t = GetTensor(TensorNameInFunctionContext(output));
-    bool dynamic_size = true;
-    //if (t) {
-      //const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
+    bool dynamic_shape = true;
+
+    //all the tensors can be categoried into 3 classes
+    //1) external tensor. For example, the placeholder/variable defined out of the node function
+    //2) shared memory tensor. It means we can find its root tensor
+    //3) local tensor. It can be batched and the first dimension should be modified
+    //There is a corner case for the tensor of variable gradient or variable-reshape gradient
+    //it is generated in this session and seems like a local tensor, but it should not be batched.
+    //in the graphutil, all the edge that can be batched are marked,
+    //and therefore if the forward edge can not be batched, the backward/gradient edge can not be batched
     if (!t) {
-      ////all the outputs of the operators in the function are unique
-      //CHECK(!t) << node->debug_info();
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
-      //CHECK(!upper_t || (output->isGradient() && output->isVariable())) << upper_t->debug_info();
       if (upper_t) {
         VLOG(V_DEBUG) << "Found underlying tensor(" << upper_t->name()
                       << "," << upper_t->count() << " elements"
@@ -69,49 +71,59 @@ OpContext* GraphSession::GetContext(const Node* node) {
         Tensor out(TensorNameInFunctionContext(output), *upper_t);
         out.Reshape(output->shape());
         InsertTensor(out);
-        dynamic_size = false;
+        dynamic_shape = false;
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
         //and only share output(0) with input(0)
         //CHECK(node->inputs_size() == 1); //reshape need two inputs
         CHECK(node->output_size() == 1); 
-        CHECK_NOTNULL(GetTensor(TensorNameInFunctionContext(node->input(0)), true));
-        Tensor out(TensorNameInFunctionContext(output),
-            *GetTensor(TensorNameInFunctionContext(node->input(0)), true));
+        const Tensor* rt = NULL;
+        CHECK_NOTNULL(rt = GetTensor(TensorNameInFunctionContext(node->input(0)), true));
+        Tensor out(TensorNameInFunctionContext(output), *rt);
         out.Reshape(output->shape());
         LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
+        dynamic_shape = rt->IsDynamicShape();
       }else {
-        TensorShape shape;
-        if (output->shape().dim_size() == 1 ||
-           (output->shape().dim_size() == 2 && output->shape().dim(0) == 1)) {
-          //Since the users write the think-like-a-vertex function,
-          //we assume each output is one-dimension, without batching
-          shape.AddDim(MAX_NODE_);
-          if (output->shape().dim_size() == 1) {
-            shape.AddDim(output->shape().dim(0));
-          }else if (output->shape().dim_size() == 2 && output->shape().dim(0) == 1) {
-            shape.AddDim(output->shape().dim(1));
+        if (!output->isGradient()) {
+          if (output->IsBatchEnabled()) {
+            dynamic_shape = true;
           }else {
-            LOG(FATAL) << "wrong dimension" << output->shape().DebugString();
+            dynamic_shape = false;
           }
         }else {
-          //CHECK(output->isVariable() && output->isGradient());
-          //the above is wrong when deducing the backward of W.reshape.matmul 
-          CHECK(output->isGradient());
-          shape = TensorShape(output->shape());
-          dynamic_size = false;
+          const Tensor* ft = NULL;
+          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->name()), true));
+          dynamic_shape = ft->IsDynamicShape();
+        }
+
+        TensorShape full_shape;
+        TensorShape partial_shape;
+        if (dynamic_shape) {
+          full_shape.AddDim(MAX_NODE_);
+          if (output->shape().dim_size() == 1) {
+            full_shape.AddDim(output->shape().dim(0));
+          }else if (output->shape().dim(0) == 1) {
+            for (int i = 1; i < output->shape().dim_size(); i++) {
+              full_shape.AddDim(output->shape().dim(0));
+            }
+          }else {
+            LOG(FATAL) << "not a think like a vertex design";
+          }
+          partial_shape = full_shape;
+          partial_shape.SetDim(0, 1);
+        }else {
+          full_shape = std::move(TensorShape(output->shape()));
         }
 
         Allocator* alloc = GetAllocator(op_def); 
         CHECK_NOTNULL(alloc);
         VLOG(V_DEBUG) << "[In Graph Session]: Allocating full tensor for "
                       << TensorNameInFunctionContext(output)
-                      << " with shape info: " << shape.debug_info();
-        Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(shape));
-        out.Resize(output->shape());
-        out.SetAsDynamic();
+                      << " with shape info: " << full_shape.debug_info();
+        Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(full_shape));
+        if (dynamic_shape)  out.Resize(partial_shape);
         VLOG(V_DEBUG) << out.debug_info();
         InsertTensor(out);
       }
@@ -123,10 +135,11 @@ OpContext* GraphSession::GetContext(const Node* node) {
       CHECK(node->output_size() == 1);
       const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }else if (std::find(zeros.begin(), zeros.end(), output->name()) != zeros.end()) {
+      //currently, we only apply the feature to fusedkernel
       CHECK(node->name().substr(0, 11) == "FusedKernel");
       const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }
-    if (dynamic_size) const_cast<Tensor*>(t)->SetAsDynamic();
+    if (dynamic_shape) const_cast<Tensor*>(t)->SetAsDynamic();
 
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }

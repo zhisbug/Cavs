@@ -418,6 +418,16 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
+  //for the data path on pull/gather  to push/scatter, it can be batched
+  for (int i = 0; i < critical_path.size(); i++) {
+    if (critical_path[i]) {
+      Node* node = func_scope->typological_sorted_nodes_[i];
+      if (node->IsSingleNode()) {
+        dynamic_cast<SingleNode*>(node)->SetBatchEnabled();
+      }
+    }
+  }
+
   for (auto& edge: func_scope->in_edges_) {
     for (auto* node : edge.second->dst()) {
       if (node->scope() == func_scope) {
@@ -446,10 +456,7 @@ void GraphUtil::ComputeGradientForFunction(
       Node* node = func_scope->typological_sorted_nodes_[i];
       CHECK(node->output_size() == 1);
       if (node->output(0)->dst_size(true) > 1) {
-        //VLOG(V_DEBUG) << "=============HHH==================";
         VLOG(V_DEBUG) << node->output(0)->debug_info();
-        //VLOG(V_DEBUG) << "=============HHH==================";
-        //sleep(3);
       }
     }
   }

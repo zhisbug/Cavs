@@ -61,6 +61,7 @@ class SingleNode : public Node {
   SingleNode(const OpDef& op_def, Scope* s);
   Statement* Compile(SessionBase* sess) override;
   void SetShape(const std::vector<TensorShapeDef>& def);
+  void SetBatchEnabled();
 
   inline bool IsSingleNode() const override { return true;  }
   inline bool IsVariableOp() const {
@@ -71,6 +72,9 @@ class SingleNode : public Node {
   }
   inline bool IsGraphOp() const { 
     return (op_def_.name() == "GraphOutput");
+  }
+  inline bool IsBatchEnabled() const { 
+    return isBatchEnabled_;
   }
   inline const OpDef& op_def() const {
     return op_def_;
@@ -87,6 +91,7 @@ class SingleNode : public Node {
   OpDef op_def_;
  private:
   SessionBase* sess_debug_;
+  bool isBatchEnabled_;
 }; 
 
 class GraphNode : public SingleNode {

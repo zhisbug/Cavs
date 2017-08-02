@@ -44,7 +44,7 @@ void OpContext::ScaleTensor() {
     //} 
   //}
   for (auto* t : outputs_) {
-    if (t->IsDynamicSize() && t->dims(0) != dyn_dim()) {
+    if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
       VLOG(V_DEBUG) << t->name() << " [OUTPUT] first dimension change from "
                     << t->dims(0) << " to " << dyn_dim();
       t->ScaleDynamicDimension(dyn_dim());

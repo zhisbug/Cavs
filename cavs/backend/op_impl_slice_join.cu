@@ -47,10 +47,11 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
     stride_ = x.count() / split_;
     offset_ = x.count() / split_ * index_;
   }
-  CHECK(stride_ == y->count());
+  CHECK(stride_ == y->count())
+    << stride_ << "\t" << y->count() << "\t" << y->dims();
 
-  if (axis_ == 0 && x.IsDynamicSize() && x.dims() == 2) {
-    CHECK(y->IsDynamicSize());
+  if (axis_ == 0 && x.IsDynamicShape() && x.dims() == 2) {
+    CHECK(y->IsDynamicShape());
     CHECK(y->dims(0) == x.dims(0));
     CHECK(y->dims() == 2);
     for (int i = 0; i < x.dims(0); i++) {
@@ -79,9 +80,9 @@ class ConcatOpImpl : public OpImpl {
       const Tensor& inp = context->Input(i);
       CHECK(inp.count() > 0);
       CHECK(copied_count + inp.count() <= out->count());
-      if (axis_ == 0 && out->IsDynamicSize() && out->dims() == 2) {
+      if (axis_ == 0 && out->IsDynamicShape() && out->dims() == 2) {
         CHECK(inp.dims(0) == out->dims(0));
-        CHECK(inp.IsDynamicSize());
+        CHECK(inp.IsDynamicShape());
         CHECK(inp.dims() == 2);
         for (int j = 0; j < out->dims(0); j++) {
           checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count/out->dims(0)+j*out->dims(1),
@@ -121,9 +122,9 @@ class SliceAllOpImpl : public OpImpl {
       Tensor* out = context->Output(i);
       CHECK(inp_check.count() == out->count());
       CHECK(copied_count + out->count() <= input.count());
-      if (axis_ == 0 && input.IsDynamicSize() && input.dims() == 2) {
+      if (axis_ == 0 && input.IsDynamicShape() && input.dims() == 2) {
         CHECK(out->dims(0) == input.dims(0));
-        CHECK(out->IsDynamicSize());
+        CHECK(out->IsDynamicShape());
         CHECK(out->dims() == 2);
         for (int j = 0; j < input.dims(0); j++) {
           checkCudaError(cudaMemcpy(out->mutable_data<T>()+j*out->dims(1),

@@ -54,7 +54,7 @@ string SingleNode::debug_info() const {
 }
 
 SingleNode::SingleNode(const OpDef& op_def, Scope* s)
-  : Node(s), op_def_(op_def), sess_debug_(NULL) {}
+  : Node(s), op_def_(op_def), isBatchEnabled_(false), sess_debug_(NULL) {}
 
 void SingleNode::SetShape(
     const vector<TensorShapeDef>& def) {
@@ -67,6 +67,13 @@ void SingleNode::SetShape(
     outputs_[i]->SetShape(def[i]);
     *(op_def_.add_shape()) = def[i];
   }
+}
+
+void SingleNode::SetBatchEnabled() {
+  //currently, only single-output node can be batched
+  CHECK(output_size() == 1);
+  isBatchEnabled_ = true;
+  output(0)->SetBatchEnabled();
 }
 
 Statement* SingleNode::Compile(

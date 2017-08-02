@@ -72,7 +72,7 @@ class Tensor {
   inline DeviceType device_type() const { return buf_->device_type(); }
   inline std::string name()       const { return name_;               }
   inline bool empty()             const { return buf_ == nullptr;     }
-  inline bool IsDynamicSize()     const { return params_->dynamic;    }
+  inline bool IsDynamicShape()     const { return params_->dynamic;    }
   inline DataType data_type()     const { return params_->type;       }
   inline void SetAsDynamic() { params_->dynamic = true; }
   //for opeators
@@ -89,7 +89,8 @@ class Tensor {
   void Reshape(const TensorShapeDef& shape);
   void Reshape(const std::vector<int>& dims);
   void Reshape(const Tensor& t);
-  void Resize(const TensorShapeDef& shape);
+  //void Resize(const TensorShapeDef& shape);
+  void Resize(const TensorShape& shape);
   bool ScaleDynamicDimension(int new_dim);
   template <typename T>
     T* mutable_data() const {
