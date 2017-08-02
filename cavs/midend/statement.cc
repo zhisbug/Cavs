@@ -39,7 +39,10 @@ void GraphStatement::Run() {
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   CHECK(output_length > 0);
   //we must clear the dynamic size in case previous ops have changed it;
-  global_ctxt_->SetDynDim(0);
+  //The only case we have to reset the dynamic size is when the previous round sets
+  //the dynamic size to a size larger than the gather output capacity,
+  //which can not happen
+  //global_ctxt_->SetDynDim(0);
   //for (int i = 0; i < gscheduler_->batch(); i++) {
     //gscheduler_->TrigerBatchId(i);
     //while (!gscheduler_->empty()) {
