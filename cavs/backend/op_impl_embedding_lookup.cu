@@ -41,9 +41,19 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
   int vocabulary_size = embedding_matrix.dims(0);
   int embedding_size  = embedding_matrix.dims(1);
   CHECK(vocabulary_size >= embedding_size);
-  CHECK(embedding->dims() == input.dims()+1);
-  for (int i = 0; i < input.dims(); i++)
-    CHECK(embedding->dims(i) == input.dims(i));
+  //we loose this constraint for the batching,
+  //in which we will add a dimension(1) in the 0th dimension
+  CHECK(embedding->dims() == input.dims()+1 ||
+      (embedding->dims() == input.dims() && input.dims(0) == 1));
+  VLOG(V_DEBUG) << input.debug_info();
+  VLOG(V_DEBUG) << embedding->debug_info();
+  //we loose this constraint for the batching,
+  //1==>1, 100 before batching 
+  //1, 1==>1, 100 after batching
+  //for input, we add a dimension(1)
+  //for output, we modify the 0th dimension to batch_size
+  /*for (int i = 0; i < input.dims(); i++)*/
+    /*CHECK(embedding->dims(i) == input.dims(i));*/
   CHECK(embedding->dims(embedding->dims()-1) == embedding_size);
 
   int slices = input.count();

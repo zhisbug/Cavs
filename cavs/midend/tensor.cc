@@ -211,7 +211,8 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
   if (shape.dim(0) == -1) {
     params_->dynamic = true;
   }else {
-    CHECK(new_counts == count());
+    CHECK(new_counts == count())
+      << new_counts << "\t" << count() << name();
   }
   //if (new_counts != count()) {
     //CHECK(shape.dim(0) == -1) << new_counts << "\tvs\t" << count();

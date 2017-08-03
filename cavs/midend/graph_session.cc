@@ -85,6 +85,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
         LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
         dynamic_shape = rt->IsDynamicShape();
+        CHECK(!dynamic_shape || out.dims(0) == 1 || out.dims() == 1);
       }else {
         if (!output->isGradient()) {
           if (output->IsBatchEnabled()) {
@@ -94,7 +95,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
           }
         }else {
           const Tensor* ft = NULL;
-          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->name()), true));
+          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
           dynamic_shape = ft->IsDynamicShape();
         }
 
@@ -106,7 +107,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
             full_shape.AddDim(output->shape().dim(0));
           }else if (output->shape().dim(0) == 1) {
             for (int i = 1; i < output->shape().dim_size(); i++) {
-              full_shape.AddDim(output->shape().dim(0));
+              full_shape.AddDim(output->shape().dim(i));
             }
           }else {
             LOG(FATAL) << "not a think like a vertex design";
