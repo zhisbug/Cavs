@@ -102,9 +102,15 @@ void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
   int vocabulary_size = dMatrix->dims(0);
   int embedding_size  = dMatrix->dims(1);
   CHECK(vocabulary_size >= embedding_size);
-  CHECK(dY.dims() == input.dims()+1);
-  for (int i = 0; i < input.dims(); i++)
-    CHECK(dY.dims(i) == input.dims(i));
+  //we loose this constraint for the batching,
+  //1==>1, 100 before batching 
+  //1, 1==>1, 100 after batching
+  //for input, we add a dimension(1)
+  //for output, we modify the 0th dimension to batch_size
+  CHECK(dY.dims() == input.dims()+1 ||
+        (dY.dims() == input.dims() && input.IsDynamicShape()));
+  /*for (int i = 0; i < input.dims(); i++)*/
+    /*CHECK(dY.dims(i) == input.dims(i));*/
   CHECK(dY.dims(dY.dims()-1) == embedding_size);
 
   checkCudaError(cudaMemset(dMatrix->mutable_data<T>(), 0, 

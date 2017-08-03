@@ -97,7 +97,11 @@ OpContext* GraphSession::GetContext(const Node* node) {
         InsertTensor(out);
       }else {
         if (!output->isGradient()) {
-          if (output->IsBatchEnabled()) {
+          //here, push/scatter op is specially supported when push is the grad of pull/gather
+          //and the output names are random values.
+          //they are not conventional gradient names, but need to be batched
+          if (output->IsBatchEnabled() ||
+              node->name() == "Push" || node->name() == "Scatter") {
             dynamic_shape = true;
           }else {
             dynamic_shape = false;

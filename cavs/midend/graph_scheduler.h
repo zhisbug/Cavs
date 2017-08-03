@@ -26,7 +26,10 @@ class GraphSchedulerBase {
   inline bool HasChild(int job_id) const;
   inline const std::vector<int>& child_id(int job_id) const;
 
-  inline void SetMessagePasser(const Tensor& t) { message_passer_ = t; }
+  inline void SetMessagePasser(const Tensor& t) {
+    CHECK(!t.IsFullShape());
+    message_passer_ = t; 
+  }
   inline const Tensor& GetMessagePasser(int id) {
     message_passer_.SetOffsetWithId(id);
     return message_passer_; 
@@ -66,7 +69,7 @@ class GraphSchedulerBase {
   std::vector<int> round2offset_;
   struct RoundCounter {
    public:
-    RoundCounter() : round_(0), isforward_(true) {}
+    RoundCounter() : round_(-1), isforward_(true) {}
     void SetForward() { isforward_ = true; }
     void SetBackward() { isforward_ = false; }
     bool IsForward() const { return isforward_; }

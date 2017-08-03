@@ -39,6 +39,7 @@ class GraphGatherOp : public OpImpl {
         int child_gid = gs->child_id(gid).at(child_offset_);
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
         const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
+        VLOG(V_DEBUG) << "here";
         CHECK(inp.count() == count_);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
@@ -49,6 +50,7 @@ class GraphGatherOp : public OpImpl {
                                   inp.data<T>(),
                                   inp.count()*sizeof(T),
                                   cudaMemcpyDeviceToDevice));
+        VLOG(V_DEBUG) << "here";
       }else {
         VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
         checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*out->count(),
@@ -96,8 +98,8 @@ class GraphPushOp : public OpImpl {
     CHECK_NOTNULL(gs);
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
-    CHECK(out->count() >= inp.count())
-          << "Input count:\t" << inp.count()
+    //CHECK(out->count() >= inp.count())
+    VLOG(V_DEBUG)      << "Input count:\t" << inp.count()
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";

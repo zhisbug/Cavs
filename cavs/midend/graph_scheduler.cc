@@ -47,7 +47,8 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   children_ = &__forward_children_ids_;
   round2offset_.clear();
   rc_.SetForward();
-  CHECK(rc_() == 0);
+  CHECK(rc_() == -1) << rc_();
+  ++rc_;
   round2offset_.push_back(0);
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
