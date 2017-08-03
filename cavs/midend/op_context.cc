@@ -15,6 +15,7 @@ void OpContext::SetTensorOffset() {
     //input'id should be set, think about the graphoutput_grad case
     //we don't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer
+    VLOG(V_DEBUG) << "here";
     for (auto* t : inputs_) {
       if (!(t->IsFullShape())) {
         const_cast<Tensor*>(t)->SetOffsetWithId(gs_->GetCurrentRoundOffset());
@@ -23,6 +24,7 @@ void OpContext::SetTensorOffset() {
                       << "and referenced as an input in a function";
       }
     }
+    VLOG(V_DEBUG) << "here";
     for (auto* t : outputs_) {
       if (!(t->IsFullShape())) {
         t->SetOffsetWithId(gs_->GetCurrentRoundOffset());
@@ -31,6 +33,7 @@ void OpContext::SetTensorOffset() {
                       << "and referenced as an output in a function";
       }
     }
+    VLOG(V_DEBUG) << "here";
   }
 }
 

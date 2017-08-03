@@ -330,7 +330,8 @@ void Tensor::SetOffsetWithId(int id) {
   size_t unit = count();
   CASES(params_->type, unit *= sizeof(T));
   size_t offset = unit*id; 
-  CHECK(offset < buf_->size()); 
+  CHECK(offset < buf_->size())
+    << id  << "\t" << unit << "\t" << buf_->size() << debug_info();
   params_->offset = offset;
 }
 

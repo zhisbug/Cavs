@@ -60,6 +60,7 @@ void GraphSchedulerBase::ReverseGraph() {
   children_ = &__forward_parents_ids_;
   parents_ = &__forward_children_ids_;
   rc_.SetBackward();
+  ++rc_;
 }
 
 void SerialGraphScheduler::Initialize() {
