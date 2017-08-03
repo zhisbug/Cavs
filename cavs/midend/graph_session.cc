@@ -81,11 +81,20 @@ OpContext* GraphSession::GetContext(const Node* node) {
         const Tensor* rt = NULL;
         CHECK_NOTNULL(rt = GetTensor(TensorNameInFunctionContext(node->input(0)), true));
         Tensor out(TensorNameInFunctionContext(output), *rt);
+        dynamic_shape = rt->IsDynamicShape();
         out.Reshape(output->shape());
+        if (dynamic_shape) {
+          TensorShapeDef new_shape;
+          if (output->shape().dim_size() == 1) {
+            new_shape.add_dim(1);
+            new_shape.add_dim(output->shape().dim(0));
+            out.Reshape(new_shape);
+          }else {
+            CHECK(output->shape().dim(0) == 1);
+          }
+        }
         LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
-        dynamic_shape = rt->IsDynamicShape();
-        CHECK(!dynamic_shape || out.dims(0) == 1 || out.dims() == 1);
       }else {
         if (!output->isGradient()) {
           if (output->IsBatchEnabled()) {

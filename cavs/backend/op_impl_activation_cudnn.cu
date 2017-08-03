@@ -58,6 +58,8 @@ template <typename T, cudnnActivationMode_t mode>
 void ActivationOpCudnn<T, mode>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
+  VLOG(V_DEBUG) << x.debug_info();
+  VLOG(V_DEBUG) << y->debug_info();
   CHECK(x.dims() == y->dims());
   CHECK(x.dims() < 5) << x.dims();
   CHECK(x.dims() > 0) << x.dims();
