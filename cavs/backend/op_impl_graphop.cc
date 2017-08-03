@@ -38,7 +38,7 @@ class GraphGatherOp : public OpImpl {
         CHECK(gs->child_id(gid).size() > child_offset_);
         int child_gid = gs->child_id(gid).at(child_offset_);
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
-        const Tensor& inp = gs->GetMessagePasser(gs->JobIdToTensorId(child_gid));
+        const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
         CHECK(inp.count() == count_);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
@@ -136,11 +136,13 @@ class GraphPullOp : public OpImpl {
     //if in tensor is a global tensor(in the backward of pull)
     CHECK(inp.IsFullShape());
     const vector<int>& job_ids = gs->GetJobId();
+    context->SetDynDim(job_ids.size());
+    context->ScaleTensor();
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
       //const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();
       checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*out->count(),
-                                inp.data<T>() + gs->JobIdToTensorId(gid)*out->count(),
+                                inp.data<T>() + gid*out->count(),
                                 out->count()*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
     }

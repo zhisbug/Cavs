@@ -45,6 +45,10 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   //isForward_ = true;
   parents_ = &__forward_parents_ids_;
   children_ = &__forward_children_ids_;
+  round2offset_.clear();
+  rc_.SetForward();
+  CHECK(rc_() == 0);
+  round2offset_.push_back(0);
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length;
 }
@@ -55,6 +59,7 @@ void GraphSchedulerBase::ReverseGraph() {
   //isForward_ = false;
   children_ = &__forward_parents_ids_;
   parents_ = &__forward_children_ids_;
+  rc_.SetBackward();
 }
 
 void SerialGraphScheduler::Initialize() {
@@ -116,6 +121,7 @@ void SerialGraphScheduler::ActivateNext() {
       //InitializeSample(toSampleId(gid)+1);
     //}
   //}
+  GraphSchedulerBase::ActivateNext();
   if (!(*parents_)[gid].empty()) {
     for (int pid : (*parents_)[gid]) {
       if (!activated_ids_[pid]) {
@@ -131,33 +137,42 @@ void SerialGraphScheduler::ActivateNext() {
 }
 
 void BatchGraphScheduler::Initialize() {
-  job2tensor_.resize(activated_ids_.size());
-  for (int sid = 0; sid < batch_size(); sid++) {
-    for (int i = 0; i < max_seq_length_; i++) {
-      int gid = toGlobalId(sid, i);
-      if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
-        activated_ids_[gid] = true;
-        ready_to_execute_ids_.push_back(gid);
-        job2tensor_[gid] = executed_jobs_ + (ready_to_execute_ids_.size()-1);
+  CHECK(ready_to_execute_ids_.empty());
+  if (rc_.IsForward()) {
+    for (int sid = 0; sid < batch_size(); sid++) {
+      for (int i = 0; i < max_seq_length_; i++) {
+        int gid = toGlobalId(sid, i);
+        if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
+          activated_ids_[gid] = true;
+          job2intensor_[gid] = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
+          ready_to_execute_ids_.push_back(gid);
+        }
       }
     }
+    execution_tracer_.clear();
+  }else {
+    ready_to_execute_ids_ = std::move(execution_tracer_[rc_()]);
   }
 }
 
 void BatchGraphScheduler::ActivateNext() {
-  vector<int> jobs_next_round;
-  for (int gid : ready_to_execute_ids_) {
-    for (int pid : (*parents_)[gid]) {
-      if (!activated_ids_[pid]) {
-        activated_ids_[pid] = true;
-        jobs_next_round.push_back(pid);
+  GraphSchedulerBase::ActivateNext();
+  if (rc_.IsForward()) {
+    vector<int> jobs_next_round;
+    for (int gid : ready_to_execute_ids_) {
+      for (int pid : (*parents_)[gid]) {
+        if (!activated_ids_[pid]) {
+          activated_ids_[pid] = true;
+          job2intensor_[gid] = GetCurrentRoundOffset() + jobs_next_round.size();
+          jobs_next_round.push_back(pid);
+        }
       }
     }
+    execution_tracer_.push_back(std::move(ready_to_execute_ids_));
+    ready_to_execute_ids_ = std::move(jobs_next_round);
+  }else {
+    ready_to_execute_ids_ = std::move(execution_tracer_[rc_.prev()]);
   }
-  executed_jobs_ += ready_to_execute_ids_.size();
-  ready_to_execute_ids_ = std::move(jobs_next_round);
-  if (ready_to_execute_ids_.empty())
-    executed_jobs_ = 0;
 }
 
 } //namespace midend
