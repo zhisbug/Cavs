@@ -44,7 +44,7 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
   //we loose this constraint for the batching,
   //in which we will add a dimension(1) in the 0th dimension
   CHECK(embedding->dims() == input.dims()+1 ||
-      (embedding->dims() == input.dims() && input.dims(0) == 1));
+      (embedding->dims() == input.dims() && input.IsDynamicShape()));
   VLOG(V_DEBUG) << input.debug_info();
   VLOG(V_DEBUG) << embedding->debug_info();
   //we loose this constraint for the batching,
