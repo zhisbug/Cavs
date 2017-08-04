@@ -17,10 +17,10 @@ class GraphSchedulerBase {
   virtual int  JobIdToInternalTensorId(int gid) const = 0;
   virtual bool Terminate() const = 0;
   inline virtual void ActivateNext();
+  inline virtual int GetCurrentRoundOffset() const;
 
   int LoadGraph(const Tensor& parent_ids);
   void ReverseGraph();
-  int GetCurrentRoundOffset() const { return round2offset_[rc_()]; }
   inline const std::vector<int>& GetJobId() const;
   inline int batch_size() const { return batch_size_; }
   inline bool HasChild(int job_id) const;
@@ -75,6 +75,7 @@ class GraphSchedulerBase {
     bool IsForward() const { return isforward_; }
     int operator()() const { return round_; }
     int prev() const { return isforward_? round_-1 : round_+1; }
+    int next() const { return isforward_? round_+1 : round_-1; }
     RoundCounter& operator ++() {
       if (isforward_) round_++; 
       else round_--; 
@@ -101,7 +102,7 @@ class SerialGraphScheduler : public GraphSchedulerBase {
   void ActivateNext() override;
   inline bool Terminate() const override { return pending_list_.empty(); }
   inline int JobIdToInternalTensorId(int gid) const override { return gid; }
-  //inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
+  inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
 
  private:
   void InitializeSample(int id);
@@ -129,32 +130,22 @@ inline void GraphSchedulerBase::ActivateNext() {
 }
 
 inline bool GraphSchedulerBase::HasChild(int job_id) const {
-  //CHECK(!Terminate());
-  //if (isForward_) {
-    //CHECK(job_id < child_ids_.size());
-    //return !child_ids_[job_id].empty();
-  //}else{
-    //CHECK(job_id < parent_ids_.size());
-    //return (!parent_ids_[job_id].emtpy());
-  //}
   CHECK(job_id < (*children_).size());
   return !(*children_)[job_id].empty();
 }
 
 inline const std::vector<int>& GraphSchedulerBase::child_id(int job_id) const {
-  //CHECK(!Terminate());
   CHECK(HasChild(job_id));
-  //if (isForward_) {
-    //return child_ids_[job_id];
-  //}else {
-    //return parent_ids_[job_id];
-  //}
   return (*children_)[job_id];
 }
 
-const std::vector<int>& GraphSchedulerBase::GetJobId() const {
+inline const std::vector<int>& GraphSchedulerBase::GetJobId() const {
   CHECK(!Terminate());
   return ready_to_execute_ids_;
+}
+
+inline int GraphSchedulerBase::GetCurrentRoundOffset() const {
+  return round2offset_[rc_()]; 
 }
 
 } //namespace midend

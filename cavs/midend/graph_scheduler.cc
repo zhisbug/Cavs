@@ -88,7 +88,6 @@ void SerialGraphScheduler::InitializeSample(int sid) {
 
 void SerialGraphScheduler::ActivateNext() {
   int gid = pending_list_.front();
-  GraphSchedulerBase::ActivateNext();
   if (!(*parents_)[gid].empty()) {
     for (int pid : (*parents_)[gid]) {
       if (!activated_ids_[pid]) {
@@ -97,7 +96,7 @@ void SerialGraphScheduler::ActivateNext() {
         VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
-  }else if (toSampleId(gid) < batch_size()-1) {
+  }else if (toSampleId(gid)+1 < batch_size_) {
     InitializeSample(toSampleId(gid)+1);
   }
   pending_list_.pop_front();
