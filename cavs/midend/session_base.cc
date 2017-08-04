@@ -11,22 +11,16 @@ namespace midend {
 
 const Tensor* SessionBase::GetTensor(
     const string& name, bool recursive) const {
-  if (!recursive) {
-    return (scoped_tensor_map_.find(name) == scoped_tensor_map_.end()) ?
-            NULL : &(scoped_tensor_map_.at(name));
-  }else {
+  if (scoped_tensor_map_.find(name) != scoped_tensor_map_.end())
+    return &(scoped_tensor_map_.at(name));
+  else if (recursive) {
     CHECK(name.find_last_of(":") != string::npos);
     string tensor_name = name.substr(name.find_last_of(":")+1);
     CHECK(tensor_name.length());
-    //string scope_name  = name.substr(0, name.find_last_of(":"));
-    //while (tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end()
-        //&& scope_name.find_last_of(":") != string::npos) {
-      //scope_name = scope_name.substr(0, scope_name.find_last_of(":")); 
-    //}
-    //return tensor_map_.find(scope_name+":"+tensor_name) == tensor_map_.end() ?
-           //NULL : &(tensor_map_.at(scope_name+":"+tensor_name));
     return raw_tensor_map_.find(tensor_name) == raw_tensor_map_.end() ?
            NULL : &(raw_tensor_map_.at(tensor_name));
+  }else {
+    return NULL;
   }
 }
 

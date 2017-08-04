@@ -47,13 +47,15 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
     stride_ = x.count() / split_;
     offset_ = x.count() / split_ * index_;
   }
-  CHECK(stride_ == y->count())
-    << stride_ << "\t" << y->count() << "\t" << y->dims();
 
-  if (axis_ == 0 && x.IsDynamicShape() && x.dims() == 2) {
+  //currently, we only support axis equals 0
+  CHECK(axis_ == 0);
+  if (x.IsDynamicShape()) {
+    CHECK(x.dims() == 2);
     CHECK(y->IsDynamicShape());
-    CHECK(y->dims(0) == x.dims(0));
+    CHECK(y->dims(0) == x.dims(0))
     CHECK(y->dims() == 2);
+    CHECK(x.dims(0)*stride_ == y->count());
     for (int i = 0; i < x.dims(0); i++) {
       checkCudaError(cudaMemcpy(y->mutable_data<T>()+i*stride_,
                                 x.data<T>()+offset_+i*x.dims(1),
@@ -61,6 +63,7 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
                                 cudaMemcpyDeviceToDevice));
     }
   }else {
+    CHECK(stride_ == y->count());
     checkCudaError(cudaMemcpy(y->mutable_data<T>(),
                               x.data<T>()+offset_,
                               stride_*sizeof(T),

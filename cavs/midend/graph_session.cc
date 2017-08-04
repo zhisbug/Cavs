@@ -40,6 +40,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //for both cases, we use the recursive method to fetch tensor
     const Tensor* t = GetTensor(TensorNameInFunctionContext(input), true); 
     CHECK(t) << "Getting " << TensorNameInFunctionContext(input);
+    VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(input)
+                  << " is " << t;
     ctxt->AppendInput(t);
   }
 
@@ -155,6 +157,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
     }
     if (dynamic_shape) const_cast<Tensor*>(t)->SetAsDynamic();
 
+    VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(output)
+                  << " is " << t;
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;
