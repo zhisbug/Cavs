@@ -31,14 +31,18 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     total_length += one_seq_length;
     for (int j = 0; j < one_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
-      __forward_parents_ids_[toGlobalId(i, j)][0] = *(start+j);
+      __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
       __forward_children_ids_[toGlobalId(i, j)].clear();
+      VLOG(V_DEBUG) << "parents: " << i << "\t" << j << "\t" << toGlobalId(i, j)
+                    << "\t" << __forward_parents_ids_[toGlobalId(i, j)][0];
     }
     __forward_children_ids_[toGlobalId(i, one_seq_length-1)].clear();
     for (int j = 0; j < one_seq_length; j++) {
       if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
         int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
         __forward_children_ids_[parent].push_back(toGlobalId(i, j));
+        VLOG(V_DEBUG) << "children: " << i << "\t" << j << "\t" << parent
+                      << "\t" << __forward_children_ids_[parent].back();
       }
     }
   }
@@ -72,63 +76,25 @@ void SerialGraphScheduler::Initialize() {
 }
 
 void SerialGraphScheduler::InitializeSample(int sid) {
-  //if (isForward_) {
-    //for (int i = 0; i < max_seq_length_; i++) {
-      //int gid = toGlobalId(sid, i);
-      //if (child_ids_[gid].empty() && !parent_ids_[gid].empty()) {
-        //pending_list_.push_back(gid);
-        //executed_ids_[gid] = true;
-      //}
-    //}
-  //}else {
-    //for (int i = max_seq_length_-1; i >= 0; i--) {
-      //int gid = toGlobalId(sid, i);
-      //if (parent_ids_[gid].empty() && !child_ids_[gid].empty()) {
-        //pending_list_.push_back(gid);
-        //executed_ids_[gid] = true;
-      //}
-    //}
-  //}
   for (int i = 0; i < max_seq_length_; i++) {
     int gid = toGlobalId(sid, i);
     if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
       pending_list_.push_back(gid);
       activated_ids_[gid] = true;
+      VLOG(V_DEBUG) << "Activating job_id: " << gid;
     }
   }
 }
 
 void SerialGraphScheduler::ActivateNext() {
   int gid = pending_list_.front();
-  //if (isForward_) {
-    //if (!parent_ids_[gid].empty()) {
-      //for (int pid : parent_ids_[gid]) {
-        //if (!executed_ids_[pid]) {
-          //pending_list_.push_back(pid);
-          //executed_ids_[pid] = true;
-        //}
-      //}
-    //}else if (toSampleId(gid) < batch_size()-1) {
-      //InitializeSample(toSampleId(gid)+1);
-    //}
-  //}else {
-    //if (!child_ids_[gid].empty()) {
-      //for (int cid : child_ids_[gid]) {
-        //if (!activated_workset_[cid]) {
-          //pending_list_.push_back(cid);
-          //activated_workset_[cid] = true;
-        //}
-      //}
-    //}else if (toSampleId(gid) < batch_size()-1) {
-      //InitializeSample(toSampleId(gid)+1);
-    //}
-  //}
   GraphSchedulerBase::ActivateNext();
   if (!(*parents_)[gid].empty()) {
     for (int pid : (*parents_)[gid]) {
       if (!activated_ids_[pid]) {
         pending_list_.push_back(pid);
         activated_ids_[pid] = true;
+        VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
   }else if (toSampleId(gid) < batch_size()-1) {
