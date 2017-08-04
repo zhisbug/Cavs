@@ -74,8 +74,8 @@ class GraphSchedulerBase {
     void SetBackward() { isforward_ = false; }
     bool IsForward() const { return isforward_; }
     int operator()() const { return round_; }
-    int prev() const { return isforward_? round_-1 : round_+1; }
-    int next() const { return isforward_? round_+1 : round_-1; }
+    //int prev() const { return isforward_? round_-1 : round_+1; }
+    //int next() const { return isforward_? round_+1 : round_-1; }
     RoundCounter& operator ++() {
       if (isforward_) round_++; 
       else round_--; 

@@ -38,8 +38,8 @@ class GraphGatherOp : public OpImpl {
         CHECK(gs->child_id(gid).size() > child_offset_);
         int child_gid = gs->child_id(gid).at(child_offset_);
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
+        VLOG(V_DEBUG) << "internal id offset: " << gs->JobIdToInternalTensorId(child_gid);
         const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
-        VLOG(V_DEBUG) << "here";
         CHECK(inp.count() == count_);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
@@ -50,7 +50,6 @@ class GraphGatherOp : public OpImpl {
                                   inp.data<T>(),
                                   inp.count()*sizeof(T),
                                   cudaMemcpyDeviceToDevice));
-        VLOG(V_DEBUG) << "here";
       }else {
         VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
         checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*out->count(),
@@ -58,6 +57,7 @@ class GraphGatherOp : public OpImpl {
                                   out->count()*sizeof(T)));
       }
     }
+    out->DebugNumerical<T>();
   }
 
  private:

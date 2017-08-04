@@ -16,11 +16,12 @@ class GraphSession : public SessionBase {
     CHECK(name_.length());
     scope_ = main_scope();
     if (sb->session_type() & FUSION)  this->AddType(FUSION);
-    if (!(sb->session_type() & BATCHING)) {
-      gscheduler_ = new SerialGraphScheduler();
-    }else {
-      gscheduler_ = new BatchGraphScheduler();
-    }
+    //if (!(sb->session_type() & BATCHING)) {
+      //gscheduler_ = new SerialGraphScheduler();
+    //}else {
+      //gscheduler_ = new BatchGraphScheduler();
+    //}
+    gscheduler_ = new BatchGraphScheduler();
   }
   const Tensor* GetTensor(const std::string& name, bool recursive = false) const override;
   OpContext* GetContext(const Node* node) override;
