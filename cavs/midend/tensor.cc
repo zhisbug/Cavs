@@ -114,7 +114,6 @@ void Tensor::DebugNumerical<float>() const {
 }
 
 Tensor::Tensor() : buf_(nullptr), name_(""), params_(nullptr) {}
-  //type_(DataType(0)), dynamic_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
                DataType type, const TensorShape& shape) 
@@ -150,7 +149,6 @@ Tensor::Tensor(const string& name, Allocator *a,
 
 //for sharing buffer operators like reshape
 Tensor::Tensor(const std::string& name, const Tensor& t) {
-  //*this = t;
   buf_ = t.buf_;
   name_ = name;
   shape_  = t.shape_;
@@ -300,8 +298,8 @@ bool Tensor::ZeroInitEnforced() const {
 
 bool Tensor::InitWithZero(int iteration) {
   CHECK_NOTNULL(params_.get());
-  size_t unit = count();
-  CASES(params_->type, unit *= sizeof(T));
+  size_t visable_size = count();
+  CASES(params_->type, visable_size *= sizeof(T));
   if (params_->iteration == iteration-1) {
     buf_->InitWithZero();
     params_->iteration++;
@@ -318,16 +316,18 @@ bool Tensor::InitWithZero(int iteration) {
 
 bool Tensor::IsFullShape() const {
   CHECK_NOTNULL(params_.get());
-  size_t unit = count();
-  CASES(params_->type, unit *= sizeof(T));
+  size_t visable_size = count();
+  CASES(params_->type, visable_size *= sizeof(T));
   CHECK_NOTNULL(buf_.get());
-  CHECK(buf_->size() % unit == 0);
-  return buf_->size() == unit;
+  CHECK(buf_->size() % visable_size == 0);
+  return buf_->size() == visable_size;
 }
 
 void Tensor::SetOffsetWithId(int id) {
   CHECK(!IsFullShape());
-  size_t unit = count();
+  CHECK(IsDynamicShape());
+  CHECK(dims() > 1);
+  size_t unit = count()/dims(0);
   CASES(params_->type, unit *= sizeof(T));
   size_t offset = unit*id; 
   CHECK(offset < buf_->size())

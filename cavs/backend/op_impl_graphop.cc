@@ -140,12 +140,14 @@ class GraphPullOp : public OpImpl {
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
     context->ScaleTensor();
+    int stride = out->count()/out->dims(0);
+    CHECK(out->dims(0) == job_ids.size());
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
       //const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();
-      checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*out->count(),
-                                inp.data<T>() + gid*out->count(),
-                                out->count()*sizeof(T),
+      checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,
+                                inp.data<T>() + gid*stride,
+                                stride*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
     }
     inp.DebugNumerical<T>();
