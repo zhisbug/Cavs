@@ -42,18 +42,17 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
   const Tensor& x = context->Input(0);
   Tensor* y = context->Output(0);
 
-  if (offset_ < 0) {
-    CHECK(x.count()% split_ == 0) << x.count() << "\t" << split_;
-    stride_ = x.count() / split_;
-    offset_ = x.count() / split_ * index_;
-  }
-
   //currently, we only support axis equals 0
   CHECK(axis_ == 0);
   if (x.IsDynamicShape()) {
+    if (offset_ < 0) {
+      CHECK((x.count()/x.dims(0)) % split_ == 0);
+      stride_ = (x.count()/x.dims(0)) / split_;
+      offset_ = (x.count()/x.dims(0)) / split_ * index_;
+    }
     CHECK(x.dims() == 2);
     CHECK(y->IsDynamicShape());
-    CHECK(y->dims(0) == x.dims(0))
+    CHECK(y->dims(0) == x.dims(0));
     CHECK(y->dims() == 2);
     CHECK(x.dims(0)*stride_ == y->count());
     for (int i = 0; i < x.dims(0); i++) {
@@ -63,6 +62,11 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
                                 cudaMemcpyDeviceToDevice));
     }
   }else {
+    if (offset_ < 0) {
+      CHECK(x.count()% split_ == 0) << x.count() << "\t" << split_;
+      stride_ = x.count() / split_;
+      offset_ = x.count() / split_ * index_;
+    }
     CHECK(stride_ == y->count());
     checkCudaError(cudaMemcpy(y->mutable_data<T>(),
                               x.data<T>()+offset_,
