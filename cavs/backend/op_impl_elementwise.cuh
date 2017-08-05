@@ -21,12 +21,32 @@ __global__ void UnaryScalarKernel(T* out, const U* value, size_t n) {
 }
 
 template <typename OP, typename T, typename U> 
+__global__ void UnaryStatefulKernel(T* out, const U* inp, size_t n) {
+  CUDA_1D_KERNEL_LOOP(i, n) { 
+    out[i] = OP::Compute(out[i], inp[i]); 
+  } 
+}
+
+template <typename OP, typename T, typename U> 
 __global__ void UnaryBroadcastingKernel(T* out, const U* inp, size_t n_out, size_t dim0) {
   CUDA_1D_KERNEL_LOOP(i, n_out) { 
-    out[i] = 0;
+    T ret = 0;
     for (int j = 0; j < dim0; j++) {
-      out[i] += OP::Compute(inp[i+j*n_out]); 
+      ret += OP::Compute(inp[i+j*n_out]); 
     }
+    out[i] = ret;
+  } 
+}
+
+template <typename OP, typename T, typename U> 
+__global__ void UnaryStatefulBroadcastingKernel(T* out, const U* inp, size_t n_out, size_t dim0) {
+  CUDA_1D_KERNEL_LOOP(i, n_out) { 
+    T ret = 0;
+    U inp0 = out[i];
+    for (int j = 0; j < dim0; j++) {
+      ret += OP::Compute(inp0, inp[i + j*n_out]); 
+    }
+    out[i] = ret;
   } 
 }
 
@@ -52,7 +72,10 @@ struct CUDAUnaryFunctor {
       size_t dim0 = n_inp/n_out;
       UnaryBroadcastingKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
           out, inp, n_out, dim0);
+    }else {
+      LOG(FATAL) << "Unrecognized Pattern:";
     }
+
     checkCudaError(cudaGetLastError());
   }
 };
@@ -62,6 +85,25 @@ struct CUDAUnaryConstScalarFunctor {
   static void Compute(T* out, const U value, size_t n) {
     UnaryConstScalarKernel<OP, T, U><<<BLOCKS_PER_GRID(n), THREADS_PER_BLOCK>>>(
         out, value, n);
+    checkCudaError(cudaGetLastError());
+  }
+};
+
+template <typename OP, typename T, typename U=T> 
+struct CUDAUnaryStatefulFunctor {
+  static void Compute(T* out, size_t n_out, const U* inp, size_t n_inp) {
+    if (n_out == n_inp) {
+      UnaryStatefulKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
+          out, inp, n_out);
+    }else if (n_out < n_inp && n_inp % n_out == 0) {
+      //this is specific for the backward of broadcasting unary operators such as mirror
+      //for user defined operator, this configuration will not be generated.
+      size_t dim0 = n_inp/n_out;
+      UnaryStatefulBroadcastingKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
+          out, inp, n_out, dim0);
+    }else {
+      LOG(FATAL) << "Unrecognized Pattern:";
+    }
     checkCudaError(cudaGetLastError());
   }
 };
@@ -110,7 +152,7 @@ struct CUDABinaryFunctor {
       BinaryScalarKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
           out, inp1, inp0, n_out);
     }else if (n_out == n_inp0) {
-      CHECK(n_out > n_inp1 && n_out % n_inp1 == 0);
+      CHECK(n_out > n_inp1 && n_out % n_inp1 == 0) << n_out << "\t" << n_inp1;
       size_t dim0 = n_out/n_inp1;
       BinaryBroadcastingKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
           out, inp1, inp0, n_out, dim0);
@@ -144,8 +186,10 @@ struct CUDABinaryConstScalarFunctor {
     UnaryOp<CUDAUnaryConstScalarFunctor<math<dtype>, dtype>, dtype>
 #define CudaBinaryOpInstance(math, dtype)   \
     BinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+/*#define CudaAccumulateBinaryOpInstance(math, dtype)    \*/
+    /*AccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>*/
 #define CudaAccumulateBinaryOpInstance(math, dtype)    \
-    AccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+    UnaryOp<CUDAUnaryStatefulFunctor<math<dtype>, dtype>, dtype>
 #define CudaPartialAccumulateBinaryOpInstance(math, dtype)    \
     PartialAccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
 

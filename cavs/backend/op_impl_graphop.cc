@@ -31,6 +31,8 @@ class GraphGatherOp : public OpImpl {
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
     context->ScaleTensor();
+    int stride = out->count()/out->dims(0);
+    CHECK(stride == count_);
     VLOG(V_DEBUG) << "Batching jobs of this round: " << job_ids.size();
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
@@ -40,21 +42,20 @@ class GraphGatherOp : public OpImpl {
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
         VLOG(V_DEBUG) << "internal id offset: " << gs->JobIdToInternalTensorId(child_gid);
         const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
-        CHECK(inp.count() == count_);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
               << "\t" << inp.debug_size() << "Bytes\n"
               << "Output count:\t" << out->count() 
               << "\t" << out->debug_size() << "Bytes";
-        checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*inp.count(),
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*stride,
                                   inp.data<T>(),
-                                  inp.count()*sizeof(T),
+                                  stride*sizeof(T),
                                   cudaMemcpyDeviceToDevice));
       }else {
         VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
-        checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*out->count(),
+        checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*stride,
                                   0,
-                                  out->count()*sizeof(T)));
+                                  stride*sizeof(T)));
       }
     }
     out->DebugNumerical<T>();

@@ -40,24 +40,25 @@ class BinaryOp : public OpImpl {
   }
 };
 
-template <typename FUNCTOR, typename T>
-class AccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
- public:
-  explicit AccumulateBinaryOp(const OpDef& def)
-    : BinaryOp<FUNCTOR, T>(def) {}
-  void Compute(OpContext* context) override {
-    //The partialadd(+=) operator behaves like a binary operation
-    //But it actually has one input, and the output is both input and output
-    const Tensor& inp = context->Input(0);
-    Tensor* out = context->Output(0);
-    CHECK(inp.count() == out->count());
-    out->DebugNumerical<T>();
-    FUNCTOR::Compute(out->mutable_data<T>(), out->count(),
-        out->mutable_data<T>(), out->count(), inp.data<T>(), inp.count());
-    inp.DebugNumerical<T>();
-    out->DebugNumerical<T>();
-  }
-};
+//template <typename FUNCTOR, typename T>
+//class AccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
+ //public:
+  //explicit AccumulateBinaryOp(const OpDef& def)
+    //: BinaryOp<FUNCTOR, T>(def) {}
+  //void Compute(OpContext* context) override {
+    ////The partialadd(+=) operator behaves like a binary operation
+    ////But it actually has one input, and the output is both input and output
+    //const Tensor& inp = context->Input(0);
+    //Tensor* out = context->Output(0);
+    ////we loose the constraint because of the broadcasting support
+    ////CHECK(inp.count() == out->count());
+    //out->DebugNumerical<T>();
+    //FUNCTOR::Compute(out->mutable_data<T>(), out->count(),
+        //out->mutable_data<T>(), out->count(), inp.data<T>(), inp.count());
+    //inp.DebugNumerical<T>();
+    //out->DebugNumerical<T>();
+  //}
+//};
 
 template <typename FUNCTOR, typename T>
 class PartialAccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
@@ -91,6 +92,8 @@ class PartialAccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
       CHECK(out->count() % split_ == 0) << out->count() << "\t" << split_;
       stride_ = out->count() / split_;
       offset_ = stride_ * index_;
+    }else if (out->IsDynamicShape()) {
+      LOG(FATAL) << "it needs further implementation for dynamic batching";
     }
     CHECK(inp.count() == stride_);
     out->DebugNumerical<T>();
