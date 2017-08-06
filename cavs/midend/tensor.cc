@@ -89,27 +89,24 @@ void Tensor::DebugNumerical<float>() const {
       L2_norm += res[i]*res[i]; 
       checksum += res[i];
     }
+    float L2_norm_unit = 0;
+    float checksum_unit = 0;
+    for (int i = 0; i < count()/dims(0); i++) {
+      L2_norm_unit += res[i]*res[i]; 
+      checksum_unit += res[i];
+    }
     VLOG(V_DEBUG) << "pointer-addr:\t" << buf_.get();
-    VLOG(V_EXHAUSTIVE_DEBUG) << name()
+    VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;
-    for (int i = 0; i < 10 && i < count(); i++)
+    VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
+      << "\tL2 Norm Unit:\t" << L2_norm_unit
+      << "\t checksum Unit:\t" << checksum_unit;
+    for (int i = 0; i < 80 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
     L2_norm = 0;
     checksum  = 0;
-    if (name() == "main:Optimizer_12:Variable_3_grad" ||
-        name() == "main:Variable_3") {
-      for (int i = 0; i < 800; i++) {
-        //VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
-                //<< std::setprecision(15) << res[i];
-        L2_norm += res[i]*res[i]; 
-        checksum += res[i];
-      }
-      VLOG(V_EXHAUSTIVE_DEBUG) << name()
-        << "\tL2 Norm:\t" << L2_norm
-        << "\t checksum:\t" << checksum;
-    }
   }
 }
 

@@ -78,7 +78,9 @@ void SliceOpImpl<T>::Compute(OpContext* context) {
 template <typename T>
 class ConcatOpImpl : public OpImpl {
  public:
-  explicit ConcatOpImpl(const OpDef& def) : OpImpl(def) {}
+  explicit ConcatOpImpl(const OpDef& def) : OpImpl(def) {
+    CHECK((axis_ = GetSingleArg<int>(op_def_, "Axis", 0)) == 0);
+  }
   void Compute(OpContext* context) override {
     Tensor* out = context->Output(0);
     CHECK(out->count() > 0);
@@ -87,10 +89,11 @@ class ConcatOpImpl : public OpImpl {
       const Tensor& inp = context->Input(i);
       CHECK(inp.count() > 0);
       CHECK(copied_count + inp.count() <= out->count());
-      if (axis_ == 0 && out->IsDynamicShape() && out->dims() == 2) {
-        CHECK(inp.dims(0) == out->dims(0));
+      if (out->IsDynamicShape()) {
         CHECK(inp.IsDynamicShape());
+        CHECK(out->dims() == 2);
         CHECK(inp.dims() == 2);
+        CHECK(inp.dims(0) == out->dims(0));
         for (int j = 0; j < out->dims(0); j++) {
           checkCudaError(cudaMemcpy(out->mutable_data<T>()+copied_count/out->dims(0)+j*out->dims(1),
                                     inp.data<T>()+j*inp.dims(1),
