@@ -86,19 +86,40 @@ class PartialAccumulateBinaryOp : public BinaryOp<FUNCTOR, T> {
     const Tensor& inp = context->Input(0);
     Tensor* out = context->Output(0);
 
-    //inp is the small tensor and out is the big one
-    if (split_ > 0) {
-      //it means the dynamic slicing
-      CHECK(out->count() % split_ == 0) << out->count() << "\t" << split_;
-      stride_ = out->count() / split_;
-      offset_ = stride_ * index_;
-    }else if (out->IsDynamicShape()) {
-      LOG(FATAL) << "it needs further implementation for dynamic batching";
-    }
-    CHECK(inp.count() == stride_);
     out->DebugNumerical<T>();
-    FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_,
-        out->mutable_data<T>()+offset_, stride_, inp.data<T>(), inp.count());
+    if (inp.IsDynamicShape()) {
+      CHECK(!inp.IsFullShape());
+      CHECK(inp.dims() == 2);
+      CHECK(out->IsDynamicShape() && !out->IsFullShape());
+      CHECK(out->dims(0) == inp.dims(0));
+      CHECK(out->dims() == inp.dims());
+      //VLOG(V_DEBUG) << out->debug_info();
+      //VLOG(V_DEBUG) << inp.debug_info();
+      if (offset_ < 0) {
+        CHECK((out->count()/out->dims(0)) % split_ == 0);
+        stride_ = (out->count()/out->dims(0)) / split_;
+        offset_ = (out->count()/out->dims(0)) / split_ * index_;
+      }
+      CHECK(stride_ = inp.count()/inp.dims(0));
+      for (int i = 0; i < out->dims(0); i++) {
+        int out_offset = offset_+i*out->dims(1);
+        FUNCTOR::Compute(out->mutable_data<T>()+out_offset, stride_,
+            out->mutable_data<T>()+out_offset, stride_, inp.data<T>()+i*stride_, stride_);
+      }
+    }else {
+      //inp is the small tensor and out is the big one
+      if (split_ > 0) {
+        //it means the dynamic slicing
+        CHECK(out->count() % split_ == 0) << out->count() << "\t" << split_;
+        stride_ = out->count() / split_;
+        offset_ = stride_ * index_;
+      }else if (out->IsDynamicShape()) {
+        LOG(FATAL) << "it needs further implementation for dynamic batching";
+      }
+      CHECK(inp.count() == stride_);
+      FUNCTOR::Compute(out->mutable_data<T>()+offset_, stride_,
+          out->mutable_data<T>()+offset_, stride_, inp.data<T>(), inp.count());
+    }
     inp.DebugNumerical<T>();
     out->DebugNumerical<T>();
   }
