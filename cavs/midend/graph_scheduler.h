@@ -15,6 +15,7 @@ class GraphSchedulerBase {
     batch_size_(0), max_seq_length_(0) {}
   virtual void Initialize() = 0;
   virtual int  JobIdToInternalTensorId(int gid) const = 0;
+  virtual int  InternalTensorIdToJobId(int tid) const = 0;
   virtual bool Terminate() const = 0;
   inline virtual void ActivateNext();
   inline virtual int GetCurrentRoundOffset() const;
@@ -102,6 +103,7 @@ class SerialGraphScheduler : public GraphSchedulerBase {
   void ActivateNext() override;
   inline bool Terminate() const override { return pending_list_.empty(); }
   inline int JobIdToInternalTensorId(int gid) const override { return gid; }
+  inline int InternalTensorIdToJobId(int tid) const override { return tid; }
   inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
 
  private:
@@ -112,14 +114,16 @@ class SerialGraphScheduler : public GraphSchedulerBase {
 class BatchGraphScheduler : public GraphSchedulerBase {
  public:
   BatchGraphScheduler() :
-    GraphSchedulerBase(), job2intensor_(0), execution_tracer_(0) {}
+    GraphSchedulerBase(), job2intensor_(0), intensor2job_(0), execution_tracer_(0) {}
   void Initialize() override;
   void ActivateNext() override;
   inline bool Terminate() const override { return ready_to_execute_ids_.empty(); }
   inline int JobIdToInternalTensorId(int gid) const override { return job2intensor_[gid]; }
+  inline int InternalTensorIdToJobId(int tid) const override { return intensor2job_[tid]; }
 
  private:
   std::vector<int> job2intensor_;
+  std::vector<int> intensor2job_;
   std::vector<std::vector<int>> execution_tracer_;
 };
 

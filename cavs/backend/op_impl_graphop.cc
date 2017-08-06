@@ -178,16 +178,32 @@ class FunctionPopRetOp : public OpImpl {
     //LOG(FATAL) << "here";
     GraphSchedulerBase* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
-    //checkCudaError(cudaDeviceSynchronize());
-    //checkCudaError(cudaGetLastError());
     const Tensor& inp = gs->GetFuncRet();
     Tensor* out = context->Output(0);
     CHECK(inp.count() <= out->count());
     CHECK(inp.debug_size() == out->debug_size());
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                              inp.data<T>(),
-                              out->count()*sizeof(T),
-                              cudaMemcpyDeviceToDevice));
+    VLOG(V_DEBUG) << inp.debug_info();
+    VLOG(V_DEBUG) << out->debug_info();
+    if (inp.IsDynamicShape()) {
+      CHECK(!out->IsDynamicShape() || out->IsFullShape());
+      int stride = inp.count()/inp.dims(0);
+      //CHECK(inp.count()/inp.dims(0) == stride);
+      for (int tid = 0; tid < out->dims(0); tid++) {
+        int gid = gs->InternalTensorIdToJobId(tid);
+        VLOG(V_DEBUG) << "tid: " << tid;
+        VLOG(V_DEBUG) << "gid: " << gid;
+        VLOG(V_DEBUG) << "stride: " << stride;
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+gid*stride,
+                                  inp.data<T>()+tid*stride,
+                                  stride*sizeof(T),
+                                  cudaMemcpyDeviceToDevice));
+      }
+    }else {
+      checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                                inp.data<T>(),
+                                out->count()*sizeof(T),
+                                cudaMemcpyDeviceToDevice));
+    }
     out->DebugNumerical<T>();
   }
 };

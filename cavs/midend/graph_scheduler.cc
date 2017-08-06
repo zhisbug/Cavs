@@ -107,13 +107,16 @@ void BatchGraphScheduler::Initialize() {
   CHECK(Terminate());
   std::fill(activated_ids_.begin(), activated_ids_.end(), false);
   job2intensor_.resize(activated_ids_.size(), 0);
+  intensor2job_.resize(activated_ids_.size(), 0);
   if (rc_.IsForward()) {
     for (int sid = 0; sid < batch_size(); sid++) {
       for (int i = 0; i < max_seq_length_; i++) {
         int gid = toGlobalId(sid, i);
         if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
           activated_ids_[gid] = true;
-          job2intensor_[gid] = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
+          int tensor_id = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
+          job2intensor_[gid] = tensor_id;
+          intensor2job_[tensor_id] = gid;
           ready_to_execute_ids_.push_back(gid);
         }
       }
@@ -134,7 +137,9 @@ void BatchGraphScheduler::ActivateNext() {
       for (int pid : (*parents_)[gid]) {
         if (!activated_ids_[pid]) {
           activated_ids_[pid] = true;
-          job2intensor_[pid] = GetCurrentRoundOffset() + jobs_next_round.size();
+          int tensor_id = GetCurrentRoundOffset() + jobs_next_round.size();
+          job2intensor_[pid] = tensor_id;
+          intensor2job_[tensor_id] = pid;
           jobs_next_round.push_back(pid);
         }
       }
