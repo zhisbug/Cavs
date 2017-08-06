@@ -120,7 +120,9 @@ class ConcatOpImpl : public OpImpl {
 template <typename T>
 class SliceAllOpImpl : public OpImpl {
  public:
-  explicit SliceAllOpImpl(const OpDef& def) : OpImpl(def) {}
+  explicit SliceAllOpImpl(const OpDef& def) : OpImpl(def) {
+    CHECK((axis_ = GetSingleArg<int>(op_def_, "Axis", 0)) == 0);
+  }
   void Compute(OpContext* context) override {
     CHECK(context->InputSize() == context->OutputSize()+1);
     const Tensor& input = context->Input(0);
@@ -132,14 +134,18 @@ class SliceAllOpImpl : public OpImpl {
       Tensor* out = context->Output(i);
       CHECK(inp_check.count() == out->count());
       CHECK(copied_count + out->count() <= input.count());
-      if (axis_ == 0 && input.IsDynamicShape() && input.dims() == 2) {
-        CHECK(out->dims(0) == input.dims(0));
+      if (input.IsDynamicShape()) {
         CHECK(out->IsDynamicShape());
+        CHECK(!input.IsFullShape());
+        CHECK(!out->IsFullShape());
+        CHECK(input.dims() == 2);
         CHECK(out->dims() == 2);
+        CHECK(out->dims(0) == input.dims(0));
+        int out_stride = out->dims(1);
         for (int j = 0; j < input.dims(0); j++) {
-          checkCudaError(cudaMemcpy(out->mutable_data<T>()+j*out->dims(1),
+          checkCudaError(cudaMemcpy(out->mutable_data<T>()+j*out_stride,
                                     input.data<T>()+copied_count/input.dims(0)+j*input.dims(1),
-                                    out->dims(1)*sizeof(T),
+                                    out_stride*sizeof(T),
                                     cudaMemcpyDeviceToDevice));
         }
       }else {

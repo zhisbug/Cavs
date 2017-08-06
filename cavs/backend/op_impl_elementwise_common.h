@@ -16,11 +16,11 @@ class UnaryOp : public OpImpl {
   explicit UnaryOp(const OpDef& def) : OpImpl(def) {}
   void Compute(OpContext* context) override {
     const Tensor& inp = context->Input(0);
-    //inp.DebugNumerical<T>();
+    inp.DebugNumerical<T>();
     Tensor* out = context->Output(0);
     FUNCTOR::Compute(out->mutable_data<T>(), out->count(), 
         inp.data<T>(), inp.count());
-    //out->DebugNumerical<T>();
+    out->DebugNumerical<T>();
   }
 };
 
