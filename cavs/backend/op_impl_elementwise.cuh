@@ -132,9 +132,9 @@ __global__ void BinaryConstScalarKernel(T* out, const U* inp0, const U inp1, siz
 //the broadcast kernel only support 1st dimension broadcasting and 
 //assumes the 1st dimension of the second input is 1.
 template <typename OP, typename T, typename U> 
-__global__ void BinaryBroadcastingKernel(T* out, const U* inp0, const U* inp1, size_t n, size_t dim0) {
+__global__ void BinaryBroadcastingKernel(T* out, const U* inp0, const U* inp1, size_t n, size_t stride) {
   CUDA_1D_KERNEL_LOOP(i, n) { 
-    out[i] = OP::Compute(inp0[i/dim0], inp1[i]); 
+    out[i] = OP::Compute(inp0[i%stride], inp1[i]); 
   } 
 }
 
@@ -142,6 +142,8 @@ template <typename OP, typename T, typename U=T>
 struct CUDABinaryFunctor {
   static void Compute(T* out, size_t n_out,
       const U* inp0, size_t n_inp0, const U* inp1, size_t n_inp1) {
+    VLOG(V_DEBUG) << "BinaryFunctior";
+    VLOG(V_DEBUG) << n_out << "\t" << n_inp0 << "\t" << n_inp1;
     if (n_out == n_inp0 && n_inp0 == n_inp1) {
       BinaryKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
           out, inp0, inp1, n_out);
@@ -153,14 +155,16 @@ struct CUDABinaryFunctor {
           out, inp1, inp0, n_out);
     }else if (n_out == n_inp0) {
       CHECK(n_out > n_inp1 && n_out % n_inp1 == 0) << n_out << "\t" << n_inp1;
-      size_t dim0 = n_out/n_inp1;
+      /*size_t dim0 = n_out/n_inp1;*/
       BinaryBroadcastingKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
-          out, inp1, inp0, n_out, dim0);
+          out, inp1, inp0, n_out, n_inp1);
+      VLOG(V_DEBUG) << "Broadcasting inp1";
     }else if (n_out == n_inp1) {
       CHECK(n_out > n_inp0 && n_out % n_inp0 == 0);
-      size_t dim0 = n_out/n_inp0;
+      /*size_t dim0 = n_out/n_inp0;*/
       BinaryBroadcastingKernel<OP, T, U><<<BLOCKS_PER_GRID(n_out), THREADS_PER_BLOCK>>>(
-          out, inp0, inp1, n_out, dim0);
+          out, inp0, inp1, n_out, n_inp0);
+      VLOG(V_DEBUG) << "Broadcasting inp0";
     }else {
       LOG(FATAL) << "Unrecognized Pattern:\t"
                  << n_out << "\t" << n_inp0 << "\t" << n_inp1;
