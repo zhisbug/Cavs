@@ -1,6 +1,7 @@
 #include "cavs/midend/node.h"
 #include "cavs/midend/graph_session.h"
 #include "cavs/midend/runtime_compiler/code_generator.h"
+#include "cavs/midend/stream_scheduler.h"
 #include "cavs/util/op_def_builder.h"
 
 using std::string;
@@ -247,9 +248,9 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
     if ((sess->session_type() & SessionBase::FUSION)) {
-      VLOG(V_DEBUG) << "Begin modifing the critical path in ScopedNode";
+      VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
       RTC::CodeGenerator generator(&nodes_);
-      VLOG(V_DEBUG) << "Modifing the critical path done in ScopedNode";
+      VLOG(V_DEBUG) << "Modifing the critical path done for fusion in ScopedNode";
     }
     for (auto* node : nodes_) {
       VLOG(V_DEBUG) << "\tCompiling\t" << node->name()
@@ -257,6 +258,12 @@ Statement* ScopedNode::Compile(
       Statement* stmt = node->Compile(sess);
       CHECK(stmt) << node->debug_info();
       bb->AppendStmt(stmt);
+    }
+
+    if ((sess->session_type() & SessionBase::STREAMMING)) {
+      VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
+      StreamScheduler scheduler(&nodes_, &(bb->stmts_));
+      VLOG(V_DEBUG) << "Modifing the critical path done for streamming in ScopedNode";
     }
     stmt_ = bb;
   }

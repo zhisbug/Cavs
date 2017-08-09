@@ -26,7 +26,7 @@ class GraphSession : public SessionBase {
   const Tensor* GetTensor(const std::string& name, bool recursive = false) const override;
   OpContext* GetContext(const Node* node) override;
   std::string TensorNameInFunctionContext(const Edge* e) const;
-  virtual int session_type() const { return GRAPH; }
+  //virtual int session_type() const { return GRAPH; }
   GraphSchedulerBase* graph_scheduler() { return gscheduler_; }
 
  private:

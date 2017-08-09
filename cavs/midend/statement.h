@@ -15,10 +15,10 @@ using ::backend::CreateOp;
 
 class Statement {
  public:
+  enum SType { EXPR = 0, BASICBLOCK = 1, FUNCCALL = 2 };
   virtual void Run() = 0;
-  inline static void IncRound() {
-    round_++;
-  }
+  virtual SType type() const = 0;
+  inline static void IncRound() { round_++; }
 
  protected:
   inline static int round() { return round_; }
@@ -34,8 +34,10 @@ class ExprStatement : public Statement {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
   }
+  SType type() const override { return EXPR; }
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
+  inline OpContext* GetContext() { return ctxt_; }
 
   void Run() override;
 
@@ -64,12 +66,14 @@ class BasicBlock : public Statement {
       }
     }
   }
+  SType type() const override { return BASICBLOCK; }
 
   inline Statement* AppendStmt(Statement* stmt) {
     CHECK(stmt);
     stmts_.push_back(stmt); 
     return stmt;
   }
+  friend class ScopedNode;
 
  protected:
   int iter_;
@@ -98,6 +102,7 @@ class FunctionCallStatement : public Statement {
     CHECK_NOTNULL(pop_ret_stmt_);
     CHECK_NOTNULL(global_ctxt_);
   }
+  SType type() const override { return FUNCCALL; }
 
  protected:
   FunctionCallStatement()

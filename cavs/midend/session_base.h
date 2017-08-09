@@ -21,7 +21,7 @@ class SessionBase {
     LOG(FATAL) << "Base Session";
   }
 
-  enum SessionType { BASE=0, SIMPLE=1, MPI=2, FUSION=4, GRAPH=8, BATCHING = 16 };
+  enum SessionType { BASE=0, SIMPLE=1, MPI=2, FUSION=4, GRAPH=8, BATCHING = 16, STREAMMING = 32 };
   int session_type() const { return type_; }
   void AddType(SessionType t) { type_ += (int)t; }
 
