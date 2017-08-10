@@ -1,4 +1,5 @@
 #include "cavs/frontend/cxx/session.h"
+#include "cavs/proto/opt.pb.h"
 #include "cavs/util/logging.h"
 
 #include <iostream>
@@ -20,7 +21,7 @@ int main(int argc, char* argv[]) {
   Sym XX = X + Y;
   Sym YY = XX + Z;
 
-  FusionSession sess;
+  Session sess((int)OPT_FUSION);
   vector<float> A_data = {1, 2, 3, 4, 5, 6};
   vector<float> B_data = {6, 5, 4, 3, 2, 1};
   vector<float> C_data = {0.1, 0.2, 0.3, 0.4, 0.5, 0.6};

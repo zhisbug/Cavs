@@ -1,6 +1,7 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
+#include "cavs/proto/opt.pb.h"
 
 #include <iostream>
 #include <fstream>
@@ -134,7 +135,7 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  FusionSession sess;
+  Session sess(OPT_FUSION);
   LOG(INFO) << "here";
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {

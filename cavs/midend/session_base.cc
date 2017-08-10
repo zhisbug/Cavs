@@ -116,11 +116,11 @@ void SessionRegister::InitInternal(
 
 } //namespace session_factory
 
-SessionBase* GetSession(const string& name) {
+SessionBase* GetSession(const string& name, int opt) {
   if (session_factory::GlobalSessionRegistry()->count(name) == 0)
     return NULL;
   else
-    return session_factory::GlobalSessionRegistry()->at(name)();
+    return session_factory::GlobalSessionRegistry()->at(name)(opt);
 }
 
 } //namespace midend

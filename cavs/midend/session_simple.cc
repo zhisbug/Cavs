@@ -1,4 +1,4 @@
-#include "cavs/midend/simple_session.h"
+#include "cavs/midend/session_simple.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/util/logging.h"
 #include "cavs/util/macros_gpu.h"
@@ -13,9 +13,7 @@ using std::set;
 
 namespace midend {
 
-SimpleSession::SimpleSession() : SessionBase(), s_(main_scope()) {
- type_ = (int)SIMPLE;
-}
+SimpleSession::SimpleSession(int opt) : SessionBase(opt), s_(main_scope()) {}
 
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,

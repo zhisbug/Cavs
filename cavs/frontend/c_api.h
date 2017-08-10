@@ -18,7 +18,7 @@ typedef struct C_Tensor   C_Tensor;
 typedef struct C_Scope    C_Scope;
 
 extern C_Session* C_NewSession(
-    const char* name, size_t name_len);
+    const char* name, size_t name_len, int opt);
 extern C_Tensor* C_NewTensor(const char* name, size_t name_len, 
     const int* shape, int dims, C_Dtype dtype);
 //extern void C_DumpGraph(C_DepGraph* c_graph);

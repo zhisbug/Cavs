@@ -247,7 +247,7 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It is located in scope " << scope()->scoped_name();
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
-    if ((sess->session_type() & SessionBase::FUSION)) {
+    if ((sess->session_type() & OPT_FUSION)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
       RTC::CodeGenerator generator(&nodes_);
       VLOG(V_DEBUG) << "Modifing the critical path done for fusion in ScopedNode";
@@ -260,7 +260,7 @@ Statement* ScopedNode::Compile(
       bb->AppendStmt(stmt);
     }
 
-    if ((sess->session_type() & SessionBase::STREAMMING)) {
+    if ((sess->session_type() & OPT_STREAMMING)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
       StreamScheduler scheduler(&nodes_, &(bb->stmts_));
       VLOG(V_DEBUG) << "Modifing the critical path done for streamming in ScopedNode";
