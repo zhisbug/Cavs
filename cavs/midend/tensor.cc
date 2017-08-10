@@ -102,7 +102,7 @@ void Tensor::DebugNumerical<float>() const {
     VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
       << "\tL2 Norm Unit:\t" << L2_norm_unit
       << "\t checksum Unit:\t" << checksum_unit;
-    for (int i = 0; i < 80 && i < count(); i++)
+    for (int i = 0; i < 10 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
     L2_norm = 0;
