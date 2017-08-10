@@ -12,7 +12,7 @@ namespace midend {
 
 class OpContext {
  public:
-  OpContext() : round_(0), gs_(NULL), stream_id_(-1) {}
+  OpContext() : round_(0), gs_(NULL), stream_id_(-1), sync_me_(false) {}
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
   inline int InputSize() const;
@@ -21,6 +21,7 @@ class OpContext {
   inline void AppendOutput(Tensor* t);
   inline OpContext* ExtractContext(const std::vector<int>& inp, const std::vector<int>& out);
   inline void SetStreamId(int id) { stream_id_ = id; }
+  inline int GetStreamID() const { return stream_id_; }
   inline void AddInputEventId(int id) { inputs_event_ids_.push_back(id); }
   inline void SetSyncMe() { sync_me_ = true; }
 

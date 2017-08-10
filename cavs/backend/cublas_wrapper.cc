@@ -11,6 +11,7 @@ namespace backend {
 
 template <>
 void MatMulMatCublasWrapper<float>(
+    cublasHandle_t handle,
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const float alpha, const float* A, const float* B,
@@ -21,13 +22,14 @@ void MatMulMatCublasWrapper<float>(
       (TransA == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
   cublasOperation_t cuTransB =
       (TransB == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  checkCublasError(cublasSgemm(CudaCommon::cublasHandle(),
+  checkCublasError(cublasSgemm(handle,
       cuTransB, cuTransA,
       N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }
 
 template <>
 void MatMulMatCublasWrapper<double>(
+    cublasHandle_t handle,
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const double alpha, const double* A, const double* B,
@@ -38,7 +40,7 @@ void MatMulMatCublasWrapper<double>(
       (TransA == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
   cublasOperation_t cuTransB =
       (TransB == false) ? CUBLAS_OP_N : CUBLAS_OP_T;
-  checkCublasError(cublasDgemm(CudaCommon::cublasHandle(),
+  checkCublasError(cublasDgemm(handle,
       cuTransB, cuTransA,
       N, M, K, &alpha, B, ldb, A, lda, &beta, C, N));
 }

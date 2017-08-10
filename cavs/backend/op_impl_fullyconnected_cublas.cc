@@ -4,6 +4,7 @@
 //#include "cavs/midend/devices.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 namespace backend {
 
@@ -16,7 +17,7 @@ template <typename T>
 class FullyConnectedOpCublas : public OpImpl {
  public:
   explicit FullyConnectedOpCublas(const OpDef& def)
-    : OpImpl(def), bias_one_(NULL), bias_length_(0) {
+    : OpImpl(def), bias_one_(NULL), bias_length_(0), handle_(NULL) {
     alloc_ = GetAllocator(DeviceTypeToString(GPU));
   }
   void Compute(OpContext* context) override;
@@ -25,6 +26,7 @@ class FullyConnectedOpCublas : public OpImpl {
   T* bias_one_;
   int bias_length_;
   Allocator* alloc_;
+  cublasHandle_t handle_;
 };
 
 template <typename T>
@@ -58,13 +60,21 @@ void FullyConnectedOpCublas<T>::Compute(OpContext* context) {
     bias_length_ = batchN;
   }
 
+  if (!handle_) {
+    if (context->GetStreamID() != -1) {
+      handle_ = StreamEventHandlePool::GetCublasHandle(context->GetStreamID());
+    }else {
+      handle_ = CudaCommon::cublasHandle();
+    }
+  }
+
   bool TransX = false;
   bool TransW = true;
 
-  MatMulMatCublasWrapper<T>(TransX, TransW,
+  MatMulMatCublasWrapper<T>(handle_, TransX, TransW,
       batchN, Out, K, 1.f, X.data<T>(), W.data<T>(),
       0, Y->mutable_data<T>());
-  MatMulMatCublasWrapper<T>(false, false,
+  MatMulMatCublasWrapper<T>(handle_, false, false,
       batchN, Out, 1, 1.f, bias_one_, B.data<T>(),
       1, Y->mutable_data<T>());
 
@@ -78,7 +88,7 @@ template <typename T>
 class FullyConnectedGradOpCublas : public OpImpl {
  public:
   explicit FullyConnectedGradOpCublas(const OpDef& def)
-    : OpImpl(def), bias_one_(NULL), bias_length_(0) {
+    : OpImpl(def), bias_one_(NULL), bias_length_(0), handle_(NULL) {
     alloc_ = GetAllocator(DeviceTypeToString(GPU));
   }
   void Compute(OpContext* context) override;
@@ -87,6 +97,7 @@ class FullyConnectedGradOpCublas : public OpImpl {
   T* bias_one_;
   int bias_length_;
   Allocator* alloc_;
+  cublasHandle_t handle_;
 };
 
 template <typename T>
@@ -127,22 +138,31 @@ void FullyConnectedGradOpCublas<T>::Compute(OpContext* context) {
     std::vector<float> init;
     init.resize(batchN, 1.f);
     bias_one_ = alloc_->Allocate<T>(batchN);
-    checkCudaError(cudaGetLastError());
+    //checkCudaError(cudaGetLastError());
     checkCudaError(cudaMemcpy(bias_one_, init.data(), batchN*sizeof(float), cudaMemcpyHostToDevice));
     bias_length_ = batchN;
   }
 
+  if (!handle_) {
+    if (context->GetStreamID() != -1) {
+      handle_ = StreamEventHandlePool::GetCublasHandle(context->GetStreamID());
+    }else {
+      handle_ = CudaCommon::cublasHandle();
+    }
+  }
+
+
   bool Trans_dY = true;
   bool Trans_X  = false;
-  MatMulMatCublasWrapper<T>(Trans_dY, Trans_X,
+  MatMulMatCublasWrapper<T>(handle_, Trans_dY, Trans_X,
       Out, K, batchN, 1.f, dY.data<T>(), X.data<T>(),
       0, dW->mutable_data<T>());
 
-  MatMulMatCublasWrapper<T>(true, false,
+  MatMulMatCublasWrapper<T>(handle_, true, false,
       1, Out, batchN, 1.f, bias_one_, dY.data<T>(),
       0, dB->mutable_data<T>());
 
-  MatMulMatCublasWrapper<T>(false, false,
+  MatMulMatCublasWrapper<T>(handle_, false, false,
       batchN, K, Out, 1.f, dY.data<T>(), W.data<T>(),
       0, dX->mutable_data<T>());
 

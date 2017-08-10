@@ -1,6 +1,8 @@
 #ifndef CAVS_BACKEND_CUBLAS_WRAPPER_H_
 #define CAVS_BACKEND_CUBLAS_WRAPPER_H_
 
+#include "cavs/util/macros_gpu.h"
+
 namespace backend {
 
 //cublas only supports FORTRAN order, fuck
@@ -9,6 +11,7 @@ namespace backend {
 //level3
 template <typename T>
 void MatMulMatCublasWrapper(
+    cublasHandle_t handle,
     const bool TransA, const bool TransB, 
     const int M, const int N, const int K, 
     const T alpha, const T* A, const T* B,

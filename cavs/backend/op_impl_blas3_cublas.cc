@@ -51,7 +51,7 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
   //LOG(INFO) << "TransA? " << TransA;
   //LOG(INFO) << "TransB? " << TransB;
 
-  MatMulMatCublasWrapper<T>(TransA, TransB,
+  MatMulMatCublasWrapper<T>(NULL, TransA, TransB,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
       0, C->mutable_data<T>());
   A.DebugNumerical<T>();

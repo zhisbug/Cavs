@@ -3,7 +3,7 @@
 
 #include "cavs/midend/node.h"
 #include "cavs/midend/edge.h"
-#include "cavs/midend/stream_event_pool.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 #include <unordered_map>
 #include <list>
@@ -35,15 +35,15 @@ class StreamScheduler {
         Edge* edge = (*iter)->output(0);
         //initialization, source node in this scope
         if (stream_ids[id] == -1) {
-          stream_ids[id] = StreamEventPool::GetNewStream();
+          stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
         }
         stream_ids[node2idx[edge->dst(0, true)]] = stream_ids[id];
       }else {
         if (stream_ids[id] == -1) {
-          stream_ids[id] = StreamEventPool::GetNewStream();
+          stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
         }
         CHECK(event_ids[id] == -1);
-        event_ids[id] = StreamEventPool::GetNewEvent();
+        event_ids[id] = StreamEventHandlePool::GenNewEventID();
         
         bool reuse_stream = false;
         for (Edge* edge : (*iter)->output()) {

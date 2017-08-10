@@ -161,7 +161,7 @@ void MPISFBOpImpl<T>::Compute(OpContext* context) {
           A.count()*sizeof(T), cudaMemcpyHostToDevice));
     checkCudaError(cudaMemcpy(workspaceB, recvbufB.data()+B.count()*i,
           B.count()*sizeof(T), cudaMemcpyHostToDevice));
-    MatMulMatCublasWrapper<T>(TransA_, TransB_,
+    MatMulMatCublasWrapper<T>(NULL, TransA_, TransB_,
         MA, NB, KA, 1.f, (T*)workspaceA, (T*)workspaceB,
         (i == 0) ? 0.f : 1.f, C->mutable_data<T>());
   }
