@@ -41,13 +41,14 @@ bool isDeserved(Node* node) {
   return node->IsSingleNode() && isDeserved(node->name());
 }
 
-Parser::Parser(list<Node*>* n) : nodes_(n) {
+Parser::Parser(list<Node*>* n, vector<vector<int>>* dependency)
+  : nodes_(n), dependency_(dependency) {
   CHECK(!nodes_->empty());
-  group_.resize(nodes_->size(), 0);
+  //group_.resize(nodes_->size(), 0);
   auto iter = nodes_->begin();
   VLOG(V_DEBUG) << "Number of nodes: " << nodes_->size();
   for (int i = 0; i < nodes_->size(); i++, iter++) {
-    group_[i] = i; 
+    //group_[i] = i; 
     CHECK(node2idx_.find(*iter) == node2idx_.end());
     node2idx_[*iter] = i;
     if ((*iter)->IsSingleNode()) {
@@ -57,15 +58,19 @@ Parser::Parser(list<Node*>* n) : nodes_(n) {
   }
 }
 
-int Parser::FindGroup(int id) const{
-  CHECK(id < group_.size());
-  int parent_id = group_[id];
-  while (parent_id != group_[parent_id])
-    parent_id = group_[parent_id];
+int FindGroup(int id, const vector<int>& group) {
+  CHECK(id < group.size());
+  int parent_id = group[id];
+  while (parent_id != group[parent_id])
+    parent_id = group[parent_id];
   return parent_id;
 }
 
 int Parser::GenerateGroup() {
+  vector<int> group(nodes_->size(), 0);
+  for (int i = 0; i < nodes_->size(); i++) {
+    group[i] = i; 
+  }
   auto iter = nodes_->begin();
   vector<int> fusion_benefit(nodes_->size(), 0);
   vector<int> bottom_line(nodes_->size(), 0);
@@ -81,24 +86,24 @@ int Parser::GenerateGroup() {
         if (isFusable(parent_node)) {
           int pid = node2idx_.at(parent_node);
           CHECK(pid > id);
-          int gpid = FindGroup(pid);
-          int gid = FindGroup(id);
+          int gpid = FindGroup(pid, group);
+          int gid = FindGroup(id, group);
           //CHECK(gpid > gid) << pid << "\t" << id << "\t" << gpid << "\t" << gid;
           if(gpid > gid){
-            group_[gid] = gpid;
+            group[gid] = gpid;
           }else{
-            group_[gpid] = gid;
+            group[gpid] = gid;
           }
 
-          bottom_line[FindGroup(id)] = std::max(bottom_line[gid], bottom_line[pid]);
-          top_line[FindGroup(id)] = std::min(top_line[gid], top_line[pid]);
+          bottom_line[FindGroup(id, group)] = std::max(bottom_line[gid], bottom_line[pid]);
+          top_line[FindGroup(id, group)] = std::min(top_line[gid], top_line[pid]);
           fusion_benefit[gpid] += fusion_benefit[gid];
           activated[pid] = true;
           if (!activated[id]) {
-            bottom_line[FindGroup(id)] = id;
+            bottom_line[FindGroup(id, group)] = id;
           }
         }else {
-          top_line[FindGroup(id)] = id;
+          top_line[FindGroup(id, group)] = id;
         }
       }
     }
@@ -107,8 +112,8 @@ int Parser::GenerateGroup() {
   map<int, vector<int>> group_info;
   CHECK(group_contents_.empty());
   for (int i = 0; i < nodes_->size(); i++) {
-    if (group_[i] != i) {
-      group_info[FindGroup(i)].push_back(i);
+    if (group[i] != i) {
+      group_info[FindGroup(i, group)].push_back(i);
     }else if (group_info.find(i) != group_info.end()){
       group_info[i].push_back(i);
     }
@@ -164,8 +169,16 @@ void Parser::FuseGroup(int gid, list<Node*>* nodes, list<Edge*>* in_edge, list<E
   CHECK(!out_edge->empty());
 }
 
-void Parser::AddFusedNode(Node* fused_node) {
+void Parser::AddFusedNode(Node* fused_node, int gid) {
+  CHECK(gid == fused_nodes_.size());
+  CHECK(gid < group_contents_.size());
   fused_nodes_.push_back(fused_node);
+  for (int id : group_contents_[gid]) {
+    Node* n = *std::next(nodes_->begin(), id);
+    CHECK(node2groupnode_.find(n) == node2groupnode_.end());
+    node2groupnode_[n] = fused_node;
+    groupnode2node_[fused_node].push_back(n);
+  }
 }
 
 void Parser::Finalize() {
@@ -183,6 +196,69 @@ void Parser::Finalize() {
   }
   for (Node* n : remove_nodes_) {
     nodes_->remove(n);
+  }
+
+  //then we should build the new dependency
+  dependency_->clear();
+  dependency_->resize(nodes_->size());
+  unordered_map<Node*, int> new_node2idx;
+  auto iter = nodes_->begin();
+  for (int i = 0; i < nodes_->size(); i++, iter++) {
+    CHECK(new_node2idx.find(*iter) == new_node2idx.end());
+    new_node2idx[*iter] = i; 
+  }
+
+  iter = nodes_->begin();
+  for (int i = 0; i < nodes_->size(); i++, iter++) {
+    if (node2idx_.find(*iter) != node2idx_.end()) {
+      //not fused nodes
+      for (Edge* edge : (*iter)->output()) {
+        if (edge->scope() == (*iter)->scope()) {
+          for (Node* pnode : edge->dst(true)) {
+            if (new_node2idx.find(pnode) == new_node2idx.end()) {
+              //its parent is fused nodes 
+              CHECK(node2idx_.find(pnode) != node2idx_.end());
+              CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
+              Node* fnode = node2groupnode_.at(pnode);
+              CHECK(node2idx_.find(fnode) == node2idx_.end());
+              CHECK(new_node2idx.find(fnode) != new_node2idx.end());
+              dependency_->at(new_node2idx.at(fnode)).push_back(i);
+            }else {
+              //acyclic graph
+              CHECK(new_node2idx.at(pnode) > i);
+              dependency_->at(new_node2idx.at(pnode)).push_back(i);
+            }
+          }
+        }
+      }
+    }else {
+      //it is a newly generated fused node
+      CHECK(groupnode2node_.find(*iter) != groupnode2node_.end());
+      for (auto* origin_n : groupnode2node_.at(*iter)) {
+        for (Edge* edge : origin_n->output()) {
+          if (edge->scope() == (*iter)->scope()) {
+            for (Node* pnode : edge->dst(true)) {
+              if (new_node2idx.find(pnode) == new_node2idx.end()) {
+                //its parent is a fused node
+                CHECK(node2idx_.find(pnode) != node2idx_.end());
+                CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
+                Node* fnode = node2groupnode_.at(pnode);
+                CHECK(node2idx_.find(fnode) == node2idx_.end());
+                CHECK(new_node2idx.find(fnode) != new_node2idx.end());
+                if (fnode != (*iter)) {
+                  CHECK(new_node2idx.at(fnode) > i);
+                  dependency_->at(new_node2idx.at(fnode)).push_back(i);
+                }
+              }else {
+                //acyclic graph
+                CHECK(new_node2idx.at(pnode) > i);
+                dependency_->at(new_node2idx.at(pnode)).push_back(i);
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 

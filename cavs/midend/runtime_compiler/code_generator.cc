@@ -80,7 +80,8 @@ string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
 
 } //namespace Ewise
 
-CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
+CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
+  : parser_(n, dependency) {
   int groups = parser_.GenerateGroup();
   list<Edge*> in_edges;
   list<Edge*> out_edges;
@@ -88,7 +89,7 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
 
   VLOG(V_DEBUG) << groups << " Groups Found";
   for (int i = 0; i < groups; i++) {
-    parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);    
+    parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);
     string name = GenKernelName();
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
@@ -144,7 +145,7 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
       for (auto* e : in_edges) {
         new_node->AddInput(e);
       }
-      parser_.AddFusedNode(new_node);
+      parser_.AddFusedNode(new_node, i);
     }
     kernel_source_.push_back(source);
     in_edges.clear();

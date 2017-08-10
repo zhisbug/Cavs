@@ -1,9 +1,9 @@
 #include "cavs/backend/op_impl.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/backend/cublas_wrapper.h"
-//#include "cavs/midend/devices.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 namespace backend {
 
@@ -18,11 +18,12 @@ class MatMulMatOpCublas : public OpImpl {
  private:
   bool TransA;
   bool TransB;
+  cublasHandle_t handle_;
 };
 
 template <typename T>
 MatMulMatOpCublas<T>::MatMulMatOpCublas(const OpDef& def)
-    : OpImpl(def), TransA(false), TransB(false) {
+    : OpImpl(def), TransA(false), TransB(false), handle_(NULL) {
   for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
     LOG(INFO) << "Transpose: " << t;
     if (t == 0) TransA = true;
@@ -48,10 +49,19 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
     << "C.dims(1): " << C->dims(1)
     << "\tNB: "      << NB;
 
-  //LOG(INFO) << "TransA? " << TransA;
-  //LOG(INFO) << "TransB? " << TransB;
+  VLOG(V_DEBUG) << "here";
+  if (!handle_) {
+    if (context->GetStreamID() != -1) {
+      handle_ = StreamEventHandlePool::GetCublasHandle(context->GetStreamID());
+      VLOG(V_DEBUG) << "running with stream_id: " << context->GetStreamID();
+    }else {
+      handle_ = CudaCommon::cublasHandle();
+      VLOG(V_DEBUG) << "running with NULL stream";
+    }
+  }
+  LOG(FATAL) << "here";
 
-  MatMulMatCublasWrapper<T>(NULL, TransA, TransB,
+  MatMulMatCublasWrapper<T>(handle_, TransA, TransB,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),
       0, C->mutable_data<T>());
   A.DebugNumerical<T>();

@@ -1,12 +1,12 @@
 #include "cavs/backend/op_impl_mpi_functor.h"
 #include "cavs/backend/cuda_common.h"
 #include "cavs/backend/cublas_wrapper.h"
-//#include "cavs/midend/devices.h"
 #include "cavs/midend/allocator.h"
 #include "cavs/proto/tensor_shape.pb.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/mpi_types.h"
 #include "cavs/util/op_util.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 namespace backend {
 
@@ -77,7 +77,7 @@ template <typename T>
 class MPISFBOpImpl: public OpImpl {
  public:
   explicit MPISFBOpImpl(const OpDef& def)
-    : OpImpl(def), TransA_(false), TransB_(false),
+    : OpImpl(def), TransA_(false), TransB_(false), handle_(NULL),
       workspaceA(NULL), workspaceB(NULL),
       workspaceAInBytes(0), workspaceBInBytes(0) {
     for (auto& t : GetListArg<int>(op_def_, "Transpose")) {
@@ -92,6 +92,7 @@ class MPISFBOpImpl: public OpImpl {
  private:
   bool TransA_;
   bool TransB_;
+  cublasHandle_t handle_;
   Allocator* alloc_;
   void *workspaceA, *workspaceB;
   size_t workspaceAInBytes, workspaceBInBytes;
@@ -156,12 +157,20 @@ void MPISFBOpImpl<T>::Compute(OpContext* context) {
   CHECK(workspaceA);
   CHECK(workspaceB);
   CHECK(C->device_type() == GPU);
+
+  if (!handle_) {
+    if (context->GetStreamID() != -1) {
+      handle_ = StreamEventHandlePool::GetCublasHandle(context->GetStreamID());
+    }else {
+      handle_ = CudaCommon::cublasHandle();
+    }
+  }
   for (int i = 0; i < size; i++) {
     checkCudaError(cudaMemcpy(workspaceA, recvbufA.data()+A.count()*i,
           A.count()*sizeof(T), cudaMemcpyHostToDevice));
     checkCudaError(cudaMemcpy(workspaceB, recvbufB.data()+B.count()*i,
           B.count()*sizeof(T), cudaMemcpyHostToDevice));
-    MatMulMatCublasWrapper<T>(NULL, TransA_, TransB_,
+    MatMulMatCublasWrapper<T>(handle_, TransA_, TransB_,
         MA, NB, KA, 1.f, (T*)workspaceA, (T*)workspaceB,
         (i == 0) ? 0.f : 1.f, C->mutable_data<T>());
   }

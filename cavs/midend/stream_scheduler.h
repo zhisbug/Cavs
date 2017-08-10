@@ -20,6 +20,7 @@ class StreamScheduler {
     for (int i = 0; i < nodes->size(); i++, iter++) {
       CHECK(node2idx.find(*iter) == node2idx.end());
       node2idx[*iter] = i;
+      VLOG(V_DEBUG) << i << (*iter)->debug_info();
     }
     std::vector<int> stream_ids(nodes->size(), -1);
     std::vector<int> event_ids(nodes->size(), -1);
@@ -37,6 +38,11 @@ class StreamScheduler {
         if (stream_ids[id] == -1) {
           stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
         }
+        CHECK(node2idx.find(edge->dst(0, true)) != node2idx.end()) << id
+            << edge->dst(0, true)->debug_info();
+        CHECK(stream_ids[node2idx.at(edge->dst(0, true))] == -1) 
+            << id << "\t" << node2idx[edge->dst(0, true)]
+            << (*iter)->debug_info() << "\n" << edge->dst(0, true)->debug_info();
         stream_ids[node2idx[edge->dst(0, true)]] = stream_ids[id];
       }else {
         if (stream_ids[id] == -1) {
@@ -63,6 +69,7 @@ class StreamScheduler {
         }
       }
     }
+    VLOG(V_DEBUG) << "Streamming info " << stream_ids[0];
 
     for (int id = 0; id < stmts->size(); id++) {
       CHECK(stream_ids[id] != -1);
@@ -75,6 +82,12 @@ class StreamScheduler {
         if (sync_me[id])
           es->GetContext()->SetSyncMe();
       }
+    }
+
+    iter = nodes->begin();
+    for (int id = 0; id < nodes->size(); id++, iter++) {
+      VLOG(V_DEBUG) << "Streamming info " << stream_ids[id];
+      VLOG(V_DEBUG) << (*iter)->debug_info();
     }
   }
 };

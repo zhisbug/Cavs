@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess(OPT_FUSION);
+  Session sess(OPT_FUSION+OPT_STREAMMING);
   LOG(INFO) << "here";
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
