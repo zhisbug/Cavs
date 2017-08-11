@@ -19,8 +19,8 @@ class SliceOpImpl : public OpImpl {
     //currently, we only support axis equals 0
     CHECK((axis_ = GetSingleArg<int>(op_def_, "Axis", 0)) == 0);
     if (GetSingleArg(def, "Split", 0) != 0) {
-      split_ = GetSingleArg<int>(def, "Split"); 
-      index_ = GetSingleArg<int>(def, "Index"); 
+      split_ = GetSingleArg<int>(def, "Split");
+      index_ = GetSingleArg<int>(def, "Index");
       CHECK(split_ > 0);
       CHECK(index_ >= 0);
     }else {
@@ -40,7 +40,6 @@ class SliceOpImpl : public OpImpl {
       VLOG(V_DEBUG) << "[Slice] Assign new stream with ID " << context->GetStreamID();
     }
 
-    CHECK(axis_ == 0);
     if (x.IsDynamicShape()) {
       CHECK(y->IsDynamicShape());
       CHECK(y->dims(0) == x.dims(0));

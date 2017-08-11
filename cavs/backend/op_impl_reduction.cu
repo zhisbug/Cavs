@@ -32,7 +32,7 @@ void AmeanOpCublas<T>::Compute(OpContext* context) {
   CUDABinaryConstScalarFunctor<math::Div<T>, T>:: Compute(
       y->mutable_data<T>(), y->count(), 
       y->mutable_data<T>(), y->count(), 
-      N);
+      N, cudaStreamDefault);
   y->DebugNumerical<T>();
 }
 
@@ -74,7 +74,7 @@ void ArgmaxOpCublasOrCuda<T>::Compute(OpContext* context) {
     BatchedArgmax(out_value, y->mutable_data<int>(), x.data<T>(), N, BATCH);
   }
   CUDAUnaryFunctor<math::Cast<T, int>, T, int>::Compute(y->mutable_data<T>(),
-      y->count(), y->data<int>(), y->count());
+      y->count(), y->data<int>(), y->count(), cudaStreamDefault);
 
   /*x.DebugNumerical<T>();*/
   /*y->DebugNumerical<T>();*/
