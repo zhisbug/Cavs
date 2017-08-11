@@ -66,6 +66,7 @@ class BasicBlock : public Statement {
         stmt->Run();
       }
     }
+    checkCudaError(cudaDeviceSynchronize());
     VLOG(V_TIMING) << "This Basic Block Ends";
   }
   SType type() const override { return BASICBLOCK; }

@@ -63,6 +63,24 @@ void OpContext::SetZero() {
   }
 }
 
+void OpContext::WaitForInputs() {
+  if (stream_id_ >= 0) {
+    for (int eid : inputs_event_ids_) {
+      checkCudaError(cudaStreamWaitEvent(
+            StreamEventHandlePool::GetCudaStream(stream_id_),
+            StreamEventHandlePool::GetCudaEvent(eid), 0));
+    }
+  }
+}
+
+void OpContext::SyncMe() {
+  if (sync_me_) {
+    cudaStream_t s = (stream_id_ == -1) ?
+      cudaStreamDefault : StreamEventHandlePool::GetCudaStream(stream_id_);
+    checkCudaError(cudaStreamSynchronize(s));
+  }
+}
+
 string OpContext::debug_info() const {
   string info;
   for (unsigned i = 0; i < inputs_.size(); i++) {

@@ -24,8 +24,13 @@ void ExprStatement::Run() {
   //for some gradient tensor, the original value must be set to 0 
   VLOG(V_TIMING) << "Setting Zero--------------------------";
   ctxt_->SetZero();
+  VLOG(V_TIMING) << "Waiting for inputs--------------------";
+  ctxt_->WaitForInputs();
   VLOG(V_TIMING) << "Computing-----------------------------";
   op_->Compute(ctxt_);
+
+  VLOG(V_TIMING) << "Sync With CPU-------------------------";
+  ctxt_->SyncMe();
   //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }

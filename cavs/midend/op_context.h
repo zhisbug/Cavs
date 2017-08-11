@@ -4,6 +4,7 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 #include <unordered_map>
 #include <string>
@@ -38,6 +39,8 @@ class OpContext {
   void SetTensorOffset();
   void ScaleTensor();
   void SetZero();
+  void WaitForInputs();
+  void SyncMe();
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
