@@ -400,7 +400,7 @@ void GraphUtil::ComputeGradientForFunction(
       terminals.insert(node->output(0));
     }
   }
-  CHECK(origins.size() == 2) << origins.size();
+  //CHECK(origins.size() == 2) << origins.size();
   CHECK(terminals.size() == 2) << terminals.size();
 
   for (auto* o_edge : origins) {
