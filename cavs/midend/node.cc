@@ -248,6 +248,7 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
     std::vector<std::vector<int>> dependency;
+
     if ((sess->opt_type() & OPT_FUSION)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
       RTC::CodeGenerator generator(&nodes_, &dependency);
@@ -263,7 +264,11 @@ Statement* ScopedNode::Compile(
 
     if ((sess->opt_type() & OPT_STREAMMING)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
-      StreamScheduler scheduler(&nodes_, &(bb->stmts_));
+      if (dependency.empty()) {
+        StreamScheduler::DependencyExtractor(&dependency, nodes_);
+      }
+      CHECK(dependency.size() == nodes_.size());
+      StreamScheduler scheduler(&(bb->stmts_), dependency);
       VLOG(V_DEBUG) << "Modifing the critical path done for streamming in ScopedNode";
     }
     stmt_ = bb;

@@ -222,11 +222,13 @@ void Parser::Finalize() {
               Node* fnode = node2groupnode_.at(pnode);
               CHECK(node2idx_.find(fnode) == node2idx_.end());
               CHECK(new_node2idx.find(fnode) != new_node2idx.end());
-              dependency_->at(new_node2idx.at(fnode)).push_back(i);
+              //dependency_->at(new_node2idx.at(fnode)).push_back(i);
+              dependency_->at(i).push_back(new_node2idx.at(fnode));
             }else {
               //acyclic graph
               CHECK(new_node2idx.at(pnode) > i);
-              dependency_->at(new_node2idx.at(pnode)).push_back(i);
+              //dependency_->at(new_node2idx.at(pnode)).push_back(i);
+              dependency_->at(i).push_back(new_node2idx.at(pnode));
             }
           }
         }
@@ -247,12 +249,14 @@ void Parser::Finalize() {
                 CHECK(new_node2idx.find(fnode) != new_node2idx.end());
                 if (fnode != (*iter)) {
                   CHECK(new_node2idx.at(fnode) > i);
-                  dependency_->at(new_node2idx.at(fnode)).push_back(i);
+                  //dependency_->at(new_node2idx.at(fnode)).push_back(i);
+                  dependency_->at(i).push_back(new_node2idx.at(fnode));
                 }
               }else {
                 //acyclic graph
                 CHECK(new_node2idx.at(pnode) > i);
-                dependency_->at(new_node2idx.at(pnode)).push_back(i);
+                //dependency_->at(new_node2idx.at(pnode)).push_back(i);
+                dependency_->at(i).push_back(new_node2idx.at(pnode));
               }
             }
           }

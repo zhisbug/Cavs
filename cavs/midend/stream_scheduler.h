@@ -13,38 +13,25 @@ namespace midend {
 
 class StreamScheduler {
  public:
-  StreamScheduler(std::list<Node*>* nodes, std::vector<Statement*>* stmts) {
-    CHECK(nodes->size() == stmts->size());
-    std::unordered_map<Node*, int> node2idx;
-    auto iter = nodes->begin();
-    for (int i = 0; i < nodes->size(); i++, iter++) {
-      CHECK(node2idx.find(*iter) == node2idx.end());
-      node2idx[*iter] = i;
-      VLOG(V_DEBUG) << i << (*iter)->debug_info();
-    }
-    std::vector<int> stream_ids(nodes->size(), -1);
-    std::vector<int> event_ids(nodes->size(), -1);
-    std::vector<std::vector<int>> input_event_ids(nodes->size());
-    std::vector<bool> sync_me(nodes->size(), false);
+  StreamScheduler(std::vector<Statement*>* stmts, const std::vector<std::vector<int>>& dependency) {
+    CHECK(dependency.size() == stmts->size());
+    std::vector<int> stream_ids(stmts->size(), -1);
+    std::vector<int> event_ids(stmts->size(), -1);
+    std::vector<std::vector<int>> input_event_ids(stmts->size());
+    std::vector<bool> sync_me(stmts->size(), false);
     //0) set the stream of me //initialization
     //1) set the event of me 
     //2) set the stream of father
     //3) set the input event of father
-    iter = nodes->begin();
-    for (int id = 0; id < nodes->size(); id++, iter++) {
-      if ((*iter)->output_size() == 1 && (*iter)->output(0)->dst_size(true) == 1) {
-        Edge* edge = (*iter)->output(0);
-        //initialization, source node in this scope
+    for (int id = 0; id < dependency.size(); id++) {
+      if (dependency[id].size() == 1) {
         if (stream_ids[id] == -1) {
           stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
         }
-        CHECK(node2idx.find(edge->dst(0, true)) != node2idx.end()) << id
-            << edge->dst(0, true)->debug_info();
-        CHECK(stream_ids[node2idx.at(edge->dst(0, true))] == -1) 
-            << id << "\t" << node2idx[edge->dst(0, true)]
-            << (*iter)->debug_info() << "\n" << edge->dst(0, true)->debug_info();
-        stream_ids[node2idx[edge->dst(0, true)]] = stream_ids[id];
-      }else {
+        int pid = dependency[id][0];
+        CHECK(pid > id);
+        stream_ids[pid] = stream_ids[id];
+      }else if (dependency[id].size() > 1) {
         if (stream_ids[id] == -1) {
           stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
         }
@@ -52,21 +39,19 @@ class StreamScheduler {
         event_ids[id] = StreamEventHandlePool::GenNewEventID();
         
         bool reuse_stream = false;
-        for (Edge* edge : (*iter)->output()) {
-          for (Node* parent_node : edge->dst(true)) {
-            int pid = node2idx[parent_node];
-            if (stream_ids[pid] == -1 && !reuse_stream) {
-              reuse_stream = true; 
-              stream_ids[pid] = stream_ids[id];
-            }else {
-              CHECK(event_ids[id] != -1);
-              input_event_ids[pid].push_back(event_ids[id]); 
-            }
-          }
-          if (edge->dst_size(true) == 0) {
-            sync_me[id] = true;
+        for (int pid : dependency[id]) {
+          CHECK(pid > id);
+          if (stream_ids[pid] == -1 && !reuse_stream) {
+            reuse_stream = true; 
+            stream_ids[pid] = stream_ids[id];
+          }else {
+            CHECK(event_ids[id] != -1);
+            input_event_ids[pid].push_back(event_ids[id]); 
           }
         }
+      }else {
+        CHECK(stream_ids[id] != -1);
+        sync_me[id] = true;
       }
     }
     VLOG(V_DEBUG) << "Streamming info " << stream_ids[0];
@@ -84,10 +69,30 @@ class StreamScheduler {
       }
     }
 
-    iter = nodes->begin();
-    for (int id = 0; id < nodes->size(); id++, iter++) {
+    for (int id = 0; id < stmts->size(); id++) {
       VLOG(V_DEBUG) << "Streamming info " << stream_ids[id];
-      VLOG(V_DEBUG) << (*iter)->debug_info();
+    }
+  }
+
+  static void DependencyExtractor(std::vector<std::vector<int>>* dependency, const std::list<Node*>& nodes) {
+    dependency->clear();
+    std::unordered_map<Node*, int> node2idx;
+    auto iter = nodes.begin();
+    for (int i = 0; i < nodes.size(); i++, iter++) {
+      CHECK(node2idx.find(*iter) == node2idx.end());
+      node2idx[*iter] = i; 
+    }
+
+    iter = nodes.begin();
+    for (int i = 0; i < nodes.size(); i++, iter++) {
+      for (Edge* edge : (*iter)->output()) {
+        if (edge->scope() == (*iter)->scope()) {
+          for (Node* pnode : edge->dst(true)) {
+            CHECK(node2idx.find(pnode) == node2idx.end());
+            dependency->at(i).push_back(node2idx.at(pnode));
+          }
+        }
+      }
     }
   }
 };
