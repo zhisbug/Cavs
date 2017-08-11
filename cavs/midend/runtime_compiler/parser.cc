@@ -263,6 +263,14 @@ void Parser::Finalize() {
         }
       }
     }
+
+  }
+  iter = nodes_->begin();
+  for (int i = 0; i < nodes_->size(); i++, iter++) {
+    VLOG(V_DEBUG) << "ID:\t" << i;
+    for (int d : dependency_->at(i))
+      VLOG(V_DEBUG) << "\tDependency: " << d;
+    VLOG(V_DEBUG) << (*iter)->debug_info();
   }
 }
 

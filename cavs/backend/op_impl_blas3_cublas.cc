@@ -49,7 +49,7 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
     << "C.dims(1): " << C->dims(1)
     << "\tNB: "      << NB;
 
-  VLOG(V_DEBUG) << "here";
+  //VLOG(V_DEBUG) << "here";
   if (!handle_) {
     if (context->GetStreamID() != -1) {
       handle_ = StreamEventHandlePool::GetCublasHandle(context->GetStreamID());
@@ -59,7 +59,7 @@ void MatMulMatOpCublas<T>::Compute(OpContext* context) {
       VLOG(V_DEBUG) << "running with NULL stream";
     }
   }
-  LOG(FATAL) << "here";
+  //LOG(FATAL) << "here";
 
   MatMulMatCublasWrapper<T>(handle_, TransA, TransB,
       MA, NB, KA, 1.f, A.data<T>(), B.data<T>(),

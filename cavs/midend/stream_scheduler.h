@@ -20,24 +20,20 @@ class StreamScheduler {
     std::vector<std::vector<int>> input_event_ids(stmts->size());
     std::vector<bool> sync_me(stmts->size(), false);
     //0) set the stream of me //initialization
-    //1) set the event of me 
-    //2) set the stream of father
-    //3) set the input event of father
+    //1) reuse the stream for father
+    //2) set the event of me(if needed) and make it the input event of father
     for (int id = 0; id < dependency.size(); id++) {
+      //step 0
+      if (stream_ids[id] == -1) {
+        stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
+      }
       if (dependency[id].size() == 1) {
-        if (stream_ids[id] == -1) {
-          stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
-        }
         int pid = dependency[id][0];
         CHECK(pid > id);
         stream_ids[pid] = stream_ids[id];
       }else if (dependency[id].size() > 1) {
-        if (stream_ids[id] == -1) {
-          stream_ids[id] = StreamEventHandlePool::GenNewStreamID();
-        }
         CHECK(event_ids[id] == -1);
         event_ids[id] = StreamEventHandlePool::GenNewEventID();
-        
         bool reuse_stream = false;
         for (int pid : dependency[id]) {
           CHECK(pid > id);
@@ -50,7 +46,7 @@ class StreamScheduler {
           }
         }
       }else {
-        CHECK(stream_ids[id] != -1);
+        CHECK(stream_ids[id] != -1) << id;
         sync_me[id] = true;
       }
     }
