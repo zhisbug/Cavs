@@ -4,6 +4,7 @@
 #include "cavs/midend/op_context.h"
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/backend/op_impl.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <string>
 #include <vector>
@@ -59,12 +60,13 @@ class BasicBlock : public Statement {
   }
 
   inline void Run() override {
-    VLOG(V_DEBUG) << "This Basic Block will Run " << iter_ << " iterations ";
+    VLOG(V_TIMING) << "This Basic Block Begins";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
         stmt->Run();
       }
     }
+    VLOG(V_TIMING) << "This Basic Block Ends";
   }
   SType type() const override { return BASICBLOCK; }
 

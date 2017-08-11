@@ -26,6 +26,7 @@ void ExprStatement::Run() {
   ctxt_->SetZero();
   VLOG(V_TIMING) << "Computing-----------------------------";
   op_->Compute(ctxt_);
+  //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 
