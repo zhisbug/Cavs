@@ -78,6 +78,9 @@ void OpContext::SyncMe() {
     cudaStream_t s = (stream_id_ == -1) ?
       cudaStreamDefault : StreamEventHandlePool::GetCudaStream(stream_id_);
     checkCudaError(cudaStreamSynchronize(s));
+    VLOG(V_TIMING) << "Sync!";
+  }else {
+    VLOG(V_TIMING) << "Not Sync!";
   }
 }
 

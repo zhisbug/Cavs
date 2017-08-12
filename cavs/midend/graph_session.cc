@@ -74,9 +74,12 @@ OpContext* GraphSession::GetContext(const Node* node) {
         CHECK_NOTNULL(rt = GetTensor(TensorNameInFunctionContext(node->input(0)), true));
         dynamic_shape = rt->IsDynamicShape();
         if (output->isGradient()) {
-          const Tensor* ft = NULL;
-          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
-          bool fwd_dynamic_shape = ft->IsDynamicShape();
+          //const Tensor* ft = NULL;
+          //CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
+          //bool fwd_dynamic_shape = ft->IsDynamicShape();
+          const Edge* edge = NULL;
+          CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
+          bool fwd_dynamic_shape = edge->IsBatchEnabled();
           if (dynamic_shape ^ fwd_dynamic_shape) {
             //otherwise it means expanding the dims 
             //there are no such operations
@@ -133,9 +136,12 @@ OpContext* GraphSession::GetContext(const Node* node) {
             dynamic_shape = false;
           }
         }else {
-          const Tensor* ft = NULL;
-          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
-          dynamic_shape = ft->IsDynamicShape();
+          //const Tensor* ft = NULL;
+          //CHECK(ft = GetTensor(GetOriginName(output->scoped_name()), true)) << output->scoped_name();
+          //dynamic_shape = ft->IsDynamicShape();
+          const Edge* edge = NULL;
+          CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
+          dynamic_shape = edge->IsBatchEnabled();
         }
 
         TensorShape full_shape;

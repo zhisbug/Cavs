@@ -142,7 +142,8 @@ int main(int argc, char* argv[]) {
       sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
                          {label,    label_ph[j%label_ph.size()].data()},
                          {word_idx, input_ph[j%input_ph.size()].data()}});
-      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
+      if (j % 10 == 0)
+        LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
   }
 

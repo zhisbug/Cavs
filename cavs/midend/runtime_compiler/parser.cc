@@ -34,7 +34,10 @@ bool isDeserved(const string& op) {
 }
 
 bool isFusable(Node* node) {
-  return node->IsSingleNode() && isElementwise(node->name());
+  return node->IsSingleNode()
+      && isElementwise(node->name());
+      //&& false;
+      //&& dynamic_cast<SingleNode*>(node)->IsBatchEnabled();
 }
 
 bool isDeserved(Node* node) {
@@ -120,6 +123,8 @@ int Parser::GenerateGroup() {
   }
   for (auto& iter : group_info) {
     VLOG(V_DEBUG) << "GroupID:\t" << iter.first;
+    for (int id : iter.second)
+      VLOG(V_DEBUG) << "GroupContent:\t" << id;
     if (fusion_benefit[iter.first] > 1) {
       group_contents_.push_back(std::move(iter.second)); 
       CHECK(bottom_line[iter.first] < top_line[iter.first]);
