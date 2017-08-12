@@ -75,6 +75,8 @@ class CudaRTCWrapper {
 
   void Launch(const std::vector<void*>& outputs,
               const std::vector<void*>& inputs,
+              const std::vector<int>& outputs_size,
+              const std::vector<int>& inputs_size,
               unsigned int num_elements,
               unsigned int gridDimX,
               unsigned int gridDimY,
@@ -87,6 +89,8 @@ class CudaRTCWrapper {
     std::vector<void*> args;
     for (int i = 0; i < outputs.size(); i++) args.push_back((void*)(&outputs[i]));
     for (int i = 0; i < inputs.size(); i++)  args.push_back((void*)(&inputs[i]));
+    for (int i = 0; i < outputs_size.size(); i++) args.push_back((void*)&outputs_size[i]);
+    for (int i = 0; i < inputs_size.size(); i++) args.push_back((void*)&inputs_size[i]);
     args.push_back(&num_elements);
     checkCUDADriverError(cuLaunchKernel(kernel_,
           gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ,

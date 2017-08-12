@@ -12,6 +12,9 @@ class CodeGenerator {
   inline static std::string PrefixedVar(std::string var) {
     return "tmp_" + var; 
   }
+  inline static std::string arrSize(std::string arr) {
+    return arr + "_count";
+  }
   inline static std::string typeToString(DataType type) {
     CHECK(DataTypeToString.find((int)type) != DataTypeToString.end());
     return DataTypeToString.at((int)type);

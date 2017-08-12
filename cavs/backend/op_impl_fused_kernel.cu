@@ -3,6 +3,7 @@
 #include "cavs/backend/cudaRTC_wrapper.h"
 
 #include <string>
+#include <set>
 #include <vector>
 #include <algorithm>
 
@@ -11,6 +12,7 @@ namespace backend {
 using ::midend::Tensor;
 using std::string;
 using std::vector;
+using std::set;
 
 template <typename T>
 class FusedKernelOpImpl : public OpImpl {
@@ -31,16 +33,27 @@ template <typename T>
 void FusedKernelOpImpl<T>::Compute(OpContext* context) {
   vector<void*> outputs;
   vector<void*> inputs;
-  const int num_elements = context->Input(0).count();
+  vector<int> outputs_size;
+  vector<int> inputs_size;
+  set<int> size_conf;
+  /*const int num_elements = context->Input(0).count();*/
   for (int i = 0; i < context->OutputSize(); i++) {
     outputs.push_back((void*)(context->Output(i)->mutable_data<T>())); 
-    CHECK(context->Output(i)->count() == num_elements);
+    int count = context->Output(i)->count();
+    outputs_size.push_back(count);
+    size_conf.insert(count);
+    /*CHECK(context->Output(i)->count() == num_elements);*/
   }
   for (int i = 0; i < context->InputSize(); i++) {
     inputs.push_back((void*)context->Input(i).data<T>()); 
-    CHECK(context->Input(i).count() == num_elements);
+    int count = context->Input(i).count();
+    inputs_size.push_back(count);
+    size_conf.insert(count);
+    /*CHECK(context->Input(i).count() == num_elements);*/
   }
-  wrapper_.Launch(outputs, inputs, num_elements, 
+  CHECK(size_conf.size() <= 2);
+  const int num_elements = *(size_conf.rbegin());
+  wrapper_.Launch(outputs, inputs, outputs_size, inputs_size, num_elements, 
       BLOCKS_PER_GRID(num_elements), 1, 1,
       THREADS_PER_BLOCK, 1, 1);
   for (int i = 0; i < context->InputSize(); i++) {

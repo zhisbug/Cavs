@@ -23,6 +23,9 @@ string GenKernelDeclaration(const string& kernel_name,
 
   source += kernel_name;
 
+  //potential bug when the graph is cyclic
+  //one argument and one const argument may be the same
+  //it will cause compile error in cudaRTC compilation
   string output_args = "(";
   for (auto* e : outputs) {
     output_args += CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
@@ -31,8 +34,18 @@ string GenKernelDeclaration(const string& kernel_name,
   for (auto* e : inputs) {
     input_args += "const " + CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
   }
-  input_args += "const int n_elements)\n";
-  source += output_args + input_args;
+  string output_count;
+  for (auto* e : outputs) {
+    output_count += "const int " + CodeGenerator::arrSiz(e->name()) + ", ";
+  }
+  string input_count;
+  for (auto* e : inputs) {
+    input_count += "const int " + CodeGenerator::arrSiz(e->name()) + ", ";
+  }
+  string total_count;
+  total_count = "const int n_elements)\n";
+
+  source += output_args + input_args + output_count + input_count + total_count;
 
   return source;
 }
@@ -54,7 +67,7 @@ string EwiseGenBodyGetInput(const list<Edge*>& inputs) {
   for (auto* e : inputs) {
     string type = CodeGenerator::typeToString(e->dtype());
     string var_name = CodeGenerator::PrefixedVar(e->name());
-    string array_ref_name = e->name() + "[idx]";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "];\n";
     var_decl += type + " " + var_name + " = " + array_ref_name + ";\n";
   }
   return var_decl;
@@ -71,9 +84,13 @@ string EwiseGenBodyGetInput(const string& name, float init) {
 string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
   string array_assign;
   for (auto* e : outputs) {
-    string array_ref_name = e->name() + "[idx]";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "];\n";
     string var_name = CodeGenerator::PrefixedVar(e->name());
-    array_assign += array_ref_name + " = " + var_name + ";\n";
+    string assignment = array_ref_name + " = " + var_name + ";\n";
+    string atomic_assignment = "atomicAdd(&" + array_ref_name + ", " + var_name + ");\n";
+    string branch = "if (" + CodeGenerator::arrSize(e->name()) + " < n_elements) {\n"
+                  + atomic_assignment + "}else {\n" + assignment + "}\n";
+    array_assign += branch;
   }
   return array_assign;
 }
