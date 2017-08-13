@@ -36,11 +36,11 @@ string GenKernelDeclaration(const string& kernel_name,
   }
   string output_count;
   for (auto* e : outputs) {
-    output_count += "const int " + CodeGenerator::arrSiz(e->name()) + ", ";
+    output_count += "const int " + CodeGenerator::arrSize(e->name()) + ", ";
   }
   string input_count;
   for (auto* e : inputs) {
-    input_count += "const int " + CodeGenerator::arrSiz(e->name()) + ", ";
+    input_count += "const int " + CodeGenerator::arrSize(e->name()) + ", ";
   }
   string total_count;
   total_count = "const int n_elements)\n";
@@ -62,12 +62,14 @@ string EwiseGenBodyThreadIndexing(const string& inner) {
   return idx;
 }
 
-string EwiseGenBodyGetInput(const list<Edge*>& inputs) {
+string EwiseGenBodyGetInput(const list<Edge*>& inputs, bool bcast = true) {
   string var_decl;
   for (auto* e : inputs) {
     string type = CodeGenerator::typeToString(e->dtype());
     string var_name = CodeGenerator::PrefixedVar(e->name());
-    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "];\n";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "]";
+    if (!bcast)
+      array_ref_name = "(idx >= " + CodeGenerator::arrSize(e->name()) + ")? 0 : " + array_ref_name;
     var_decl += type + " " + var_name + " = " + array_ref_name + ";\n";
   }
   return var_decl;
@@ -84,7 +86,7 @@ string EwiseGenBodyGetInput(const string& name, float init) {
 string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
   string array_assign;
   for (auto* e : outputs) {
-    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "];\n";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "]";
     string var_name = CodeGenerator::PrefixedVar(e->name());
     string assignment = array_ref_name + " = " + var_name + ";\n";
     string atomic_assignment = "atomicAdd(&" + array_ref_name + ", " + var_name + ");\n";
@@ -120,9 +122,9 @@ CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
         stateful_output.push_back(n->output(0)->name());
         if (std::find(out_edges.begin(), out_edges.end(), n->output(0)) !=
             out_edges.end()) {
-          func_body += Ewise::EwiseGenBodyGetInput({n->output(0)});
+          func_body += Ewise::EwiseGenBodyGetInput({n->output(0)}, false);
         }else {
-          func_body += Ewise::EwiseGenBodyGetInput(n->output(0)->name(), 0);
+          func_body += Ewise::EwiseGenBodyGetInput(n->output(0)->name(), 0.f);
         }
       }
       if (!n->IsStatefulOp())
