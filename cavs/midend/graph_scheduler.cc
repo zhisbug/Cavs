@@ -23,12 +23,12 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     CHECK(max_seq_length_ == graph_struct.dims(1)); 
   }
 
-  int total_length = 0;
+  total_length_ = 0;
   for (int i = 0; i < batch_size_; i++) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
     int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
     CHECK(one_seq_length <= max_seq_length_);
-    total_length += one_seq_length;
+    total_length_ += one_seq_length;
     for (int j = 0; j < one_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
       __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
@@ -55,10 +55,10 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   ++rc_;
   round2offset_.push_back(0);
   VLOG(V_DEBUG) << "Loading graph completed...";
-  return total_length;
+  return total_length_;
 }
 
-void GraphSchedulerBase::ReverseGraph() {
+int GraphSchedulerBase::ReverseGraph() {
   CHECK(batch_size_ > 0);
   CHECK(max_seq_length_ > 0);
   //isForward_ = false;
@@ -66,6 +66,7 @@ void GraphSchedulerBase::ReverseGraph() {
   parents_ = &__forward_children_ids_;
   rc_.SetBackward();
   ++rc_;
+  return total_length_;
 }
 
 void SerialGraphScheduler::Initialize() {

@@ -30,7 +30,8 @@ class Statement {
 
 class ExprStatement : public Statement {
  public:
-  ExprStatement(OpImpl* op, OpContext* ctxt) : op_(op), ctxt_(ctxt) {}
+  ExprStatement(OpImpl* op, OpContext* ctxt)
+    : op_(op), ctxt_(ctxt)/*, custom_p_(NULL)*/ {}
   ~ExprStatement() {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
@@ -39,6 +40,9 @@ class ExprStatement : public Statement {
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
   inline OpContext* GetContext() { return ctxt_; }
+  //inline void SetCustomCtxtFunc(std::function<void(OpContext*>) f) {
+    //custom_context_ = std::move(f);
+  //}
 
   void Run() override;
 
@@ -46,17 +50,21 @@ class ExprStatement : public Statement {
   ExprStatement() : op_(NULL), ctxt_(NULL) {}
   OpImpl* op_;
   OpContext* ctxt_;
+  //std::function<void(OpContext*)> custom_context_;
 };
 
 class BasicBlock : public Statement {
  public:
-  BasicBlock(int iter) : iter_(iter), stmts_(0) {
+  BasicBlock(int iter) :
+    iter_(iter), stmts_(0)/*, init_(0), finalize_(0)*/ {
     CHECK(iter > 0) ;
   }
 
   ~BasicBlock() {
     for (auto* stmt : stmts_)
       free(stmt);
+    //if (!init_) free(init_);
+    //if (!finalize_) free(finalize_);
   }
 
   inline void Run() override {
@@ -66,7 +74,7 @@ class BasicBlock : public Statement {
         stmt->Run();
       }
     }
-    checkCudaError(cudaDeviceSynchronize());
+    //checkCudaError(cudaDeviceSynchronize());
     VLOG(V_TIMING) << "This Basic Block Ends";
   }
   SType type() const override { return BASICBLOCK; }
@@ -76,11 +84,14 @@ class BasicBlock : public Statement {
     stmts_.push_back(stmt); 
     return stmt;
   }
+
   friend class ScopedNode;
 
  protected:
   int iter_;
   std::vector<Statement*> stmts_;
+  //std::vector<Statement*> init_;
+  //std::vector<Statement*> finalize_;
 };
 
 class FunctionCallStatement : public Statement {
@@ -131,8 +142,14 @@ class GraphStatement : public FunctionCallStatement {
 class GraphGradStatement : public GraphStatement {
  public:
   GraphGradStatement(Statement* node_func, GraphSchedulerBase* gs)
-    : GraphStatement(node_func, gs) {}
+    : GraphStatement(node_func, gs), batch_weight_updates_(0) {}
   void Run() override;
+  inline void SetBatchWeightUpdate(std::vector<Statement*>&& wu) {
+    batch_weight_updates_ = std::move(wu);
+  }
+
+ private:
+  std::vector<Statement*> batch_weight_updates_;
 };
 
 } //namespace midend

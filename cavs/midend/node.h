@@ -135,6 +135,8 @@ class ScopedNode : public Node {
   std::list<Node*> nodes_;
 
  private:
+  //std::list<Node*> init_node_;
+  //std::list<Node*> finalize_node_;
   std::string name_;
   int iter_;
   const Scope* contained_;

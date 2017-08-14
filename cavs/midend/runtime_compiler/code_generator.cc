@@ -115,7 +115,11 @@ CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
     vector<string> stateful_output;
+    bool batch_enable = false;
     for (auto* n : nodes) {
+      CHECK(n->IsSingleNode());
+      if (dynamic_cast<SingleNode*>(n)->IsBatchEnabled())
+        batch_enable = true;
       VLOG(V_DEBUG) << dynamic_cast<SingleNode*>(n)->op_def().DebugString();
       if (n->IsStatefulOp() &&
           std::find(stateful_output.begin(), stateful_output.end(), n->output(0)->name())
@@ -159,7 +163,9 @@ CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
         .AttrList<string>("ZeroEnforced", stateful_output)
         .Device("GPU")
         .Finalize(&op_def);
-      Node* new_node = new SingleNode(op_def, nodes.front()->scope());
+      SingleNode* new_node = new SingleNode(op_def, nodes.front()->scope());
+      if (batch_enable) new_node->SetBatchEnabled();
+
       for (auto* e : out_edges) {
         new_node->AddOutput(e);
       }

@@ -12,7 +12,7 @@ namespace midend {
 class GraphSchedulerBase {
  public:
   GraphSchedulerBase() :
-    batch_size_(0), max_seq_length_(0) {}
+    batch_size_(0), max_seq_length_(0), total_length_(0) {}
   virtual void Initialize() = 0;
   virtual int  JobIdToInternalTensorId(int gid) const = 0;
   virtual int  InternalTensorIdToJobId(int tid) const = 0;
@@ -21,7 +21,7 @@ class GraphSchedulerBase {
   inline virtual int GetCurrentRoundOffset() const;
 
   int LoadGraph(const Tensor& parent_ids);
-  void ReverseGraph();
+  int ReverseGraph();
   inline const std::vector<int>& GetJobId() const;
   inline int batch_size() const { return batch_size_; }
   inline bool HasChild(int job_id) const;
@@ -62,6 +62,7 @@ class GraphSchedulerBase {
   std::vector<bool> activated_ids_;
   int batch_size_;
   int max_seq_length_;
+  int total_length_;
   Tensor message_passer_;
   Tensor func_arg_;
   Tensor func_ret_;

@@ -367,7 +367,7 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
-  //for the data path on pull/gather  to push/scatter, it can be batched
+  //for the data path on pull/gather to push/scatter, it can be batched
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
       Node* node = func_scope->typological_sorted_nodes_[i];

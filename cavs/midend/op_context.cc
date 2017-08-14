@@ -34,20 +34,23 @@ void OpContext::SetTensorOffset() {
   }
 }
 
-void OpContext::ScaleTensor() {
+void OpContext::ScaleOutputTensor() {
   //Input tensor buffer size should never be modified in the operator
-  for (auto* t : inputs_) {
-    if (t->IsDynamicShape()) {
-      CHECK(t->dims(0) == dyn_dim()) << t->debug_info() << t;
-      //t.ScaleDynamicDimension(dyn_dim());
-    } 
-  }
   for (auto* t : outputs_) {
     if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
       VLOG(V_DEBUG) << t->name() << " [OUTPUT] first dimension change from "
                     << t->dims(0) << " to " << dyn_dim() << "\t"
                     << t << t->debug_info();
       t->ScaleDynamicDimension(dyn_dim());
+    } 
+  }
+}
+
+void OpContext::ScaleInputTensor() {
+  for (auto* t : inputs_) {
+    if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
+      CHECK(t->dims(0) == dyn_dim()) << t->debug_info() << t;
+      const_cast<Tensor*>(t)->ScaleDynamicDimension(dyn_dim());
     } 
   }
 }

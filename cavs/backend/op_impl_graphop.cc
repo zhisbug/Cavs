@@ -30,7 +30,7 @@ class GraphGatherOp : public OpImpl {
     //int job_id = gs->GetCurrentJobId();
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
-    context->ScaleTensor();
+    context->ScaleOutputTensor();
     int stride = out->count()/out->dims(0);
     CHECK(stride == count_);
     VLOG(V_DEBUG) << "Batching jobs of this round: " << job_ids.size();
@@ -140,7 +140,7 @@ class GraphPullOp : public OpImpl {
     CHECK(inp.IsFullShape());
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
-    context->ScaleTensor();
+    context->ScaleOutputTensor();
     int stride = out->count()/out->dims(0);
     CHECK(out->dims(0) == job_ids.size());
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
