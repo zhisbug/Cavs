@@ -37,6 +37,7 @@ class OpContext {
   inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
 
   void SetTensorOffset();
+  void ResetTensorOffset();
   void ScaleOutputTensor();
   void ScaleInputTensor();
   void SetZero();

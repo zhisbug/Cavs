@@ -84,7 +84,10 @@ class StreamScheduler {
       for (Edge* edge : (*iter)->output()) {
         if (edge->scope() == (*iter)->scope()) {
           for (Node* pnode : edge->dst(true)) {
-            CHECK(node2idx.find(pnode) == node2idx.end());
+            //CHECK(node2idx.find(pnode) != node2idx.end());
+            //we loose this constraint because batchweightupdater may remove some nodes in the scope
+            //but, these node must be the last nodes and will not break the dependency chain.
+            if (node2idx.find(pnode) == node2idx.end()) continue;
             dependency->at(i).push_back(node2idx.at(pnode));
           }
         }

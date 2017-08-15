@@ -85,7 +85,9 @@ int Parser::GenerateGroup() {
       CHECK((*iter)->output_size() == 1);
       Edge* edge = (*iter)->output(0);
       for (Node* parent_node : edge->dst(true)) {
-        CHECK(node2idx_.find(parent_node) != node2idx_.end());
+        if (node2idx_.find(parent_node) == node2idx_.end()) continue;
+        //we loose this constraint because batchweightupdater may remove some nodes in this scope
+        //CHECK(node2idx_.find(parent_node) != node2idx_.end());
         if (isFusable(parent_node)) {
           int pid = node2idx_.at(parent_node);
           CHECK(pid > id);
@@ -222,7 +224,9 @@ void Parser::Finalize() {
           for (Node* pnode : edge->dst(true)) {
             if (new_node2idx.find(pnode) == new_node2idx.end()) {
               //its parent is fused nodes 
-              CHECK(node2idx_.find(pnode) != node2idx_.end());
+              //CHECK(node2idx_.find(pnode) != node2idx_.end());
+              //we loose this constraint because batchweightupdater may remove some nodes in this scope
+              if (node2idx_.find(pnode) == node2idx_.end()) continue;
               CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
               Node* fnode = node2groupnode_.at(pnode);
               CHECK(node2idx_.find(fnode) == node2idx_.end());
@@ -247,7 +251,9 @@ void Parser::Finalize() {
             for (Node* pnode : edge->dst(true)) {
               if (new_node2idx.find(pnode) == new_node2idx.end()) {
                 //its parent is a fused node
-                CHECK(node2idx_.find(pnode) != node2idx_.end());
+                //CHECK(node2idx_.find(pnode) != node2idx_.end());
+                //we loose this constraint because batchweightupdater may remove some nodes in this scope
+                if (node2idx_.find(pnode) == node2idx_.end()) continue;
                 CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
                 Node* fnode = node2groupnode_.at(pnode);
                 CHECK(node2idx_.find(fnode) == node2idx_.end());

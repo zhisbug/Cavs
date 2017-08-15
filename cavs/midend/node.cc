@@ -210,20 +210,22 @@ Statement* GraphGradNode::Compile(
     }
 
     vector<Statement*> batch_weight_update;
+    std::list<Node*> finalize_node;
     if ((sess->opt_type() & OPT_BATCHING)) {
-      std::list<Node*> finalize_node;
       VLOG(V_DEBUG) << "Begin modifing the critical path for Batching in ScopedNode";
       BatchingWeightUpdater updater(&(sn->nodes_), &finalize_node);
       VLOG(V_DEBUG) << "Modifing the critical path done for Batching in ScopedNode";
-      if (!finalize_node.empty()) {
-        for (Node* fn : finalize_node) {
-          Statement* stmt = fn->Compile(sess);
-          CHECK(stmt) << fn->debug_info();
-          batch_weight_update.push_back(stmt);
-        }
+    }
+
+    Statement* node_grad_stmt = sn->Compile(gsess_);
+
+    if ((sess->opt_type() & OPT_BATCHING)) {
+      for (Node* fn : finalize_node) {
+        Statement* stmt = fn->Compile(gsess_);
+        CHECK(stmt) << fn->debug_info();
+        batch_weight_update.push_back(stmt);
       }
     }
-    Statement* node_grad_stmt = sn->Compile(gsess_);
 
     push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
     pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());

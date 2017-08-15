@@ -34,6 +34,23 @@ void OpContext::SetTensorOffset() {
   }
 }
 
+void OpContext::ResetTensorOffset() {
+  for (auto* t : inputs_) {
+    VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
+    if (!(t->IsFullShape())) {
+      VLOG(V_DEBUG) << "Resetted";
+      const_cast<Tensor*>(t)->SetOffsetWithId(0);
+    }
+  }
+  for (auto* t : outputs_) {
+    VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
+    if (!(t->IsFullShape())) {
+      VLOG(V_DEBUG) << "Resetted";
+      t->SetOffsetWithId(0);
+    }
+  }
+}
+
 void OpContext::ScaleOutputTensor() {
   //Input tensor buffer size should never be modified in the operator
   for (auto* t : outputs_) {
@@ -49,7 +66,7 @@ void OpContext::ScaleOutputTensor() {
 void OpContext::ScaleInputTensor() {
   for (auto* t : inputs_) {
     if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
-      CHECK(t->dims(0) == dyn_dim()) << t->debug_info() << t;
+      //CHECK(t->dims(0) != dyn_dim()) << t->debug_info() << t;
       const_cast<Tensor*>(t)->ScaleDynamicDimension(dyn_dim());
     } 
   }

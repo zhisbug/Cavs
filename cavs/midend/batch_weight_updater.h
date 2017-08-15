@@ -33,6 +33,16 @@ class BatchingWeightUpdater {
       }
       iter++;
     }
+
+    for (Node* n : *finalize_node) {
+      bool cond0 = (n->output(0)->scope() == n->scope());
+      if (cond0) {
+        for (Node* pn : n->output(0)->dst(true)) {
+          CHECK(std::find(finalize_node->begin(), finalize_node->end(), pn) !=
+                          finalize_node->end());
+        }
+      }
+    }
   }
 };
 

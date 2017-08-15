@@ -104,6 +104,7 @@ void GraphGradStatement::Run() {
 
   OpContext::SetDynDim(input_length);
   for (auto* stmt : batch_weight_updates_) {
+    dynamic_cast<ExprStatement*>(stmt)->GetContext()->ResetTensorOffset();
     dynamic_cast<ExprStatement*>(stmt)->GetContext()->ScaleInputTensor();
     stmt->Run();
   }
