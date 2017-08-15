@@ -58,10 +58,10 @@ struct C_Tensor {
 };
 
 
-C_Session* C_NewSession(const char* name, size_t name_len) {
+C_Session* C_NewSession(const char* name, size_t name_len, int opt) {
   string name_str(name, name_len);
   //SessionBase* sess = GetSession(name_str, C_graph->graph);
-  SessionBase* sess = GetSession(name_str);
+  SessionBase* sess = GetSession(name_str, opt);
   return new C_Session{sess};
 }
 

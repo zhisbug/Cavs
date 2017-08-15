@@ -14,57 +14,6 @@ using namespace std;
 
 namespace midend {
 
-//bool TraverseCriticalPath(Scope* loss_scope,
-      //const Edge* loss, const Edge* curr,
-      //unordered_map<const Node*, bool>* fwd_path,
-      //list<const Node*>* newly_traversed) {
-  //CHECK(curr->srcs_size() == 1) << curr->DebugInfo();
-  //LOG_IF(INFO, curr->dsts_size() > 1) << curr->DebugInfo();
-  ////LOG(INFO) << curr->DebugInfo();
-  //if (curr == loss) {
-    //for (auto* node : *newly_traversed) {
-      ////loss_scope->AddNode(node->op_def());
-      //loss_scope->AddOp(node->op_def());
-    //}
-    //newly_traversed->clear();
-    //return true;
-  //}
-  //const Node* node = curr->dst(0);
-  //CHECK(node);
-  //if (fwd_path->find(node) != fwd_path->end() && (*fwd_path)[node]) {
-    //DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
-    //for (auto* node : *newly_traversed) {
-      ////loss_scope->AddNode(node->op_def());
-      //loss_scope->AddOp(node->op_def());
-    //}
-    //newly_traversed->clear();
-    //return true;
-  //}
-  ////CHECK(curr->dsts_size() == 1) << curr->dsts_size();
-  //if (fwd_path->find(node) == fwd_path->end() ||
-      //!(*fwd_path)[node]) {
-    //(*fwd_path)[node] = false;
-    //newly_traversed->push_back(node);
-    //bool in_path = false;
-    //for (auto* edge : node->outputs()) {
-      //if (TraverseCriticalPath(loss_scope, loss, edge,
-            //fwd_path, newly_traversed)) {
-        //const vector<OpDef>& grads = 
-          //::backend::MakeGradient(node->op_def()); 
-        //CHECK(grads.size()) << node->op_def().DebugString();
-        //DeduceAndApplyOneGradNode(loss_scope, node, curr->name());
-        //in_path = true;
-        //(*fwd_path)[node] = true; 
-      //}
-    //}
-    //if (!in_path) {
-      //CHECK(newly_traversed->size() > 0);
-      //newly_traversed->pop_back();
-    //}
-  //}
-  //return (*fwd_path)[node];
-//}
-
 OpDef GraphUtil::PartialGrad(const Node* node, const string& edge) {
   CHECK(node->IsSingleNode());
   const vector<OpDef>& grads = 
@@ -91,7 +40,7 @@ bool GraphUtil::GenCriticalPath(vector<bool>* cpath,
   CHECK(curr->src_size(true) == 1) << curr->debug_info();
   CHECK(curr->src_size(false) == 1 || curr->isVariable()) << curr->debug_info();
   VLOG_IF(V_DEBUG, curr->dst_size() > 1) << curr->scoped_name();
-  VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->scoped_name();
+  //VLOG(V_DEBUG) << "GenCriticalPath:\t" << curr->scoped_name();
   CHECK(scope->node2idx_.find(curr->src(0)) != scope->node2idx_.end());
   if (curr == loss) {
     int idx = scope->node2idx_.at(curr->src(0));
@@ -418,7 +367,7 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
-  //for the data path on pull/gather  to push/scatter, it can be batched
+  //for the data path on pull/gather to push/scatter, it can be batched
   for (int i = 0; i < critical_path.size(); i++) {
     if (critical_path[i]) {
       Node* node = func_scope->typological_sorted_nodes_[i];

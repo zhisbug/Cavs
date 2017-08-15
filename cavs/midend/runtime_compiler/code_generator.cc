@@ -23,6 +23,9 @@ string GenKernelDeclaration(const string& kernel_name,
 
   source += kernel_name;
 
+  //potential bug when the graph is cyclic
+  //one argument and one const argument may be the same
+  //it will cause compile error in cudaRTC compilation
   string output_args = "(";
   for (auto* e : outputs) {
     output_args += CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
@@ -31,8 +34,18 @@ string GenKernelDeclaration(const string& kernel_name,
   for (auto* e : inputs) {
     input_args += "const " + CodeGenerator::typeToString(e->dtype()) + " *" + e->name() + ", ";
   }
-  input_args += "const int n_elements)\n";
-  source += output_args + input_args;
+  string output_count;
+  for (auto* e : outputs) {
+    output_count += "const int " + CodeGenerator::arrSize(e->name()) + ", ";
+  }
+  string input_count;
+  for (auto* e : inputs) {
+    input_count += "const int " + CodeGenerator::arrSize(e->name()) + ", ";
+  }
+  string total_count;
+  total_count = "const int n_elements)\n";
+
+  source += output_args + input_args + output_count + input_count + total_count;
 
   return source;
 }
@@ -54,8 +67,10 @@ string EwiseGenBodyGetInput(const list<Edge*>& inputs) {
   for (auto* e : inputs) {
     string type = CodeGenerator::typeToString(e->dtype());
     string var_name = CodeGenerator::PrefixedVar(e->name());
-    string array_ref_name = e->name() + "[idx]";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "]";
     var_decl += type + " " + var_name + " = " + array_ref_name + ";\n";
+    //if (bcast)
+      //var_decl += type + " " + CodeGenerator::OriVar(e->name()) + " = " + var_name + ";\n";
   }
   return var_decl;
 }
@@ -71,16 +86,23 @@ string EwiseGenBodyGetInput(const string& name, float init) {
 string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
   string array_assign;
   for (auto* e : outputs) {
-    string array_ref_name = e->name() + "[idx]";
+    string array_ref_name = e->name() + "[idx%" + CodeGenerator::arrSize(e->name()) + "]";
     string var_name = CodeGenerator::PrefixedVar(e->name());
-    array_assign += array_ref_name + " = " + var_name + ";\n";
+    string ori_var_name = CodeGenerator::OriVar(e->name());
+    string assignment = array_ref_name + " = " + var_name + ";\n";
+    string keep_ori_value = CodeGenerator::typeToString(e->dtype()) + " " + ori_var_name + " = " + array_ref_name + ";\n";
+    string atomic_assignment = "atomicAdd(&" + array_ref_name + ", (" + var_name + " - " + ori_var_name + "));\n";
+    string branch = "if (" + CodeGenerator::arrSize(e->name()) + " < n_elements) {\n"
+                  + keep_ori_value + atomic_assignment + "}else {\n" + assignment + "}\n";
+    array_assign += branch;
   }
   return array_assign;
 }
 
 } //namespace Ewise
 
-CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
+CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
+  : parser_(n, dependency) {
   int groups = parser_.GenerateGroup();
   list<Edge*> in_edges;
   list<Edge*> out_edges;
@@ -88,12 +110,16 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
 
   VLOG(V_DEBUG) << groups << " Groups Found";
   for (int i = 0; i < groups; i++) {
-    parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);    
+    parser_.FuseGroup(i, &nodes, &in_edges, &out_edges);
     string name = GenKernelName();
     string source = GenKernelDeclaration(name, in_edges, out_edges);
     string func_body = Ewise::EwiseGenBodyGetInput(in_edges);
     vector<string> stateful_output;
+    //bool batch_enable = false;
     for (auto* n : nodes) {
+      CHECK(n->IsSingleNode());
+      //if (dynamic_cast<SingleNode*>(n)->IsBatchEnabled())
+        //batch_enable = true;
       VLOG(V_DEBUG) << dynamic_cast<SingleNode*>(n)->op_def().DebugString();
       if (n->IsStatefulOp() &&
           std::find(stateful_output.begin(), stateful_output.end(), n->output(0)->name())
@@ -104,7 +130,7 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
             out_edges.end()) {
           func_body += Ewise::EwiseGenBodyGetInput({n->output(0)});
         }else {
-          func_body += Ewise::EwiseGenBodyGetInput(n->output(0)->name(), 0);
+          func_body += Ewise::EwiseGenBodyGetInput(n->output(0)->name(), 0.f);
         }
       }
       if (!n->IsStatefulOp())
@@ -137,14 +163,16 @@ CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
         .AttrList<string>("ZeroEnforced", stateful_output)
         .Device("GPU")
         .Finalize(&op_def);
-      Node* new_node = new SingleNode(op_def, nodes.front()->scope());
+      SingleNode* new_node = new SingleNode(op_def, nodes.front()->scope());
+      //if (batch_enable) new_node->SetBatchEnabled();
+
       for (auto* e : out_edges) {
         new_node->AddOutput(e);
       }
       for (auto* e : in_edges) {
         new_node->AddInput(e);
       }
-      parser_.AddFusedNode(new_node);
+      parser_.AddFusedNode(new_node, i);
     }
     kernel_source_.push_back(source);
     in_edges.clear();

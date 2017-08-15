@@ -12,12 +12,13 @@ namespace midend {
 
 class SimpleSession : public SessionBase {
  public:
-  SimpleSession();
+  SimpleSession(int opt);
   void Run(const std::vector<std::string>& output_names, 
            std::vector<Tensor>* output_tensors,
            const std::vector<std::string>& input_names,
            const std::vector<Tensor>& input_tensors) override;
-  //int session_type() const override { return SIMPLE; }
+  int session_type() const override { return SIMPLE; }
+
  protected:
   virtual void Compile(const std::vector<std::string>& output_names);
   virtual void FeedInput(const std::vector<std::string>& input_names,

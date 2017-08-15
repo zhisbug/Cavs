@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+enum OptLevel {
+  OPT_NONE       = 0;
+  OPT_FUSION     = 1;
+  OPT_BATCHING   = 2;
+  OPT_STREAMMING = 4;
+}
+

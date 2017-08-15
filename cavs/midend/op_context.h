@@ -4,6 +4,7 @@
 #include "cavs/midend/tensor.h"
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/proto/op_def.pb.h"
+#include "cavs/util/stream_event_handle_pool.h"
 
 #include <unordered_map>
 #include <string>
@@ -12,7 +13,7 @@ namespace midend {
 
 class OpContext {
  public:
-  OpContext() : round_(0), gs_(NULL) {}
+  OpContext() : round_(0), gs_(NULL), stream_id_(-1), sync_me_(false) {}
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
   inline int InputSize() const;
@@ -20,6 +21,10 @@ class OpContext {
   inline void AppendInput(const Tensor* t);
   inline void AppendOutput(Tensor* t);
   inline OpContext* ExtractContext(const std::vector<int>& inp, const std::vector<int>& out);
+  inline void SetStreamId(int id) { stream_id_ = id; }
+  inline int GetStreamID() const { return stream_id_; }
+  inline void AddInputEventId(int id) { inputs_event_ids_.push_back(id); }
+  inline void SetSyncMe() { sync_me_ = true; }
 
   //the followings are all about optimizations
   inline void SetRound(int r) { round_ = r; }
@@ -32,8 +37,12 @@ class OpContext {
   inline static void SetDynDim(int dyn_dim) { dyn_dim_ = dyn_dim; }
 
   void SetTensorOffset();
-  void ScaleTensor();
+  void ResetTensorOffset();
+  void ScaleOutputTensor();
+  void ScaleInputTensor();
   void SetZero();
+  void WaitForInputs();
+  void SyncMe();
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
@@ -42,6 +51,9 @@ class OpContext {
   inline static int dyn_dim() { return dyn_dim_; }
   std::vector<const Tensor*> inputs_;
   std::vector<Tensor*> outputs_;
+  int stream_id_;
+  std::vector<int> inputs_event_ids_;
+  bool sync_me_;
   int round_;
   GraphSchedulerBase* gs_;
   static int dyn_dim_;

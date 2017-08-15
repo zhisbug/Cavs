@@ -30,7 +30,9 @@ class GraphGatherOp : public OpImpl {
     //int job_id = gs->GetCurrentJobId();
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
-    context->ScaleTensor();
+    context->ScaleOutputTensor();
+    int stride = out->count()/out->dims(0);
+    CHECK(stride == count_);
     VLOG(V_DEBUG) << "Batching jobs of this round: " << job_ids.size();
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
@@ -38,26 +40,25 @@ class GraphGatherOp : public OpImpl {
         CHECK(gs->child_id(gid).size() > child_offset_);
         int child_gid = gs->child_id(gid).at(child_offset_);
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
+        VLOG(V_DEBUG) << "internal id offset: " << gs->JobIdToInternalTensorId(child_gid);
         const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
-        VLOG(V_DEBUG) << "here";
-        CHECK(inp.count() == count_);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
               << "\t" << inp.debug_size() << "Bytes\n"
               << "Output count:\t" << out->count() 
               << "\t" << out->debug_size() << "Bytes";
-        checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*inp.count(),
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*stride,
                                   inp.data<T>(),
-                                  inp.count()*sizeof(T),
+                                  stride*sizeof(T),
                                   cudaMemcpyDeviceToDevice));
-        VLOG(V_DEBUG) << "here";
       }else {
         VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
-        checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*out->count(),
+        checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*stride,
                                   0,
-                                  out->count()*sizeof(T)));
+                                  stride*sizeof(T)));
       }
     }
+    out->DebugNumerical<T>();
   }
 
  private:
@@ -139,13 +140,15 @@ class GraphPullOp : public OpImpl {
     CHECK(inp.IsFullShape());
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
-    context->ScaleTensor();
+    context->ScaleOutputTensor();
+    int stride = out->count()/out->dims(0);
+    CHECK(out->dims(0) == job_ids.size());
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
       //const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();
-      checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*out->count(),
-                                inp.data<T>() + gid*out->count(),
-                                out->count()*sizeof(T),
+      checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,
+                                inp.data<T>() + gid*stride,
+                                stride*sizeof(T),
                                 cudaMemcpyDeviceToDevice));
     }
     inp.DebugNumerical<T>();
@@ -175,16 +178,32 @@ class FunctionPopRetOp : public OpImpl {
     //LOG(FATAL) << "here";
     GraphSchedulerBase* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
-    //checkCudaError(cudaDeviceSynchronize());
-    //checkCudaError(cudaGetLastError());
     const Tensor& inp = gs->GetFuncRet();
     Tensor* out = context->Output(0);
     CHECK(inp.count() <= out->count());
     CHECK(inp.debug_size() == out->debug_size());
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                              inp.data<T>(),
-                              out->count()*sizeof(T),
-                              cudaMemcpyDeviceToDevice));
+    VLOG(V_DEBUG) << inp.debug_info();
+    VLOG(V_DEBUG) << out->debug_info();
+    if (inp.IsDynamicShape()) {
+      CHECK(!out->IsDynamicShape() || out->IsFullShape());
+      int stride = inp.count()/inp.dims(0);
+      //CHECK(inp.count()/inp.dims(0) == stride);
+      for (int tid = 0; tid < out->dims(0); tid++) {
+        int gid = gs->InternalTensorIdToJobId(tid);
+        VLOG(V_DEBUG) << "tid: " << tid;
+        VLOG(V_DEBUG) << "gid: " << gid;
+        VLOG(V_DEBUG) << "stride: " << stride;
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+gid*stride,
+                                  inp.data<T>()+tid*stride,
+                                  stride*sizeof(T),
+                                  cudaMemcpyDeviceToDevice));
+      }
+    }else {
+      checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                                inp.data<T>(),
+                                out->count()*sizeof(T),
+                                cudaMemcpyDeviceToDevice));
+    }
     out->DebugNumerical<T>();
   }
 };

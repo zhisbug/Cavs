@@ -97,11 +97,12 @@ int main(int argc, char* argv[]) {
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   //int iterations = 20;
   for (int i = 0; i < FLAGS_epoch; i++) {
-    //for (int j = 0; j < iterations; j++) {
-      //sess.Run({train}, {{input,input_ph[j%input_ph.size()].data()},
-                         //{label,label_ph[j%label_ph.size()].data()}});
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
-    //}
+    for (int j = 0; j < iterations; j++) {
+      sess.Run({train}, {{input,input_ph[j%input_ph.size()].data()},
+                         {label,label_ph[j%label_ph.size()].data()}});
+      if (j % 10 == 0)
+        LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
+    }
     //float sum = 0.f;
     //for (int j = 0; j < iterations; j++) {
       //sess.Run({perplexity}, {{input,input_ph[j%input_ph.size()].data()},
@@ -112,16 +113,16 @@ int main(int argc, char* argv[]) {
       //sum += *(float*)(perplexity.eval());
     //}
     //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
-    float sum = 0.f;
-    for (int j = 0; j < iterations; j++) {
-      sess.Run({train, perplexity}, {{input,input_ph[j%input_ph.size()].data()},
-                              {label,label_ph[j%label_ph.size()].data()}});
-      float ppx = *(float*)(perplexity.eval());
-      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                << "\tPPX:\t" << exp(ppx);
-      sum += *(float*)(perplexity.eval());
-    }
-    LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    //float sum = 0.f;
+    //for (int j = 0; j < iterations; j++) {
+      //sess.Run({train, perplexity}, {{input,input_ph[j%input_ph.size()].data()},
+                              //{label,label_ph[j%label_ph.size()].data()}});
+      //float ppx = *(float*)(perplexity.eval());
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                //<< "\tPPX:\t" << exp(ppx);
+      //sum += *(float*)(perplexity.eval());
+    //}
+    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   free(input_data);

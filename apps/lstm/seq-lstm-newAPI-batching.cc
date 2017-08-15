@@ -135,8 +135,7 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess(OPT_FUSION+OPT_STREAMMING);
-  LOG(INFO) << "here";
+  Session sess(OPT_BATCHING);
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
@@ -146,17 +145,6 @@ int main(int argc, char* argv[]) {
       if (j % 10 == 0)
         LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
-    //float sum = 0.f;
-    //for (int j = 0; j < iterations; j++) {
-      //sess.Run({perplexity, train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                         //{label,    label_ph[j%label_ph.size()].data()},
-                         //{word_idx, input_ph[j%input_ph.size()].data()}});
-      //float ppx = *(float*)(perplexity.eval());
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                //<< "\tPPX:\t" << exp(ppx);
-      //sum += *(float*)(perplexity.eval());
-    //}
-    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   return 0;

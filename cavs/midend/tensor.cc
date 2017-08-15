@@ -89,32 +89,28 @@ void Tensor::DebugNumerical<float>() const {
       L2_norm += res[i]*res[i]; 
       checksum += res[i];
     }
+    float L2_norm_unit = 0;
+    float checksum_unit = 0;
+    for (int i = 0; i < count()/dims(0); i++) {
+      L2_norm_unit += res[i]*res[i]; 
+      checksum_unit += res[i];
+    }
     VLOG(V_DEBUG) << "pointer-addr:\t" << buf_.get();
-    VLOG(V_EXHAUSTIVE_DEBUG) << name()
+    VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;
+    VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
+      << "\tL2 Norm Unit:\t" << L2_norm_unit
+      << "\t checksum Unit:\t" << checksum_unit;
     for (int i = 0; i < 10 && i < count(); i++)
       VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
                 << std::setprecision(15) << res[i];
     L2_norm = 0;
     checksum  = 0;
-    if (name() == "main:Optimizer_12:Variable_3_grad" ||
-        name() == "main:Variable_3") {
-      for (int i = 0; i < 800; i++) {
-        //VLOG(V_EXHAUSTIVE_DEBUG) << name() << "[" << i << "]: "
-                //<< std::setprecision(15) << res[i];
-        L2_norm += res[i]*res[i]; 
-        checksum += res[i];
-      }
-      VLOG(V_EXHAUSTIVE_DEBUG) << name()
-        << "\tL2 Norm:\t" << L2_norm
-        << "\t checksum:\t" << checksum;
-    }
   }
 }
 
 Tensor::Tensor() : buf_(nullptr), name_(""), params_(nullptr) {}
-  //type_(DataType(0)), dynamic_(false) {}
 
 Tensor::Tensor(const string& name, Allocator *a, 
                DataType type, const TensorShape& shape) 
@@ -150,7 +146,6 @@ Tensor::Tensor(const string& name, Allocator *a,
 
 //for sharing buffer operators like reshape
 Tensor::Tensor(const std::string& name, const Tensor& t) {
-  //*this = t;
   buf_ = t.buf_;
   name_ = name;
   shape_  = t.shape_;
@@ -300,8 +295,8 @@ bool Tensor::ZeroInitEnforced() const {
 
 bool Tensor::InitWithZero(int iteration) {
   CHECK_NOTNULL(params_.get());
-  size_t unit = count();
-  CASES(params_->type, unit *= sizeof(T));
+  size_t visable_size = count();
+  CASES(params_->type, visable_size *= sizeof(T));
   if (params_->iteration == iteration-1) {
     buf_->InitWithZero();
     params_->iteration++;
@@ -318,16 +313,18 @@ bool Tensor::InitWithZero(int iteration) {
 
 bool Tensor::IsFullShape() const {
   CHECK_NOTNULL(params_.get());
-  size_t unit = count();
-  CASES(params_->type, unit *= sizeof(T));
+  size_t visable_size = count();
+  CASES(params_->type, visable_size *= sizeof(T));
   CHECK_NOTNULL(buf_.get());
-  CHECK(buf_->size() % unit == 0);
-  return buf_->size() == unit;
+  CHECK(buf_->size() % visable_size == 0);
+  return buf_->size() == visable_size;
 }
 
 void Tensor::SetOffsetWithId(int id) {
   CHECK(!IsFullShape());
-  size_t unit = count();
+  CHECK(IsDynamicShape());
+  CHECK(dims() > 1);
+  size_t unit = count()/dims(0);
   CASES(params_->type, unit *= sizeof(T));
   size_t offset = unit*id; 
   CHECK(offset < buf_->size())

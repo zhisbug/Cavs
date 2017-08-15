@@ -23,22 +23,26 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     CHECK(max_seq_length_ == graph_struct.dims(1)); 
   }
 
-  int total_length = 0;
+  total_length_ = 0;
   for (int i = 0; i < batch_size_; i++) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
     int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
     CHECK(one_seq_length <= max_seq_length_);
-    total_length += one_seq_length;
+    total_length_ += one_seq_length;
     for (int j = 0; j < one_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
-      __forward_parents_ids_[toGlobalId(i, j)][0] = *(start+j);
+      __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
       __forward_children_ids_[toGlobalId(i, j)].clear();
+      VLOG(V_DEBUG) << "parents: " << i << "\t" << j << "\t" << toGlobalId(i, j)
+                    << "\t" << __forward_parents_ids_[toGlobalId(i, j)][0];
     }
     __forward_children_ids_[toGlobalId(i, one_seq_length-1)].clear();
     for (int j = 0; j < one_seq_length; j++) {
       if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
         int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
         __forward_children_ids_[parent].push_back(toGlobalId(i, j));
+        VLOG(V_DEBUG) << "children: " << i << "\t" << j << "\t" << parent
+                      << "\t" << __forward_children_ids_[parent].back();
       }
     }
   }
@@ -51,10 +55,10 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   ++rc_;
   round2offset_.push_back(0);
   VLOG(V_DEBUG) << "Loading graph completed...";
-  return total_length;
+  return total_length_;
 }
 
-void GraphSchedulerBase::ReverseGraph() {
+int GraphSchedulerBase::ReverseGraph() {
   CHECK(batch_size_ > 0);
   CHECK(max_seq_length_ > 0);
   //isForward_ = false;
@@ -62,6 +66,7 @@ void GraphSchedulerBase::ReverseGraph() {
   parents_ = &__forward_children_ids_;
   rc_.SetBackward();
   ++rc_;
+  return total_length_;
 }
 
 void SerialGraphScheduler::Initialize() {
@@ -72,66 +77,27 @@ void SerialGraphScheduler::Initialize() {
 }
 
 void SerialGraphScheduler::InitializeSample(int sid) {
-  //if (isForward_) {
-    //for (int i = 0; i < max_seq_length_; i++) {
-      //int gid = toGlobalId(sid, i);
-      //if (child_ids_[gid].empty() && !parent_ids_[gid].empty()) {
-        //pending_list_.push_back(gid);
-        //executed_ids_[gid] = true;
-      //}
-    //}
-  //}else {
-    //for (int i = max_seq_length_-1; i >= 0; i--) {
-      //int gid = toGlobalId(sid, i);
-      //if (parent_ids_[gid].empty() && !child_ids_[gid].empty()) {
-        //pending_list_.push_back(gid);
-        //executed_ids_[gid] = true;
-      //}
-    //}
-  //}
   for (int i = 0; i < max_seq_length_; i++) {
     int gid = toGlobalId(sid, i);
     if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
       pending_list_.push_back(gid);
       activated_ids_[gid] = true;
+      VLOG(V_DEBUG) << "Activating job_id: " << gid;
     }
   }
 }
 
 void SerialGraphScheduler::ActivateNext() {
   int gid = pending_list_.front();
-  //if (isForward_) {
-    //if (!parent_ids_[gid].empty()) {
-      //for (int pid : parent_ids_[gid]) {
-        //if (!executed_ids_[pid]) {
-          //pending_list_.push_back(pid);
-          //executed_ids_[pid] = true;
-        //}
-      //}
-    //}else if (toSampleId(gid) < batch_size()-1) {
-      //InitializeSample(toSampleId(gid)+1);
-    //}
-  //}else {
-    //if (!child_ids_[gid].empty()) {
-      //for (int cid : child_ids_[gid]) {
-        //if (!activated_workset_[cid]) {
-          //pending_list_.push_back(cid);
-          //activated_workset_[cid] = true;
-        //}
-      //}
-    //}else if (toSampleId(gid) < batch_size()-1) {
-      //InitializeSample(toSampleId(gid)+1);
-    //}
-  //}
-  GraphSchedulerBase::ActivateNext();
   if (!(*parents_)[gid].empty()) {
     for (int pid : (*parents_)[gid]) {
       if (!activated_ids_[pid]) {
         pending_list_.push_back(pid);
         activated_ids_[pid] = true;
+        VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
-  }else if (toSampleId(gid) < batch_size()-1) {
+  }else if (toSampleId(gid)+1 < batch_size_) {
     InitializeSample(toSampleId(gid)+1);
   }
   pending_list_.pop_front();
@@ -139,14 +105,19 @@ void SerialGraphScheduler::ActivateNext() {
 }
 
 void BatchGraphScheduler::Initialize() {
-  CHECK(ready_to_execute_ids_.empty());
+  CHECK(Terminate());
+  std::fill(activated_ids_.begin(), activated_ids_.end(), false);
+  job2intensor_.resize(activated_ids_.size(), 0);
+  intensor2job_.resize(activated_ids_.size(), 0);
   if (rc_.IsForward()) {
     for (int sid = 0; sid < batch_size(); sid++) {
       for (int i = 0; i < max_seq_length_; i++) {
         int gid = toGlobalId(sid, i);
         if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
           activated_ids_[gid] = true;
-          job2intensor_[gid] = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
+          int tensor_id = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
+          job2intensor_[gid] = tensor_id;
+          intensor2job_[tensor_id] = gid;
           ready_to_execute_ids_.push_back(gid);
         }
       }
@@ -154,18 +125,22 @@ void BatchGraphScheduler::Initialize() {
     execution_tracer_.clear();
   }else {
     ready_to_execute_ids_ = std::move(execution_tracer_[rc_()]);
+    VLOG(V_DEBUG) << "ready_to_execute_ids_" << ready_to_execute_ids_[0];
   }
 }
 
 void BatchGraphScheduler::ActivateNext() {
   GraphSchedulerBase::ActivateNext();
+  VLOG(V_DEBUG) << "activation next " << rc_();
   if (rc_.IsForward()) {
     vector<int> jobs_next_round;
     for (int gid : ready_to_execute_ids_) {
       for (int pid : (*parents_)[gid]) {
         if (!activated_ids_[pid]) {
           activated_ids_[pid] = true;
-          job2intensor_[gid] = GetCurrentRoundOffset() + jobs_next_round.size();
+          int tensor_id = GetCurrentRoundOffset() + jobs_next_round.size();
+          job2intensor_[pid] = tensor_id;
+          intensor2job_[tensor_id] = pid;
           jobs_next_round.push_back(pid);
         }
       }
@@ -173,7 +148,12 @@ void BatchGraphScheduler::ActivateNext() {
     execution_tracer_.push_back(std::move(ready_to_execute_ids_));
     ready_to_execute_ids_ = std::move(jobs_next_round);
   }else {
-    ready_to_execute_ids_ = std::move(execution_tracer_[rc_.prev()]);
+    if (rc_() >= 0) {
+      ready_to_execute_ids_ = std::move(execution_tracer_[rc_()]);
+      VLOG(V_DEBUG) << "ready_to_execute_ids_" << ready_to_execute_ids_[0];
+    }else {
+      ready_to_execute_ids_.clear();
+    }
   }
 }
 

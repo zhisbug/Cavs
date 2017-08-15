@@ -40,6 +40,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //for both cases, we use the recursive method to fetch tensor
     const Tensor* t = GetTensor(TensorNameInFunctionContext(input), true); 
     CHECK(t) << "Getting " << TensorNameInFunctionContext(input);
+    VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(input)
+                  << " is " << t;
     ctxt->AppendInput(t);
   }
 
@@ -62,6 +64,32 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //and therefore if the forward edge can not be batched, the backward/gradient edge can not be batched
     if (!t) {
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
+      bool can_share_memory = GetSingleArg<bool>(op_def, "ShareMemory", false);
+      //there is a corner case that the share memory should be disabled during runtime
+      //that is the backward of io = (i+bi). 
+      //i and io are batched but bi can not be batched
+      //During the backwarding, the gradient of bi can not be applied with the sharememory feature
+      if (can_share_memory) {
+        const Tensor* rt = NULL;
+        CHECK_NOTNULL(rt = GetTensor(TensorNameInFunctionContext(node->input(0)), true));
+        dynamic_shape = rt->IsDynamicShape();
+        if (output->isGradient()) {
+          //const Tensor* ft = NULL;
+          //CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
+          //bool fwd_dynamic_shape = ft->IsDynamicShape();
+          const Edge* edge = NULL;
+          CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
+          bool fwd_dynamic_shape = edge->IsBatchEnabled();
+          if (dynamic_shape ^ fwd_dynamic_shape) {
+            //otherwise it means expanding the dims 
+            //there are no such operations
+            CHECK(dynamic_shape);
+            can_share_memory = false;
+            VLOG(V_DEBUG) << "the output of " << output->scoped_name() << " falls into this design";
+          }
+        }
+      }
+
       if (upper_t) {
         VLOG(V_DEBUG) << "Found underlying tensor(" << upper_t->name()
                       << "," << upper_t->count() << " elements"
@@ -72,7 +100,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
         out.Reshape(output->shape());
         InsertTensor(out);
         dynamic_shape = false;
-      }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
+      }else if (can_share_memory) {
         //currently, we only support sharing memory
         //for single-input and single-output operators
         //and only share output(0) with input(0)
@@ -80,9 +108,11 @@ OpContext* GraphSession::GetContext(const Node* node) {
         CHECK(node->output_size() == 1); 
         const Tensor* rt = NULL;
         CHECK_NOTNULL(rt = GetTensor(TensorNameInFunctionContext(node->input(0)), true));
-        Tensor out(TensorNameInFunctionContext(output), *rt);
         dynamic_shape = rt->IsDynamicShape();
+        Tensor out(TensorNameInFunctionContext(output), *rt);
         out.Reshape(output->shape());
+        VLOG(V_DEBUG) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
+
         if (dynamic_shape) {
           TensorShapeDef new_shape;
           if (output->shape().dim_size() == 1) {
@@ -93,7 +123,6 @@ OpContext* GraphSession::GetContext(const Node* node) {
             CHECK(output->shape().dim(0) == 1);
           }
         }
-        LOG(INFO) << "[In Graph Session]: Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
       }else {
         if (!output->isGradient()) {
@@ -107,9 +136,12 @@ OpContext* GraphSession::GetContext(const Node* node) {
             dynamic_shape = false;
           }
         }else {
-          const Tensor* ft = NULL;
-          CHECK_NOTNULL(ft = GetTensor(GetOriginName(output->scoped_name()), true));
-          dynamic_shape = ft->IsDynamicShape();
+          //const Tensor* ft = NULL;
+          //CHECK(ft = GetTensor(GetOriginName(output->scoped_name()), true)) << output->scoped_name();
+          //dynamic_shape = ft->IsDynamicShape();
+          const Edge* edge = NULL;
+          CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
+          dynamic_shape = edge->IsBatchEnabled();
         }
 
         TensorShape full_shape;
@@ -155,6 +187,8 @@ OpContext* GraphSession::GetContext(const Node* node) {
     }
     if (dynamic_shape) const_cast<Tensor*>(t)->SetAsDynamic();
 
+    VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(output)
+                  << " is " << t;
     ctxt->AppendOutput(const_cast<Tensor*>(t));
   }
   return ctxt;

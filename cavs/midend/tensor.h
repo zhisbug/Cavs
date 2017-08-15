@@ -72,9 +72,9 @@ class Tensor {
   inline DeviceType device_type() const { return buf_->device_type(); }
   inline std::string name()       const { return name_;               }
   inline bool empty()             const { return buf_ == nullptr;     }
-  inline bool IsDynamicShape()     const { return params_->dynamic;    }
+  inline bool IsDynamicShape()    const { return params_->dynamic;    }
   inline DataType data_type()     const { return params_->type;       }
-  inline void SetAsDynamic() { params_->dynamic = true; }
+  inline void SetAsDynamic()            { params_->dynamic = true;    }
   //for opeators
   inline int count()         const { return shape_.n_elements(); }
   inline int dims()          const { return shape_.dim();        }
@@ -122,7 +122,11 @@ class Tensor {
                zero_init_enforced(false), iteration(0) {}
     DataType type;
     size_t offset;
-    //if a tensor is dynamic at first, it is dynamic at last
+    //dynamic is used in two cases:
+    //1) when the shape is defined as -1(fullshape),
+    //   which means the shaped is deduced in runtime
+    //2) when the batching optimization is applied(partial shape),
+    //   which means the batch dimension changes frequently during runtime
     bool dynamic;
     bool zero_init_enforced;
     int iteration;

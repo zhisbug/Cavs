@@ -4,6 +4,7 @@
 #include "cavs/midend/op_context.h"
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/backend/op_impl.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <string>
 #include <vector>
@@ -15,10 +16,10 @@ using ::backend::CreateOp;
 
 class Statement {
  public:
+  enum SType { EXPR = 0, BASICBLOCK = 1, FUNCCALL = 2 };
   virtual void Run() = 0;
-  inline static void IncRound() {
-    round_++;
-  }
+  virtual SType type() const = 0;
+  inline static void IncRound() { round_++; }
 
  protected:
   inline static int round() { return round_; }
@@ -29,13 +30,19 @@ class Statement {
 
 class ExprStatement : public Statement {
  public:
-  ExprStatement(OpImpl* op, OpContext* ctxt) : op_(op), ctxt_(ctxt) {}
+  ExprStatement(OpImpl* op, OpContext* ctxt)
+    : op_(op), ctxt_(ctxt)/*, custom_p_(NULL)*/ {}
   ~ExprStatement() {
     if (op_) free(op_);
     if (ctxt_) free(ctxt_);
   }
+  SType type() const override { return EXPR; }
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
+  inline OpContext* GetContext() { return ctxt_; }
+  //inline void SetCustomCtxtFunc(std::function<void(OpContext*>) f) {
+    //custom_context_ = std::move(f);
+  //}
 
   void Run() override;
 
@@ -43,27 +50,34 @@ class ExprStatement : public Statement {
   ExprStatement() : op_(NULL), ctxt_(NULL) {}
   OpImpl* op_;
   OpContext* ctxt_;
+  //std::function<void(OpContext*)> custom_context_;
 };
 
 class BasicBlock : public Statement {
  public:
-  BasicBlock(int iter) : iter_(iter), stmts_(0) {
+  BasicBlock(int iter) :
+    iter_(iter), stmts_(0)/*, init_(0), finalize_(0)*/ {
     CHECK(iter > 0) ;
   }
 
   ~BasicBlock() {
     for (auto* stmt : stmts_)
       free(stmt);
+    //if (!init_) free(init_);
+    //if (!finalize_) free(finalize_);
   }
 
   inline void Run() override {
-    VLOG(V_DEBUG) << "This Basic Block will Run " << iter_ << " iterations ";
+    VLOG(V_TIMING) << "This Basic Block Begins";
     for (int i = 0; i < iter_; i++) {
       for (auto* stmt : stmts_) {
         stmt->Run();
       }
     }
+    //checkCudaError(cudaDeviceSynchronize());
+    VLOG(V_TIMING) << "This Basic Block Ends";
   }
+  SType type() const override { return BASICBLOCK; }
 
   inline Statement* AppendStmt(Statement* stmt) {
     CHECK(stmt);
@@ -71,9 +85,13 @@ class BasicBlock : public Statement {
     return stmt;
   }
 
+  friend class ScopedNode;
+
  protected:
   int iter_;
   std::vector<Statement*> stmts_;
+  //std::vector<Statement*> init_;
+  //std::vector<Statement*> finalize_;
 };
 
 class FunctionCallStatement : public Statement {
@@ -98,6 +116,7 @@ class FunctionCallStatement : public Statement {
     CHECK_NOTNULL(pop_ret_stmt_);
     CHECK_NOTNULL(global_ctxt_);
   }
+  SType type() const override { return FUNCCALL; }
 
  protected:
   FunctionCallStatement()
@@ -123,8 +142,14 @@ class GraphStatement : public FunctionCallStatement {
 class GraphGradStatement : public GraphStatement {
  public:
   GraphGradStatement(Statement* node_func, GraphSchedulerBase* gs)
-    : GraphStatement(node_func, gs) {}
+    : GraphStatement(node_func, gs), batch_weight_updates_(0) {}
   void Run() override;
+  inline void SetBatchWeightUpdate(std::vector<Statement*>&& wu) {
+    batch_weight_updates_ = std::move(wu);
+  }
+
+ private:
+  std::vector<Statement*> batch_weight_updates_;
 };
 
 } //namespace midend

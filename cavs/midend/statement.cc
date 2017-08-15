@@ -19,13 +19,22 @@ void ExprStatement::Run() {
   VLOG(V_TIMING) << "Setting Offset------------------------";
   ctxt_->SetTensorOffset();
   //for dynamic tensor size support(the tensor size may vary during iterations)
-  VLOG(V_TIMING) << "Setting Scale-------------------------";
-  ctxt_->ScaleTensor();
+  VLOG(V_TIMING) << "Setting Output Tenesor Scale-------------------------";
+  ctxt_->ScaleOutputTensor();
   //for some gradient tensor, the original value must be set to 0 
   VLOG(V_TIMING) << "Setting Zero--------------------------";
   ctxt_->SetZero();
+  //VLOG(V_TIMING) << "Customized context--------------------------";
+  //if (custom_context_ != nullptr)
+    //custom_context_(ctxt_);
+  VLOG(V_TIMING) << "Waiting for inputs--------------------";
+  ctxt_->WaitForInputs();
   VLOG(V_TIMING) << "Computing-----------------------------";
   op_->Compute(ctxt_);
+
+  VLOG(V_TIMING) << "Sync With CPU-------------------------";
+  //ctxt_->SyncMe();
+  //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 
@@ -62,7 +71,7 @@ void GraphStatement::Run() {
 
   //we must set dynamic size for graphoutput here
   global_ctxt_->SetDynDim(output_length);
-  global_ctxt_->ScaleTensor();
+  global_ctxt_->ScaleOutputTensor();
   pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutput done";
 }
@@ -74,7 +83,7 @@ void GraphGradStatement::Run() {
 
   push_arg_stmt_->Run();
 
-  gscheduler_->ReverseGraph();
+  int input_length = gscheduler_->ReverseGraph();
   //global_ctxt_->SetDynDim(-1);
   //for (int i = 0; i < gscheduler_->batch(); i++) {
     //gscheduler_->TrigerBatchId(i);
@@ -91,6 +100,13 @@ void GraphGradStatement::Run() {
     VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
+  }
+
+  OpContext::SetDynDim(input_length);
+  for (auto* stmt : batch_weight_updates_) {
+    dynamic_cast<ExprStatement*>(stmt)->GetContext()->ResetTensorOffset();
+    dynamic_cast<ExprStatement*>(stmt)->GetContext()->ScaleInputTensor();
+    stmt->Run();
   }
 
   pop_ret_stmt_->Run();

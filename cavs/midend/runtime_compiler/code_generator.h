@@ -8,9 +8,15 @@ namespace RTC {
 
 class CodeGenerator {
  public:
-  CodeGenerator(std::list<Node*>* n);
+  CodeGenerator(std::list<Node*>* n, std::vector<std::vector<int>>* dependency);
   inline static std::string PrefixedVar(std::string var) {
     return "tmp_" + var; 
+  }
+  inline static std::string OriVar(std::string var) {
+    return "ori_" + var; 
+  }
+  inline static std::string arrSize(std::string arr) {
+    return arr + "_count";
   }
   inline static std::string typeToString(DataType type) {
     CHECK(DataTypeToString.find((int)type) != DataTypeToString.end());

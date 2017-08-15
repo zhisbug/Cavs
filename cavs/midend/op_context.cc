@@ -34,20 +34,40 @@ void OpContext::SetTensorOffset() {
   }
 }
 
-void OpContext::ScaleTensor() {
+void OpContext::ResetTensorOffset() {
+  for (auto* t : inputs_) {
+    VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
+    if (!(t->IsFullShape())) {
+      VLOG(V_DEBUG) << "Resetted";
+      const_cast<Tensor*>(t)->SetOffsetWithId(0);
+    }
+  }
+  for (auto* t : outputs_) {
+    VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
+    if (!(t->IsFullShape())) {
+      VLOG(V_DEBUG) << "Resetted";
+      t->SetOffsetWithId(0);
+    }
+  }
+}
+
+void OpContext::ScaleOutputTensor() {
   //Input tensor buffer size should never be modified in the operator
-  //for (auto& t : inputs_) {
-    //if (t.IsDynamicSize() && t.dims(0) != dyn_dim()) {
-      //VLOG(V_DEBUG) << t.name() << " [INPUT] first dimension change from "
-                    //<< t.dims(0) << " to " << dyn_dim();
-      //t.ScaleDynamicDimension(dyn_dim());
-    //} 
-  //}
   for (auto* t : outputs_) {
     if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
       VLOG(V_DEBUG) << t->name() << " [OUTPUT] first dimension change from "
-                    << t->dims(0) << " to " << dyn_dim();
+                    << t->dims(0) << " to " << dyn_dim() << "\t"
+                    << t << t->debug_info();
       t->ScaleDynamicDimension(dyn_dim());
+    } 
+  }
+}
+
+void OpContext::ScaleInputTensor() {
+  for (auto* t : inputs_) {
+    if (t->IsDynamicShape() && t->dims(0) != dyn_dim()) {
+      //CHECK(t->dims(0) != dyn_dim()) << t->debug_info() << t;
+      const_cast<Tensor*>(t)->ScaleDynamicDimension(dyn_dim());
     } 
   }
 }
@@ -60,6 +80,27 @@ void OpContext::SetZero() {
       t->InitWithZero(round());
       VLOG(V_DEBUG) << "-------------------------------------------------------";
     }
+  }
+}
+
+void OpContext::WaitForInputs() {
+  if (stream_id_ >= 0) {
+    for (int eid : inputs_event_ids_) {
+      checkCudaError(cudaStreamWaitEvent(
+            StreamEventHandlePool::GetCudaStream(stream_id_),
+            StreamEventHandlePool::GetCudaEvent(eid), 0));
+    }
+  }
+}
+
+void OpContext::SyncMe() {
+  if (sync_me_) {
+    cudaStream_t s = (stream_id_ == -1) ?
+      cudaStreamDefault : StreamEventHandlePool::GetCudaStream(stream_id_);
+    checkCudaError(cudaStreamSynchronize(s));
+    VLOG(V_TIMING) << "Sync!";
+  }else {
+    VLOG(V_TIMING) << "Not Sync!";
   }
 }
 

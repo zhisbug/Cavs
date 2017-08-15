@@ -1,4 +1,4 @@
-#include "cavs/midend/simple_session.h"
+#include "cavs/midend/session_simple.h"
 #include "cavs/midend/statement.h"
 #include "cavs/backend/op_impl_mpi_functor.h"
 #include "cavs/util/op_def_builder.h"
@@ -18,9 +18,9 @@ namespace midend {
 
 class MPISession: public SimpleSession {
  public:
-  MPISession();
+  MPISession(int opt);
   ~MPISession();
-  //int session_type() const override { return MPI; }
+  int session_type() const override { return MPI; }
 
  private:
   void Compile(const vector<string>& output_names) override;
@@ -79,8 +79,8 @@ void AddMPIOnPath(list<Node*>& critical_path) {
   }
 }
 
-MPISession::MPISession() : SimpleSession() {
-  type_ = (int)MPI;
+MPISession::MPISession(int opt) : SimpleSession(opt) {
+  //type_ = (int)MPI;
   MPI_Init(NULL, NULL);
 }
 

@@ -21,7 +21,10 @@ class CudaCommon{
   inline static cudnnHandle_t cudnnHandle() { return Get()->cudnnHandle_; }
 
  private:
-  CudaCommon();
+  CudaCommon() {
+    checkCublasError(cublasCreate(&cublasHandle_));
+    checkCUDNNError(cudnnCreate(&cudnnHandle_));
+  }
   static CudaCommon* Get() {static CudaCommon cc; return &cc;}
   cublasHandle_t cublasHandle_;
   cudnnHandle_t cudnnHandle_;

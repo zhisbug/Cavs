@@ -40,7 +40,7 @@ void ClipOpImpl<T>::Compute(OpContext* context) {
     CUDABinaryConstScalarFunctor<math::Mul<T>, T>::Compute(
         out->mutable_data<T>(), out->count(),
         in.data<T>(), in.count(), 
-        clip_/std::max(sum, clip_));
+        clip_/std::max(sum, clip_), cudaStreamDefault);
     VLOG(V_EXHAUSTIVE_DEBUG) << "clip: " << clip_ << "\tsum: " << sum
                              << "\tscale: " << clip_/std::max(sum, clip_);
     in.DebugNumerical<T>();

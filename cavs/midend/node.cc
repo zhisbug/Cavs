@@ -1,6 +1,8 @@
 #include "cavs/midend/node.h"
 #include "cavs/midend/graph_session.h"
 #include "cavs/midend/runtime_compiler/code_generator.h"
+#include "cavs/midend/stream_scheduler.h"
+#include "cavs/midend/batch_weight_updater.h"
 #include "cavs/util/op_def_builder.h"
 
 using std::string;
@@ -206,7 +208,24 @@ Statement* GraphGradNode::Compile(
       sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
       sn->SetContainedScope(node_grad_func);
     }
+
+    vector<Statement*> batch_weight_update;
+    std::list<Node*> finalize_node;
+    if ((sess->opt_type() & OPT_BATCHING)) {
+      VLOG(V_DEBUG) << "Begin modifing the critical path for Batching in ScopedNode";
+      BatchingWeightUpdater updater(&(sn->nodes_), &finalize_node);
+      VLOG(V_DEBUG) << "Modifing the critical path done for Batching in ScopedNode";
+    }
+
     Statement* node_grad_stmt = sn->Compile(gsess_);
+
+    if ((sess->opt_type() & OPT_BATCHING)) {
+      for (Node* fn : finalize_node) {
+        Statement* stmt = fn->Compile(gsess_);
+        CHECK(stmt) << fn->debug_info();
+        batch_weight_update.push_back(stmt);
+      }
+    }
 
     push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
     pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
@@ -216,6 +235,8 @@ Statement* GraphGradNode::Compile(
     dynamic_cast<GraphGradStatement*>(stmt_)->SetGlobalContext(ctxt);
     dynamic_cast<GraphGradStatement*>(stmt_)->SetPushArgStatement(push_arg_stmt);
     dynamic_cast<GraphGradStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
+    if (!batch_weight_update.empty())
+      dynamic_cast<GraphGradStatement*>(stmt_)->SetBatchWeightUpdate(std::move(batch_weight_update));
   }
   return stmt_;
 }
@@ -223,6 +244,7 @@ Statement* GraphGradNode::Compile(
 ScopedNode::ScopedNode(Scope* located,
       const string& name, int iter)
     : Node(located), name_(name), iter_(iter), contained_(NULL) {}
+      /*init_node_(0), finalize_node_(0)*/
 
 void ScopedNode::SetContainedScope(const Scope* contained) {
   CHECK_NOTNULL(contained);
@@ -246,11 +268,14 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It is located in scope " << scope()->scoped_name();
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
-    if ((sess->session_type() & SessionBase::FUSION)) {
-      VLOG(V_DEBUG) << "Begin modifing the critical path in ScopedNode";
-      RTC::CodeGenerator generator(&nodes_);
-      VLOG(V_DEBUG) << "Modifing the critical path done in ScopedNode";
+
+    std::vector<std::vector<int>> dependency;
+    if ((sess->opt_type() & OPT_FUSION)) {
+      VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
+      RTC::CodeGenerator generator(&nodes_, &dependency);
+      VLOG(V_DEBUG) << "Modifing the critical path done for fusion in ScopedNode";
     }
+
     for (auto* node : nodes_) {
       VLOG(V_DEBUG) << "\tCompiling\t" << node->name()
                     << "\t in Scope: " << contained_->scoped_name();
@@ -258,6 +283,17 @@ Statement* ScopedNode::Compile(
       CHECK(stmt) << node->debug_info();
       bb->AppendStmt(stmt);
     }
+
+    if ((sess->opt_type() & OPT_STREAMMING)) {
+      VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
+      if (dependency.empty()) {
+        StreamScheduler::DependencyExtractor(&dependency, nodes_);
+      }
+      CHECK(dependency.size() == nodes_.size());
+      StreamScheduler scheduler(&(bb->stmts_), dependency);
+      VLOG(V_DEBUG) << "Modifing the critical path done for streamming in ScopedNode";
+    }
+
     stmt_ = bb;
   }
   return stmt_;
