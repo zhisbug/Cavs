@@ -15,11 +15,12 @@ class BatchingWeightUpdater {
     
     Scope* s = nodes->front()->scope();
     std::list<Node*> updater;
+    std::set<Node*> blacklist;
     for (auto iter = nodes->begin(); iter != nodes->end(); ) {
       CHECK((*iter)->scope() == s);
       bool cond0 = ((*iter)->output_size() == 1);
       bool cond1 = (*iter)->output(0)->isGradient();
-      if (cond0 && cond1) {
+      if (cond0 && cond1 && blacklist.find(*iter) == blacklist.end()) {
         Edge* backward_e = (*iter)->output(0);
         Edge* forward_e = s->FindEdge(GetOriginName(backward_e->name()));  
         CHECK(forward_e);
@@ -29,6 +30,13 @@ class BatchingWeightUpdater {
           finalize_node->push_back(*iter);
           nodes->erase(iter++);
           continue;
+        }
+      }else if ((!cond0 && cond1) || blacklist.find(*iter) != blacklist.end()) {
+        blacklist.insert(*iter);
+        for (Edge* e : (*iter)->output()) {
+          for (Node* pn : e->dst(true)) {
+            blacklist.insert(pn);
+          }
         }
       }
       iter++;
