@@ -62,6 +62,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
     //it is generated in this session and seems like a local tensor, but it should not be batched.
     //in the graphutil, all the edge that can be batched are marked,
     //and therefore if the forward edge can not be batched, the backward/gradient edge can not be batched
+    VLOG(V_DEBUG) << "here";
     if (!t) {
       const Tensor* upper_t = GetTensor(TensorNameInFunctionContext(output), true);
       bool can_share_memory = GetSingleArg<bool>(op_def, "ShareMemory", false);
@@ -89,6 +90,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
           }
         }
       }
+    VLOG(V_DEBUG) << "here";
 
       if (upper_t) {
         VLOG(V_DEBUG) << "Found underlying tensor(" << upper_t->name()
@@ -174,7 +176,11 @@ OpContext* GraphSession::GetContext(const Node* node) {
         InsertTensor(out);
       }
       CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
+    }else {
+      dynamic_shape = false;
     }
+
+    VLOG(V_DEBUG) << "here";
     const vector<string>& zeros =
       GetListArg<string>(dynamic_cast<const SingleNode*>(node)->op_def(), "ZeroEnforced");
     if (node->IsStatefulOp()) {
@@ -185,6 +191,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
       CHECK(node->name().substr(0, 11) == "FusedKernel");
       const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }
+    VLOG(V_DEBUG) << "here";
     if (dynamic_shape) const_cast<Tensor*>(t)->SetAsDynamic();
 
     VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(output)

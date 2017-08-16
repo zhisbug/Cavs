@@ -8,9 +8,9 @@
 
 using namespace std;
 
-DEFINE_int32 (batch_size,       20,       "batch");
+DEFINE_int32 (batch_size,  20,       "batch");
 DEFINE_int32 (input_size,  21701,    "input size");
-DEFINE_int32 (timestep,    20,       "timestep");
+//DEFINE_int32 (timestep,    20,       "timestep");
 DEFINE_int32 (embedding,   200,      "embedding size");
 DEFINE_int32 (hidden,      100,      "hidden size");
 DEFINE_int32 (epoch,       1,        "epochs");
@@ -22,25 +22,29 @@ int MAX_LEN = 56;
 int MAX_DEPENDENCY = 111;
 int NUM_SAMPLES = 8544;
 
-DEFINE_string(input_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/sents_idx.txt", "input sentences");
-DEFINE_string(label_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/labels.txt", "label sentences");
-DEFINE_string(graph_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/parents.txt", "graph dependency");
+//DEFINE_string(input_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/sents_idx.txt", "input sentences");
+//DEFINE_string(label_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/labels.txt", "label sentences");
+//DEFINE_string(graph_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/parents.txt", "graph dependency");
+DEFINE_string(input_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/sents_idx.txt", "input sentences");
+DEFINE_string(label_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/labels.txt",    "label sentences");
+DEFINE_string(graph_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/parents.txt",   "graph dependency");
 
 class Reader {
  public:
   Reader(const string input, const string label, const string graph) :
-      input_path(input), label_path(label), graph_path(graph) {
-    input_file = ifstream(input_path);
-    label_file = ifstream(label_path);
-    graph_file = ifstream(graph_path);
+      input_path(input), label_path(label), graph_path(graph),
+      input_file(input), label_file(label), graph_file(graph) {
+    //input_file = std::move(ifstream(input_path));
+    //label_file = std::move(ifstream(label_path));
+    //graph_file = std::move(ifstream(graph_path));
   }
 
-  void next_batch(vector<vector<int> >& batch_input, vector<vector<int> >& batch_label, 
-      vector<vector<int> >& batch_graph) {
-    batch_input.clear();
-    batch_label.clear();
-    batch_graph.clear();
+  void next_batch( vector<int>* batch_graph, vector<float>* batch_input, vector<float>* batch_label) {
+    std::fill(batch_input->begin(), batch_input->end(), -1);
+    std::fill(batch_label->begin(), batch_label->end(), -1);
+    std::fill(batch_graph->begin(), batch_graph->end(), -1);
     int i = 0; 
+    int label_length = 0;
     while (i < FLAGS_batch_size) {
       if (input_file.eof()) { // which mean it reaches the end of the file
         input_file.clear();
@@ -56,27 +60,43 @@ class Reader {
       if (input_str.length() > 0) {
         getline(label_file, label_str);
         getline(graph_file, graph_str);
-        batch_input.push_back(process_line(input_str, MAX_LEN));
-        batch_label.push_back(process_line(label_str, MAX_DEPENDENCY));
-        batch_graph.push_back(process_line(graph_str, MAX_DEPENDENCY)); 
+        int length;
+        process_graph<int>(batch_graph->data() + i*MAX_DEPENDENCY, &length, graph_str);
+        CHECK(MAX_DEPENDENCY >= length);
+
+        process_data<float>(batch_input->data() + i*MAX_DEPENDENCY, &length, input_str);
+        CHECK(MAX_LEN >= length);
+
+        process_data<float>(batch_label->data() + label_length, &length, label_str);
+        CHECK(MAX_DEPENDENCY >= length);
+        label_length += length;
         i++;
       }
     }
   }
 
  private:
-  vector<int> process_line(const string str, const int max_len) {
+  template<typename T>
+  void process_data(T* data, int* len, const string& str) {
     stringstream input_stream(str);
-    vector<int> ret;
-    ret.resize(max_len);
-    for (int i = 0; i < max_len; ++i)
-      ret[i] = -1;
     int val, idx = 0;
     while (input_stream >> val) {
-      ret[idx] = val; 
+      data[idx] = val; 
       idx++;
     }
-    return ret;
+    *len = idx;
+  }
+
+  template<typename T>
+  void process_graph(T* data, int* len, const string& str) {
+    stringstream input_stream(str);
+    int val, idx = 0;
+    while (input_stream >> val) {
+      data[idx] = val-1;
+      idx++;
+    }
+    *len = idx;
+    CHECK(data[idx-1] == -1);
   }
 
   string input_path;
@@ -100,6 +120,15 @@ class TreeModel : public GraphSupport {
     U = Sym::Variable(DT_FLOAT, {4 * FLAGS_hidden * FLAGS_hidden},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     B = Sym::Variable(DT_FLOAT, {4 * FLAGS_hidden}, Sym::Zeros());
+
+    // prepare parameter symbols
+    b_i = B.Slice(0, FLAGS_hidden);
+    b_f = B.Slice(FLAGS_hidden, FLAGS_hidden);
+    b_u = B.Slice(2 * FLAGS_hidden, FLAGS_hidden);
+    b_o = B.Slice(3 * FLAGS_hidden, FLAGS_hidden);
+
+    U_iou = U.Slice(0, 3 * FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, 3 * FLAGS_hidden});
+    U_f   = U.Slice(3 * FLAGS_hidden * FLAGS_hidden, FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, FLAGS_hidden});
   }
 
   void Node() override {
@@ -116,23 +145,12 @@ class TreeModel : public GraphSupport {
     Sym x = Pull(0, {1});
     x = x.EmbeddingLookup(embedding.Mirror());
 
-    // prepare parameter symbols
-    Sym b_i = B.Slice(0, FLAGS_hidden);
-    Sym b_f = B.Slice(FLAGS_hidden, FLAGS_hidden);
-    Sym b_u = B.Slice(2 * FLAGS_hidden, FLAGS_hidden);
-    Sym b_o = B.Slice(3 * FLAGS_hidden, FLAGS_hidden);
-
     // layout: i, o, u, f
     // start computation
     // xW is 1 x 4*FLAGS_hidden
     Sym xW = Sym::MatMul(x, W.Reshape({FLAGS_embedding, 4 * FLAGS_hidden}).Mirror()).Reshape({FLAGS_hidden * 4});
     Sym xW_i, xW_o, xW_u, xW_f;
     tie(xW_i, xW_o, xW_u, xW_f) = xW.Split4();
-
-    Sym U_iou = U.Slice(0, 3 * FLAGS_hidden * FLAGS_hidden)
-        .Reshape({FLAGS_hidden, 3 * FLAGS_hidden});
-    Sym U_f = U.Slice(3 * FLAGS_hidden * FLAGS_hidden, FLAGS_hidden * FLAGS_hidden)
-        .Reshape({FLAGS_hidden, FLAGS_hidden});
     
     // hU_iou is 1 x 3*FLAGS_hidden
     Sym hU_iou = Sym::MatMul(h_lr.Reshape({1, FLAGS_hidden}), U_iou.Mirror()).Reshape({FLAGS_hidden * 3});
@@ -161,17 +179,23 @@ class TreeModel : public GraphSupport {
  private:
   Sym W, U, B;
   Sym embedding;
+  Sym b_i;
+  Sym b_f;
+  Sym b_u;
+  Sym b_o;
+            
+  Sym U_iou;
+  Sym U_f;
 };
 
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
-  Reader sst_reader = Reader(FLAGS_input_file, FLAGS_label_file, 
-      FLAGS_graph_file);
-  vector<vector<int> > test_input, test_label, test_graph;
+  Reader sst_reader(FLAGS_input_file, FLAGS_label_file, FLAGS_graph_file);
 
   Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY}, "CPU");
-  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_LEN});
+  //Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_LEN});
+  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});
   Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});
 
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
@@ -188,13 +212,16 @@ int main(int argc, char* argv[]) {
   Sym perplexity = loss.Reduce_mean();
   Session sess;
   int iterations = NUM_SAMPLES / FLAGS_batch_size; 
-  vector<vector<int> > batch_input, batch_label, batch_graph;
+  //vector<float> input_data(FLAGS_batch_size*MAX_LEN, -1);
+  vector<float> input_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
+  vector<float> label_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
+  vector<int>   graph_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
-      sst_reader.next_batch(batch_input, batch_label, batch_graph);
-      sess.Run({train}, {{graph,    batch_graph.data()},
-                         {label,    batch_label.data()},
-                         {word_idx, batch_input.data()}});
+      sst_reader.next_batch(&graph_data, &input_data, &label_data);
+      sess.Run({train}, {{graph,    graph_data.data()},
+                         {label,    label_data.data()},
+                         {word_idx, input_data.data()}});
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
     }
     //float sum = 0.f;

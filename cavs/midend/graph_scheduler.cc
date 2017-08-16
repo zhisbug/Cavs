@@ -28,13 +28,14 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
     int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
     CHECK(one_seq_length <= max_seq_length_);
+    VLOG(V_DEBUG) << "sequence_lengh = " << one_seq_length;
     total_length_ += one_seq_length;
     for (int j = 0; j < one_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
       __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
       __forward_children_ids_[toGlobalId(i, j)].clear();
-      VLOG(V_DEBUG) << "parents: " << i << "\t" << j << "\t" << toGlobalId(i, j)
-                    << "\t" << __forward_parents_ids_[toGlobalId(i, j)][0];
+      VLOG(V_DEBUG) << "parents[" << i << "][" << j << "](" << toGlobalId(i, j)
+                    << ") = " << __forward_parents_ids_[toGlobalId(i, j)][0];
     }
     __forward_children_ids_[toGlobalId(i, one_seq_length-1)].clear();
     for (int j = 0; j < one_seq_length; j++) {

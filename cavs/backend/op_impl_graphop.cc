@@ -180,8 +180,11 @@ class FunctionPopRetOp : public OpImpl {
     CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetFuncRet();
     Tensor* out = context->Output(0);
+    VLOG(V_DEBUG) << inp.debug_info();
+    VLOG(V_DEBUG) << out->debug_info();
     CHECK(inp.count() <= out->count());
-    CHECK(inp.debug_size() == out->debug_size());
+    CHECK(inp.debug_size() >= out->debug_size())
+        << inp.debug_size() << "\t" << out->debug_size();
     VLOG(V_DEBUG) << inp.debug_info();
     VLOG(V_DEBUG) << out->debug_info();
     if (inp.IsDynamicShape()) {

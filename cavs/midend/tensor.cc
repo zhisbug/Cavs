@@ -119,6 +119,7 @@ Tensor::Tensor(const string& name, Allocator *a,
   params_->type = type;
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
+    VLOG(V_DEBUG) << "Setting " << this->name() << " as dynamic";
     params_->dynamic = true;
     shape_ = shape;
     CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
@@ -135,6 +136,7 @@ Tensor::Tensor(const string& name, Allocator *a,
   params_->type = type;
   CHECK(shape.dim() > 0);
   if (shape.dim(0) == -1) {
+    VLOG(V_DEBUG) << "Setting " << this->name() << " as dynamic";
     params_->dynamic = true;
     shape_ = std::move(shape);
     CASES(params_->type, buf_.reset(new TensorBuffer<T>(a, 0)));
@@ -204,6 +206,7 @@ void Tensor::Reshape(const TensorShapeDef& shape) {
   for (auto& dim : shape.dim())
     new_counts *= dim;
   if (shape.dim(0) == -1) {
+    VLOG(V_DEBUG) << "Setting " << name() << " as dynamic";
     params_->dynamic = true;
   }else {
     CHECK(new_counts == count())
@@ -225,6 +228,7 @@ void Tensor::Reshape(const vector<int>& dims) {
     new_counts *= dim;
   if (dims[0] == -1) {
     params_->dynamic = true;
+    VLOG(V_DEBUG) << "Setting " << name() << " as dynamic";
   }else {
     CHECK(new_counts == count());
   }
@@ -236,6 +240,7 @@ void Tensor::Reshape(const vector<int>& dims) {
 void Tensor::Reshape(const Tensor& t) {
   CHECK_NOTNULL(params_.get());
   if (t.dims(0) == -1) {
+    VLOG(V_DEBUG) << "Setting " << name() << " as dynamic";
     params_->dynamic = true;
   }else {
     CHECK(t.count() == count());

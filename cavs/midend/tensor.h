@@ -74,7 +74,10 @@ class Tensor {
   inline bool empty()             const { return buf_ == nullptr;     }
   inline bool IsDynamicShape()    const { return params_->dynamic;    }
   inline DataType data_type()     const { return params_->type;       }
-  inline void SetAsDynamic()            { params_->dynamic = true;    }
+  inline void SetAsDynamic()            { 
+    VLOG(V_DEBUG) << "Setting " << name() << " as dynamic";
+    params_->dynamic = true;    
+  }
   //for opeators
   inline int count()         const { return shape_.n_elements(); }
   inline int dims()          const { return shape_.dim();        }

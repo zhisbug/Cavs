@@ -1,8 +1,11 @@
 import numpy as np
 import os
 
-data_dir = '/users/hzhang2/projects/Cavs/apps/lstm/sst'
-splits = ['train', 'test', 'dev']
+# data_dir = '/users/hzhang2/projects/Cavs/apps/lstm/sst'
+data_dir = '/users/shizhenx/projects/Cavs/apps/lstm/data/sst'
+
+# splits = ['train', 'test', 'dev']
+splits = ['train']
 
 
 class Vocab(object):
