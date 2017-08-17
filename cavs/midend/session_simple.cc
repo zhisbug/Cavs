@@ -18,24 +18,25 @@ SimpleSession::SimpleSession(int opt) : SessionBase(opt), s_(main_scope()) {}
 void SimpleSession::DepthSearch(Node* curr,
     list<Node*>* critical_path,
     set<Node*>* include) {
-  bool isSource = (curr->input_size() == 0);
-  bool accessed = (include->find(curr) != include->end());
+  bool hasIncluded = (include->find(curr) != include->end());
 
-  if (!accessed) {
+  if (!hasIncluded) {
     //(*include)[curr] = true;
-    //VLOG(V_DEBUG) << curr->debug_info();
-    if (curr->IsScopedNode())
-      include->insert(curr);
+    //if (curr->IsScopedNode())
+    include->insert(curr);
+    bool isSource = (curr->input_size() == 0);
     if (!isSource) {
       for (auto* edge : curr->input()) {
         CHECK(edge->src_size() == 1 || edge->isVariable());
-        //for (auto* node : edge->srcs()) {
-        DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
-        //}
+        for (auto* node : edge->src()) {
+          DepthSearch(node, critical_path, include);
+        }
       }
       for (auto* edge : curr->control_dependency()) {
         CHECK(edge->src_size() == 1);
-        DepthSearch(const_cast<Node*>(edge->src(0)), critical_path, include);
+        for (auto* node : edge->src()) {
+          DepthSearch(node, critical_path, include);
+        }
         VLOG(V_DEBUG) << "[Dependency Info]:\n" << curr->debug_info()
                       << "\n==>\n"<< edge->src(0)->scoped_name();
       }

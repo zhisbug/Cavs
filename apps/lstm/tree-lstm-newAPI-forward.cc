@@ -23,9 +23,6 @@ int MAX_LEN = 56;
 int MAX_DEPENDENCY = 111;
 int NUM_SAMPLES = 8544;
 
-//DEFINE_string(input_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/sents_idx.txt", "input sentences");
-//DEFINE_string(label_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/labels.txt", "label sentences");
-//DEFINE_string(graph_file, "/users/hzhang2/projects/Cavs/apps/lstm/sst/train/parents.txt", "graph dependency");
 DEFINE_string(input_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/sents_idx.txt", "input sentences");
 DEFINE_string(label_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/labels.txt",    "label sentences");
 DEFINE_string(graph_file, "/users/shizhenx/projects/Cavs/apps/lstm/data/sst/train/parents.txt",   "graph dependency");
@@ -114,22 +111,22 @@ class TreeModel : public GraphSupport {
   TreeModel(const Sym& graph_ph, const Sym& vertex_ph) : 
     GraphSupport(graph_ph, vertex_ph) {
     embedding = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_embedding},
-                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//weight_5
 
     W = Sym::Variable(DT_FLOAT, {4 * FLAGS_embedding * FLAGS_hidden},
-                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
+                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//weight_6
     U = Sym::Variable(DT_FLOAT, {4 * FLAGS_hidden * FLAGS_hidden},
-                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    B = Sym::Variable(DT_FLOAT, {4 * FLAGS_hidden}, Sym::Zeros());
+                            Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//weight_7
+    B = Sym::Variable(DT_FLOAT, {4 * FLAGS_hidden}, Sym::Zeros());//weight_8
 
     // prepare parameter symbols
-    b_i = B.Slice(0, FLAGS_hidden);
-    b_f = B.Slice(FLAGS_hidden, FLAGS_hidden);
-    b_u = B.Slice(2 * FLAGS_hidden, FLAGS_hidden);
-    b_o = B.Slice(3 * FLAGS_hidden, FLAGS_hidden);
+    b_i = B.Slice(0, FLAGS_hidden);//slice_9
+    b_f = B.Slice(FLAGS_hidden, FLAGS_hidden);//slice_10
+    b_u = B.Slice(2 * FLAGS_hidden, FLAGS_hidden);//slice_11
+    b_o = B.Slice(3 * FLAGS_hidden, FLAGS_hidden);//slice_12
 
-    U_iou = U.Slice(0, 3 * FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, 3 * FLAGS_hidden});
-    U_f   = U.Slice(3 * FLAGS_hidden * FLAGS_hidden, FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, FLAGS_hidden});
+    U_iou = U.Slice(0, 3 * FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, 3 * FLAGS_hidden});//slice_13
+    U_f   = U.Slice(3 * FLAGS_hidden * FLAGS_hidden, FLAGS_hidden * FLAGS_hidden).Reshape({FLAGS_hidden, FLAGS_hidden});//slice_14
   }
 
   void Node() override {
@@ -194,14 +191,14 @@ int main(int argc, char* argv[]) {
   
   Reader sst_reader(FLAGS_input_file, FLAGS_label_file, FLAGS_graph_file);
 
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY}, "CPU");
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY}, "CPU");//placeholder_0
   //Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_LEN});
-  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});
-  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});
+  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});//placeholder_1
+  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, MAX_DEPENDENCY});//placeholder_2
 
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
-                               Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-  Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
+                               Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//weight_3
+  Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());//weight_4
   TreeModel model(graph, word_idx);
   Sym graph_output = model.Output();
   Sym label_reshape = label.Reshape({-1, 1});
@@ -218,24 +215,6 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 26; i++)
     sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
-    //for (int j = 0; j < iterations; j++) {
-      //sst_reader.next_batch(&graph_data, &input_data, &label_data);
-      //sess.Run({train}, {{graph,    graph_data.data()},
-                         //{label,    label_data.data()},
-                         //{word_idx, input_data.data()}});
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
-    //}
-    //float sum = 0.f;
-    //for (int j = 0; j < iterations; j++) {
-      //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                              //{label,    label_ph[j%label_ph.size()].data()},
-                              //{word_idx, input_ph[j%input_ph.size()].data()}});
-      //float ppx = *(float*)(perplexity.eval());
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                //<< "\tPPX:\t" << exp(ppx);
-      //sum += *(float*)(perplexity.eval());
-    //}
-    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
     float sum = 0.f;
     for (int j = 0; j < iterations; j++) {
       LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
