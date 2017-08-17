@@ -1,6 +1,7 @@
 #include "cavs/frontend/cxx/sym.h"
 #include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
+#include "cavs/proto/opt.pb.h"
 
 #include <iostream>
 #include <fstream>
@@ -11,8 +12,8 @@ using namespace std;
 DEFINE_int32 (batch_size,  20,       "batch");
 DEFINE_int32 (input_size,  21701,    "input size");
 //DEFINE_int32 (timestep,    20,       "timestep");
-DEFINE_int32 (embedding,   200,      "embedding size");
-DEFINE_int32 (hidden,      100,      "hidden size");
+DEFINE_int32 (embedding,   300,      "embedding size");
+DEFINE_int32 (hidden,      150,      "hidden size");
 DEFINE_int32 (epoch,       1,        "epochs");
 DEFINE_int32 (iters,       99999,    "iterations");
 DEFINE_double(init_scale,  0.1f,     "init random scale of variables");
@@ -216,6 +217,10 @@ int main(int argc, char* argv[]) {
   vector<float> input_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<float> label_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<int>   graph_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
+  sst_reader.next_batch(&graph_data, &input_data, &label_data);
+  sst_reader.next_batch(&graph_data, &input_data, &label_data);
+  sst_reader.next_batch(&graph_data, &input_data, &label_data);
+  sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       sst_reader.next_batch(&graph_data, &input_data, &label_data);

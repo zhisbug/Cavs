@@ -17,6 +17,7 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     max_seq_length_ = graph_struct.dims(1);
     __forward_parents_ids_.resize(batch_size_*max_seq_length_); 
     __forward_children_ids_.resize(batch_size_*max_seq_length_); 
+    sample_offset_in_gid_.resize(batch_size_);
     activated_ids_.resize(batch_size_*max_seq_length_, false);
   }else {
     CHECK(batch_size_ == graph_struct.dims(0)); 
@@ -27,6 +28,7 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   for (int i = 0; i < batch_size_; i++) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
     int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
+    sample_offset_in_gid_[i] = one_seq_length + (i > 0) ? sample_offset_in_gid_[i-1] : 0;
     CHECK(one_seq_length <= max_seq_length_);
     VLOG(V_DEBUG) << "sequence_lengh = " << one_seq_length;
     total_length_ += one_seq_length;
@@ -86,6 +88,7 @@ void SerialGraphScheduler::InitializeSample(int sid) {
       VLOG(V_DEBUG) << "Activating job_id: " << gid;
     }
   }
+  sample_id_ = sid;
 }
 
 void SerialGraphScheduler::ActivateNext() {
@@ -98,8 +101,8 @@ void SerialGraphScheduler::ActivateNext() {
         VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
-  }else if (toSampleId(gid)+1 < batch_size_) {
-    InitializeSample(toSampleId(gid)+1);
+  }else if (sample_id_+1 < batch_size_) {
+    InitializeSample(sample_id_+1);
   }
   pending_list_.pop_front();
   ready_to_execute_ids_[0] = pending_list_.front();

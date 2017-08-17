@@ -36,7 +36,7 @@ class GraphSchedulerBase {
     return message_passer_; 
   }
   inline void SetFuncArg(const Tensor t) { 
-    CHECK(t.IsFullShape());
+    //CHECK(t.IsFullShape());
     func_arg_ = t;
   }
   inline const Tensor& GetFuncArg() {
@@ -53,11 +53,10 @@ class GraphSchedulerBase {
 
  protected:
   inline int toGlobalId(int sample_id, int local_id) const {
-    return sample_id*max_seq_length_+local_id; 
+    //return sample_id*max_seq_length_+local_id; 
+    return sample_offset_in_gid_[sample_id]+local_id;
   }
-  inline int toSampleId(int gid) const {
-    return gid/max_seq_length_;
-  }
+  std::vector<int>  sample_offset_in_gid_;
   std::vector<int>  ready_to_execute_ids_;
   std::vector<bool> activated_ids_;
   int batch_size_;
@@ -108,6 +107,10 @@ class SerialGraphScheduler : public GraphSchedulerBase {
   inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
 
  private:
+  //inline int toSampleId(int gid) const {
+    //return gid/max_seq_length_;
+  //}
+  int sample_id_;
   void InitializeSample(int id);
   std::list<int> pending_list_;
 };

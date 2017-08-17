@@ -137,14 +137,17 @@ class GraphPullOp : public OpImpl {
 
     //out tensor must be local
     //if in tensor is a global tensor(in the backward of pull)
-    CHECK(inp.IsFullShape());
+    //CHECK(inp.IsFullShape());
     const vector<int>& job_ids = gs->GetJobId();
     context->SetDynDim(job_ids.size());
     context->ScaleOutputTensor();
     int stride = out->count()/out->dims(0);
     CHECK(out->dims(0) == job_ids.size());
+    VLOG(V_DEBUG) << out->debug_info() << "\t" << out->debug_size();
+    VLOG(V_DEBUG) << inp.debug_info() << "\t" << inp.debug_size();
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
+      VLOG(V_DEBUG) << "job_ids[" << local_id << "] = " << gid;
       //const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();
       checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,
                                 inp.data<T>() + gid*stride,
@@ -188,7 +191,7 @@ class FunctionPopRetOp : public OpImpl {
     VLOG(V_DEBUG) << inp.debug_info();
     VLOG(V_DEBUG) << out->debug_info();
     if (inp.IsDynamicShape()) {
-      CHECK(!out->IsDynamicShape() || out->IsFullShape());
+      //CHECK(!out->IsDynamicShape() || out->IsFullShape());
       int stride = inp.count()/inp.dims(0);
       //CHECK(inp.count()/inp.dims(0) == stride);
       for (int tid = 0; tid < out->dims(0); tid++) {
