@@ -36,6 +36,7 @@ class GraphSchedulerBase {
     return message_passer_; 
   }
   inline void SetFuncArg(const Tensor t) { 
+    //we loose this constraint because of the label reshape
     //CHECK(t.IsFullShape());
     func_arg_ = t;
   }
@@ -71,12 +72,10 @@ class GraphSchedulerBase {
   struct RoundCounter {
    public:
     RoundCounter() : round_(-1), isforward_(true) {}
-    void SetForward() { isforward_ = true; }
+    void Reset() { round_ = -1; isforward_ = true; }
     void SetBackward() { isforward_ = false; }
     bool IsForward() const { return isforward_; }
     int operator()() const { return round_; }
-    //int prev() const { return isforward_? round_-1 : round_+1; }
-    //int next() const { return isforward_? round_+1 : round_-1; }
     RoundCounter& operator ++() {
       if (isforward_) round_++; 
       else round_--; 

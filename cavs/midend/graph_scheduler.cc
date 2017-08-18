@@ -53,7 +53,8 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   parents_ = &__forward_parents_ids_;
   children_ = &__forward_children_ids_;
   round2offset_.clear();
-  rc_.SetForward();
+  //rc_.SetForward();
+  rc_.Reset();
   CHECK(rc_() == -1) << rc_();
   ++rc_;
   round2offset_.push_back(0);
