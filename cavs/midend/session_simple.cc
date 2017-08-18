@@ -28,13 +28,13 @@ void SimpleSession::DepthSearch(Node* curr,
     if (!isSource) {
       for (auto* edge : curr->input()) {
         CHECK(edge->src_size() == 1 || edge->isVariable());
-        for (auto* node : edge->src()) {
+        for (auto* node : edge->src(true)) {
           DepthSearch(node, critical_path, include);
         }
       }
       for (auto* edge : curr->control_dependency()) {
         CHECK(edge->src_size() == 1);
-        for (auto* node : edge->src()) {
+        for (auto* node : edge->src(true)) {
           DepthSearch(node, critical_path, include);
         }
         VLOG(V_DEBUG) << "[Dependency Info]:\n" << curr->debug_info()

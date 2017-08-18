@@ -25,22 +25,23 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   }
 
   total_length_ = 0;
+  int prev_seq_length = 0;
   for (int i = 0; i < batch_size_; i++) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
-    int one_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
-    sample_offset_in_gid_[i] = one_seq_length + (i > 0) ? sample_offset_in_gid_[i-1] : 0;
-    CHECK(one_seq_length <= max_seq_length_);
-    VLOG(V_DEBUG) << "sequence_lengh = " << one_seq_length;
-    total_length_ += one_seq_length;
-    for (int j = 0; j < one_seq_length-1; j++) {
+    int curr_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
+    sample_offset_in_gid_[i] = prev_seq_length + ((i > 0) ? sample_offset_in_gid_[i-1] : 0);
+    CHECK(curr_seq_length <= max_seq_length_);
+    VLOG(V_DEBUG) << "sequence_lengh = " << curr_seq_length;
+    total_length_ += curr_seq_length;
+    for (int j = 0; j < curr_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
       __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
       __forward_children_ids_[toGlobalId(i, j)].clear();
       VLOG(V_DEBUG) << "parents[" << i << "][" << j << "](" << toGlobalId(i, j)
                     << ") = " << __forward_parents_ids_[toGlobalId(i, j)][0];
     }
-    __forward_children_ids_[toGlobalId(i, one_seq_length-1)].clear();
-    for (int j = 0; j < one_seq_length; j++) {
+    __forward_children_ids_[toGlobalId(i, curr_seq_length-1)].clear();
+    for (int j = 0; j < curr_seq_length; j++) {
       if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
         int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
         __forward_children_ids_[parent].push_back(toGlobalId(i, j));
@@ -48,6 +49,7 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
                       << "\t" << __forward_children_ids_[parent].back();
       }
     }
+    prev_seq_length = curr_seq_length;
   }
   //isForward_ = true;
   parents_ = &__forward_parents_ids_;
@@ -102,8 +104,8 @@ void SerialGraphScheduler::ActivateNext() {
         VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
-  }else if (sample_id_+1 < batch_size_) {
-    InitializeSample(sample_id_+1);
+  }else if (++sample_id_ < batch_size_) {
+    InitializeSample(sample_id_);
   }
   pending_list_.pop_front();
   ready_to_execute_ids_[0] = pending_list_.front();
