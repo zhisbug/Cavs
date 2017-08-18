@@ -52,23 +52,20 @@ OpContext* SessionBase::GetContext(const Node* node) {
     if (!t) {
       const Tensor* upper_t = GetTensor(output->scoped_name(), true);
       if (upper_t) {
-        LOG(INFO) << "Found underlying tensor(" << upper_t->name()
-                  << "," << upper_t->count() << " elements"
-                  << ") for " << output->scoped_name()
-                  << " with shape info: " << output->shape().DebugString();
+        VLOG(V_DEBUG) << "Found underlying tensor(" << upper_t->name()
+                      << "," << upper_t->count() << " elements"
+                      << ") for " << output->scoped_name()
+                      << " with shape info: " << output->shape().DebugString();
         Tensor out(output->scoped_name(), *upper_t);
         out.Reshape(output->shape());
         InsertTensor(out);
       }else if (GetSingleArg<bool>(op_def, "ShareMemory", false)) {
-        //currently, we only support sharing memory
-        //for single-input and single-output operators
-        //and only share output(0) with input(0)
         //CHECK(node->inputs_size() == 1); //reshape need two inputs
         CHECK(node->output_size() == 1); 
         Tensor out(output->scoped_name(),
             *GetTensor(node->input(0)->scoped_name()));
         out.Reshape(output->shape());
-        LOG(INFO) << "Share Memory Tensor" << out.debug_info();
+        VLOG(V_DEBUG) << "Share Memory Tensor" << out.debug_info();
         InsertTensor(out);
       }else {
         CHECK(output->shape().dim_size() > 0);

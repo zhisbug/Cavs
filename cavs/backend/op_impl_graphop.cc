@@ -32,7 +32,7 @@ class GraphGatherOp : public OpImpl {
     context->SetDynDim(job_ids.size());
     context->ScaleOutputTensor();
     int stride = out->count()/out->dims(0);
-    CHECK(stride == count_);
+    CHECK(stride == count_) << out->debug_info() << op_def_.DebugString();
     VLOG(V_DEBUG) << "Batching jobs of this round: " << job_ids.size();
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];

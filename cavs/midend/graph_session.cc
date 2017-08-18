@@ -144,6 +144,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
           dynamic_shape = edge->IsBatchEnabled();
         }
 
+        VLOG(V_DEBUG) << "IsDynamicShape: " << dynamic_shape;
         TensorShape full_shape;
         TensorShape partial_shape;
         if (dynamic_shape) {

@@ -305,6 +305,17 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
     const vector<TensorShapeDef>& shape_def = 
       ::backend::ShapeInference(op, input_shapes);
     node->SetShape(shape_def);
+    if (node->name() == "Gather" || node->name() == "Pull") {
+      node->SetBatchEnabled();
+    }else {
+      for (Edge* e : node->input()) {
+        if (e->IsBatchEnabled()) {
+          node->SetBatchEnabled(); 
+          break;
+        }
+      }
+    }
+
     if (node->name() == "Push") {
       //Currently, push only has one output.
       //There is one and only one push op per function
@@ -367,15 +378,15 @@ void GraphUtil::ComputeGradientForFunction(
     }
   }
 
-  //for the data path on pull/gather to push/scatter, it can be batched
-  for (int i = 0; i < critical_path.size(); i++) {
-    if (critical_path[i]) {
-      Node* node = func_scope->typological_sorted_nodes_[i];
-      if (node->IsSingleNode()) {
-        dynamic_cast<SingleNode*>(node)->SetBatchEnabled();
-      }
-    }
-  }
+  ////for the data path on pull/gather to push/scatter, it can be batched
+  //for (int i = 0; i < critical_path.size(); i++) {
+    //if (critical_path[i]) {
+      //Node* node = func_scope->typological_sorted_nodes_[i];
+      //if (node->IsSingleNode()) {
+        //dynamic_cast<SingleNode*>(node)->SetBatchEnabled();
+      //}
+    //}
+  //}
 
   for (auto& edge: func_scope->in_edges_) {
     for (auto* node : edge.second->dst()) {

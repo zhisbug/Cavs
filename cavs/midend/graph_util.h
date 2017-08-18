@@ -17,7 +17,6 @@ class GraphUtil {
   GraphUtil(Scope* s);
   ScopedNode* AddOptimizerOp(const OpDef& op_def);
   TensorShapeDef AddFunction(const FunctionDef& func_def);
-  //std::string debug_info() const;
 
  private:
   OpDef PartialGrad(const Node* node, const std::string& edge);
@@ -26,10 +25,10 @@ class GraphUtil {
       const Edge* curr,
       const Edge* loss,
       const Scope* scope);
-  bool GenDependencyPath(std::vector<bool>* cpath,
-      const Edge* curr,
-      const Edge* loss,
-      const Scope* scope);
+  //bool GenDependencyPath(std::vector<bool>* cpath,
+      //const Edge* curr,
+      //const Edge* loss,
+      //const Scope* scope);
   void GenGradient(Scope* loss_scope,
       const std::vector<bool>& critical_path,
       const std::vector<std::unordered_map<size_t, OpDef>>& grads,
