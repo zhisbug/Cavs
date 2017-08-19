@@ -59,7 +59,7 @@ class GraphSchedulerBase {
   }
   std::vector<int>  sample_offset_in_gid_;
   std::vector<int>  ready_to_execute_ids_;
-  std::vector<bool> activated_ids_;
+  std::vector<int> activated_times_;
   int batch_size_;
   int max_seq_length_;
   int total_length_;

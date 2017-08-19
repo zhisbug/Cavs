@@ -218,37 +218,25 @@ int main(int argc, char* argv[]) {
   for (int i = 0; i < 26; i++)
     sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
+    //for (int j = 0; j < iterations; j++) {
+      //sst_reader.next_batch(&graph_data, &input_data, &label_data);
+      //sess.Run({train}, {{graph,    graph_data.data()},
+                         //{label,    label_data.data()},
+                         //{word_idx, input_data.data()}});
+      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
+    //}
+    float sum = 0.f;
     for (int j = 0; j < iterations; j++) {
       sst_reader.next_batch(&graph_data, &input_data, &label_data);
-      sess.Run({train}, {{graph,    graph_data.data()},
-                         {label,    label_data.data()},
-                         {word_idx, input_data.data()}});
-      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
+      sess.Run({perplexity}, {{graph,    graph_data.data()},
+                              {label,    label_data.data()},
+                              {word_idx, input_data.data()}});
+      float ppx = *(float*)(perplexity.eval());
+      LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
+                << "\tPPX:\t" << exp(ppx);
+      sum += *(float*)(perplexity.eval());
     }
-    //float sum = 0.f;
-    //for (int j = 0; j < iterations; j++) {
-      //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-                              //{label,    label_ph[j%label_ph.size()].data()},
-                              //{word_idx, input_ph[j%input_ph.size()].data()}});
-      //float ppx = *(float*)(perplexity.eval());
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                //<< "\tPPX:\t" << exp(ppx);
-      //sum += *(float*)(perplexity.eval());
-    //}
-    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
-    //float sum = 0.f;
-    //for (int j = 0; j < iterations; j++) {
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
-      //sst_reader.next_batch(&graph_data, &input_data, &label_data);
-      //sess.Run({perplexity}, {{graph,    graph_data.data()},
-                              //{label,    label_data.data()},
-                              //{word_idx, input_data.data()}});
-      //float ppx = *(float*)(perplexity.eval());
-      //LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j
-                //<< "\tPPX:\t" << exp(ppx);
-      //sum += *(float*)(perplexity.eval());
-    //}
-    //LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
+    LOG(INFO) << "Epoch[" << i << "]: loss = \t" << exp(sum/iterations);
   }
 
   return 0;
