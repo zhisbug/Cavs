@@ -82,10 +82,12 @@ void GraphSupport::Push(const Sym& s) {
 }
 
 void GraphSupport::Scatter(const Sym& s) {
+  //currently, for tree support, we hard the child here
   OpDef def = OpDefBuilder("Scatter")
                 .Input(s.output(0))
                 .Dtype(s.type())
                 .Device(s.device())
+                .AttrSingle("Child", 0)
                 .Finalize();
   Sym AddToFunction(def);
 }

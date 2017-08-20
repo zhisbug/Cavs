@@ -37,11 +37,14 @@ class GraphGatherOp : public OpImpl {
     for (int local_id = 0; local_id < job_ids.size(); local_id++) {
       int gid = job_ids[local_id];
       if (gs->HasChild(gid)) {
-        CHECK(gs->child_id(gid).size() > child_offset_);
-        int child_gid = gs->child_id(gid).at(child_offset_);
+        CHECK(gs->ChildIds(gid).size() > child_offset_);
+        int child_gid = gs->ChildIds(gid)[child_offset_];
         VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
-        VLOG(V_DEBUG) << "internal id offset: " << gs->JobIdToInternalTensorId(child_gid);
-        const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
+        CHECK(gs->InputTensorIds(gid).size() > child_offset_);
+        int child_tensor_id = gs->InputTensorIds(gid)[child_offset_];
+        VLOG(V_DEBUG) << "internal gather offset: " << child_tensor_id;
+        //const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
+        const Tensor& inp = gs->GetMessagePasser(child_tensor_id);
         CHECK(out->count() == inp.count())
               << "Input count:\t" << inp.count()
               << "\t" << inp.debug_size() << "Bytes\n"
@@ -69,7 +72,10 @@ class GraphGatherOp : public OpImpl {
 template <typename T>
 class GraphScatterOp : public OpImpl {
  public:
-  explicit GraphScatterOp(const OpDef& def) : OpImpl(def) {}
+  explicit GraphScatterOp(const OpDef& def) : OpImpl(def) {
+    child_offset_ = GetSingleArg<int>(def, "Child");
+    CHECK(child_offset_ >= 0);
+  }
 
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Scatter Operator needs further runtime support";
@@ -80,13 +86,42 @@ class GraphScatterOp : public OpImpl {
           << "\t" << inp.debug_size() << "Bytes\n"
           << "Output count:\t" << out->count() 
           << "\t" << out->debug_size() << "Bytes";
-    checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                              inp.data<T>(),
-                              inp.count()*sizeof(T),
-                              cudaMemcpyDeviceToDevice));
+    CHECK(inp.IsDynamicShape());
+    CHECK(out->IsDynamicShape());
+    CHECK(out->dims(0) == inp.dims(0));
+    int stride = out->count()/out->dims(0);
+    CHECK(stride == inp.count()/inp.dims(0));
+    //checkCudaError(cudaMemcpy(out->mutable_data<T>(),
+                              //inp.data<T>(),
+                              //inp.count()*sizeof(T),
+                              //cudaMemcpyDeviceToDevice));
+    //GraphSchedulerBase* gs = context->graph_scheduler();
+    //gs->SetMessagePasser(*out);
+
+    out->SetOffsetWithId(0);
     GraphSchedulerBase* gs = context->graph_scheduler();
+    const vector<int>& job_ids = gs->GetJobId();
+    VLOG(V_DEBUG) << "Batching jobs of this round: " << job_ids.size();
+    for (int local_id = 0; local_id < job_ids.size(); local_id++) {
+      int gid = job_ids[local_id];
+      if (gs->OutputTensorIds(gid).size() > child_offset_) {
+        int output_tensor_id = gs->OutputTensorIds(gid)[child_offset_];
+        VLOG(V_DEBUG) << "internal scatter id: " << output_tensor_id;
+        checkCudaError(cudaMemcpy(out->mutable_data<T>()+output_tensor_id*stride,
+                                  inp.data<T>() + local_id*stride,
+                                  stride*sizeof(T),
+                                  cudaMemcpyDeviceToDevice));
+      }else {
+        VLOG(V_DEBUG) << "[Scattering] No need to scatter";
+      }
+    }
+
     gs->SetMessagePasser(*out);
+    out->DebugNumerical<T>();
   }
+
+ private:
+  int child_offset_;
 };
 
 template <typename T>
@@ -185,7 +220,8 @@ class FunctionPopRetOp : public OpImpl {
     Tensor* out = context->Output(0);
     VLOG(V_DEBUG) << inp.debug_info();
     VLOG(V_DEBUG) << out->debug_info();
-    CHECK(inp.count() <= out->count());
+    CHECK(inp.count() <= out->count())
+      << inp.count() << "\t" << out->count();
     CHECK(inp.debug_size() >= out->debug_size())
         << inp.debug_size() << "\t" << out->debug_size();
     VLOG(V_DEBUG) << inp.debug_info();

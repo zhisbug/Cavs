@@ -51,20 +51,9 @@ void GraphStatement::Run() {
   //The only case we have to reset the dynamic size is when the previous round sets
   //the dynamic size to a size larger than the gather output capacity,
   //which can not happen
-  //global_ctxt_->SetDynDim(-1);
-  //for (int i = 0; i < gscheduler_->batch(); i++) {
-    //gscheduler_->TrigerBatchId(i);
-    //while (!gscheduler_->empty()) {
-      //VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
-                    //<< " in batch_id: " << i;
-      ////sleep(2);
-      //node_func_->Run();
-      //gscheduler_->ActivateNext();
-    //}
-  //}
   gscheduler_->Initialize();
   while (!gscheduler_->Terminate()) {
-    VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -85,19 +74,9 @@ void GraphGradStatement::Run() {
 
   int input_length = gscheduler_->ReverseGraph();
   //global_ctxt_->SetDynDim(-1);
-  //for (int i = 0; i < gscheduler_->batch(); i++) {
-    //gscheduler_->TrigerBatchId(i);
-    //while (!gscheduler_->empty()) {
-      //VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()
-                    //<< " in batch_id: " << i;
-      ////sleep(2);
-      //node_func_->Run();
-      //gscheduler_->ActivateNext();
-    //}
-  //}
   gscheduler_->Initialize();
   while (!gscheduler_->Terminate()) {
-    VLOG(V_DEBUG) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }

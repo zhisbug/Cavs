@@ -288,6 +288,7 @@ ScopedNode* GraphUtil::AddOptimizerOp(const OpDef& def) {
   ApplyGradient(loss_scope, var_names, solver, proj, lr);
 
   sn->SetContainedScope(loss_scope);
+  VLOG(V_DEBUG) << "Optimizer generated...";
 
   return sn;
 }
@@ -441,7 +442,7 @@ void GraphUtil::GenGradientForFunction(Scope* func_grad_scope,
       for (auto& iter : grads[i]) {
         VLOG(V_DEBUG) << "Adding grad op\n" << iter.second.DebugString();
         SingleNode* grad_node = func_grad_scope->AddOp(iter.second);
-        CHECK(grad_node);
+        CHECK(grad_node) << iter.second.DebugString();
         VLOG(V_DEBUG) << "Getting input shape...";
         const vector<TensorShapeDef>& inputs = 
           grad_node->input_shapes();

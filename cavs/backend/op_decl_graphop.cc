@@ -35,6 +35,7 @@ class GatherOpDecl : public ExtractOpDecl {
       .Input(GetGradientName(op_def_.output(0)))
       .Output("Scatter_Backward_"+std::to_string(GetHash(op_def_)))
       .Device(op_def_)
+      .Attr(op_def_)
       .Finalize(&scatter);
     grad->push_back(scatter);
   }
@@ -101,7 +102,8 @@ class ScatterOpDecl : public EmitOpDecl {
     OpDefBuilder("Gather")
       .Output(GetGradientName(op_def_.input(0)))
       .Shape(op_def_)
-      .AttrSingle("Child", 0)
+      //.AttrSingle("Child", 0)
+      .Attr(op_def_)
       .Device(op_def_)
       .Finalize(&gather);
     grad->push_back(gather);
