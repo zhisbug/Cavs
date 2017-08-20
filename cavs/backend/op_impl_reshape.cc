@@ -54,11 +54,19 @@ void ReshapeLikeOp<T>::Compute(OpContext* context) {
   const Tensor& dy = context->Input(0);
   const Tensor& x  = context->Input(1);
   Tensor* dx = context->Output(0);
-  CHECK(x.count() == dx->count());
-  CHECK(x.count() == dy.count());
+  //VLOG(V_DEBUG) << x.debug_info() << dy.debug_info() << dx->debug_info();
+  CHECK(dx->count() == dy.count());
   CHECK(x.dims() == dx->dims());
-  for (int i = 0; i < x.dims(); i++)
-    CHECK(x.dims(i) == dx->dims(i));
+  if (x.IsDynamicShape()) {
+    CHECK(dx->IsDynamicShape());
+    for (int i = 1; i < x.dims(); i++)
+      CHECK(x.dims(i) == dx->dims(i));
+    CHECK(x.debug_size() == dx->debug_size());
+  }else {
+    for (int i = 0; i < x.dims(); i++)
+      CHECK(x.dims(i) == dx->dims(i));
+    CHECK(x.count() == dx->count());
+  }
   //checkCudaError(cudaMemcpy(dx->mutable_data<T>(), dy.data<T>(),
                             //dy.count()*sizeof(T), cudaMemcpyDeviceToDevice));
   dy.DebugNumerical<T>();

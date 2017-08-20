@@ -45,7 +45,7 @@ class GraphGatherOp : public OpImpl {
         VLOG(V_DEBUG) << "internal gather offset: " << child_tensor_id;
         //const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
         const Tensor& inp = gs->GetMessagePasser(child_tensor_id);
-        CHECK(out->count() == inp.count())
+        CHECK(out->count() >= inp.count())
               << "Input count:\t" << inp.count()
               << "\t" << inp.debug_size() << "Bytes\n"
               << "Output count:\t" << out->count() 

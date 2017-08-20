@@ -97,14 +97,15 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess;
+  //Session sess;
+  Session sess(OPT_BATCHING);
   vector<int>   graph_data(FLAGS_batch_size*(2*FLAGS_tree_size-1), -1);
 
   binaryTree(&graph_data);
   for (int j = 0; j < FLAGS_iters; j++) {
     sess.Run({train}, {{graph, graph_data.data()}});
-    if (j % 10 == 0)
-      LOG(INFO) << "\tIteration:\t" << j;
+    //if (j % 10 == 0)
+    LOG(INFO) << "\tIteration:\t" << j;
   }
   
 
