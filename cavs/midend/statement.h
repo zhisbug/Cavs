@@ -113,7 +113,7 @@ class FunctionCallStatement : public Statement {
 
   void Run() override {
     CHECK_NOTNULL(push_arg_stmt_);
-    CHECK_NOTNULL(pop_ret_stmt_);
+    //CHECK_NOTNULL(pop_ret_stmt_);
     CHECK_NOTNULL(global_ctxt_);
   }
   SType type() const override { return FUNCCALL; }

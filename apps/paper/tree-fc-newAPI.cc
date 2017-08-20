@@ -12,7 +12,7 @@ using namespace std;
 DEFINE_int32 (batch_size, 20,       "batch");
 DEFINE_int32 (hidden,     100,      "hidden size");
 DEFINE_int32 (tree_size,  128,      "epochs");
-DEFINE_int32 (iters,      30,       "iterations");
+DEFINE_int32 (iters,      100,       "iterations");
 DEFINE_double(init_scale, 0.1f,     "init random scale of variables");
 DEFINE_double(lr,         0.00001f, "learning rate");
 

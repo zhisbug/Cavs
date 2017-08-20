@@ -43,7 +43,8 @@ void GraphStatement::Run() {
   CHECK(node_func_);
   CHECK(gscheduler_);
 
-  push_arg_stmt_->Run();
+  if (push_arg_stmt_)
+    push_arg_stmt_->Run();
 
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   CHECK(output_length > 0);
@@ -61,7 +62,8 @@ void GraphStatement::Run() {
   //we must set dynamic size for graphoutput here
   global_ctxt_->SetDynDim(output_length);
   global_ctxt_->ScaleOutputTensor();
-  pop_ret_stmt_->Run();
+  if (pop_ret_stmt_)
+    pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutput done";
 }
 
@@ -70,7 +72,8 @@ void GraphGradStatement::Run() {
   CHECK(node_func_);
   CHECK(gscheduler_);
 
-  push_arg_stmt_->Run();
+  if (push_arg_stmt_)
+    push_arg_stmt_->Run();
 
   int input_length = gscheduler_->ReverseGraph();
   //global_ctxt_->SetDynDim(-1);
@@ -88,7 +91,8 @@ void GraphGradStatement::Run() {
     stmt->Run();
   }
 
-  pop_ret_stmt_->Run();
+  if (pop_ret_stmt_)
+    pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutputGrad done";
 }
 

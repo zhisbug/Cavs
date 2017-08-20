@@ -147,23 +147,32 @@ Statement* GraphNode::Compile(
     }
 
     ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindNode("Node"));
+    bool pop_exist = false;
     if (!sn) {
       Scope* node_func = main_scope()->FindChildScope("Node");
       CHECK_NOTNULL(node_func);
       sn = new ScopedNode(main_scope(), "Node", 1);
       sn->SetContainedScope(node_func);
+      for (Node* n : sn->nodes_) {
+        if (n->name() == "Push") {
+          pop_exist = true; 
+          break;
+        }
+      }
     }
     CHECK_NOTNULL(gsess_);
     Statement* node_func_stmt = sn->Compile(gsess_);
 
     push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
-    pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
     push_arg_stmt = new ExprStatement(push_arg_op, push_ctxt);
-    pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
     stmt_ = new GraphStatement(node_func_stmt, gsess_->graph_scheduler());
     dynamic_cast<GraphStatement*>(stmt_)->SetGlobalContext(ctxt);
     dynamic_cast<GraphStatement*>(stmt_)->SetPushArgStatement(push_arg_stmt);
-    dynamic_cast<GraphStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
+    if (pop_exist) {
+      pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+      pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
+      dynamic_cast<GraphStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
+    }
   }
   return stmt_;
 }
@@ -201,12 +210,19 @@ Statement* GraphGradNode::Compile(
     CHECK_NOTNULL(gsess_ = GetGraphSession(GetOriginName(op_def_.input(0))));
     
     CHECK(main_scope()->FindChildScope("Node"));
+    bool pop_exist = false;
     ScopedNode* sn = dynamic_cast<ScopedNode*>(main_scope()->FindChildScope("Node")->FindNode(GetGradientName("Node")));
     if (!sn){
       Scope* node_grad_func = main_scope()->FindChildScope("Node")->FindChildScope(GetGradientName("Node"));
       CHECK_NOTNULL(node_grad_func);
       sn = new ScopedNode(main_scope(), GetGradientName("Node"), 1);
       sn->SetContainedScope(node_grad_func);
+      for (Node* n : sn->nodes_) {
+        if (n->name() == "Push") {
+          pop_exist = true; 
+          break;
+        }
+      }
     }
 
     vector<Statement*> batch_weight_update;
@@ -228,13 +244,15 @@ Statement* GraphGradNode::Compile(
     }
 
     push_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
-    pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
     push_arg_stmt = new ExprStatement(push_arg_op, push_ctxt);
-    pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
     stmt_ = new GraphGradStatement(node_grad_stmt, gsess_->graph_scheduler());
     dynamic_cast<GraphGradStatement*>(stmt_)->SetGlobalContext(ctxt);
     dynamic_cast<GraphGradStatement*>(stmt_)->SetPushArgStatement(push_arg_stmt);
-    dynamic_cast<GraphGradStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
+    if (pop_exist) {
+      pop_ctxt->SetGraphScheduler(gsess_->graph_scheduler());
+      pop_ret_stmt = new ExprStatement(pop_ret_op, pop_ctxt);
+      dynamic_cast<GraphGradStatement*>(stmt_)->SetPopRetStatement(pop_ret_stmt);
+    }
     if (!batch_weight_update.empty())
       dynamic_cast<GraphGradStatement*>(stmt_)->SetBatchWeightUpdate(std::move(batch_weight_update));
   }
