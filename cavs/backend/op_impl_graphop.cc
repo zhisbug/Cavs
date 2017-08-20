@@ -116,7 +116,7 @@ class GraphScatterOp : public OpImpl {
       }
     }
 
-    gs->SetMessagePasser(*out);
+    //gs->SetMessagePasser(*out);
     out->DebugNumerical<T>();
   }
 

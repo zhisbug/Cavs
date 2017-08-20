@@ -24,6 +24,24 @@ const Tensor* GraphSession::GetTensor(const string& name, bool recursive) const 
     return NULL;
 }
 
+void DynamicShapeFormat(TensorShape* full_shape,
+                        TensorShape* partial_shape,
+                        const TensorShapeDef& edge_shape,
+                        int MAX_NODE_) {
+  full_shape->AddDim(MAX_NODE_);
+  if (edge_shape.dim_size() == 1) {
+    full_shape->AddDim(edge_shape.dim(0));
+  }else if (edge_shape.dim(0) == 1) {
+    for (int i = 1; i < edge_shape.dim_size(); i++) {
+      full_shape->AddDim(edge_shape.dim(i));
+    }
+  }else {
+    LOG(FATAL) << "not a think like a vertex design";
+  }
+  *partial_shape = *full_shape;
+  partial_shape->SetDim(0, 1);
+}
+
 OpContext* GraphSession::GetContext(const Node* node) {
   //This context assign the full tensor for each operator
   //But for each function call, it may work on a specific range
@@ -124,44 +142,27 @@ OpContext* GraphSession::GetContext(const Node* node) {
           }
         }
         InsertTensor(out);
+
       }else {
-        if (!output->isGradient()) {
-          //here, push/scatter op is specially supported when push is the grad of pull/gather
-          //and the output names are random values.
-          //they are not conventional gradient names, but need to be batched
-          if (output->IsBatchEnabled() ||
-              node->name() == "Push" || node->name() == "Scatter") {
-            dynamic_shape = true;
-          }else {
-            dynamic_shape = false;
-          }
+        if (node->name() == "Push"   || node->name() == "Pull" ||
+            node->name() == "Gather" || node->name() == "Scatter") {
+          dynamic_shape = true;
+        }else if (!output->isGradient()) {
+          dynamic_shape = output->IsBatchEnabled();
         }else {
-          //const Tensor* ft = NULL;
-          //CHECK(ft = GetTensor(GetOriginName(output->scoped_name()), true)) << output->scoped_name();
-          //dynamic_shape = ft->IsDynamicShape();
           const Edge* edge = NULL;
           CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
           dynamic_shape = edge->IsBatchEnabled();
         }
-
         VLOG(V_DEBUG) << "IsDynamicShape: " << dynamic_shape;
+
         TensorShape full_shape;
         TensorShape partial_shape;
         if (dynamic_shape) {
-          full_shape.AddDim(MAX_NODE_);
-          if (output->shape().dim_size() == 1) {
-            full_shape.AddDim(output->shape().dim(0));
-          }else if (output->shape().dim(0) == 1) {
-            for (int i = 1; i < output->shape().dim_size(); i++) {
-              full_shape.AddDim(output->shape().dim(i));
-            }
-          }else {
-            LOG(FATAL) << "not a think like a vertex design";
-          }
-          partial_shape = full_shape;
-          partial_shape.SetDim(0, 1);
+          DynamicShapeFormat(&full_shape, &partial_shape, output->shape(), MAX_NODE_);
         }else {
           full_shape = std::move(TensorShape(output->shape()));
+          partial_shape = full_shape;
         }
 
         Allocator* alloc = GetAllocator(op_def); 
@@ -169,10 +170,25 @@ OpContext* GraphSession::GetContext(const Node* node) {
         VLOG(V_DEBUG) << "[In Graph Session]: Allocating full tensor for "
                       << TensorNameInFunctionContext(output)
                       << " with shape info: " << full_shape.debug_info();
-        Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(full_shape));
-        if (dynamic_shape)  out.Resize(partial_shape);
-        VLOG(V_DEBUG) << out.debug_info();
-        InsertTensor(out);
+
+        if (node->name() == "Scatter") {
+          if (!internal_message_pool_) {
+            const string& tname = scope_->scoped_name() + ":__interal_message_pool";
+            Tensor out(tname, alloc, op_def.dtype(), std::move(full_shape));
+            out.Resize(partial_shape);
+            out.SetAsDynamic();
+            InsertTensor(out);
+            SetInternalMessagePool(GetTensor(tname));
+          }
+          CHECK(internal_message_pool_->count() == partial_shape.n_elements());
+          Tensor out(TensorNameInFunctionContext(output), *internal_message_pool_);
+          out.Resize(partial_shape);
+          InsertTensor(out);
+        }else {
+          Tensor out(TensorNameInFunctionContext(output), alloc, op_def.dtype(), std::move(full_shape));
+          out.Resize(partial_shape);
+          InsertTensor(out);
+        }
       }
       CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
     }else {

@@ -53,7 +53,7 @@ void GraphStatement::Run() {
   //which can not happen
   gscheduler_->Initialize();
   while (!gscheduler_->Terminate()) {
-    LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -76,7 +76,7 @@ void GraphGradStatement::Run() {
   //global_ctxt_->SetDynDim(-1);
   gscheduler_->Initialize();
   while (!gscheduler_->Terminate()) {
-    LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
