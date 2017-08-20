@@ -164,10 +164,12 @@ class SliceAllOpImpl : public OpImpl {
     for (int i = 0; i < context->OutputSize(); i++) {
       const Tensor& inp_check = context->Input(i+1);
       Tensor* out = context->Output(i);
-      CHECK(inp_check.count() == out->count());
       CHECK(copied_count + out->count() <= input.count());
 
       if (input.IsDynamicShape()) {
+        CHECK(inp_check.debug_size() == out->debug_size());
+        CHECK(inp_check.IsDynamicShape());
+        CHECK(inp_check.count()/inp_check.dims(0) == out->count()/out->dims(0));
         CHECK(out->IsDynamicShape());
         CHECK(!input.IsFullShape());
         CHECK(!out->IsFullShape());
@@ -185,6 +187,8 @@ class SliceAllOpImpl : public OpImpl {
                                          cudaMemcpyDeviceToDevice, stream_));
         }
       }else {
+        CHECK(inp_check.count() == out->count());
+        CHECK(!inp_check.IsDynamicShape());
         CHECK(!out->IsDynamicShape());
         checkCudaError(cudaMemcpyAsync(out->mutable_data<T>(),
                                        input.data<T>()+copied_count,
