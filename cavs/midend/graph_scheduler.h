@@ -29,9 +29,9 @@ class GraphSchedulerBase {
     CHECK(!Terminate());
     return ready_to_execute_ids_;
   }
-  //inline const std::vector<int>& ChildIds(int job_id) const;
-  inline std::vector<int> InputTensorIds(const std::vector<int>& gids, int child_offset) const;
-  inline std::vector<int> OutputTensorIds(const std::vector<int>& gids, int child_offset) const;
+  inline const std::vector<int>& ChildIds(int job_id) const;
+  inline std::vector<int> GatherTensorIds(const std::vector<int>& gids, int child_offset) const;
+  inline std::vector<int> ScatterTensorIds(const std::vector<int>& gids, int child_offset) const;
 
   inline void SetMessagePasser(const Tensor& t) {
     CHECK(!t.IsFullShape());
@@ -148,12 +148,12 @@ inline bool GraphSchedulerBase::HasChild(int job_id) const {
   return !(*children_)[job_id].empty();
 }
 
-//inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
-  //CHECK(HasChild(gid));
-  //return (*children_)[gid];
-//}
+inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
+  CHECK(HasChild(gid));
+  return (*children_)[gid];
+}
 
-inline std::vector<int> GraphSchedulerBase::InputTensorIds(
+inline std::vector<int> GraphSchedulerBase::GatherTensorIds(
     const std::vector<int>& gids, int child_offset) const {
   std::vector<int> ret;
   if (rc_.IsForward()) {
@@ -167,14 +167,13 @@ inline std::vector<int> GraphSchedulerBase::InputTensorIds(
     CHECK(child_offset == 0);
     for (int gid : gids) {
       CHECK((*children_)[gid].size() == 1);
-      int cid = (*children_)[gid][0];
-      ret.push_back(JobIdToInternalTensorId(cid));
+      ret.push_back(JobIdToInternalTensorId(gid));
     }
   }
   return ret;
 }
 
-inline std::vector<int> GraphSchedulerBase::OutputTensorIds(
+inline std::vector<int> GraphSchedulerBase::ScatterTensorIds(
     const std::vector<int>& gids, int child_offset) const {
   //CHECK(HasChild(gid));
   std::vector<int> ret;
@@ -184,9 +183,14 @@ inline std::vector<int> GraphSchedulerBase::OutputTensorIds(
       ret.push_back(JobIdToInternalTensorId(gid));
   }else {
     for (int gid : gids) {
-      CHECK(child_offset < (*parents_)[gid].size());
-      int pid = (*parents_)[gid][child_offset];
-      ret.push_back(JobIdToInternalTensorId(pid));
+      if ((*parents_)[gid].size() == 0) {
+        ret.push_back(JobIdToInternalTensorId(gid));
+      }else if (child_offset < (*parents_)[gid].size()) {
+        int pid = (*parents_)[gid][child_offset];
+        ret.push_back(JobIdToInternalTensorId(pid));
+      }else {
+        LOG(FATAL) << "Wrong config";
+      }
     }
   }
   return ret;
