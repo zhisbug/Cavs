@@ -1,4 +1,5 @@
 #include "cavs/backend/op_impl.h"
+#include "cavs/backend/functor_batched_memcpy.cuh"
 #include "cavs/midend/tensor.h"
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/stream_event_handle_pool.h"
@@ -54,12 +55,17 @@ class SliceOpImpl : public OpImpl {
       int y_stride = x_stride / split_;
       int x_offset = y_stride * index_;
       CHECK(dyn_dim * y_stride == y->count());
-      for (int i = 0; i < dyn_dim; i++) {
-        checkCudaError(cudaMemcpyAsync(y->mutable_data<T>() + i*y_stride,
-                                       x.data<T>() + x_offset + i*x_stride,
-                                       y_stride * sizeof(T),
-                                       cudaMemcpyDeviceToDevice, stream_));
-      }
+      /*for (int i = 0; i < dyn_dim; i++) {*/
+        /*[>checkCudaError(cudaMemcpyAsync(y->mutable_data<T>() + i*y_stride,<]*/
+                                       /*[>x.data<T>() + x_offset + i*x_stride,<]*/
+                                       /*[>y_stride * sizeof(T),<]*/
+                                       /*[>cudaMemcpyDeviceToDevice, stream_));<]*/
+      /*}*/
+      int blocksPerGrid = dyn_dim;
+      int threadsPerBlock = y_stride;
+      BatchedDynamicSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+          y->mutable_data<T>(), y_stride, x.data<T>() + x_offset, x_stride, y_stride);
+      
     }else {
       //static slicing
       CHECK(!y->IsDynamicShape());
@@ -114,13 +120,18 @@ class ConcatOpImpl : public OpImpl {
         int dyn_dim = out->dims(0);
         int out_stride = out->count() / dyn_dim;
         int inp_stride = inp.count() / dyn_dim;
-        for (int j = 0; j < dyn_dim; j++) {
-          int out_offset = copied_count / dyn_dim;
-          checkCudaError(cudaMemcpyAsync(out->mutable_data<T>() + out_offset + j*out_stride,
-                                         inp.data<T>() + j*inp_stride,
-                                         inp_stride * sizeof(T),
-                                         cudaMemcpyDeviceToDevice, stream_));
-        }
+        int out_offset = copied_count / dyn_dim;
+        /*for (int j = 0; j < dyn_dim; j++) {*/
+          /*int out_offset = copied_count / dyn_dim;*/
+          /*checkCudaError(cudaMemcpyAsync(out->mutable_data<T>() + out_offset + j*out_stride,*/
+                                         /*inp.data<T>() + j*inp_stride,*/
+                                         /*inp_stride * sizeof(T),*/
+                                         /*cudaMemcpyDeviceToDevice, stream_));*/
+        /*}*/
+        int blocksPerGrid = dyn_dim;
+        int threadsPerBlock = inp_stride;
+        BatchedDynamicSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+            out->mutable_data<T>() + out_offset, out_stride, inp.data<T>(), inp_stride, inp_stride);
       }else {
         CHECK(!inp.IsDynamicShape());
         checkCudaError(cudaMemcpyAsync(out->mutable_data<T>()+copied_count,
@@ -179,13 +190,18 @@ class SliceAllOpImpl : public OpImpl {
         int dyn_dim = input.dims(0);
         int inp_stride = input.count() / dyn_dim;
         int out_stride = out->count() / dyn_dim;
-        for (int j = 0; j < dyn_dim; j++) {
-          int input_offset = copied_count / dyn_dim;
-          checkCudaError(cudaMemcpyAsync(out->mutable_data<T>() + j*out_stride,
-                                         input.data<T>() + input_offset + j*inp_stride,
-                                         out_stride*sizeof(T),
-                                         cudaMemcpyDeviceToDevice, stream_));
-        }
+        int input_offset = copied_count / dyn_dim;
+        /*for (int j = 0; j < dyn_dim; j++) {*/
+          /*int input_offset = copied_count / dyn_dim;*/
+          /*checkCudaError(cudaMemcpyAsync(out->mutable_data<T>() + j*out_stride,*/
+                                         /*input.data<T>() + input_offset + j*inp_stride,*/
+                                         /*out_stride*sizeof(T),*/
+                                         /*cudaMemcpyDeviceToDevice, stream_));*/
+        /*}*/
+        int blocksPerGrid = dyn_dim;
+        int threadsPerBlock = out_stride;
+        BatchedDynamicSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+            out->mutable_data<T>(), out_stride, input.data<T>() + input_offset, inp_stride, out_stride);
       }else {
         CHECK(inp_check.count() == out->count());
         CHECK(!inp_check.IsDynamicShape());

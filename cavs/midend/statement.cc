@@ -34,7 +34,7 @@ void ExprStatement::Run() {
 
   VLOG(V_TIMING) << "Sync With CPU-------------------------";
   //ctxt_->SyncMe();
-  //checkCudaError(cudaDeviceSynchronize());
+  checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 
@@ -46,15 +46,21 @@ void GraphStatement::Run() {
   if (push_arg_stmt_)
     push_arg_stmt_->Run();
 
+  LOG(INFO) << "Loading graph...";
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
+  LOG(INFO) << "Load graph done...";
   CHECK(output_length > 0);
   //we must clear the dynamic size in case previous ops have changed it;
   //The only case we have to reset the dynamic size is when the previous round sets
   //the dynamic size to a size larger than the gather output capacity,
   //which can not happen
+  LOG(INFO) << "Initialzing 1st round"; 
   gscheduler_->Initialize();
+  LOG(INFO) << "Initialzing 1st round done";
+  int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    LOG(INFO) << "doing job_id: " << round++;
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -78,8 +84,10 @@ void GraphGradStatement::Run() {
   int input_length = gscheduler_->ReverseGraph();
   //global_ctxt_->SetDynDim(-1);
   gscheduler_->Initialize();
+  int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
+    LOG(INFO) << "doing job_id: " << round++;
     node_func_->Run();
     gscheduler_->ActivateNext();
   }

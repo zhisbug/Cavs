@@ -12,7 +12,7 @@ namespace midend {
 class GraphSchedulerBase {
  public:
   GraphSchedulerBase() :
-    batch_size_(0), max_seq_length_(0), total_length_(0) {}
+    batch_size_(0), max_seq_length_(0), total_length_(0), gpu_idx_buf_(NULL) {}
   virtual void Initialize() = 0;
   virtual int  JobIdToInternalTensorId(int gid) const = 0;
   virtual int  InternalTensorIdToJobId(int tid) const = 0;
@@ -22,12 +22,16 @@ class GraphSchedulerBase {
 
   int LoadGraph(const Tensor& parent_ids);
   int ReverseGraph();
-  inline const std::vector<int>& GetJobId() const;
   inline int batch_size() const { return batch_size_; }
+  inline int* gpu_idx_buf() const { return gpu_idx_buf_; }
   inline bool HasChild(int job_id) const;
-  inline const std::vector<int>& ChildIds(int job_id) const;
-  inline const std::vector<int> InputTensorIds(int gid) const;
-  inline const std::vector<int> OutputTensorIds(int gid) const;
+  inline const std::vector<int>& GetJobId() const {
+    CHECK(!Terminate());
+    return ready_to_execute_ids_;
+  }
+  //inline const std::vector<int>& ChildIds(int job_id) const;
+  inline std::vector<int> InputTensorIds(const std::vector<int>& gids, int child_offset) const;
+  inline std::vector<int> OutputTensorIds(const std::vector<int>& gids, int child_offset) const;
 
   inline void SetMessagePasser(const Tensor& t) {
     CHECK(!t.IsFullShape());
@@ -93,6 +97,7 @@ class GraphSchedulerBase {
  private:
   std::vector<std::vector<int>> __forward_parents_ids_;
   std::vector<std::vector<int>> __forward_children_ids_;
+  int* gpu_idx_buf_;
 };
 
 class SerialGraphScheduler : public GraphSchedulerBase {
@@ -143,40 +148,48 @@ inline bool GraphSchedulerBase::HasChild(int job_id) const {
   return !(*children_)[job_id].empty();
 }
 
-inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
-  CHECK(HasChild(gid));
-  return (*children_)[gid];
-}
+//inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
+  //CHECK(HasChild(gid));
+  //return (*children_)[gid];
+//}
 
-inline const std::vector<int> GraphSchedulerBase::InputTensorIds(int gid) const {
-  CHECK(HasChild(gid));
+inline std::vector<int> GraphSchedulerBase::InputTensorIds(
+    const std::vector<int>& gids, int child_offset) const {
   std::vector<int> ret;
   if (rc_.IsForward()) {
-    for (int cid : (*children_)[gid])
+    for (int gid : gids) {
+      CHECK(HasChild(gid));
+      CHECK(child_offset < (*children_)[gid].size());
+      int cid = (*children_)[gid][child_offset];
       ret.push_back(JobIdToInternalTensorId(cid));
+    }
   }else {
-    CHECK((*children_)[gid].size() == 1);
-    for (int cid : (*children_)[gid])
-      ret.push_back(JobIdToInternalTensorId(gid));
+    CHECK(child_offset == 0);
+    for (int gid : gids) {
+      CHECK((*children_)[gid].size() == 1);
+      int cid = (*children_)[gid][0];
+      ret.push_back(JobIdToInternalTensorId(cid));
+    }
   }
   return ret;
 }
 
-inline const std::vector<int> GraphSchedulerBase::OutputTensorIds(int gid) const {
+inline std::vector<int> GraphSchedulerBase::OutputTensorIds(
+    const std::vector<int>& gids, int child_offset) const {
   //CHECK(HasChild(gid));
   std::vector<int> ret;
   if (rc_.IsForward()) {
-    ret.push_back(JobIdToInternalTensorId(gid));
+    CHECK(child_offset == 0);
+    for (int gid : gids)
+      ret.push_back(JobIdToInternalTensorId(gid));
   }else {
-    for (int pid : (*parents_)[gid])
+    for (int gid : gids) {
+      CHECK(child_offset < (*parents_)[gid].size());
+      int pid = (*parents_)[gid][child_offset];
       ret.push_back(JobIdToInternalTensorId(pid));
+    }
   }
   return ret;
-}
-
-inline const std::vector<int>& GraphSchedulerBase::GetJobId() const {
-  CHECK(!Terminate());
-  return ready_to_execute_ids_;
 }
 
 inline int GraphSchedulerBase::GetCurrentRoundOffset() const {

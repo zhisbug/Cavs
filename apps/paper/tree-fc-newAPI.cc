@@ -22,14 +22,14 @@ class TreeFCModel : public GraphSupport {
   TreeFCModel(const Sym& graph_ph, const Sym& vertex_ph) : 
     GraphSupport(graph_ph, vertex_ph) {
 
-    W = Sym::Variable(DT_FLOAT, {2 * FLAGS_hidden, FLAGS_hidden}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    B = Sym::Variable(DT_FLOAT, {FLAGS_hidden}, Sym::Zeros());
+    W = Sym::Variable(DT_FLOAT, {2 * FLAGS_hidden, FLAGS_hidden}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//v2
+    //B = Sym::Variable(DT_FLOAT, {FLAGS_hidden}, Sym::Zeros());
   }
 
   void Node() override {
-    Sym left = Gather(0, {FLAGS_hidden});
-    Sym right = Gather(1, {FLAGS_hidden});
-    Sym fc = Sym::MatMul(Sym::Concat({left, right}).Reshape({1, 2*FLAGS_hidden}), W.Mirror()) + B.Reshape({1, FLAGS_hidden}).Mirror();
+    Sym left = Gather(0, {FLAGS_hidden});//g3
+    Sym right = Gather(1, {FLAGS_hidden});//g4
+    Sym fc = Sym::MatMul(Sym::Concat({left, right}).Reshape({1, 2*FLAGS_hidden}), W.Mirror()/*mirror_5*/);// + B.Reshape({1, FLAGS_hidden}).Mirror();
     Sym res = fc.Relu();
     Scatter(res.Mirror());
     Push(res.Mirror());
@@ -87,8 +87,8 @@ void binaryTree(vector<int>* graph) {
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1}, "CPU");
-  Sym vertex   = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1});
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1}, "CPU");//p0
+  Sym vertex   = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1});//p1
 
   TreeFCModel model(graph, vertex);
   Sym graph_output = model.Output();
@@ -104,6 +104,7 @@ int main(int argc, char* argv[]) {
   binaryTree(&graph_data);
   for (int j = 0; j < FLAGS_iters; j++) {
     sess.Run({train}, {{graph, graph_data.data()}});
+    //sess.Run({loss}, {{graph, graph_data.data()}});
     //if (j % 10 == 0)
     LOG(INFO) << "\tIteration:\t" << j;
   }

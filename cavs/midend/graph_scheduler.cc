@@ -1,5 +1,6 @@
 #include "cavs/midend/graph_scheduler.h"
 #include "cavs/proto/devices.pb.h"
+#include "cavs/util/macros_gpu.h"
 
 #include <algorithm>
 
@@ -19,6 +20,7 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     __forward_children_ids_.resize(batch_size_*max_seq_length_); 
     sample_offset_in_gid_.resize(batch_size_);
     activated_times_.resize(batch_size_*max_seq_length_, 0);
+    checkCudaError(cudaMalloc((void**)&gpu_idx_buf_, batch_size_*max_seq_length_*sizeof(int)));
   }else {
     CHECK(batch_size_ == graph_struct.dims(0)); 
     CHECK(max_seq_length_ == graph_struct.dims(1)); 
