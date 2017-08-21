@@ -39,46 +39,46 @@ class GraphGatherOp : public OpImpl {
     CHECK(stride == count_) << out->debug_info() << op_def_.DebugString();
     VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
 
-    /*if (gs->HasChild(gids[0])) {*/
-      /*const vector<int>& child_tensor_ids = gs->GatherTensorIds(gids, child_offset_);*/
-      /*checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), child_tensor_ids.data(),*/
-                     /*child_tensor_ids.size()*sizeof(int), cudaMemcpyHostToDevice));*/
-      /*int blocksPerGrid = gids.size();*/
-      /*int threadsPerBlock = stride;*/
-      /*BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(*/
-              /*out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);*/
-    /*}else {*/
-      /*checkCudaError(cudaMemset(out->mutable_data<T>(), 0, gids.size()*stride*sizeof(T)));*/
-    /*}*/
-
-    for (int local_id = 0; local_id < gids.size(); local_id++) {
-      int gid = gids[local_id];
-      if (gs->HasChild(gid)) {
-        CHECK(gs->ChildIds(gid).size() > child_offset_);
-        int child_gid = gs->ChildIds(gid)[child_offset_];
-        VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;
-
-        CHECK(gs->GatherTensorIds(gids, child_offset_).size() > local_id);
-        int child_tensor_id = gs->GatherTensorIds(gids, child_offset_)[local_id];
-        VLOG(V_DEBUG) << "internal gather offset: " << child_tensor_id;
-        //const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));
-        const Tensor& inp = gs->GetMessagePasser(child_tensor_id);
-        CHECK(out->count() >= inp.count())
-              << "Input count:\t" << inp.count()
-              << "\t" << inp.debug_size() << "Bytes\n"
-              << "Output count:\t" << out->count() 
-              << "\t" << out->debug_size() << "Bytes";
-        checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*stride,
-                                  inp.data<T>(),
-                                  stride*sizeof(T),
-                                  cudaMemcpyDeviceToDevice));
-      }else {
-        VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";
-        checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*stride,
-                                  0,
-                                  stride*sizeof(T)));
-      }
+    if (gs->HasChild(gids[0])) {
+      const vector<int>& child_tensor_ids = gs->GatherTensorIds(gids, child_offset_);
+      checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), child_tensor_ids.data(),
+                     child_tensor_ids.size()*sizeof(int), cudaMemcpyHostToDevice));
+      int blocksPerGrid = gids.size();
+      int threadsPerBlock = stride;
+      BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+              out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
+    }else {
+      checkCudaError(cudaMemset(out->mutable_data<T>(), 0, gids.size()*stride*sizeof(T)));
     }
+
+    /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
+      /*int gid = gids[local_id];*/
+      /*if (gs->HasChild(gid)) {*/
+        /*CHECK(gs->ChildIds(gid).size() > child_offset_);*/
+        /*int child_gid = gs->ChildIds(gid)[child_offset_];*/
+        /*VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;*/
+
+        /*CHECK(gs->GatherTensorIds(gids, child_offset_).size() > local_id);*/
+        /*int child_tensor_id = gs->GatherTensorIds(gids, child_offset_)[local_id];*/
+        /*VLOG(V_DEBUG) << "internal gather offset: " << child_tensor_id;*/
+        /*//const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));*/
+        /*const Tensor& inp = gs->GetMessagePasser(child_tensor_id);*/
+        /*CHECK(out->count() >= inp.count())*/
+              /*<< "Input count:\t" << inp.count()*/
+              /*<< "\t" << inp.debug_size() << "Bytes\n"*/
+              /*<< "Output count:\t" << out->count() */
+              /*<< "\t" << out->debug_size() << "Bytes";*/
+        /*checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*stride,*/
+                                  /*inp.data<T>(),*/
+                                  /*stride*sizeof(T),*/
+                                  /*cudaMemcpyDeviceToDevice));*/
+      /*}else {*/
+        /*VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";*/
+        /*checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*stride,*/
+                                  /*0,*/
+                                  /*stride*sizeof(T)));*/
+      /*}*/
+    /*}*/
     out->DebugNumerical<T>();
   }
 
@@ -112,39 +112,35 @@ class GraphScatterOp : public OpImpl {
     CHECK(out->dims(0) == inp.dims(0));
     int stride = out->count()/out->dims(0);
     CHECK(stride == inp.count()/inp.dims(0));
-    //checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                              //inp.data<T>(),
-                              //inp.count()*sizeof(T),
-                              //cudaMemcpyDeviceToDevice));
-    //GraphSchedulerBase* gs = context->graph_scheduler();
-    //gs->SetMessagePasser(*out);
-    GraphSchedulerBase* gs = context->graph_scheduler();
-    const vector<int>& gids = gs->GetJobId();
-    //VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
-
-    //const vector<int>& output_tensor_ids = gs->OutputTensorIds(gids, child_offset_);
-    //checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), output_tensor_ids.data(),
-                   //output_tensor_ids.size()*sizeof(int), cudaMemcpyHostToDevice));
-    //int blocksPerGrid = gids.size();
-    //int threadsPerBlock = stride;
-    //BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
-            //out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
 
     out->SetOffsetWithId(0);
-    for (int local_id = 0; local_id < gids.size(); local_id++) {
-      int gid = gids[local_id];
-      if (gs->ScatterTensorIds({gid}, child_offset_).size() > 0) {
-        CHECK(gs->ScatterTensorIds({gid}, child_offset_).size() == 1);
-        int output_tensor_id = gs->ScatterTensorIds({gid}, child_offset_)[0];
-        checkCudaError(cudaMemcpy(out->mutable_data<T>() + output_tensor_id*stride,
-                                  inp.data<T>() + local_id*stride,
-                                  stride*sizeof(T),
-                                  cudaMemcpyDeviceToDevice));
-        VLOG(V_DEBUG) << "internal scatter id: " << output_tensor_id;
-      }else {
-        VLOG(V_DEBUG) << "[Scattering] No need to scatter";
-      }
-    }
+    GraphSchedulerBase* gs = context->graph_scheduler();
+    const vector<int>& gids = gs->GetJobId();
+    VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
+
+    const vector<int>& output_tensor_ids = gs->ScatterTensorIds(gids, child_offset_);
+    checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), output_tensor_ids.data(),
+                   output_tensor_ids.size()*sizeof(int), cudaMemcpyHostToDevice));
+    int blocksPerGrid = gids.size();
+    int threadsPerBlock = stride;
+    BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+            out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
+
+    /*out->SetOffsetWithId(0);*/
+    /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
+      /*int gid = gids[local_id];*/
+      /*if (gs->ScatterTensorIds({gid}, child_offset_).size() > 0) {*/
+        /*CHECK(gs->ScatterTensorIds({gid}, child_offset_).size() == 1);*/
+        /*int output_tensor_id = gs->ScatterTensorIds({gid}, child_offset_)[0];*/
+        /*checkCudaError(cudaMemcpy(out->mutable_data<T>() + output_tensor_id*stride,*/
+                                  /*inp.data<T>() + local_id*stride,*/
+                                  /*stride*sizeof(T),*/
+                                  /*cudaMemcpyDeviceToDevice));*/
+        /*VLOG(V_DEBUG) << "internal scatter id: " << output_tensor_id;*/
+      /*}else {*/
+        /*VLOG(V_DEBUG) << "[Scattering] No need to scatter";*/
+      /*}*/
+    /*}*/
 
     out->DebugNumerical<T>();
   }
@@ -191,7 +187,6 @@ class GraphPullOp : public OpImpl {
     //LOG(FATAL) << "Pull Operator needs further runtime support";
     GraphSchedulerBase* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
-    //const Tensor& inp = context->Input(0);
     const Tensor& inp = gs->GetFuncArg();
     Tensor* out = context->Output(0);
     CHECK(inp.count() >= out->count())
