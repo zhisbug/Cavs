@@ -14,11 +14,11 @@ class GraphSchedulerBase {
   GraphSchedulerBase() :
     batch_size_(0), max_seq_length_(0), total_length_(0), gpu_idx_buf_(NULL) {}
   virtual void Initialize() = 0;
-  virtual int  JobIdToInternalTensorId(int gid) const = 0;
-  virtual int  InternalTensorIdToJobId(int tid) const = 0;
+  virtual std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const = 0;
+  virtual std::vector<int> InternalTensorIdToJobIds(const std::vector<int>& tids) const = 0;
   virtual bool Terminate() const = 0;
-  inline virtual void ActivateNext();
-  inline virtual int GetCurrentRoundOffset() const;
+  virtual void ActivateNext();
+  virtual int GetCurrentRoundOffset() const;
 
   int LoadGraph(const Tensor& parent_ids);
   int ReverseGraph();
@@ -29,7 +29,7 @@ class GraphSchedulerBase {
     CHECK(!Terminate());
     return ready_to_execute_ids_;
   }
-  inline const std::vector<int>& ChildIds(int job_id) const;
+  //inline const std::vector<int>& ChildIds(int job_id) const;
   inline std::vector<int> GatherTensorIds(const std::vector<int>& gids, int child_offset) const;
   inline std::vector<int> ScatterTensorIds(const std::vector<int>& gids, int child_offset) const;
 
@@ -108,14 +108,13 @@ class SerialGraphScheduler : public GraphSchedulerBase {
   void Initialize() override;
   void ActivateNext() override;
   inline bool Terminate() const override { return pending_list_.empty(); }
-  inline int JobIdToInternalTensorId(int gid) const override { return gid; }
-  inline int InternalTensorIdToJobId(int tid) const override { return tid; }
+  //inline int JobIdToInternalTensorId(int gid) const override { return gid; }
+  //inline int InternalTensorIdToJobId(int tid) const override { return tid; }
+  std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const override { return gids; }
+  std::vector<int> InternalTensorIdToJobIds(const std::vector<int>& tids) const override { return tids; }
   inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
 
  private:
-  //inline int toSampleId(int gid) const {
-    //return gid/max_seq_length_;
-  //}
   int sample_id_;
   void InitializeSample(int id);
   std::list<int> pending_list_;
@@ -128,8 +127,18 @@ class BatchGraphScheduler : public GraphSchedulerBase {
   void Initialize() override;
   void ActivateNext() override;
   inline bool Terminate() const override { return ready_to_execute_ids_.empty(); }
-  inline int JobIdToInternalTensorId(int gid) const override { return job2intensor_[gid]; }
-  inline int InternalTensorIdToJobId(int tid) const override { return intensor2job_[tid]; }
+  //inline int JobIdToInternalTensorId(int gid) const override { return job2intensor_[gid]; }
+  //inline int InternalTensorIdToJobId(int tid) const override { return intensor2job_[tid]; }
+  std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const override {
+    std::vector<int> tids(gids.size());
+    for (int i = 0; i < gids.size(); i++) tids[i] = job2intensor_[gids[i]];
+    return tids;
+  }
+  std::vector<int> InternalTensorIdToJobIds(const std::vector<int>& tids) const override {
+    std::vector<int> gids(tids.size());
+    for (int i = 0; i < tids.size(); i++) gids[i] = intensor2job_[tids[i]];
+    return gids; 
+  }
 
  private:
   std::vector<int> job2intensor_;
@@ -148,10 +157,10 @@ inline bool GraphSchedulerBase::HasChild(int job_id) const {
   return !(*children_)[job_id].empty();
 }
 
-inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
-  CHECK(HasChild(gid));
-  return (*children_)[gid];
-}
+//inline const std::vector<int>& GraphSchedulerBase::ChildIds(int gid) const {
+  //CHECK(HasChild(gid));
+  //return (*children_)[gid];
+//}
 
 inline std::vector<int> GraphSchedulerBase::GatherTensorIds(
     const std::vector<int>& gids, int child_offset) const {
@@ -161,13 +170,13 @@ inline std::vector<int> GraphSchedulerBase::GatherTensorIds(
       CHECK(HasChild(gid));
       CHECK(child_offset < (*children_)[gid].size());
       int cid = (*children_)[gid][child_offset];
-      ret.push_back(JobIdToInternalTensorId(cid));
+      ret.push_back(JobIdToInternalTensorIds({cid})[0]);
     }
   }else {
     CHECK(child_offset == 0);
     for (int gid : gids) {
       CHECK((*children_)[gid].size() == 1);
-      ret.push_back(JobIdToInternalTensorId(gid));
+      ret.push_back(JobIdToInternalTensorIds({gid})[0]);
     }
   }
   return ret;
@@ -180,14 +189,14 @@ inline std::vector<int> GraphSchedulerBase::ScatterTensorIds(
   if (rc_.IsForward()) {
     CHECK(child_offset == 0);
     for (int gid : gids)
-      ret.push_back(JobIdToInternalTensorId(gid));
+      ret.push_back(JobIdToInternalTensorIds({gid})[0]);
   }else {
     for (int gid : gids) {
       if ((*parents_)[gid].size() == 0) {
-        ret.push_back(JobIdToInternalTensorId(gid));
+        ret.push_back(JobIdToInternalTensorIds({gid})[0]);
       }else if (child_offset < (*parents_)[gid].size()) {
         int pid = (*parents_)[gid][child_offset];
-        ret.push_back(JobIdToInternalTensorId(pid));
+        ret.push_back(JobIdToInternalTensorIds({pid})[0]);
       }else {
         LOG(FATAL) << "Wrong config";
       }

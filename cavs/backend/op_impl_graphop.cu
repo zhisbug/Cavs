@@ -182,7 +182,9 @@ class GraphPushOp : public OpImpl {
 template <typename T>
 class GraphPullOp : public OpImpl {
  public:
-  explicit GraphPullOp(const OpDef& def) : OpImpl(def) {}
+  explicit GraphPullOp(const OpDef& def) :
+    OpImpl(def), stream_(cudaStreamDefault)  {}
+
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "Pull Operator needs further runtime support";
     GraphSchedulerBase* gs = context->graph_scheduler();
@@ -198,25 +200,36 @@ class GraphPullOp : public OpImpl {
     //out tensor must be local
     //if in tensor is a global tensor(in the backward of pull)
     //CHECK(inp.IsFullShape());
-    const vector<int>& job_ids = gs->GetJobId();
-    context->SetDynDim(job_ids.size());
+    const vector<int>& gids = gs->GetJobId();
+    context->SetDynDim(gids.size());
     context->ScaleOutputTensor();
     int stride = out->count()/out->dims(0);
-    CHECK(out->dims(0) == job_ids.size());
-    VLOG(V_DEBUG) << out->debug_info() << "\t" << out->debug_size();
-    VLOG(V_DEBUG) << inp.debug_info() << "\t" << inp.debug_size();
-    for (int local_id = 0; local_id < job_ids.size(); local_id++) {
-      int gid = job_ids[local_id];
-      VLOG(V_DEBUG) << "job_ids[" << local_id << "] = " << gid;
-      //const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();
-      checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,
-                                inp.data<T>() + gid*stride,
-                                stride*sizeof(T),
-                                cudaMemcpyDeviceToDevice));
-    }
+    CHECK(out->dims(0) == gids.size());
+    /*VLOG(V_DEBUG) << out->debug_info() << "\t" << out->debug_size();*/
+    /*VLOG(V_DEBUG) << inp.debug_info() << "\t" << inp.debug_size();*/
+
+    checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), gids.data(),
+                   gids.size()*sizeof(int), cudaMemcpyHostToDevice));
+    int blocksPerGrid = gids.size();
+    int threadsPerBlock = stride;
+    BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+            out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
+
+    /*for (int local_id = 0; local_id < job_ids.size(); local_id++) {*/
+      /*int gid = job_ids[local_id];*/
+      /*VLOG(V_DEBUG) << "job_ids[" << local_id << "] = " << gid;*/
+      /*//const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();*/
+      /*checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,*/
+                                /*inp.data<T>() + gid*stride,*/
+                                /*stride*sizeof(T),*/
+                                /*cudaMemcpyDeviceToDevice));*/
+    /*}*/
     inp.DebugNumerical<T>();
     out->DebugNumerical<T>();
   }
+
+ private:
+  cudaStream_t stream_;
 };
 
 template <typename T>
@@ -236,7 +249,9 @@ class FunctionPushArgOp : public OpImpl {
 template <typename T>
 class FunctionPopRetOp : public OpImpl {
  public:
-  explicit FunctionPopRetOp(const OpDef& def) : OpImpl(def) {}
+  explicit FunctionPopRetOp(const OpDef& def) :
+    OpImpl(def), stream_(cudaStreamDefault) {}
+
   void Compute(OpContext* context) override {
     //LOG(FATAL) << "here";
     GraphSchedulerBase* gs = context->graph_scheduler();
@@ -251,28 +266,42 @@ class FunctionPopRetOp : public OpImpl {
         << inp.debug_size() << "\t" << out->debug_size();
     VLOG(V_DEBUG) << inp.debug_info();
     VLOG(V_DEBUG) << out->debug_info();
-    if (inp.IsDynamicShape()) {
-      //CHECK(!out->IsDynamicShape() || out->IsFullShape());
-      int stride = inp.count()/inp.dims(0);
-      //CHECK(inp.count()/inp.dims(0) == stride);
-      for (int tid = 0; tid < out->dims(0); tid++) {
-        int gid = gs->InternalTensorIdToJobId(tid);
-        VLOG(V_DEBUG) << "tid: " << tid;
-        VLOG(V_DEBUG) << "gid: " << gid;
-        VLOG(V_DEBUG) << "stride: " << stride;
-        checkCudaError(cudaMemcpy(out->mutable_data<T>()+gid*stride,
-                                  inp.data<T>()+tid*stride,
-                                  stride*sizeof(T),
-                                  cudaMemcpyDeviceToDevice));
-      }
-    }else {
-      checkCudaError(cudaMemcpy(out->mutable_data<T>(),
-                                inp.data<T>(),
-                                out->count()*sizeof(T),
-                                cudaMemcpyDeviceToDevice));
-    }
+
+    CHECK(inp.IsDynamicShape());
+    //for the backward, the gradient of lower layer output may not be dynamic
+    //for example, the placeholder of layer0
+    /*CHECK(out->IsDynamicShape());*/
+    int stride = inp.count()/inp.dims(0);
+    int out_dyn_dim = out->dims(0);
+    //for the backward, the shape of lower layer output is arbitrary
+    //for example, the placeholder may be {2, 4} (batch, time_step)
+    //here, the inp shape may be {1, 1} (serial model) or {2, 1} (batch mode)
+    /*CHECK(stride == out->count()/out_dyn_dim);*/
+    vector<int> tids(out_dyn_dim);
+    for (int i = 0; i < tids.size(); i++) tids[i] = i;
+    const vector<int>& gids = gs->InternalTensorIdToJobIds(tids);
+    checkCudaError(cudaMemcpy(gs->gpu_idx_buf(), gids.data(),
+                   gids.size()*sizeof(int), cudaMemcpyHostToDevice));
+
+    int blocksPerGrid = gids.size();
+    int threadsPerBlock = stride;
+    BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+            out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
+    /*for (int tid = 0; tid < out->dims(0); tid++) {*/
+      /*int gid = gs->InternalTensorIdToJobId(tid);*/
+      /*VLOG(V_DEBUG) << "tid: " << tid;*/
+      /*VLOG(V_DEBUG) << "gid: " << gid;*/
+      /*VLOG(V_DEBUG) << "stride: " << stride;*/
+      /*checkCudaError(cudaMemcpy(out->mutable_data<T>()+gid*stride,*/
+                                /*inp.data<T>()+tid*stride,*/
+                                /*stride*sizeof(T),*/
+                                /*cudaMemcpyDeviceToDevice));*/
+    /*}*/
     out->DebugNumerical<T>();
   }
+
+ private:
+  cudaStream_t stream_;
 };
 
 REGISTER_OP_IMPL_BUILDER(Key("Pull").Device("GPU"),    GraphPullOp<float>);
