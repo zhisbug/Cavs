@@ -57,7 +57,6 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   parents_ = &__forward_parents_ids_;
   children_ = &__forward_children_ids_;
   round2offset_.clear();
-  //rc_.SetForward();
   rc_.Reset();
   CHECK(rc_() == -1) << rc_();
   ++rc_;
@@ -69,7 +68,6 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
 int GraphSchedulerBase::ReverseGraph() {
   CHECK(batch_size_ > 0);
   CHECK(max_seq_length_ > 0);
-  //isForward_ = false;
   children_ = &__forward_parents_ids_;
   parents_ = &__forward_children_ids_;
   rc_.SetBackward();
@@ -116,8 +114,9 @@ void SerialGraphScheduler::ActivateNext() {
 void BatchGraphScheduler::Initialize() {
   CHECK(Terminate());
   std::fill(activated_times_.begin(), activated_times_.end(), 0);
-  job2intensor_.resize(activated_times_.size(), 0);
-  intensor2job_.resize(activated_times_.size(), 0);
+  //job2intensor_.resize(activated_times_.size(), 0);
+  //intensor2job_.resize(activated_times_.size(), 0);
+  tids_to_jobids_.resize(activated_times_.size(), 0);
   if (rc_.IsForward()) {
     for (int sid = 0; sid < batch_size(); sid++) {
       for (int i = 0; i < max_seq_length_; i++) {
@@ -125,15 +124,21 @@ void BatchGraphScheduler::Initialize() {
         if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
           //activated_times[gid]++;
           int tensor_id = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
-          job2intensor_[gid] = tensor_id;
-          intensor2job_[tensor_id] = gid;
+          //job2intensor_[gid] = tensor_id;
+          tids_for_scatter_[0].push_back(tensor_id);
+          //intensor2job_[tensor_id] = gid;
+          tids_to_jobids_[tensor_id] = gid;
           ready_to_execute_ids_.push_back(gid);
         }
       }
     }
     execution_tracer_.clear();
+    gather_tracer_.clear();
+    scatter_tracer_.clear();
   }else {
     ready_to_execute_ids_ = std::move(execution_tracer_[rc_()]);
+    tids_for_gather_ = std::move(scatter_tracer_[rc_()]);
+    tids_for_scatter_ = std::move(gather_tracer_[rc_()]);
     VLOG(V_DEBUG) << "ready_to_execute_ids_" << ready_to_execute_ids_[0];
   }
 }
@@ -143,25 +148,46 @@ void BatchGraphScheduler::ActivateNext() {
   VLOG(V_DEBUG) << "activation next " << rc_();
   if (rc_.IsForward()) {
     vector<int> jobs_next_round;
+    jobs_next_round.reserve(1<<20);
+    vector<vector<int>> gather_ids_next_round(2);
+    gather_ids_next_round[0].reserve(1<<20);
+    gather_ids_next_round[1].reserve(1<<20);
+    vector<vector<int>> scatter_ids_next_round(1);
+    scatter_ids_next_round[0].reserve(1<<20);
     for (int gid : ready_to_execute_ids_) {
       for (int pid : (*parents_)[gid]) {
         if (++activated_times_[pid] == (*children_)[pid].size()) {
           //activated_times[pid]++;
           int tensor_id = GetCurrentRoundOffset() + jobs_next_round.size();
-          job2intensor_[pid] = tensor_id;
-          intensor2job_[tensor_id] = pid;
+          //job2intensor_[pid] = tensor_id;
+          //intensor2job_[tensor_id] = pid;
+          tids_to_jobids_[tensor_id] = pid;
           jobs_next_round.push_back(pid);
+          CHECK(gather_ids_next_round.size() >= (*children_)[pid].size());
+          for (int i = 0; i < (*children_)[pid].size(); i++) {
+            gather_ids_next_round[i].push_back((*children_)[pid][i]);
+          }
+          scatter_ids_next_round[0].push_back(pid);
         }
       }
     }
     execution_tracer_.push_back(std::move(ready_to_execute_ids_));
+    gather_tracer_.push_back(std::move(tids_for_gather_));
+    scatter_tracer_.push_back(std::move(tids_for_scatter_));
+
     ready_to_execute_ids_ = std::move(jobs_next_round);
+    tids_for_gather_      = std::move(gather_ids_next_round);
+    tids_for_scatter_     = std::move(scatter_ids_next_round);
   }else {
     if (rc_() >= 0) {
       ready_to_execute_ids_ = std::move(execution_tracer_[rc_()]);
+      tids_for_gather_      = std::move(scatter_tracer_[rc_()]);
+      tids_for_scatter_     = std::move(gather_tracer_[rc_()]);
       VLOG(V_DEBUG) << "ready_to_execute_ids_" << ready_to_execute_ids_[0];
     }else {
       ready_to_execute_ids_.clear();
+      for (auto& ctidg : tids_for_gather_)  { ctidg.clear(); }
+      for (auto& ctids : tids_for_scatter_) { ctids.clear(); }
     }
   }
 }

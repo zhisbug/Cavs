@@ -34,7 +34,7 @@ void ExprStatement::Run() {
 
   VLOG(V_TIMING) << "Sync With CPU-------------------------";
   //ctxt_->SyncMe();
-  checkCudaError(cudaDeviceSynchronize());
+  //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 
@@ -60,7 +60,7 @@ void GraphStatement::Run() {
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    LOG(INFO) << "doing job_id: " << round++;
+    LOG(INFO) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -87,7 +87,7 @@ void GraphGradStatement::Run() {
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    LOG(INFO) << "doing job_id: " << round++;
+    LOG(INFO) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
