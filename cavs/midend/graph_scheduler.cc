@@ -53,14 +53,10 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     }
     prev_seq_length = curr_seq_length;
   }
-  //isForward_ = true;
   parents_ = &__forward_parents_ids_;
   children_ = &__forward_children_ids_;
   round2offset_.clear();
   rc_.Reset();
-  CHECK(rc_() == -1) << rc_();
-  ++rc_;
-  round2offset_.push_back(0);
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length_;
 }
@@ -71,23 +67,42 @@ int GraphSchedulerBase::ReverseGraph() {
   children_ = &__forward_parents_ids_;
   parents_ = &__forward_children_ids_;
   rc_.SetBackward();
-  ++rc_;
+  //++rc_;
   return total_length_;
 }
 
 void SerialGraphScheduler::Initialize() {
+  ++rc_;
   CHECK(Terminate());
   std::fill(activated_times_.begin(), activated_times_.end(), 0);
+  tids_to_jobids_.resize(activated_times_.size(), 0);
   InitializeSample(0);
-  ready_to_execute_ids_[0] = pending_list_.front();
+  int gid = pending_list_.front();
+  ready_to_execute_ids_[0] = gid;
+
+  if (rc_.IsForward()) {
+    for (auto& child : tids_for_gather_)  child.clear();
+    for (auto& child : tids_for_scatter_)  child.clear();
+    for (int i = 0; i < (*parents_)[gid].size(); i++) {
+      tids_for_scatter_[0].push_back(gid);
+    }
+  }else {
+    for (auto& child : tids_for_gather_)  child.clear();
+    for (auto& child : tids_for_scatter_)  child.clear();
+    for (int i = 0; i < (*parents_)[gid].size(); i++) {
+      tids_for_scatter_[i].push_back((*parents_)[gid][i]);
+    }
+  }
+  tids_to_jobids_[gid] = gid;
 }
 
 void SerialGraphScheduler::InitializeSample(int sid) {
-  for (int i = 0; i < max_seq_length_; i++) {
+  int sample_length = ((sid < batch_size_-1) ? sample_offset_in_gid_[sid+1] : total_length_)
+                      - sample_offset_in_gid_[sid];
+  for (int i = 0; i < sample_length; i++) {
     int gid = toGlobalId(sid, i);
     if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
       pending_list_.push_back(gid);
-      //activated_times_[gid]++;
       VLOG(V_DEBUG) << "Activating job_id: " << gid;
     }
   }
@@ -95,12 +110,12 @@ void SerialGraphScheduler::InitializeSample(int sid) {
 }
 
 void SerialGraphScheduler::ActivateNext() {
+  ++rc_;
   int gid = pending_list_.front();
   if (!(*parents_)[gid].empty()) {
     for (int pid : (*parents_)[gid]) {
       if (++activated_times_[pid] == (*children_)[pid].size()) {
         pending_list_.push_back(pid);
-        //activated_ids_[pid] = true;
         VLOG(V_DEBUG) << "Activating job_id: " << pid;
       }
     }
@@ -108,15 +123,41 @@ void SerialGraphScheduler::ActivateNext() {
     InitializeSample(sample_id_);
   }
   pending_list_.pop_front();
-  ready_to_execute_ids_[0] = pending_list_.front();
+  int next_gid = pending_list_.front();
+  ready_to_execute_ids_[0] = next_gid;
+
+  if (rc_.IsForward()) {
+    for (auto& child : tids_for_scatter_)  child.clear();
+    for (auto& child : tids_for_gather_)  child.clear();
+    for (int i = 0; i < (*parents_)[next_gid].size(); i++) {
+      //only a count number
+      tids_for_scatter_[0].push_back(next_gid);
+    }
+    for (int i = 0; i < (*children_)[next_gid].size(); i++) {
+      tids_for_gather_[i].push_back((*children_)[next_gid][i]);
+    }
+  }else {
+    for (auto& child : tids_for_gather_)  child.clear();
+    for (auto& child : tids_for_scatter_)  child.clear();
+    for (int i = 0; i < (*children_)[next_gid].size(); i++) {
+      //only a count number
+      tids_for_gather_[0].push_back(next_gid);
+    }
+    for (int i = 0; i < (*parents_)[next_gid].size(); i++) {
+      tids_for_scatter_[i].push_back((*parents_)[next_gid][i]);
+    }
+  }
+  tids_to_jobids_[gid] = gid;
 }
 
 void BatchGraphScheduler::Initialize() {
+  ++rc_;
   CHECK(Terminate());
   std::fill(activated_times_.begin(), activated_times_.end(), 0);
   //job2intensor_.resize(activated_times_.size(), 0);
   //intensor2job_.resize(activated_times_.size(), 0);
   tids_to_jobids_.resize(activated_times_.size(), 0);
+  if (round2offset_.empty())  round2offset_.push_back(0);
   if (rc_.IsForward()) {
     for (int sid = 0; sid < batch_size(); sid++) {
       for (int i = 0; i < max_seq_length_; i++) {
@@ -125,8 +166,8 @@ void BatchGraphScheduler::Initialize() {
           //activated_times[gid]++;
           int tensor_id = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
           //job2intensor_[gid] = tensor_id;
-          tids_for_scatter_[0].push_back(tensor_id);
           //intensor2job_[tensor_id] = gid;
+          tids_for_scatter_[0].push_back(tensor_id);
           tids_to_jobids_[tensor_id] = gid;
           ready_to_execute_ids_.push_back(gid);
         }
@@ -144,7 +185,9 @@ void BatchGraphScheduler::Initialize() {
 }
 
 void BatchGraphScheduler::ActivateNext() {
-  GraphSchedulerBase::ActivateNext();
+  if (round2offset_.size() <= (++rc_)())
+    round2offset_.push_back(round2offset_.back() + GetJobId().size());
+
   VLOG(V_DEBUG) << "activation next " << rc_();
   if (rc_.IsForward()) {
     vector<int> jobs_next_round;

@@ -96,6 +96,8 @@ void Tensor::DebugNumerical<float>() const {
       checksum_unit += res[i];
     }
     VLOG(V_DEBUG) << "pointer-addr:\t" << buf_.get();
+    VLOG(V_DEBUG) << "dynamic: " << params_->dynamic;
+    VLOG(V_DEBUG) << "offset: " << params_->offset;
     VLOG(V_EXHAUSTIVE_DEBUG) << name() << std::setprecision(15)
       << "\tL2 Norm:\t" << L2_norm
       << "\t checksum:\t" << checksum;

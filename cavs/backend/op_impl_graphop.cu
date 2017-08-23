@@ -39,9 +39,12 @@ class GraphGatherOp : public OpImpl {
     CHECK(stride == count_) << out->debug_info() << op_def_.DebugString();
     VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
 
-    if (gs->HasChild(gids[0])) {
-      /*const vector<int>& child_tensor_ids = gs->GatherTensorIds(gids, child_offset_);*/
-      const vector<int>& tensor_ids_for_gather = gs->CurrentRoundTensorIdsForGather(child_offset_);
+    /*const vector<int>& child_tensor_ids = gs->GatherTensorIds(gids, child_offset_);*/
+    const vector<int>& tensor_ids_for_gather = gs->CurrentRoundTensorIdsForGather(child_offset_);
+    for (int id : tensor_ids_for_gather) {
+      VLOG(V_DEBUG) << "child_offset: " << child_offset_ << "\t" << id;
+    }
+    if (!tensor_ids_for_gather.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_gather.data(),
                      tensor_ids_for_gather.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
       /*LOG(INFO) << "child_tensor_ids size: " << child_tensor_ids.size();*/
@@ -121,12 +124,14 @@ class GraphScatterOp : public OpImpl {
     VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
 
     const vector<int>& tensor_ids_for_scatter = gs->CurrentRoundTensorIdsForScatter(child_offset_);
-    checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_scatter.data(),
-                   tensor_ids_for_scatter.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
-    int blocksPerGrid = gids.size();
-    int threadsPerBlock = stride;
-    BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
-            out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
+    if (!tensor_ids_for_scatter.empty()) {
+      checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_scatter.data(),
+                     tensor_ids_for_scatter.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
+      int blocksPerGrid = gids.size();
+      int threadsPerBlock = stride;
+      BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+              out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
+    }
 
     /*out->SetOffsetWithId(0);*/
     /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
@@ -258,7 +263,6 @@ class FunctionPopRetOp : public OpImpl {
     OpImpl(def), stream_(cudaStreamDefault) {}
 
   void Compute(OpContext* context) override {
-    //LOG(FATAL) << "here";
     GraphSchedulerBase* gs = context->graph_scheduler();
     CHECK_NOTNULL(gs);
     const Tensor& inp = gs->GetFuncRet();
@@ -282,10 +286,13 @@ class FunctionPopRetOp : public OpImpl {
     //for example, the placeholder may be {2, 4} (batch, time_step)
     //here, the inp shape may be {1, 1} (serial model) or {2, 1} (batch mode)
     /*CHECK(stride == out->count()/out_dyn_dim);*/
-    vector<int> tids(out_dyn_dim);
-    for (int i = 0; i < tids.size(); i++) tids[i] = i;
+    /*vector<int> tids(out_dyn_dim);*/
+    /*for (int i = 0; i < tids.size(); i++) tids[i] = i;*/
     /*const vector<int>& gids = gs->InternalTensorIdToJobIds(tids);*/
     const vector<int>& tids2gids= gs->TensorIdsToJobIds();
+    for (int i = 0; i < tids2gids.size(); i++) {
+      VLOG(V_DEBUG) << "i: " << i << "\tgid: " << tids2gids[i];
+    }
     checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tids2gids.data(),
                    tids2gids.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
     int blocksPerGrid = tids2gids.size();
@@ -302,6 +309,7 @@ class FunctionPopRetOp : public OpImpl {
                                 /*stride*sizeof(T),*/
                                 /*cudaMemcpyDeviceToDevice));*/
     /*}*/
+    inp.DebugNumerical<T>();
     out->DebugNumerical<T>();
   }
 

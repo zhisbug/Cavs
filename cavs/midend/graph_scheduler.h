@@ -18,7 +18,8 @@ class GraphSchedulerBase {
   }
   virtual void Initialize() = 0;
   virtual bool Terminate() const = 0;
-  virtual void ActivateNext();
+  virtual void ActivateNext() = 0;
+  virtual int GetCurrentRoundOffset() const = 0;
   //virtual std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const = 0;
   //virtual std::vector<int> InternalTensorIdToJobIds(const std::vector<int>& tids) const = 0;
 
@@ -33,9 +34,6 @@ class GraphSchedulerBase {
   inline const std::vector<int>& GetJobId() const {
     CHECK(!Terminate());
     return ready_to_execute_ids_;
-  }
-  inline int GetCurrentRoundOffset() const {
-    return round2offset_[rc_()]; 
   }
   inline const std::vector<int>& CurrentRoundTensorIdsForGather(int child_offset) const {
     return tids_for_gather_[child_offset];
@@ -83,7 +81,8 @@ class GraphSchedulerBase {
   std::vector<std::vector<int>> tids_for_gather_;
   std::vector<std::vector<int>> tids_for_scatter_;
   std::vector<int> tids_to_jobids_;
-  std::vector<int> intensor2job_;
+  std::vector<int> round2offset_;
+  //std::vector<int> intensor2job_;
 
   int batch_size_;
   int max_seq_length_;
@@ -93,7 +92,6 @@ class GraphSchedulerBase {
   Tensor func_ret_;
   std::vector<std::vector<int>> *parents_;
   std::vector<std::vector<int>> *children_;
-  std::vector<int> round2offset_;
   struct RoundCounter {
    public:
     RoundCounter() : round_(-1), isforward_(true) {}
@@ -127,11 +125,11 @@ class SerialGraphScheduler : public GraphSchedulerBase {
   void Initialize() override;
   void ActivateNext() override;
   inline bool Terminate() const override { return pending_list_.empty(); }
+  inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
   //inline int JobIdToInternalTensorId(int gid) const override { return gid; }
   //inline int InternalTensorIdToJobId(int tid) const override { return tid; }
   //std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const override { return gids; }
   //std::vector<int> InternalTensorIdToJobIds(const std::vector<int>& tids) const override { return tids; }
-  //inline int GetCurrentRoundOffset() const override { return GetJobId()[0]; }
 
  private:
   int sample_id_;
@@ -146,6 +144,7 @@ class BatchGraphScheduler : public GraphSchedulerBase {
   void Initialize() override;
   void ActivateNext() override;
   inline bool Terminate() const override { return ready_to_execute_ids_.empty(); }
+  inline int GetCurrentRoundOffset() const override { return round2offset_[rc_()]; }
   //inline int JobIdToInternalTensorId(int gid) const override { return job2intensor_[gid]; }
   //inline int InternalTensorIdToJobId(int tid) const override { return intensor2job_[tid]; }
   //std::vector<int> JobIdToInternalTensorIds(const std::vector<int>& gids) const override {
@@ -167,11 +166,11 @@ class BatchGraphScheduler : public GraphSchedulerBase {
   std::vector<std::vector<std::vector<int>>> scatter_tracer_;
 };
 
-inline void GraphSchedulerBase::ActivateNext() {
-  ++rc_;
-  if (round2offset_.size() <= rc_())
-    round2offset_.push_back(round2offset_.back() + GetJobId().size());
-}
+//inline void GraphSchedulerBase::ActivateNext() {
+  //++rc_;
+  //if (round2offset_.size() <= rc_())
+    //round2offset_.push_back(round2offset_.back() + GetJobId().size());
+//}
 
 //inline bool GraphSchedulerBase::HasChild(int job_id) const {
   //CHECK(job_id < (*children_).size());
