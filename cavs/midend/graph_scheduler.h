@@ -80,6 +80,7 @@ class GraphSchedulerBase {
   std::vector<int>  activated_times_;
   std::vector<std::vector<int>> tids_for_gather_;
   std::vector<std::vector<int>> tids_for_scatter_;
+  std::vector<int> jobids_to_tids_;
   std::vector<int> tids_to_jobids_;
   std::vector<int> round2offset_;
   //std::vector<int> intensor2job_;

@@ -227,11 +227,11 @@ Statement* GraphGradNode::Compile(
 
     vector<Statement*> batch_weight_update;
     std::list<Node*> finalize_node;
-    if ((sess->opt_type() & OPT_BATCHING)) {
-      VLOG(V_DEBUG) << "Begin modifing the critical path for Batching in ScopedNode";
-      BatchingWeightUpdater updater(&(sn->nodes_), &finalize_node);
-      VLOG(V_DEBUG) << "Modifing the critical path done for Batching in ScopedNode";
-    }
+    //if ((sess->opt_type() & OPT_BATCHING)) {
+      //VLOG(V_DEBUG) << "Begin modifing the critical path for Batching in ScopedNode";
+      //BatchingWeightUpdater updater(&(sn->nodes_), &finalize_node);
+      //VLOG(V_DEBUG) << "Modifing the critical path done for Batching in ScopedNode";
+    //}
 
     Statement* node_grad_stmt = sn->Compile(gsess_);
 

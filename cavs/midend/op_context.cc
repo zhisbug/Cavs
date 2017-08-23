@@ -17,7 +17,7 @@ void OpContext::SetTensorOffset() {
     //just choose the right offset of the input tensor buffer
     for (auto* t : inputs_) {
       if (!(t->IsFullShape())) {
-        VLOG(V_DEBUG) << "Setting offset for " << t->name();
+        VLOG(V_DEBUG) << "Setting offset for " << t->name() << "\t" << gs_->GetCurrentRoundOffset();
         const_cast<Tensor*>(t)->SetOffsetWithId(gs_->GetCurrentRoundOffset());
       }else {
         VLOG(V_DEBUG) << t->name() << " must be a global tensor, "
@@ -26,7 +26,7 @@ void OpContext::SetTensorOffset() {
     }
     for (auto* t : outputs_) {
       if (!(t->IsFullShape())) {
-        VLOG(V_DEBUG) << "Setting offset for " << t->name();
+        VLOG(V_DEBUG) << "Setting offset for " << t->name() << "\t" << gs_->GetCurrentRoundOffset();
         VLOG(V_DEBUG) << t->debug_info();
         t->SetOffsetWithId(gs_->GetCurrentRoundOffset());
       }else {

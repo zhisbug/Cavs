@@ -34,7 +34,7 @@ void ExprStatement::Run() {
 
   VLOG(V_TIMING) << "Sync With CPU-------------------------";
   //ctxt_->SyncMe();
-  //checkCudaError(cudaDeviceSynchronize());
+  checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 

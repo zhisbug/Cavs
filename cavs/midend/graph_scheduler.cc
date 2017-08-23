@@ -154,22 +154,19 @@ void BatchGraphScheduler::Initialize() {
   ++rc_;
   CHECK(Terminate());
   std::fill(activated_times_.begin(), activated_times_.end(), 0);
-  //job2intensor_.resize(activated_times_.size(), 0);
-  //intensor2job_.resize(activated_times_.size(), 0);
+  jobids_to_tids_.resize(activated_times_.size(), 0);
   tids_to_jobids_.resize(activated_times_.size(), 0);
   if (round2offset_.empty())  round2offset_.push_back(0);
   if (rc_.IsForward()) {
     for (int sid = 0; sid < batch_size(); sid++) {
       for (int i = 0; i < max_seq_length_; i++) {
-        int gid = toGlobalId(sid, i);
-        if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
-          //activated_times[gid]++;
+        int pid = toGlobalId(sid, i);
+        if ((*children_)[pid].empty() && !(*parents_)[pid].empty()) {
           int tensor_id = GetCurrentRoundOffset() + ready_to_execute_ids_.size();
-          //job2intensor_[gid] = tensor_id;
-          //intensor2job_[tensor_id] = gid;
-          tids_for_scatter_[0].push_back(tensor_id);
-          tids_to_jobids_[tensor_id] = gid;
-          ready_to_execute_ids_.push_back(gid);
+          tids_to_jobids_[tensor_id] = pid;
+          jobids_to_tids_[pid] = tensor_id;
+          tids_for_scatter_[0].push_back(jobids_to_tids_[pid]);
+          ready_to_execute_ids_.push_back(pid);
         }
       }
     }
@@ -205,12 +202,17 @@ void BatchGraphScheduler::ActivateNext() {
           //job2intensor_[pid] = tensor_id;
           //intensor2job_[tensor_id] = pid;
           tids_to_jobids_[tensor_id] = pid;
+          jobids_to_tids_[pid] = tensor_id;
           jobs_next_round.push_back(pid);
           CHECK(gather_ids_next_round.size() >= (*children_)[pid].size());
           for (int i = 0; i < (*children_)[pid].size(); i++) {
-            gather_ids_next_round[i].push_back((*children_)[pid][i]);
+            int cid = (*children_)[pid][i];
+            gather_ids_next_round[i].push_back(jobids_to_tids_[cid]);
           }
-          scatter_ids_next_round[0].push_back(pid);
+          for (int i = 0; i < (*parents_)[pid].size(); i++) {
+            //just for counting(may be zero)
+            scatter_ids_next_round[0].push_back(jobids_to_tids_[pid]);
+          }
         }
       }
     }
