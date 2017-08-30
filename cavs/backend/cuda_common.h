@@ -9,7 +9,7 @@ namespace backend {
     for (int i = blockIdx.x * blockDim.x + threadIdx.x;  \
             i < (n); i += blockDim.x * gridDim.x)
 
-const int THREADS_PER_BLOCK = 1024;
+const int THREADS_PER_BLOCK = 512;
 
 __inline__ int BLOCKS_PER_GRID(const int N) {
     return (N + THREADS_PER_BLOCK - 1) / THREADS_PER_BLOCK;
