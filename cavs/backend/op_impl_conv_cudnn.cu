@@ -102,7 +102,8 @@ void ConvOpCudnn<T>::Compute(OpContext* context) {
                   DataTypeToCudnnType<T>::value, CUDNN_TENSOR_NCHW, 
                   FYC, FXC, FH, FW));
   checkCUDNNError(cudnnSetConvolution2dDescriptor(conv_desc_,
-                  0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION));
+                  0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION,
+                  DataTypeToCudnnType<T>::value));
   /*checkCUDNNError(cudnnGetConvolutionNdForwardOutputDim(*/
                   /*conv_desc_, x_desc_, filter_desc_, */
                   /*4, YDim));*/
@@ -197,7 +198,8 @@ void ConvOpCudnnGrad<T>::Compute(OpContext* context) {
                   DataTypeToCudnnType<T>::value, CUDNN_TENSOR_NCHW, 
                   FYC, FXC, FH, FW));
   checkCUDNNError(cudnnSetConvolution2dDescriptor(conv_desc_,
-                  0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION));
+                  0, 0, 1, 1, 1, 1, CUDNN_CROSS_CORRELATION,
+                  DataTypeToCudnnType<T>::value));
   {
     size_t filter_worksize = 0;
     size_t data_worksize = 0;
