@@ -47,7 +47,7 @@ __global__ void UnaryStatefulBroadcastingKernel(T* out, const U* inp, size_t n_o
       ret += OP::Compute(inp0, inp[i + j*n_out]); 
     }
     out[i] = ret;
-  } 
+  }
 }
 
 template <typename OP, typename T, typename U> 
@@ -138,6 +138,17 @@ __global__ void BinaryBroadcastingKernel(T* out, const U* inp0, const U* inp1, s
   } 
 }
 
+template <typename OP, typename T, typename U> 
+__global__ void BinaryStridedKernel(T* out, size_t stride_out,
+    const U* inp0, size_t stride_inp0, const U* inp1, size_t stride_inp1, size_t one_block_length) {
+  int inp0_offset = blockIdx.x*stride_inp0;
+  int inp1_offset = blockIdx.x*stride_inp1;
+  int out_offset  = blockIdx.x*stride_out;
+  for (int tid = threadIdx.x; tid < one_block_length; tid += blockDim.x) {
+    out[out_offset + tid] = OP::Compute(inp0[inp0_offset + tid], inp1[inp1_offset + tid]);
+  }
+}
+
 template <typename OP, typename T, typename U=T>
 struct CUDABinaryFunctor {
   static void Compute(T* out, size_t n_out,
@@ -184,6 +195,18 @@ struct CUDABinaryConstScalarFunctor {
   }
 };
 
+template <typename OP, typename T, typename U=T>
+struct CUDABinaryStridedFunctor {
+  static void Compute(T* out, size_t stride_out,
+      const U* inp0, size_t stride_inp0,
+      const U* inp1, size_t stride_inp1,
+      int num_blocks, int workload_of_one_block, cudaStream_t stream) {
+    BinaryStridedKernel<OP, T, U><<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(
+        out, stride_out, inp0, stride_inp0, inp1, stride_inp1, workload_of_one_block);
+    checkCudaError(cudaGetLastError());
+  }
+};
+
 #define CudaUnaryOpInstance(math, dtype)    \
     UnaryOp<CUDAUnaryFunctor<math<dtype>, dtype>, dtype>
 #define CudaUnaryConstScalarOpInstance(math, dtype)    \
@@ -193,7 +216,7 @@ struct CUDABinaryConstScalarFunctor {
 #define CudaAccumulateBinaryOpInstance(math, dtype)    \
     UnaryOp<CUDAUnaryStatefulFunctor<math<dtype>, dtype>, dtype>
 #define CudaPartialAccumulateBinaryOpInstance(math, dtype)    \
-    PartialAccumulateBinaryOp<CUDABinaryFunctor<math<dtype>, dtype>, dtype>
+    PartialAccumulateBinaryOp<CUDABinaryStridedFunctor<math<dtype>, dtype>, dtype>
 
 } //namespace backend
 

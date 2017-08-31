@@ -104,6 +104,7 @@ void SimpleSession::Run(const vector<string>& output_names,
   FetchOutput(output_names, output_tensors);
   VLOG(V_TIMING) << "Execution completed";
   Statement::IncRound();
+  checkCudaError(cudaDeviceSynchronize());
 }
 
 void SimpleSession::FeedInput(const vector<string>& input_names,

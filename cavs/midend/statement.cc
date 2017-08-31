@@ -34,7 +34,7 @@ void ExprStatement::Run() {
 
   VLOG(V_TIMING) << "Sync With CPU-------------------------";
   //ctxt_->SyncMe();
-  checkCudaError(cudaDeviceSynchronize());
+  //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
 
@@ -46,6 +46,7 @@ void GraphStatement::Run() {
   if (push_arg_stmt_)
     push_arg_stmt_->Run();
 
+  checkCudaError(cudaDeviceSynchronize());
   LOG(INFO) << "Loading graph...";
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   LOG(INFO) << "Load graph done...";
@@ -56,11 +57,12 @@ void GraphStatement::Run() {
   //which can not happen
   LOG(INFO) << "Initialzing 1st round"; 
   gscheduler_->Initialize();
+  checkCudaError(cudaDeviceSynchronize());
   LOG(INFO) << "Initialzing 1st round done";
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    LOG(INFO) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
+    VLOG(V_DEBUG) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -87,7 +89,7 @@ void GraphGradStatement::Run() {
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    LOG(INFO) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
+    VLOG(V_DEBUG) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
     node_func_->Run();
     gscheduler_->ActivateNext();
   }

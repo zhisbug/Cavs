@@ -73,13 +73,13 @@ class BatchingWeightUpdater {
       }
     }
 
-    for (auto *n : *finalize_node) {
-      VLOG(V_DEBUG) << n->debug_info();
-    }
-    CHECK(!blacklist.empty());
-    for (auto *n : blacklist) {
-      VLOG(V_DEBUG) << n->debug_info();
-    }
+    //for (auto *n : *finalize_node) {
+      //VLOG(V_DEBUG) << n->debug_info();
+    //}
+    ////CHECK(!blacklist.empty());
+    //for (auto *n : blacklist) {
+      //VLOG(V_DEBUG) << n->debug_info();
+    //}
     //LOG(FATAL) << "here";
   }
 };

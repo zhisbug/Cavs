@@ -9,19 +9,18 @@
 
 using namespace std;
 
-DEFINE_int32 (batch_size, 20,       "batch");
-DEFINE_int32 (hidden,     100,      "hidden size");
-DEFINE_int32 (tree_size,  128,      "epochs");
-DEFINE_int32 (iters,      100,       "iterations");
+DEFINE_int32 (batch,      20,       "batch"                         );
+DEFINE_int32 (hidden,     100,      "hidden size"                   );
+DEFINE_int32 (tree,       128,      "the leaf number of the tree"   );
+DEFINE_int32 (iters,      100,      "iterations"                    );
 DEFINE_double(init_scale, 0.1f,     "init random scale of variables");
-DEFINE_double(lr,         0.00001f, "learning rate");
+DEFINE_double(lr,         0.00001f, "learning rate"                 );
 
 
 class TreeFCModel : public GraphSupport {
  public:
   TreeFCModel(const Sym& graph_ph, const Sym& vertex_ph) : 
     GraphSupport(graph_ph, vertex_ph) {
-
     W = Sym::Variable(DT_FLOAT, {2 * FLAGS_hidden, FLAGS_hidden}, Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));//v2
     //B = Sym::Variable(DT_FLOAT, {FLAGS_hidden}, Sym::Zeros());
   }
@@ -65,18 +64,18 @@ class TreeFCModel : public GraphSupport {
 void binaryTree(vector<int>* graph) {
   vector<int> one_tree;
   int count = 0;
-  for (int width = FLAGS_tree_size; width > 1; width >>= 1) {
+  for (int width = FLAGS_tree; width > 1; width >>= 1) {
     count += width;
     for (int i = 0; i < width; i++) {
       one_tree.push_back(i/2+count);
     }
   }
   one_tree.push_back(-1);
-  CHECK(one_tree.size() == 2*FLAGS_tree_size-1);
+  CHECK(one_tree.size() == 2*FLAGS_tree-1);
 
   graph->clear();
-  for (int i = 0; i < FLAGS_batch_size; i++) {
-    std::copy(one_tree.begin(), one_tree.end(), graph->begin() + i*(2*FLAGS_tree_size-1));
+  for (int i = 0; i < FLAGS_batch; i++) {
+    std::copy(one_tree.begin(), one_tree.end(), graph->begin() + i*(2*FLAGS_tree-1));
   }
 }
 
@@ -87,8 +86,8 @@ void binaryTree(vector<int>* graph) {
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
   
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1}, "CPU");//p0
-  Sym vertex   = Sym::Placeholder(DT_FLOAT, {FLAGS_batch_size, 2*FLAGS_tree_size-1});//p1
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, 2*FLAGS_tree-1}, "CPU");//p0
+  Sym vertex   = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, 2*FLAGS_tree-1});//p1
 
   TreeFCModel model(graph, vertex);
   Sym graph_output = model.Output();
@@ -99,12 +98,12 @@ int main(int argc, char* argv[]) {
 
   //Session sess;
   Session sess(OPT_BATCHING);
-  vector<int>   graph_data(FLAGS_batch_size*(2*FLAGS_tree_size-1), -1);
+  vector<int>   graph_data(FLAGS_batch*(2*FLAGS_tree-1), -1);
 
   binaryTree(&graph_data);
   for (int j = 0; j < FLAGS_iters; j++) {
-    sess.Run({train}, {{graph, graph_data.data()}});
-    //sess.Run({loss}, {{graph, graph_data.data()}});
+    //sess.Run({train}, {{graph, graph_data.data()}});
+    sess.Run({loss}, {{graph, graph_data.data()}});
     //if (j % 10 == 0)
     LOG(INFO) << "\tIteration:\t" << j;
   }
