@@ -79,6 +79,7 @@ void SerialGraphScheduler::Initialize() {
   InitializeSample(0);
   int gid = pending_list_.front();
   ready_to_execute_ids_[0] = gid;
+  tids_to_jobids_[gid] = gid;
 
   if (rc_.IsForward()) {
     for (auto& child : tids_for_gather_)  child.clear();
@@ -93,7 +94,6 @@ void SerialGraphScheduler::Initialize() {
       tids_for_scatter_[i].push_back((*parents_)[gid][i]);
     }
   }
-  tids_to_jobids_[gid] = gid;
 }
 
 void SerialGraphScheduler::InitializeSample(int sid) {
@@ -122,10 +122,12 @@ void SerialGraphScheduler::ActivateNext() {
   }else if (++sample_id_ < batch_size_) {
     InitializeSample(sample_id_);
   }
+  tids_to_jobids_[gid] = gid;
   pending_list_.pop_front();
+  if (Terminate()) return;
+
   int next_gid = pending_list_.front();
   ready_to_execute_ids_[0] = next_gid;
-
   if (rc_.IsForward()) {
     for (auto& child : tids_for_scatter_)  child.clear();
     for (auto& child : tids_for_gather_)  child.clear();
@@ -147,7 +149,6 @@ void SerialGraphScheduler::ActivateNext() {
       tids_for_scatter_[i].push_back((*parents_)[next_gid][i]);
     }
   }
-  tids_to_jobids_[gid] = gid;
 }
 
 void BatchGraphScheduler::Initialize() {

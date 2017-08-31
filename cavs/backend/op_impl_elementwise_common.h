@@ -123,8 +123,9 @@ class PartialAccumulateBinaryOp : public OpImpl {
     }else {
       //inp is the small tensor and out is the big one
       CHECK(!out->IsDynamicShape());
-      CHECK(out->dims(0) == 1);
-      CHECK(inp.dims(0) == 1);
+      //it may be accumulating to a slice of variable
+      //CHECK(out->dims(0) == 1);
+      //CHECK(inp.dims(0) == 1);
       if (split_ > 0) {
         //it means the dynamic slicing
         CHECK(out->count() % split_ == 0);
