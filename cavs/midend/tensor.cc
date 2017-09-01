@@ -323,7 +323,7 @@ bool Tensor::IsFullShape() const {
 }
 
 void Tensor::SetOffsetWithId(int id) {
-  CHECK(!IsFullShape());
+  //CHECK(!IsFullShape());
   CHECK(IsDynamicShape());
   CHECK(dims() > 1);
   size_t unit = count()/dims(0);

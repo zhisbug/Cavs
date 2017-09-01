@@ -262,7 +262,6 @@ Statement* GraphGradNode::Compile(
 ScopedNode::ScopedNode(Scope* located,
       const string& name, int iter)
     : Node(located), name_(name), iter_(iter), contained_(NULL) {}
-      /*init_node_(0), finalize_node_(0)*/
 
 void ScopedNode::SetContainedScope(const Scope* contained) {
   CHECK_NOTNULL(contained);

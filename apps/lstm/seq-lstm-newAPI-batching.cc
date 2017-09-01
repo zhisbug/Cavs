@@ -49,14 +49,13 @@ class SeqModel : public GraphSupport {
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
     Sym LSTM_w = Sym::Variable(DT_FLOAT, {w_size},
                             Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
-    Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size},
-                            Sym::Zeros());
+    Sym LSTM_b = Sym::Variable(DT_FLOAT, {b_size}, Sym::Zeros());//variable_7
     U  = LSTM_w.Slice(0, 4*FLAGS_hidden*FLAGS_hidden);//slice_8
     W  = LSTM_w.Slice(4*FLAGS_hidden*FLAGS_hidden, 4*FLAGS_hidden*FLAGS_hidden);//slice_9
     bi = LSTM_b.Slice(0, FLAGS_hidden);//slice_10
     bf = LSTM_b.Slice(FLAGS_hidden, FLAGS_hidden);//slice_11
-    bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);
-    bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);
+    bu = LSTM_b.Slice(2*FLAGS_hidden, FLAGS_hidden);//slice_12
+    bo = LSTM_b.Slice(3*FLAGS_hidden, FLAGS_hidden);//slice_13
   }
 
   void Node() override {

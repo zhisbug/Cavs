@@ -16,7 +16,8 @@ void OpContext::SetTensorOffset() {
     //we don't change the value or the size of input tensor buffer,
     //just choose the right offset of the input tensor buffer
     for (auto* t : inputs_) {
-      if (!(t->IsFullShape())) {
+      //if (!(t->IsFullShape())) {
+      if (t->IsDynamicShape()) {
         VLOG(V_DEBUG) << "Setting offset for " << t->name() << "\t" << gs_->GetCurrentRoundOffset();
         const_cast<Tensor*>(t)->SetOffsetWithId(gs_->GetCurrentRoundOffset());
       }else {
@@ -25,7 +26,8 @@ void OpContext::SetTensorOffset() {
       }
     }
     for (auto* t : outputs_) {
-      if (!(t->IsFullShape())) {
+      //if (!(t->IsFullShape())) {
+      if (t->IsDynamicShape()) {
         VLOG(V_DEBUG) << "Setting offset for " << t->name() << "\t" << gs_->GetCurrentRoundOffset();
         VLOG(V_DEBUG) << t->debug_info();
         t->SetOffsetWithId(gs_->GetCurrentRoundOffset());
@@ -40,14 +42,16 @@ void OpContext::SetTensorOffset() {
 void OpContext::ResetTensorOffset() {
   for (auto* t : inputs_) {
     VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
-    if (!(t->IsFullShape())) {
+    //if (!(t->IsFullShape())) {
+    if (t->IsDynamicShape()) {
       VLOG(V_DEBUG) << "Resetted";
       const_cast<Tensor*>(t)->SetOffsetWithId(0);
     }
   }
   for (auto* t : outputs_) {
     VLOG(V_DEBUG) << "Resetting the offset of " << t->name() << "...";
-    if (!(t->IsFullShape())) {
+    //if (!(t->IsFullShape())) {
+    if (t->IsDynamicShape()) {
       VLOG(V_DEBUG) << "Resetted";
       t->SetOffsetWithId(0);
     }
