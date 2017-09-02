@@ -14,6 +14,16 @@
         LOG(FATAL) << "CUDA failure: "           \
                    << cudaGetErrorString(err);   \
       }                                          \
+      err = cudaDeviceSynchronize();             \
+      if (err != cudaSuccess) {                  \
+        LOG(FATAL) << "CUDA failure: "           \
+                   << cudaGetErrorString(err);   \
+      }                                          \
+      err = cudaGetLastError();                  \
+      if (err != cudaSuccess) {                  \
+        LOG(FATAL) << "CUDA failure: "           \
+                   << cudaGetErrorString(err);   \
+      }                                          \
     }while(0)
 
 #define checkCublasError(stmt)                   \

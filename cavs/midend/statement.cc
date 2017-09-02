@@ -62,7 +62,9 @@ void GraphStatement::Run() {
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    VLOG(V_DEBUG) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
+    VLOG(V_DEBUG) << "round: " << round++
+      << "\t job_counts:" << gscheduler_->GetJobId().size()
+      << "\t job_id :" << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }
@@ -89,7 +91,9 @@ void GraphGradStatement::Run() {
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
-    VLOG(V_DEBUG) << "round: " << round++ << "\t job_counts:" << gscheduler_->GetJobId().size();
+    VLOG(V_DEBUG) << "round: " << round++
+      << "\t job_counts:" << gscheduler_->GetJobId().size()
+      << "\t job_id :" << gscheduler_->GetJobId()[0];
     node_func_->Run();
     gscheduler_->ActivateNext();
   }

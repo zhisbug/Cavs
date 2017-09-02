@@ -65,6 +65,7 @@ class SliceOpImpl : public OpImpl {
       int threadsPerBlock = y_stride;
       BatchedDynamicSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
           y->mutable_data<T>(), y_stride, x.data<T>() + x_offset, x_stride, y_stride);
+      checkCudaError(cudaGetLastError());
       
     }else {
       //static slicing

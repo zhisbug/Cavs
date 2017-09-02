@@ -228,6 +228,7 @@ class GraphPullOp : public OpImpl {
     /*int threadsPerBlock = stride;*/
     const int MAX_THREADS_IN_BLOCK = 1 << 10;
     int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
+    checkCudaError(cudaGetLastError());
     BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
             out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
     checkCudaError(cudaGetLastError());
@@ -297,14 +298,17 @@ class FunctionPopRetOp : public OpImpl {
     /*for (int i = 0; i < tids.size(); i++) tids[i] = i;*/
     /*const vector<int>& gids = gs->InternalTensorIdToJobIds(tids);*/
     const vector<int>& tids2gids= gs->TensorIdsToJobIds();
-    /*for (int i = 0; i < tids2gids.size(); i++) {*/
-      /*VLOG(V_DEBUG) << "i: " << i << "\tgid: " << tids2gids[i];*/
-    /*}*/
+    for (int i = 0; i < tids2gids.size(); i++) {
+      VLOG(V_DEBUG) << "i: " << i << "\tgid: " << tids2gids[i];
+    }
     checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tids2gids.data(),
                    tids2gids.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
     int blocksPerGrid = tids2gids.size();
     /*int threadsPerBlock = stride;*/
     const int MAX_THREADS_IN_BLOCK = 1 << 10;
+    VLOG(V_DEBUG) << blocksPerGrid;
+    VLOG(V_DEBUG) << stride;
+    checkCudaError(cudaGetLastError());
     int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
     BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
             out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);

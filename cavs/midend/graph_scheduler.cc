@@ -19,7 +19,7 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     __forward_parents_ids_.resize(batch_size_*max_seq_length_); 
     __forward_children_ids_.resize(batch_size_*max_seq_length_); 
     sample_offset_in_gid_.resize(batch_size_);
-    activated_times_.resize(batch_size_*max_seq_length_, 0);
+    //activated_times_.resize(batch_size_*max_seq_length_, 0);
     checkCudaError(cudaMalloc((void**)&gpu_idx_buf_, batch_size_*max_seq_length_*sizeof(int)));
   }else {
     CHECK(batch_size_ == graph_struct.dims(0)); 
@@ -57,6 +57,8 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   children_ = &__forward_children_ids_;
   round2offset_.clear();
   rc_.Reset();
+  activated_times_.resize(total_length_, 0);
+  tids_to_jobids_.resize(total_length_, 0);
   VLOG(V_DEBUG) << "Loading graph completed...";
   return total_length_;
 }
@@ -75,7 +77,7 @@ void SerialGraphScheduler::Initialize() {
   ++rc_;
   CHECK(Terminate());
   std::fill(activated_times_.begin(), activated_times_.end(), 0);
-  tids_to_jobids_.resize(activated_times_.size(), 0);
+  //tids_to_jobids_.resize(activated_times_.size(), 0);
   InitializeSample(0);
   int gid = pending_list_.front();
   ready_to_execute_ids_[0] = gid;

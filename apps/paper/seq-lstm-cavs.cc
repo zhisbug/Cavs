@@ -137,8 +137,8 @@ int main(int argc, char* argv[]) {
   //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_STREAMMING);
-  //Session sess(OPT_BATCHING+OPT_FUSION);
-  Session sess(OPT_BATCHING);
+  Session sess(OPT_BATCHING+OPT_FUSION);
+  //Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
   //Session sess;
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
