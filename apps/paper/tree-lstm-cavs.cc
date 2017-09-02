@@ -32,9 +32,6 @@ class Reader {
   Reader(const string input, const string label, const string graph) :
       input_path(input), label_path(label), graph_path(graph),
       input_file(input), label_file(label), graph_file(graph) {
-    //input_file = std::move(ifstream(input_path));
-    //label_file = std::move(ifstream(label_path));
-    //graph_file = std::move(ifstream(graph_path));
   }
 
   void next_batch( vector<int>* batch_graph, vector<float>* batch_input, vector<float>* batch_label) {
@@ -206,15 +203,15 @@ int main(int argc, char* argv[]) {
   Sym loss = graph_output.FullyConnected(weight, bias).SoftmaxEntropyLoss(label_reshape);
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
-  Session sess;
+  Session sess(OPT_BATCHING);
   //int iterations = NUM_SAMPLES / FLAGS_batch_size; 
   int iterations = FLAGS_iters;
   //vector<float> input_data(FLAGS_batch_size*MAX_LEN, -1);
   vector<float> input_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<float> label_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<int>   graph_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
-  //for (int i = 0; i < 27; i++)
-    //sst_reader.next_batch(&graph_data, &input_data, &label_data);
+  for (int i = 0; i < 13; i++)
+    sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       sst_reader.next_batch(&graph_data, &input_data, &label_data);

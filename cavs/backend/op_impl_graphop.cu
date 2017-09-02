@@ -5,9 +5,12 @@
 #include "cavs/util/macros_gpu.h"
 #include "cavs/util/op_util.h"
 
+#include <string>
+
 using ::midend::Tensor;
 using ::midend::GraphSchedulerBase;
 using std::vector;
+using std::string;
 
 namespace backend {
 
@@ -38,9 +41,20 @@ class GraphGatherOp : public OpImpl {
     int stride = out->count()/out->dims(0);
     CHECK(stride == count_) << out->debug_info() << op_def_.DebugString();
     VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
+    if (VLOG_IS_ON(V_DEBUG)) {
+      string out;
+      for (int id : gids) out += std::to_string(id) + "\t";
+      VLOG(V_DEBUG) << out;
+    }
 
     /*const vector<int>& child_tensor_ids = gs->GatherTensorIds(gids, child_offset_);*/
     const vector<int>& tensor_ids_for_gather = gs->CurrentRoundTensorIdsForGather(child_offset_);
+    if (VLOG_IS_ON(V_DEBUG)) {
+      string out;
+      for (int id : tensor_ids_for_gather) out += std::to_string(id) + "\t";
+      VLOG(V_DEBUG) << out;
+    }
+
     if (!tensor_ids_for_gather.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_gather.data(),
                      tensor_ids_for_gather.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
@@ -122,8 +136,19 @@ class GraphScatterOp : public OpImpl {
     GraphSchedulerBase* gs = context->graph_scheduler();
     const vector<int>& gids = gs->GetJobId();
     VLOG(V_DEBUG) << "Batching jobs of this round: " << gids.size();
+    if (VLOG_IS_ON(V_DEBUG)) {
+      string out;
+      for (int id : gids) out += std::to_string(id) + "\t";
+      VLOG(V_DEBUG) << out;
+    }
 
     const vector<int>& tensor_ids_for_scatter = gs->CurrentRoundTensorIdsForScatter(child_offset_);
+    VLOG(V_DEBUG) << "tensor ids for scatter: " << tensor_ids_for_scatter.size();
+    if (VLOG_IS_ON(V_DEBUG)) {
+      string out;
+      for (int id : tensor_ids_for_scatter) out += std::to_string(id) + "\t";
+      VLOG(V_DEBUG) << out;
+    }
     CHECK(gids.size() == tensor_ids_for_scatter.size() || tensor_ids_for_scatter.empty());
     if (!tensor_ids_for_scatter.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_scatter.data(),
