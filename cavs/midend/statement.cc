@@ -19,7 +19,11 @@ void ExprStatement::Run() {
   VLOG(V_TIMING) << "Setting Offset------------------------";
   ctxt_->SetTensorOffset();
   //for dynamic tensor size support(the tensor size may vary during iterations)
-  VLOG(V_TIMING) << "Setting Output Tenesor Scale-------------------------";
+  //input tensor should also be scaled in the case of the backwarding of skewed tree
+  //when the forward data is reused, it's 1st dimension is the last round dim, 
+  //which should be changed from round to round
+  VLOG(V_TIMING) << "Setting Input/Output Tenesor Scale-------------------------";
+  ctxt_->ScaleInputTensor();
   ctxt_->ScaleOutputTensor();
   //for some gradient tensor, the original value must be set to 0 
   VLOG(V_TIMING) << "Setting Zero--------------------------";

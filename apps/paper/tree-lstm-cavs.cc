@@ -210,7 +210,7 @@ int main(int argc, char* argv[]) {
   vector<float> input_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<float> label_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<int>   graph_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
-  for (int i = 0; i < 13; i++)
+  for (int i = 0; i < 33; i++)
     sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
