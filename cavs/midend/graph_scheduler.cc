@@ -90,12 +90,14 @@ void SerialGraphScheduler::Initialize() {
     for (int i = 0; i < (*parents_)[gid].size(); i++) {
       tids_for_scatter_[0].push_back(gid);
     }
+    if (!HasChild(gid)) tids_for_gather_init_[0] = {gid};
   }else {
     for (auto& child : tids_for_gather_)  child.clear();
     for (auto& child : tids_for_scatter_)  child.clear();
     for (int i = 0; i < (*parents_)[gid].size(); i++) {
       tids_for_scatter_[i].push_back((*parents_)[gid][i]);
     }
+    if (!HasChild(gid)) tids_for_gather_init_[1] = {gid};
   }
 }
 
@@ -141,6 +143,7 @@ void SerialGraphScheduler::ActivateNext() {
     for (int i = 0; i < (*children_)[next_gid].size(); i++) {
       tids_for_gather_[i].push_back((*children_)[next_gid][i]);
     }
+    if (!HasChild(next_gid)) tids_for_gather_init_[0] = {next_gid};
   }else {
     for (auto& child : tids_for_gather_)  child.clear();
     for (auto& child : tids_for_scatter_)  child.clear();
@@ -151,6 +154,7 @@ void SerialGraphScheduler::ActivateNext() {
     for (int i = 0; i < (*parents_)[next_gid].size(); i++) {
       tids_for_scatter_[i].push_back((*parents_)[next_gid][i]);
     }
+    if (!HasChild(next_gid)) tids_for_gather_init_[1] = {next_gid};
   }
 }
 
@@ -173,8 +177,8 @@ void BatchGraphScheduler::Initialize() {
         ready_to_execute_ids_.push_back(gid);
         VLOG(V_DEBUG) << "Pushing back " << gid;
       }
-      
     }
+    tids_for_gather_init_[0] = ready_to_execute_ids_;
     execution_tracer_.clear();
     gather_tracer_.clear();
     scatter_tracer_.clear();
@@ -212,9 +216,13 @@ void BatchGraphScheduler::ActivateNext() {
             int cid = (*children_)[pid][i];
             gather_ids_next_round[i].push_back(jobids_to_tids_[cid]);
           }
-          for (int i = 0; i < (*parents_)[pid].size(); i++) {
-            //just for counting(may be zero)
-            scatter_ids_next_round[0].push_back(jobids_to_tids_[pid]);
+          if ((*parents_)[pid].empty()) {
+            tids_for_gather_init_[1].push_back(tensor_id);
+          }else {
+            for (int i = 0; i < (*parents_)[pid].size(); i++) {
+              //just for counting(may be zero)
+              scatter_ids_next_round[0].push_back(tensor_id);
+            }
           }
         }
       }

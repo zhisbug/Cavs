@@ -54,12 +54,17 @@ class GraphGatherOp : public OpImpl {
       for (int id : tensor_ids_for_gather) out += std::to_string(id) + "\t";
       VLOG(V_DEBUG) << out;
     }
+    //for skewed batched trees, in the backward pass, 
+    //the root of one tree does not need to gather,
+    //but the inode of other tree have to gather
+    //so we loose this constraint
+    /*CHECK(gids.size() == tensor_ids_for_gather.size() || tensor_ids_for_gather.empty());*/
 
     if (!tensor_ids_for_gather.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_gather.data(),
                      tensor_ids_for_gather.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
-      /*LOG(INFO) << "child_tensor_ids size: " << child_tensor_ids.size();*/
-      int blocksPerGrid = gids.size();
+      /*int blocksPerGrid = gids.size();*/
+      int blocksPerGrid = tensor_ids_for_gather.size();
       /*int threadsPerBlock = stride;*/
       const int MAX_THREADS_IN_BLOCK = 1 << 10;
       int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
@@ -67,7 +72,14 @@ class GraphGatherOp : public OpImpl {
               out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
       checkCudaError(cudaGetLastError());
     }else {
-      checkCudaError(cudaMemset(out->mutable_data<T>(), 0, gids.size()*stride*sizeof(T)));
+      /*checkCudaError(cudaMemset(out->mutable_data<T>(), 0, gids.size()*stride*sizeof(T)));*/
+      int blocksPerGrid = gs->CurrentRoundTensorIdsForGatherInitialization().size();
+      checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), gs->CurrentRoundTensorIdsForGatherInitialization().data(),
+                     blocksPerGrid*sizeof(int), cudaMemcpyHostToDevice, stream_));
+      const int MAX_THREADS_IN_BLOCK = 1 << 10;
+      int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
+      BatchedDynamicSelectedAssignZeroKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
+              out->mutable_data<T>(), stride, gs->gpu_idx_buf(), stride);
     }
 
     /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
@@ -149,11 +161,14 @@ class GraphScatterOp : public OpImpl {
       for (int id : tensor_ids_for_scatter) out += std::to_string(id) + "\t";
       VLOG(V_DEBUG) << out;
     }
-    CHECK(gids.size() == tensor_ids_for_scatter.size() || tensor_ids_for_scatter.empty());
+    //for skewed batched trees, the root of one tree does not need to scatter,
+    //but the inode of other tree have to scatter
+    //so we loose this constraint
+    /*CHECK(gids.size() == tensor_ids_for_scatter.size() || tensor_ids_for_scatter.empty());*/
     if (!tensor_ids_for_scatter.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_scatter.data(),
                      tensor_ids_for_scatter.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
-      int blocksPerGrid = gids.size();
+      int blocksPerGrid = tensor_ids_for_scatter.size();
       /*int threadsPerBlock = stride;*/
       const int MAX_THREADS_IN_BLOCK = 1 << 10;
       int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;

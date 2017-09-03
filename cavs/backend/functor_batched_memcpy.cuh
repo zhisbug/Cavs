@@ -51,6 +51,20 @@ __global__ void BatchedDynamicSelectedOutputSliceCopyKernel(
   }
 }
 
+template <typename T>
+__global__ void BatchedDynamicSelectedAssignZeroKernel(
+    T *out, int out_stride, const int* ids, int copy_length) {
+  /*int inp_offset = ids[blockIdx.x]*inp_stride + threadIdx.x;*/
+  /*int out_offset = blockIdx.x*out_stride + threadIdx.x;*/
+  /*if (threadIdx.x < copy_length) {*/
+    /*out[out_offset] = inp[inp_offset];*/
+  /*}*/
+  int out_offset = blockIdx.x*out_stride;
+  for (int tid = threadIdx.x; tid < copy_length; tid += blockDim.x) {
+    out[out_offset + tid] = 0;
+  }
+}
+
 } //namespace backend
 
 #endif

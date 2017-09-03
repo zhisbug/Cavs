@@ -13,6 +13,7 @@ class GraphSchedulerBase {
  public:
   GraphSchedulerBase() :
     batch_size_(0), max_seq_length_(0), total_length_(0), gpu_idx_buf_(NULL) {
+      tids_for_gather_init_.resize(2);
       tids_for_gather_.resize(2);
       tids_for_scatter_.resize(2);
   }
@@ -33,6 +34,12 @@ class GraphSchedulerBase {
   inline const std::vector<int>& GetJobId() const {
     CHECK(!Terminate());
     return ready_to_execute_ids_;
+  }
+  inline const std::vector<int>& CurrentRoundTensorIdsForGatherInitialization() const {
+    if (rc_.IsForward())
+      return tids_for_gather_init_[0];
+    else
+      return tids_for_gather_init_[1];
   }
   inline const std::vector<int>& CurrentRoundTensorIdsForGather(int child_offset) const {
     return tids_for_gather_[child_offset];
@@ -76,6 +83,7 @@ class GraphSchedulerBase {
   std::vector<int>  sample_offset_in_gid_;
   std::vector<int>  ready_to_execute_ids_;
   std::vector<int>  activated_times_;
+  std::vector<std::vector<int>> tids_for_gather_init_;
   std::vector<std::vector<int>> tids_for_gather_;
   std::vector<std::vector<int>> tids_for_scatter_;
   std::vector<int> jobids_to_tids_;
