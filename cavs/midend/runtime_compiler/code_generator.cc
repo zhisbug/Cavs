@@ -101,8 +101,7 @@ string EwiseGenBodyAssignOutput(const list<Edge*>& outputs) {
 
 } //namespace Ewise
 
-CodeGenerator::CodeGenerator(list<Node*>* n, vector<vector<int>>* dependency)
-  : parser_(n, dependency) {
+CodeGenerator::CodeGenerator(list<Node*>* n) : parser_(n) {
   int groups = parser_.GenerateGroup();
   list<Edge*> in_edges;
   list<Edge*> out_edges;

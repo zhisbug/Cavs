@@ -44,8 +44,9 @@ bool isDeserved(Node* node) {
   return node->IsSingleNode() && isDeserved(node->name());
 }
 
-Parser::Parser(list<Node*>* n, vector<vector<int>>* dependency)
-  : nodes_(n), dependency_(dependency) {
+//Parser::Parser(list<Node*>* n, vector<vector<int>>* dependency)
+Parser::Parser(list<Node*>* n)
+  : nodes_(n)/*, dependency_(dependency)*/ {
   CHECK(!nodes_->empty());
   //group_.resize(nodes_->size(), 0);
   auto iter = nodes_->begin();
@@ -72,7 +73,7 @@ int FindGroup(int id, const vector<int>& group) {
 int Parser::GenerateGroup() {
   vector<int> group(nodes_->size(), 0);
   for (int i = 0; i < nodes_->size(); i++) {
-    group[i] = i; 
+    group[i] = i;
   }
   auto iter = nodes_->begin();
   vector<int> fusion_benefit(nodes_->size(), 0);
@@ -205,84 +206,84 @@ void Parser::Finalize() {
     nodes_->remove(n);
   }
 
-  //then we should build the new dependency
-  dependency_->clear();
-  dependency_->resize(nodes_->size());
-  unordered_map<Node*, int> new_node2idx;
-  auto iter = nodes_->begin();
-  for (int i = 0; i < nodes_->size(); i++, iter++) {
-    CHECK(new_node2idx.find(*iter) == new_node2idx.end());
-    new_node2idx[*iter] = i; 
-  }
+  ////then we should build the new dependency
+  //dependency_->clear();
+  //dependency_->resize(nodes_->size());
+  //unordered_map<Node*, int> new_node2idx;
+  //auto iter = nodes_->begin();
+  //for (int i = 0; i < nodes_->size(); i++, iter++) {
+    //CHECK(new_node2idx.find(*iter) == new_node2idx.end());
+    //new_node2idx[*iter] = i; 
+  //}
 
-  iter = nodes_->begin();
-  for (int i = 0; i < nodes_->size(); i++, iter++) {
-    if (node2idx_.find(*iter) != node2idx_.end()) {
-      //not fused nodes
-      for (Edge* edge : (*iter)->output()) {
-        if (edge->scope() == (*iter)->scope()) {
-          for (Node* pnode : edge->dst(true)) {
-            if (new_node2idx.find(pnode) == new_node2idx.end()) {
-              //its parent is fused nodes 
-              //CHECK(node2idx_.find(pnode) != node2idx_.end());
-              //we loose this constraint because batchweightupdater may remove some nodes in this scope
-              if (node2idx_.find(pnode) == node2idx_.end()) continue;
-              CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
-              Node* fnode = node2groupnode_.at(pnode);
-              CHECK(node2idx_.find(fnode) == node2idx_.end());
-              CHECK(new_node2idx.find(fnode) != new_node2idx.end());
-              //dependency_->at(new_node2idx.at(fnode)).push_back(i);
-              dependency_->at(i).push_back(new_node2idx.at(fnode));
-            }else {
-              //acyclic graph
-              CHECK(new_node2idx.at(pnode) > i);
-              //dependency_->at(new_node2idx.at(pnode)).push_back(i);
-              dependency_->at(i).push_back(new_node2idx.at(pnode));
-            }
-          }
-        }
-      }
-    }else {
-      //it is a newly generated fused node
-      CHECK(groupnode2node_.find(*iter) != groupnode2node_.end());
-      for (auto* origin_n : groupnode2node_.at(*iter)) {
-        for (Edge* edge : origin_n->output()) {
-          if (edge->scope() == (*iter)->scope()) {
-            for (Node* pnode : edge->dst(true)) {
-              if (new_node2idx.find(pnode) == new_node2idx.end()) {
-                //its parent is a fused node
-                //CHECK(node2idx_.find(pnode) != node2idx_.end());
-                //we loose this constraint because batchweightupdater may remove some nodes in this scope
-                if (node2idx_.find(pnode) == node2idx_.end()) continue;
-                CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
-                Node* fnode = node2groupnode_.at(pnode);
-                CHECK(node2idx_.find(fnode) == node2idx_.end());
-                CHECK(new_node2idx.find(fnode) != new_node2idx.end());
-                if (fnode != (*iter)) {
-                  CHECK(new_node2idx.at(fnode) > i);
-                  //dependency_->at(new_node2idx.at(fnode)).push_back(i);
-                  dependency_->at(i).push_back(new_node2idx.at(fnode));
-                }
-              }else {
-                //acyclic graph
-                CHECK(new_node2idx.at(pnode) > i);
-                //dependency_->at(new_node2idx.at(pnode)).push_back(i);
-                dependency_->at(i).push_back(new_node2idx.at(pnode));
-              }
-            }
-          }
-        }
-      }
-    }
+  //iter = nodes_->begin();
+  //for (int i = 0; i < nodes_->size(); i++, iter++) {
+    //if (node2idx_.find(*iter) != node2idx_.end()) {
+      ////not fused nodes
+      //for (Edge* edge : (*iter)->output()) {
+        //if (edge->scope() == (*iter)->scope()) {
+          //for (Node* pnode : edge->dst(true)) {
+            //if (new_node2idx.find(pnode) == new_node2idx.end()) {
+              ////its parent is fused nodes 
+              ////CHECK(node2idx_.find(pnode) != node2idx_.end());
+              ////we loose this constraint because batchweightupdater may remove some nodes in this scope
+              //if (node2idx_.find(pnode) == node2idx_.end()) continue;
+              //CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
+              //Node* fnode = node2groupnode_.at(pnode);
+              //CHECK(node2idx_.find(fnode) == node2idx_.end());
+              //CHECK(new_node2idx.find(fnode) != new_node2idx.end());
+              ////dependency_->at(new_node2idx.at(fnode)).push_back(i);
+              //dependency_->at(i).push_back(new_node2idx.at(fnode));
+            //}else {
+              ////acyclic graph
+              //CHECK(new_node2idx.at(pnode) > i);
+              ////dependency_->at(new_node2idx.at(pnode)).push_back(i);
+              //dependency_->at(i).push_back(new_node2idx.at(pnode));
+            //}
+          //}
+        //}
+      //}
+    //}else {
+      ////it is a newly generated fused node
+      //CHECK(groupnode2node_.find(*iter) != groupnode2node_.end());
+      //for (auto* origin_n : groupnode2node_.at(*iter)) {
+        //for (Edge* edge : origin_n->output()) {
+          //if (edge->scope() == (*iter)->scope()) {
+            //for (Node* pnode : edge->dst(true)) {
+              //if (new_node2idx.find(pnode) == new_node2idx.end()) {
+                ////its parent is a fused node
+                ////CHECK(node2idx_.find(pnode) != node2idx_.end());
+                ////we loose this constraint because batchweightupdater may remove some nodes in this scope
+                //if (node2idx_.find(pnode) == node2idx_.end()) continue;
+                //CHECK(node2groupnode_.find(pnode) != node2groupnode_.end());
+                //Node* fnode = node2groupnode_.at(pnode);
+                //CHECK(node2idx_.find(fnode) == node2idx_.end());
+                //CHECK(new_node2idx.find(fnode) != new_node2idx.end());
+                //if (fnode != (*iter)) {
+                  //CHECK(new_node2idx.at(fnode) > i);
+                  ////dependency_->at(new_node2idx.at(fnode)).push_back(i);
+                  //dependency_->at(i).push_back(new_node2idx.at(fnode));
+                //}
+              //}else {
+                ////acyclic graph
+                //CHECK(new_node2idx.at(pnode) > i);
+                ////dependency_->at(new_node2idx.at(pnode)).push_back(i);
+                //dependency_->at(i).push_back(new_node2idx.at(pnode));
+              //}
+            //}
+          //}
+        //}
+      //}
+    //}
 
-  }
-  iter = nodes_->begin();
-  for (int i = 0; i < nodes_->size(); i++, iter++) {
-    VLOG(V_DEBUG) << "ID:\t" << i;
-    for (int d : dependency_->at(i))
-      VLOG(V_DEBUG) << "\tDependency: " << d;
-    VLOG(V_DEBUG) << (*iter)->debug_info();
-  }
+  //}
+  //iter = nodes_->begin();
+  //for (int i = 0; i < nodes_->size(); i++, iter++) {
+    //VLOG(V_DEBUG) << "ID:\t" << i;
+    //for (int d : dependency_->at(i))
+      //VLOG(V_DEBUG) << "\tDependency: " << d;
+    //VLOG(V_DEBUG) << (*iter)->debug_info();
+  //}
 }
 
 } //RTC

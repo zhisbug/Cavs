@@ -56,7 +56,7 @@ string SingleNode::debug_info() const {
 }
 
 SingleNode::SingleNode(const OpDef& op_def, Scope* s)
-  : Node(s), op_def_(op_def), isBatchEnabled_(false), sess_debug_(NULL) {}
+  : Node(s), op_def_(op_def), isDynamicEnabled_(false), sess_debug_(NULL) {}
 
 void SingleNode::SetShape(
     const vector<TensorShapeDef>& def) {
@@ -71,11 +71,11 @@ void SingleNode::SetShape(
   }
 }
 
-void SingleNode::SetBatchEnabled() {
+void SingleNode::SetDynamicEnabled() {
   //currently, only single-output node can be batched
   CHECK(output_size() == 1);
-  isBatchEnabled_ = true;
-  output(0)->SetBatchEnabled();
+  isDynamicEnabled_ = true;
+  output(0)->SetDynamicEnabled();
 }
 
 Statement* SingleNode::Compile(
@@ -286,10 +286,9 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
 
-    std::vector<std::vector<int>> dependency;
     if ((sess->opt_type() & OPT_FUSION)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
-      RTC::CodeGenerator generator(&nodes_, &dependency);
+      RTC::CodeGenerator generator(&nodes_);
       VLOG(V_DEBUG) << "Modifing the critical path done for fusion in ScopedNode";
     }
 
@@ -303,11 +302,11 @@ Statement* ScopedNode::Compile(
 
     if ((sess->opt_type() & OPT_STREAMMING)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
-      if (dependency.empty()) {
-        StreamScheduler::DependencyExtractor(&dependency, nodes_);
-      }
-      CHECK(dependency.size() == nodes_.size());
-      StreamScheduler scheduler(&(bb->stmts_), dependency);
+      //if (dependency.empty()) {
+        //StreamScheduler::DependencyExtractor(&dependency, nodes_);
+      //}
+      //CHECK(dependency.size() == nodes_.size());
+      StreamScheduler scheduler(&(bb->stmts_), nodes_);
       VLOG(V_DEBUG) << "Modifing the critical path done for streamming in ScopedNode";
     }
 

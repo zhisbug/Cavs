@@ -5,7 +5,7 @@ using std::string;
 namespace midend {
 
 Edge::Edge(const string& name, Scope* s)
-  : name_(name), located_(s), isBatchEnabled_(false) {
+  : name_(name), located_(s), isDynamicEnabled_(false) {
   located_->AddEdge(this);
 }
 

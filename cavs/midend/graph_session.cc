@@ -97,7 +97,7 @@ OpContext* GraphSession::GetContext(const Node* node) {
           //bool fwd_dynamic_shape = ft->IsDynamicShape();
           const Edge* edge = NULL;
           CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
-          bool fwd_dynamic_shape = edge->IsBatchEnabled();
+          bool fwd_dynamic_shape = edge->IsDynamicEnabled();
           if (dynamic_shape ^ fwd_dynamic_shape) {
             //otherwise it means expanding the dims 
             //there are no such operations
@@ -148,11 +148,11 @@ OpContext* GraphSession::GetContext(const Node* node) {
             node->name() == "Gather" || node->name() == "Scatter") {
           dynamic_shape = true;
         }else if (!output->isGradient()) {
-          dynamic_shape = output->IsBatchEnabled();
+          dynamic_shape = output->IsDynamicEnabled();
         }else {
           const Edge* edge = NULL;
           CHECK_NOTNULL(edge = output->scope()->FindEdge(GetOriginName(output->name())));
-          dynamic_shape = edge->IsBatchEnabled();
+          dynamic_shape = edge->IsDynamicEnabled();
         }
         VLOG(V_DEBUG) << "IsDynamicShape: " << dynamic_shape;
 

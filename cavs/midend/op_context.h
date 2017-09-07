@@ -13,7 +13,8 @@ namespace midend {
 
 class OpContext {
  public:
-  OpContext() : round_(0), gs_(NULL), stream_id_(-1), sync_me_(false) {}
+  OpContext() : round_(0), gs_(NULL),
+    stream_id_(-1), event_record_id_(-1), wait_for_event_id_(-1) {}
   inline const Tensor& Input(int idx) const;
   inline Tensor* Output(int idx);
   inline int InputSize() const;
@@ -23,8 +24,8 @@ class OpContext {
   inline OpContext* ExtractContext(const std::vector<int>& inp, const std::vector<int>& out);
   inline void SetStreamId(int id) { stream_id_ = id; }
   inline int GetStreamID() const { return stream_id_; }
-  inline void AddInputEventId(int id) { inputs_event_ids_.push_back(id); }
-  inline void SetSyncMe() { sync_me_ = true; }
+  inline void SetWaitForEventId(int eid) { wait_for_event_id_ = eid; }
+  inline void SetEventRecord(int eid) { event_record_id_ = eid; }
 
   //the followings are all about optimizations
   inline void SetRound(int r) { round_ = r; }
@@ -41,8 +42,8 @@ class OpContext {
   void ScaleOutputTensor();
   void ScaleInputTensor();
   void SetZero();
-  void WaitForInputs();
-  void SyncMe();
+  void WaitForEvent();
+  void RecordMyEvent();
 
   std::string debug_info() const;
   static std::unordered_map<std::string, void*> repo_;
@@ -52,8 +53,9 @@ class OpContext {
   std::vector<const Tensor*> inputs_;
   std::vector<Tensor*> outputs_;
   int stream_id_;
+  int event_record_id_;
+  int wait_for_event_id_;
   std::vector<int> inputs_event_ids_;
-  bool sync_me_;
   int round_;
   GraphSchedulerBase* gs_;
   static int dyn_dim_;

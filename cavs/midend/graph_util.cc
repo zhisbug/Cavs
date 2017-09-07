@@ -307,11 +307,11 @@ TensorShapeDef GraphUtil::AddFunction(const FunctionDef& def) {
       ::backend::ShapeInference(op, input_shapes);
     node->SetShape(shape_def);
     if (node->name() == "Gather" || node->name() == "Pull") {
-      node->SetBatchEnabled();
+      node->SetDynamicEnabled();
     }else {
       for (Edge* e : node->input()) {
-        if (e->IsBatchEnabled()) {
-          node->SetBatchEnabled(); 
+        if (e->IsDynamicEnabled()) {
+          node->SetDynamicEnabled(); 
           break;
         }
       }

@@ -23,7 +23,7 @@ class BatchingWeightUpdater {
         if (e->isGradient()) {
           Edge* forward_e     = s->FindEdge(GetOriginName(e->name()));  
           CHECK(forward_e);
-          if (!forward_e->IsBatchEnabled()) {
+          if (!forward_e->IsDynamicEnabled()) {
             isBackwardAndNotInGatherPullPath = true; 
             break;
           }

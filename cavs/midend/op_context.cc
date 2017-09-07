@@ -90,24 +90,18 @@ void OpContext::SetZero() {
   }
 }
 
-void OpContext::WaitForInputs() {
-  if (stream_id_ >= 0) {
-    for (int eid : inputs_event_ids_) {
-      checkCudaError(cudaStreamWaitEvent(
-            StreamEventHandlePool::GetCudaStream(stream_id_),
-            StreamEventHandlePool::GetCudaEvent(eid), 0));
-    }
+void OpContext::WaitForEvent() {
+  if (stream_id_ > -1 && wait_for_event_id_ > -1) {
+    checkCudaError(cudaStreamWaitEvent(
+          StreamEventHandlePool::GetCudaStream(stream_id_),
+          StreamEventHandlePool::GetCudaEvent(wait_for_event_id_), 0));
   }
 }
 
-void OpContext::SyncMe() {
-  if (sync_me_) {
-    cudaStream_t s = (stream_id_ == -1) ?
-      cudaStreamDefault : StreamEventHandlePool::GetCudaStream(stream_id_);
-    checkCudaError(cudaStreamSynchronize(s));
-    VLOG(V_TIMING) << "Sync!";
-  }else {
-    VLOG(V_TIMING) << "Not Sync!";
+void OpContext::RecordMyEvent() {
+  if (stream_id_ > -1 && event_record_id_ > -1) {
+    checkCudaError(cudaEventRecord(StreamEventHandlePool::GetCudaEvent(event_record_id_),
+                                   StreamEventHandlePool::GetCudaStream(stream_id_))); 
   }
 }
 

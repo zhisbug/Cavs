@@ -15,7 +15,8 @@ namespace RTC {
 
 class Parser {
  public:
-  Parser(std::list<Node*>* n, std::vector<std::vector<int>>* dependency);
+  //Parser(std::list<Node*>* n, std::vector<std::vector<int>>* dependency);
+  Parser(std::list<Node*>* n);
   int GenerateGroup();
   void FuseGroup(int gid, std::list<Node*>* nodes,
                  std::list<Edge*>* in_edges, std::list<Edge*>* out_Edges);
@@ -25,7 +26,7 @@ class Parser {
  private:
   //int FindGroup(int id) const;
   std::list<Node*>* nodes_;
-  std::vector<std::vector<int>>* dependency_;
+  //std::vector<std::vector<int>>* dependency_;
 
   std::unordered_map<Node*, int> node2idx_;
   std::vector<std::vector<int>> group_contents_;

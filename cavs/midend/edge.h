@@ -40,8 +40,8 @@ class Edge {
 
   inline void SetShape(const TensorShapeDef& def);
   inline const TensorShapeDef& shape() const;
-  inline void SetBatchEnabled();
-  inline bool IsBatchEnabled() const;
+  inline void SetDynamicEnabled();
+  inline bool IsDynamicEnabled() const;
   DataType dtype() const;
 
   std::string debug_info() const;
@@ -55,7 +55,7 @@ class Edge {
   std::vector<Node*> same_scoped_dsts_;
   std::vector<Node*> control_dependency_on_me_;
   Scope* located_;
-  bool isBatchEnabled_;
+  bool isDynamicEnabled_;
 };
 
 inline bool Edge::isVariable() const {
@@ -136,12 +136,12 @@ inline const std::vector<Node*>& Edge::control_dependency() const {
   return control_dependency_on_me_;
 }
 
-inline bool Edge::IsBatchEnabled() const {
-  return isBatchEnabled_;
+inline bool Edge::IsDynamicEnabled() const {
+  return isDynamicEnabled_;
 }
 
-inline void Edge::SetBatchEnabled() {
-  isBatchEnabled_ = true;
+inline void Edge::SetDynamicEnabled() {
+  isDynamicEnabled_ = true;
 }
 
 } //namespace midend

@@ -22,7 +22,7 @@ void ExprStatement::Run() {
   //input tensor should also be scaled in the case of the backwarding of skewed tree
   //when the forward data is reused, it's 1st dimension is the last round dim, 
   //which should be changed from round to round
-  VLOG(V_TIMING) << "Setting Input/Output Tenesor Scale-------------------------";
+  VLOG(V_TIMING) << "Setting Input/Output Tenesor Scale----";
   ctxt_->ScaleInputTensor();
   ctxt_->ScaleOutputTensor();
   //for some gradient tensor, the original value must be set to 0 
@@ -32,12 +32,12 @@ void ExprStatement::Run() {
   //if (custom_context_ != nullptr)
     //custom_context_(ctxt_);
   VLOG(V_TIMING) << "Waiting for inputs--------------------";
-  ctxt_->WaitForInputs();
+  ctxt_->WaitForEvent();
   VLOG(V_TIMING) << "Computing-----------------------------";
   op_->Compute(ctxt_);
 
-  VLOG(V_TIMING) << "Sync With CPU-------------------------";
-  //ctxt_->SyncMe();
+  VLOG(V_TIMING) << "Recording My Event if necessary-------";
+  ctxt_->RecordMyEvent();
   //checkCudaError(cudaDeviceSynchronize());
   VLOG(V_TIMING) << "======================================";
 }
