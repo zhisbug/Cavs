@@ -51,18 +51,18 @@ void GraphStatement::Run() {
     push_arg_stmt_->Run();
 
   checkCudaError(cudaDeviceSynchronize());
-  LOG(INFO) << "Loading graph...";
+  //LOG(INFO) << "Loading graph...";
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
-  LOG(INFO) << "Load graph done...";
+  //LOG(INFO) << "Load graph done...";
   CHECK(output_length > 0);
   //we must clear the dynamic size in case previous ops have changed it;
   //The only case we have to reset the dynamic size is when the previous round sets
   //the dynamic size to a size larger than the gather output capacity,
   //which can not happen
-  LOG(INFO) << "Initialzing 1st round"; 
+  //LOG(INFO) << "Initialzing 1st round"; 
   gscheduler_->Initialize();
   checkCudaError(cudaDeviceSynchronize());
-  LOG(INFO) << "Initialzing 1st round done";
+  //LOG(INFO) << "Initialzing 1st round done";
   int round = 0;
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];

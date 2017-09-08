@@ -32,13 +32,16 @@ class StreamScheduler {
             CHECK(edge->scope() == (*riter)->scope());
             CHECK(on_scatter_path_edge.find(edge) == on_scatter_path_edge.end());
             on_scatter_path_edge.insert(edge);
+            VLOG(V_DEBUG) << "Inserting " << edge->name();
           }
         }else {
           for (Edge* edge : (*riter)->output()) {
             if (on_scatter_path_edge.find(edge) != on_scatter_path_edge.end()) {
               for (Edge* cedge : (*riter)->input()) {
-                CHECK(on_scatter_path_edge.find(cedge) == on_scatter_path_edge.end());
+                VLOG(V_DEBUG) << "Want to insert " << cedge->name();
+                //CHECK(on_scatter_path_edge.find(cedge) == on_scatter_path_edge.end());
                 on_scatter_path_edge.insert(cedge);
+                VLOG(V_DEBUG) << "Inserting " << cedge->name();
               }
               label[i] = 1; 
               break;
@@ -109,6 +112,15 @@ class StreamScheduler {
       event_ids[id] = StreamEventHandlePool::GenNewEventID();
     }
 
+    {
+      //debug stream
+      auto iter = nodes.begin();
+      for (int i = 0; i < nodes.size(); i++, iter++) {
+        VLOG(V_DEBUG) << "Stream[" << label[i] << "]: " << (*iter)->name();
+      }
+      //LOG(FATAL) << "here";
+    }
+
     std::vector<Statement*> reordered_stmts;
     for (int label_id = 1; label_id <= 3; label_id++) {
       for (int id = 0; id < stmts->size(); id++) {
@@ -123,6 +135,16 @@ class StreamScheduler {
         ExprStatement* es = dynamic_cast<ExprStatement*>(reordered_stmts.back());
         es->GetContext()->SetEventRecord(event_ids[label_id-1]);
       }
+    }
+
+    {
+      //debug statement order
+      for (int i = 0; i < nodes.size(); i++) {
+        CHECK(reordered_stmts[i]->type() == Statement::EXPR);
+        ExprStatement* es = dynamic_cast<ExprStatement*>(reordered_stmts[i]);
+        VLOG(V_DEBUG) << "execute[" << i << "]: " << es->debug_info();
+      }
+      //LOG(FATAL) << "here";
     }
 
     for (int i = 0; i < 2; i++) {

@@ -40,9 +40,7 @@ class ExprStatement : public Statement {
   inline void SetOp(OpImpl* op) { op_ = op; }
   inline void SetContext(OpContext* ctxt) { ctxt_ = ctxt; }
   inline OpContext* GetContext() { return ctxt_; }
-  //inline void SetCustomCtxtFunc(std::function<void(OpContext*>) f) {
-    //custom_context_ = std::move(f);
-  //}
+  inline std::string debug_info() { return op_->DebugInfo(0); }
 
   void Run() override;
 
