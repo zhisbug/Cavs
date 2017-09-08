@@ -134,17 +134,18 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
+  Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_STREAMMING);
-  Session sess(OPT_BATCHING+OPT_FUSION);
+  //Session sess(OPT_BATCHING+OPT_FUSION);
   //Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
   //Session sess;
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
-      sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+      //sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+      sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
                          {label,    label_ph[j%label_ph.size()].data()},
                          {word_idx, input_ph[j%input_ph.size()].data()}});
       if (j % 10 == 0)

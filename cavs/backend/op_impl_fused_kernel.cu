@@ -17,7 +17,8 @@ using std::set;
 template <typename T>
 class FusedKernelOpImpl : public OpImpl {
  public:
-  explicit FusedKernelOpImpl(const OpDef& def) : OpImpl(def) {
+  explicit FusedKernelOpImpl(const OpDef& def)
+    : OpImpl(def), stream_(cudaStreamDefault)  {
     const string& kernel_name = GetSingleArg<string>(def, "KernelName"); 
     const string& kernel_src  = GetSingleArg<string>(def, "KernelSource"); 
     wrapper_.Compile(kernel_name, kernel_src);
@@ -27,6 +28,7 @@ class FusedKernelOpImpl : public OpImpl {
 
  private:
   RTC::CudaRTCWrapper wrapper_;
+  cudaStream_t stream_;
 };
 
 template <typename T>
@@ -53,9 +55,13 @@ void FusedKernelOpImpl<T>::Compute(OpContext* context) {
   }
   CHECK(size_conf.size() <= 2);
   const int num_elements = *(size_conf.rbegin());
+  if (!stream_ && context->GetStreamID() != -1) {
+    stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+    VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+  }
   wrapper_.Launch(outputs, inputs, outputs_size, inputs_size, num_elements, 
       BLOCKS_PER_GRID(num_elements), 1, 1,
-      THREADS_PER_BLOCK, 1, 1);
+      THREADS_PER_BLOCK, 1, 1, stream_);
   for (int i = 0; i < context->InputSize(); i++) {
     context->Input(i).DebugNumerical<T>();
   }

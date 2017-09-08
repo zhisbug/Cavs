@@ -83,7 +83,8 @@ class CudaRTCWrapper {
               unsigned int gridDimZ,
               unsigned int blockDimX,
               unsigned int blockDimY,
-              unsigned int blockDimZ) {
+              unsigned int blockDimZ, 
+              cudaStream_t stream) {
     CHECK(module_loaded_);
     CHECK(kernel_);
     std::vector<void*> args;
@@ -94,7 +95,7 @@ class CudaRTCWrapper {
     args.push_back(&num_elements);
     checkCUDADriverError(cuLaunchKernel(kernel_,
           gridDimX, gridDimY, gridDimZ, blockDimX, blockDimY, blockDimZ,
-          0, NULL, args.data(), 0));
+          0, stream, args.data(), 0));
   }
 
  private:
