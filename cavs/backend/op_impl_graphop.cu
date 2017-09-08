@@ -80,6 +80,7 @@ class GraphGatherOp : public OpImpl {
       int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
       BatchedDynamicSelectedAssignZeroKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
               out->mutable_data<T>(), stride, gs->gpu_idx_buf(), stride);
+      checkCudaError(cudaGetLastError());
     }
 
     /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/

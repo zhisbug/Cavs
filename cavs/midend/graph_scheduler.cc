@@ -179,6 +179,7 @@ void BatchGraphScheduler::Initialize() {
       }
     }
     tids_for_gather_init_[0] = ready_to_execute_ids_;
+    tids_for_gather_init_[1].clear();
     execution_tracer_.clear();
     gather_tracer_.clear();
     scatter_tracer_.clear();

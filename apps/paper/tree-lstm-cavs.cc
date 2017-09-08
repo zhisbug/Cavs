@@ -9,7 +9,7 @@
 
 using namespace std;
 
-DEFINE_int32 (batch_size,  20,       "batch");
+DEFINE_int32 (batch_size,  256,       "batch");
 DEFINE_int32 (input_size,  21701,    "input size");
 //DEFINE_int32 (timestep,    20,       "timestep");
 DEFINE_int32 (embedding,   300,      "embedding size");
@@ -210,8 +210,8 @@ int main(int argc, char* argv[]) {
   vector<float> input_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<float> label_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
   vector<int>   graph_data(FLAGS_batch_size*MAX_DEPENDENCY, -1);
-  for (int i = 0; i < 33; i++)
-    sst_reader.next_batch(&graph_data, &input_data, &label_data);
+  //for (int i = 0; i < 33; i++)
+    //sst_reader.next_batch(&graph_data, &input_data, &label_data);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       sst_reader.next_batch(&graph_data, &input_data, &label_data);
