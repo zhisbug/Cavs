@@ -11,8 +11,12 @@ using ::midend::Tensor;
 template <typename T>
 class EmbeddingLookupOp: public OpImpl {
  public:
-  explicit EmbeddingLookupOp(const OpDef& def) : OpImpl(def) {}
+  explicit EmbeddingLookupOp(const OpDef& def)
+    : OpImpl(def), stream_(cudaStreamDefault) {}
   void Compute(OpContext* context) override;
+
+ private:
+  cudaStream_t stream_;
 };
 
 template <typename T>
@@ -52,13 +56,17 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
   /*for (int i = 0; i < input.dims(); i++)*/
     /*CHECK(embedding->dims(i) == input.dims(i));*/
   CHECK(embedding->dims(embedding->dims()-1) == embedding_size);
+  if (!stream_ && context->GetStreamID() != -1) {
+    stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+    VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+  }
 
   int slices = input.count();
   const int MAX_THREADS_IN_BLOCK = 1 << 10;
   int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
                          embedding_size : MAX_THREADS_IN_BLOCK;
   int blocksPerGrid = slices;
-  BatchedCopy<<<blocksPerGrid, threadsPerBlock>>>(
+  BatchedCopy<<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
       embedding->mutable_data<T>(),
       input.data<T>(), embedding_matrix.data<T>(),
       embedding_size);
@@ -71,8 +79,12 @@ void EmbeddingLookupOp<T>::Compute(OpContext* context) {
 template <typename T>
 class EmbeddingLookupGradOp: public OpImpl {
  public:
-  explicit EmbeddingLookupGradOp(const OpDef& def) : OpImpl(def) {}
+  explicit EmbeddingLookupGradOp(const OpDef& def)
+    : OpImpl(def), stream_(cudaStreamDefault) {}
   void Compute(OpContext* context) override;
+
+ private:
+  cudaStream_t stream_;
 };
 
 template <typename T>
@@ -119,6 +131,12 @@ void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
   int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
                          embedding_size : MAX_THREADS_IN_BLOCK;
   int blocksPerGrid = slices;
+
+  if (!stream_ && context->GetStreamID() != -1) {
+    stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+    VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+  }
+
   BatchedSparseUpdate<<<blocksPerGrid, threadsPerBlock>>>(
       dMatrix->mutable_data<T>(),
       input.data<T>(), dY.data<T>(),

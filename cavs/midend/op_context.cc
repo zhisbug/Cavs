@@ -102,6 +102,7 @@ void OpContext::RecordMyEvent() {
   if (stream_id_ > -1 && event_record_id_ > -1) {
     checkCudaError(cudaEventRecord(StreamEventHandlePool::GetCudaEvent(event_record_id_),
                                    StreamEventHandlePool::GetCudaStream(stream_id_))); 
+    LOG(INFO) << "stream: " << stream_id_ << "\tevent: " << event_record_id_;
   }
 }
 

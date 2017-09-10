@@ -22,6 +22,7 @@ class OpImpl {
     else
       return op_def_.name();
   }
+  std::string name() const { return op_def_.name(); }
  protected:
   OpDef op_def_;
 };

@@ -1,9 +1,18 @@
 #ifndef CAVS_BACKEND_FUNCTOR_BATCHED_MEMCPY_CUH_
 #define CAVS_BACKEND_FUNCTOR_BATCHED_MEMCPY_CUH_
 
+#include "cavs/backend/cuda_common.h"
 #include "cavs/util/macros_gpu.h"
 
 namespace backend {
+
+template <typename T>
+__global__ void ContinuousMemcpyKernel(
+    T *out, const T* inp, int n) {
+  CUDA_1D_KERNEL_LOOP(i, n) { 
+    out[i] = inp[i];
+  }
+}
 
 //we assume the GridDim.x = dynamic dimension
 template <typename T>

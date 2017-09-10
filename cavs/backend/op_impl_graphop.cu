@@ -59,6 +59,10 @@ class GraphGatherOp : public OpImpl {
     //but the inode of other tree have to gather
     //so we loose this constraint
     /*CHECK(gids.size() == tensor_ids_for_gather.size() || tensor_ids_for_gather.empty());*/
+    if (!stream_ && context->GetStreamID() != -1) {
+      stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+      VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+    }
 
     if (!tensor_ids_for_gather.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_gather.data(),
@@ -70,7 +74,6 @@ class GraphGatherOp : public OpImpl {
       int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
       BatchedDynamicSelectedInputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
               out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
-      checkCudaError(cudaGetLastError());
     }else {
       /*checkCudaError(cudaMemset(out->mutable_data<T>(), 0, gids.size()*stride*sizeof(T)));*/
       int blocksPerGrid = gs->CurrentRoundTensorIdsForGatherInitialization().size();
@@ -80,37 +83,9 @@ class GraphGatherOp : public OpImpl {
       int threadsPerBlock = (MAX_THREADS_IN_BLOCK > stride)? stride : MAX_THREADS_IN_BLOCK;
       BatchedDynamicSelectedAssignZeroKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
               out->mutable_data<T>(), stride, gs->gpu_idx_buf(), stride);
-      checkCudaError(cudaGetLastError());
     }
+    checkCudaError(cudaGetLastError());
 
-    /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
-      /*int gid = gids[local_id];*/
-      /*if (gs->HasChild(gid)) {*/
-        /*CHECK(gs->ChildIds(gid).size() > child_offset_);*/
-        /*int child_gid = gs->ChildIds(gid)[child_offset_];*/
-        /*VLOG(V_DEBUG) << "Gathering Child_gid:" << child_gid;*/
-
-        /*CHECK(gs->GatherTensorIds(gids, child_offset_).size() > local_id);*/
-        /*int child_tensor_id = gs->GatherTensorIds(gids, child_offset_)[local_id];*/
-        /*VLOG(V_DEBUG) << "internal gather offset: " << child_tensor_id;*/
-        /*//const Tensor& inp = gs->GetMessagePasser(gs->JobIdToInternalTensorId(child_gid));*/
-        /*const Tensor& inp = gs->GetMessagePasser(child_tensor_id);*/
-        /*CHECK(out->count() >= inp.count())*/
-              /*<< "Input count:\t" << inp.count()*/
-              /*<< "\t" << inp.debug_size() << "Bytes\n"*/
-              /*<< "Output count:\t" << out->count() */
-              /*<< "\t" << out->debug_size() << "Bytes";*/
-        /*checkCudaError(cudaMemcpy(out->mutable_data<T>()+local_id*stride,*/
-                                  /*inp.data<T>(),*/
-                                  /*stride*sizeof(T),*/
-                                  /*cudaMemcpyDeviceToDevice));*/
-      /*}else {*/
-        /*VLOG(V_DEBUG) << "[Gathering] No Child_id, Setting Zero";*/
-        /*checkCudaError(cudaMemset(out->mutable_data<T>()+local_id*stride,*/
-                                  /*0,*/
-                                  /*stride*sizeof(T)));*/
-      /*}*/
-    /*}*/
     out->DebugNumerical<T>();
   }
 
@@ -166,6 +141,10 @@ class GraphScatterOp : public OpImpl {
     //but the inode of other tree have to scatter
     //so we loose this constraint
     /*CHECK(gids.size() == tensor_ids_for_scatter.size() || tensor_ids_for_scatter.empty());*/
+    if (!stream_ && context->GetStreamID() != -1) {
+      stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+      VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+    }
     if (!tensor_ids_for_scatter.empty()) {
       checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), tensor_ids_for_scatter.data(),
                      tensor_ids_for_scatter.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
@@ -178,22 +157,6 @@ class GraphScatterOp : public OpImpl {
     }
 
     checkCudaError(cudaGetLastError());
-    /*out->SetOffsetWithId(0);*/
-    /*for (int local_id = 0; local_id < gids.size(); local_id++) {*/
-      /*int gid = gids[local_id];*/
-      /*if (gs->ScatterTensorIds({gid}, child_offset_).size() > 0) {*/
-        /*CHECK(gs->ScatterTensorIds({gid}, child_offset_).size() == 1);*/
-        /*int output_tensor_id = gs->ScatterTensorIds({gid}, child_offset_)[0];*/
-        /*checkCudaError(cudaMemcpy(out->mutable_data<T>() + output_tensor_id*stride,*/
-                                  /*inp.data<T>() + local_id*stride,*/
-                                  /*stride*sizeof(T),*/
-                                  /*cudaMemcpyDeviceToDevice));*/
-        /*VLOG(V_DEBUG) << "internal scatter id: " << output_tensor_id;*/
-      /*}else {*/
-        /*VLOG(V_DEBUG) << "[Scattering] No need to scatter";*/
-      /*}*/
-    /*}*/
-
     out->DebugNumerical<T>();
   }
 
@@ -221,9 +184,17 @@ class GraphPushOp : public OpImpl {
 
     T* out_ptr = out->mutable_data<T>();
     CHECK(!out->IsFullShape());
+
+    if (!stream_ && context->GetStreamID() != -1) {
+      stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+      VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+    }
+    /*LOG(FATAL) << context->GetStreamID();*/
     checkCudaError(cudaMemcpyAsync(out_ptr, inp.data<T>(),
                                    inp.count()*sizeof(T),
                                    cudaMemcpyDeviceToDevice, stream_));
+    /*ContinuousMemcpyKernel<<<BLOCKS_PER_GRID(inp.count()), THREADS_PER_BLOCK, 0, stream_>>>(*/
+        /*out_ptr, inp.data<T>(), inp.count());*/
     gs->SetFuncRet(*out);
 
     inp.DebugNumerical<T>();
@@ -263,6 +234,10 @@ class GraphPullOp : public OpImpl {
     /*VLOG(V_DEBUG) << out->debug_info() << "\t" << out->debug_size();*/
     /*VLOG(V_DEBUG) << inp.debug_info() << "\t" << inp.debug_size();*/
 
+    if (!stream_ && context->GetStreamID() != -1) {
+      stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
+      VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
+    }
     checkCudaError(cudaMemcpyAsync(gs->gpu_idx_buf(), gids.data(),
                    gids.size()*sizeof(int), cudaMemcpyHostToDevice, stream_));
     int blocksPerGrid = gids.size();
@@ -274,15 +249,6 @@ class GraphPullOp : public OpImpl {
             out->mutable_data<T>(), stride, inp.data<T>(), stride, gs->gpu_idx_buf(), stride);
     checkCudaError(cudaGetLastError());
 
-    /*for (int local_id = 0; local_id < job_ids.size(); local_id++) {*/
-      /*int gid = job_ids[local_id];*/
-      /*VLOG(V_DEBUG) << "job_ids[" << local_id << "] = " << gid;*/
-      /*//const T* inp_ptr = inp.data<T>() + out->count()*gs->GetJobId();*/
-      /*checkCudaError(cudaMemcpy(out->mutable_data<T>() + local_id*stride,*/
-                                /*inp.data<T>() + gid*stride,*/
-                                /*stride*sizeof(T),*/
-                                /*cudaMemcpyDeviceToDevice));*/
-    /*}*/
     inp.DebugNumerical<T>();
     out->DebugNumerical<T>();
   }
@@ -335,9 +301,6 @@ class FunctionPopRetOp : public OpImpl {
     //for example, the placeholder may be {2, 4} (batch, time_step)
     //here, the inp shape may be {1, 1} (serial model) or {2, 1} (batch mode)
     /*CHECK(stride == out->count()/out_dyn_dim);*/
-    /*vector<int> tids(out_dyn_dim);*/
-    /*for (int i = 0; i < tids.size(); i++) tids[i] = i;*/
-    /*const vector<int>& gids = gs->InternalTensorIdToJobIds(tids);*/
     const vector<int>& tids2gids= gs->TensorIdsToJobIds();
     for (int i = 0; i < tids2gids.size(); i++) {
       VLOG(V_DEBUG) << "i: " << i << "\tgid: " << tids2gids[i];
@@ -354,16 +317,7 @@ class FunctionPopRetOp : public OpImpl {
     BatchedDynamicSelectedOutputSliceCopyKernel<T><<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
             out->mutable_data<T>(), stride, gs->gpu_idx_buf(), inp.data<T>(), stride, stride);
     checkCudaError(cudaGetLastError());
-    /*for (int tid = 0; tid < out->dims(0); tid++) {*/
-      /*int gid = gs->InternalTensorIdToJobId(tid);*/
-      /*VLOG(V_DEBUG) << "tid: " << tid;*/
-      /*VLOG(V_DEBUG) << "gid: " << gid;*/
-      /*VLOG(V_DEBUG) << "stride: " << stride;*/
-      /*checkCudaError(cudaMemcpy(out->mutable_data<T>()+gid*stride,*/
-                                /*inp.data<T>()+tid*stride,*/
-                                /*stride*sizeof(T),*/
-                                /*cudaMemcpyDeviceToDevice));*/
-    /*}*/
+
     inp.DebugNumerical<T>();
     out->DebugNumerical<T>();
   }
