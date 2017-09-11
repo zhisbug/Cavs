@@ -28,9 +28,6 @@ void ExprStatement::Run() {
   //for some gradient tensor, the original value must be set to 0 
   VLOG(V_TIMING) << "Setting Zero--------------------------";
   ctxt_->SetZero();
-  //VLOG(V_TIMING) << "Customized context--------------------------";
-  //if (custom_context_ != nullptr)
-    //custom_context_(ctxt_);
   VLOG(V_TIMING) << "Waiting for inputs--------------------";
   ctxt_->WaitForEvent();
   VLOG(V_TIMING) << "Computing-----------------------------";

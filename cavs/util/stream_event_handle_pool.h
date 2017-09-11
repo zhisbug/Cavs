@@ -40,7 +40,7 @@ class StreamEventHandlePool {
     }
   }
   static cudaStream_t GetCudaStream(int sid) {
-    CHECK(sid < Get()->stream_pool_.size());
+    CHECK(sid < Get()->stream_pool_.size()) << sid;
     return Get()->stream_pool_[sid];
     //if (sid < Get()->stream_pool_.size())
       //return Get()->stream_pool_[sid];
