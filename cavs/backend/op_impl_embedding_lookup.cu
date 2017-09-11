@@ -119,25 +119,25 @@ void EmbeddingLookupGradOp<T>::Compute(OpContext* context) {
   //for input, we add a dimension(1)
   //for output, we modify the 0th dimension to batch_size
   CHECK(dY.dims() == input.dims()+1 ||
-        (dY.dims() == input.dims() && input.IsDynamicShape()));
+       (dY.dims() == input.dims() && input.IsDynamicShape()));
   /*for (int i = 0; i < input.dims(); i++)*/
     /*CHECK(dY.dims(i) == input.dims(i));*/
   CHECK(dY.dims(dY.dims()-1) == embedding_size);
-
-  checkCudaError(cudaMemset(dMatrix->mutable_data<T>(), 0, 
-                            dMatrix->count()*sizeof(T)));
-  int slices = input.count();
-  const int MAX_THREADS_IN_BLOCK = 1 << 10;
-  int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
-                         embedding_size : MAX_THREADS_IN_BLOCK;
-  int blocksPerGrid = slices;
 
   if (!stream_ && context->GetStreamID() != -1) {
     stream_ = StreamEventHandlePool::GetCudaStream(context->GetStreamID());
     VLOG(V_DEBUG) << "[Unary] Assign new stream with ID " << context->GetStreamID();
   }
 
-  BatchedSparseUpdate<<<blocksPerGrid, threadsPerBlock>>>(
+  /*checkCudaError(cudaMemsetAsync(dMatrix->mutable_data<T>(), 0, */
+                                 /*dMatrix->count()*sizeof(T), stream_));*/
+  int slices = input.count();
+  const int MAX_THREADS_IN_BLOCK = 1 << 10;
+  int threadsPerBlock = (MAX_THREADS_IN_BLOCK > embedding_size) ?
+                         embedding_size : MAX_THREADS_IN_BLOCK;
+  int blocksPerGrid = slices;
+
+  BatchedSparseUpdate<<<blocksPerGrid, threadsPerBlock, 0, stream_>>>(
       dMatrix->mutable_data<T>(),
       input.data<T>(), dY.data<T>(),
       embedding_size);

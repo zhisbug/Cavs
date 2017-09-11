@@ -21,7 +21,7 @@ class GPUAllocator : public Allocator {
     checkCudaError(cudaFree(buf));
   }
   void InitWithZero(void* buf, size_t nbytes) override {
-    checkCudaError(cudaMemset(buf, 0, nbytes));
+    checkCudaError(cudaMemsetAsync(buf, 0, nbytes, cudaStreamDefault));
   }
 };
 

@@ -63,7 +63,7 @@ class SeqModel : public GraphSupport {
     Sym child_h/*slice_16*/, child_c/*slice_15*/;
     tie(child_h, child_c) = child.Split2();
     Sym x       = Pull(0, {1}); //pull_17
-    x           = x.EmbeddingLookup(embedding.Mirror()/*mirror_18*/); //embeddinglookup_19
+    x           = x.EmbeddingLookup(embedding/*.Mirror(<])[>mirror_18*/); //embeddinglookup_19
 
     Sym tmp = Sym::MatMul(x, U.Mirror()/*mirror_24*/.Reshape({FLAGS_hidden, 4*FLAGS_hidden})/*reshape_25*/)/*matmul_26*/
             + Sym::MatMul(child_h.Expand_dims(0)/*expand_dims_22*/,
@@ -134,18 +134,18 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
+  //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_FUSION);
-  //Session sess(OPT_BATCHING);
+  Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
   //Session sess;
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
-      //sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
-      sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+      sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
+      //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
                          {label,    label_ph[j%label_ph.size()].data()},
                          {word_idx, input_ph[j%input_ph.size()].data()}});
       if (j % 10 == 0)
