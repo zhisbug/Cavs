@@ -22,8 +22,8 @@ class SessionBase {
     LOG(FATAL) << "Base Session";
   }
 
-  enum SessionType { BASE=0, SIMPLE=1, MPI=2, GRAPH=4 };
-  virtual int session_type() const { return BASE; }
+  enum SessionType { SIMPLE=1, MPI=2, GRAPH=4 };
+  virtual int session_type() const {}
   int opt_type() const { return opt_; }
   //void AddType(SessionType t) { type_ += (int)t; }
 
