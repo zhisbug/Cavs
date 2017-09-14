@@ -134,13 +134,13 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
+  //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_FUSION);
   //Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
-  //Session sess;
+  Session sess;
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {

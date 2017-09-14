@@ -135,7 +135,6 @@ int main(int argc, char* argv[]) {
   Sym perplexity = loss.Reduce_mean();
 
   Session sess;
-  LOG(INFO) << "here";
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {

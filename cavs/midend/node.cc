@@ -97,7 +97,7 @@ Statement* SingleNode::Compile(
       VLOG(V_DEBUG) << mpi_def.DebugString();
       op = CreateOp(mpi_def);
     }else {
-      LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
+      LOG(INFO) << "Compiling SingleNode:\t" << op_def().DebugString();
       VLOG(V_DEBUG) << op_def().DebugString();
       op = CreateOp(op_def());
     }
@@ -227,7 +227,7 @@ Statement* GraphGradNode::Compile(
 
     vector<Statement*> batch_weight_update;
     std::list<Node*> finalize_node;
-    if ((sess->opt_type() & OPT_BATCHING) && sess->session_type() == SessionBase::GRAPH) {
+    if ((sess->opt_type() & OPT_BATCHING)) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for Batching in ScopedNode";
       BatchingWeightUpdater updater(&(sn->nodes_), &finalize_node);
       VLOG(V_DEBUG) << "Modifing the critical path done for Batching in ScopedNode";
@@ -235,7 +235,7 @@ Statement* GraphGradNode::Compile(
 
     Statement* node_grad_stmt = sn->Compile(gsess_);
 
-    if ((sess->opt_type() & OPT_BATCHING) && sess->session_type() == SessionBase::GRAPH) {
+    if (sess->opt_type() & OPT_BATCHING) {
       for (Node* fn : finalize_node) {
         Statement* stmt = fn->Compile(gsess_);
         CHECK(stmt) << fn->debug_info();
