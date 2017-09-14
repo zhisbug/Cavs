@@ -142,7 +142,6 @@ OpContext* GraphSession::GetContext(const Node* node) {
           }
         }
         InsertTensor(out);
-
       }else {
         if (node->name() == "Push"   || node->name() == "Pull" ||
             node->name() == "Gather" || node->name() == "Scatter") {
@@ -190,26 +189,15 @@ OpContext* GraphSession::GetContext(const Node* node) {
           InsertTensor(out);
         }
         CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
-        if (output->isGradient())
-          const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
       }
       CHECK_NOTNULL(t = GetTensor(TensorNameInFunctionContext(output)));
+      if (output->isGradient() && !can_share_memory)
+        const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
     }else {
       dynamic_shape = false;
     }
 
-    //const vector<string>& zeros =
-      //GetListArg<string>(dynamic_cast<const SingleNode*>(node)->op_def(), "ZeroEnforced");
-    //if (node->IsStatefulOp()) {
-      //CHECK(node->output_size() == 1);
-      //const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
-    //}else if (std::find(zeros.begin(), zeros.end(), output->name()) != zeros.end()) {
-      ////currently, we only apply the feature to fusedkernel
-      //CHECK(node->name().substr(0, 11) == "FusedKernel");
-      //const_cast<Tensor*>(t)->SetZeroInitEnforced(); 
-    //}
     if (dynamic_shape) const_cast<Tensor*>(t)->SetAsDynamic();
-
     VLOG(V_DEBUG) << "[In Graph Session]: the addr of " << TensorNameInFunctionContext(output)
                   << " is " << t;
     ctxt->AppendOutput(const_cast<Tensor*>(t));

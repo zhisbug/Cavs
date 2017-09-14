@@ -245,21 +245,6 @@ void Tensor::Reshape(const Tensor& t) {
   shape_ = t.shape_;
 }
 
-//the shape may be less than the real buffer size
-//void Tensor::Resize(const TensorShapeDef& shape) {
-  //CHECK_NOTNULL(params_.get());
-  //int new_counts = 1;
-  //for (auto& dim : shape.dim())
-    //new_counts *= dim;
-  //if (new_counts > shape_.n_elements()) {
-    //size_t new_size = new_counts;
-    //CASES(params_->type, new_size *= sizeof(T));
-    //CHECK_NOTNULL(buf_.get());
-    //buf_->Resize(new_size);
-  //}
-  //shape_ = TensorShape(shape);
-//}
-
 void Tensor::Resize(const TensorShape& shape) {
   CHECK_NOTNULL(params_.get());
   if (shape.n_elements() > count()) {
@@ -297,6 +282,7 @@ bool Tensor::ZeroInitEnforced() const {
 
 bool Tensor::InitWithZero(int iteration) {
   CHECK_NOTNULL(params_.get());
+  CHECK(ZeroInitEnforced());
   size_t visable_size = count();
   CASES(params_->type, visable_size *= sizeof(T));
   if (params_->iteration == iteration-1) {
