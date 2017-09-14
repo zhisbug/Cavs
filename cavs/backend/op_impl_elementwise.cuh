@@ -201,6 +201,7 @@ struct CUDABinaryStridedFunctor {
       const U* inp0, size_t stride_inp0,
       const U* inp1, size_t stride_inp1,
       int num_blocks, int workload_of_one_block, cudaStream_t stream) {
+    CHECK(num_blocks > 0);
     BinaryStridedKernel<OP, T, U><<<num_blocks, THREADS_PER_BLOCK, 0, stream>>>(
         out, stride_out, inp0, stride_inp0, inp1, stride_inp1, workload_of_one_block);
     checkCudaError(cudaGetLastError());
@@ -216,7 +217,7 @@ struct CUDABinaryStridedFunctor {
 #define CudaAccumulateBinaryOpInstance(math, dtype)    \
     UnaryOp<CUDAUnaryStatefulFunctor<math<dtype>, dtype>, dtype>
 #define CudaPartialAccumulateBinaryOpInstance(math, dtype)    \
-    PartialAccumulateBinaryOp<CUDABinaryStridedFunctor<math<dtype>, dtype>, dtype>
+    PartialAccumulateBinaryOp<CUDABinaryStridedFunctor<math<dtype>, dtype>, CUDABinaryFunctor<math<dtype>, dtype>, dtype>
 
 } //namespace backend
 

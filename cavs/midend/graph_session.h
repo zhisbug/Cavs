@@ -32,6 +32,7 @@ class GraphSession : public SessionBase {
   }
   std::string TensorNameInFunctionContext(const Edge* e) const;
   GraphSchedulerBase* graph_scheduler() { return gscheduler_; }
+  int session_type() const { return SessionBase::GRAPH; }
 
  private:
   SessionBase* global_sess_;

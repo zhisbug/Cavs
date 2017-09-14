@@ -226,7 +226,11 @@ class StreamScheduler {
           for (Edge* edge : (*iter)->input()) {
             if (on_gather_to_path_edge.find(edge) != on_gather_to_path_edge.end()) {
               for (Edge* pedge : (*iter)->output()) {
-                CHECK(on_gather_to_path_edge.find(pedge) == on_gather_to_path_edge.end());
+                VLOG(V_DEBUG) << pedge->name() << edge->name();
+                VLOG(V_DEBUG) << (*iter)->debug_info();
+                //we loose this constraint because of the backward of split function
+                //several operators output to the same tensor
+                //CHECK(on_gather_to_path_edge.find(pedge) == on_gather_to_path_edge.end());
                 on_gather_to_path_edge.insert(pedge); 
               }
               CHECK(label[i] == 1 || label[i] == 3);

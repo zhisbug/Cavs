@@ -63,7 +63,7 @@ class BinaryOp : public OpImpl {
   cudaStream_t stream_;
 };
 
-template <typename FUNCTOR, typename T>
+template <typename FUNCTORDYN, typename FUNCTOR, typename T>
 class PartialAccumulateBinaryOp : public OpImpl {
  public:
   explicit PartialAccumulateBinaryOp(const OpDef& def) : OpImpl(def),
@@ -116,7 +116,7 @@ class PartialAccumulateBinaryOp : public OpImpl {
                          //out->mutable_data<T>() + out_offset, inp_stride,
                          //inp.data<T>() + i*inp_stride, inp_stride, stream_);
       //}
-      FUNCTOR::Compute(out->mutable_data<T>() + inp_offset, out_stride, 
+      FUNCTORDYN::Compute(out->mutable_data<T>() + inp_offset, out_stride, 
                        out->data<T>() + inp_offset, out_stride,
                        inp.data<T>(), inp_stride,
                        dyn_dim, inp_stride, stream_);
@@ -127,19 +127,18 @@ class PartialAccumulateBinaryOp : public OpImpl {
       //CHECK(out->dims(0) == 1);
       //CHECK(inp.dims(0) == 1);
       if (split_ > 0) {
-        //it means the dynamic slicing
         CHECK(out->count() % split_ == 0);
         stride_ = out->count() / split_;
         offset_ = stride_ * index_;
       }
       CHECK(inp.count() == stride_);
-      //FUNCTOR::Compute(out->mutable_data<T>() + offset_, stride_,
-                       //out->mutable_data<T>() + offset_, stride_,
-                       //inp.data<T>(), inp.count(), stream_);
-      FUNCTOR::Compute(out->mutable_data<T>() + offset_, out->count(), 
-                       out->data<T>() + offset_, out->count(),
-                       inp.data<T>(), inp.count(),
-                       1, inp.count(), stream_);
+      FUNCTOR::Compute(out->mutable_data<T>() + offset_, stride_,
+                       out->data<T>() + offset_, stride_,
+                       inp.data<T>(), inp.count(), stream_);
+      //FUNCTOR::Compute(out->mutable_data<T>() + offset_, out->count(), 
+                       //out->data<T>() + offset_, out->count(),
+                       //inp.data<T>(), inp.count(),
+                       //1, inp.count(), stream_);
     }
     inp.DebugNumerical<T>();
     out->DebugNumerical<T>();

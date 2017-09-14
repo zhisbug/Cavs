@@ -97,7 +97,7 @@ Statement* SingleNode::Compile(
       VLOG(V_DEBUG) << mpi_def.DebugString();
       op = CreateOp(mpi_def);
     }else {
-      LOG(INFO) << "Compiling SingleNode:\t" << op_def().name();
+      LOG(INFO) << "Compiling SingleNode:\t" << op_def().DebugString();
       VLOG(V_DEBUG) << op_def().DebugString();
       op = CreateOp(op_def());
     }
@@ -235,7 +235,7 @@ Statement* GraphGradNode::Compile(
 
     Statement* node_grad_stmt = sn->Compile(gsess_);
 
-    if ((sess->opt_type() & OPT_BATCHING)) {
+    if (sess->opt_type() & OPT_BATCHING) {
       for (Node* fn : finalize_node) {
         Statement* stmt = fn->Compile(gsess_);
         CHECK(stmt) << fn->debug_info();
@@ -286,7 +286,7 @@ Statement* ScopedNode::Compile(
     VLOG(V_DEBUG) << "It contains a scope "    << contained_->scoped_name();
     BasicBlock* bb = new BasicBlock(iter_);
 
-    if ((sess->opt_type() & OPT_FUSION)) {
+    if ((sess->opt_type() & OPT_FUSION) && sess->session_type() == SessionBase::GRAPH) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for fusion in ScopedNode";
       RTC::CodeGenerator generator(&nodes_);
       VLOG(V_DEBUG) << "Modifing the critical path done for fusion in ScopedNode";
@@ -300,7 +300,7 @@ Statement* ScopedNode::Compile(
       bb->AppendStmt(stmt);
     }
 
-    if ((sess->opt_type() & OPT_STREAMMING)) {
+    if ((sess->opt_type() & OPT_STREAMMING) && sess->session_type() == SessionBase::GRAPH) {
       VLOG(V_DEBUG) << "Begin modifing the critical path for streamming in ScopedNode";
       //if (dependency.empty()) {
         //StreamScheduler::DependencyExtractor(&dependency, nodes_);
