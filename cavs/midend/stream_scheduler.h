@@ -206,10 +206,6 @@ class StreamScheduler {
           VLOG(V_DEBUG) << "independent egde: " << edge->name();
       }
 
-      //auto iter = nodes.begin();
-      //for (int id = 0; id < nodes.size(); id++, iter++) {
-        //CHECK(stmts->at(id)->type() == Statement::EXPR);
-        
       std::set<Edge*> on_gather_to_path_edge;
       iter = nodes.begin();
       for (int i = 0; i < nodes.size(); i++, iter++) {
@@ -222,7 +218,7 @@ class StreamScheduler {
             on_gather_to_path_edge.insert(edge);
           }
         }else {
-          bool on_path = false;
+          //bool on_path = false;
           for (Edge* edge : (*iter)->input()) {
             if (on_gather_to_path_edge.find(edge) != on_gather_to_path_edge.end()) {
               for (Edge* pedge : (*iter)->output()) {
@@ -235,21 +231,54 @@ class StreamScheduler {
               }
               CHECK(label[i] == 1 || label[i] == 3);
               if (label[i] == 1)  label[i] = 2;
-              on_path = true;
+              //on_path = true;
               break;
             }
           }
+        }
+      }//for nodes
 
-          //the first node which depends on a node in stream 1 is the anchor of stream 1 and 2
-          if (on_path && anchor[0] == -1) {
-            for (Edge* edge : (*iter)->input()) {
-              if (on_gather_to_path_edge.find(edge) == on_gather_to_path_edge.end() &&
-                  independent_edges.find(edge) == independent_edges.end()) {
-                VLOG(V_DEBUG) << edge->name() << (*iter)->debug_info();
-                anchor[0] = i; 
+      std::unordered_map<Node*, int> node2idx;
+      iter = nodes.begin();
+      for (int i = 0; i < nodes.size(); i++, iter++) {
+        node2idx[*iter] = i;
+      }
+
+      iter = nodes.begin();
+      for (int i = 0; i < nodes.size(); i++, iter++) {
+        if (label[i] == 2 && anchor[0] == -1) {
+          bool has_not_on_path_edge = false;
+          bool edge_has_not_on_path_write = false;
+          for (Edge* edge : (*iter)->input()) {
+            if (edge->scope() == (*iter)->scope()) {
+              has_not_on_path_edge = (on_gather_to_path_edge.find(edge) == on_gather_to_path_edge.end())
+                                     && (independent_edges.find(edge) == independent_edges.end());
+              if (has_not_on_path_edge)
                 break;
+            }
+          }
+
+          for (Edge* edge : (*iter)->output()) {
+            if (edge->scope() == (*iter)->scope()) {
+              for (Node* src_node : edge->src(true)) {
+                if (node2idx.find(src_node) != node2idx.end()) {
+                  int idx = node2idx.at(src_node);
+                  if (label[idx] == 1) {
+                    edge_has_not_on_path_write = true;
+                    break;
+                  }
+                }
               }
             }
+            if (edge_has_not_on_path_write)
+              break;
+          }
+            
+          VLOG(V_DEBUG) << i << "\t" << (*iter)->name()
+                        << has_not_on_path_edge << "\t" << edge_has_not_on_path_write;
+          if (has_not_on_path_edge || edge_has_not_on_path_write) {
+            anchor[0] = i; 
+            break;
           }
         }
       }
@@ -300,12 +329,12 @@ class StreamScheduler {
     }
 
     for (int i = 0; i < 2; i++) {
+      CHECK(anchor[i] != -1) << i;
       ExprStatement* anchor_stmt = dynamic_cast<ExprStatement*>(stmts->at(anchor[i]));
       anchor_stmt->GetContext()->SetWaitForEventId(event_ids[i]);
-        VLOG(V_DEBUG) << "stream( " << anchor_stmt->debug_info()
-                      << ") wait for event: [" << event_ids[i] << "]";
+      VLOG(V_DEBUG) << "stream( " << anchor_stmt->debug_info()
+                    << ") wait for event: [" << event_ids[i] << "]";
     }
-    //LOG(FATAL) << "here";
     CHECK(stmts->size() == reordered_stmts.size());
     *stmts = std::move(reordered_stmts);
   }
