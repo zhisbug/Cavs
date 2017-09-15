@@ -1,4 +1,5 @@
 #include "cavs/midend/statement.h"
+#include "cavs/util/timing.h"
 
 namespace midend {
 
@@ -47,8 +48,9 @@ void GraphStatement::Run() {
   if (push_arg_stmt_)
     push_arg_stmt_->Run();
 
-  checkCudaError(cudaDeviceSynchronize());
+  //checkCudaError(cudaDeviceSynchronize());
   //LOG(INFO) << "Loading graph...";
+  Timing::TimingBegin("GraphParsing");
   int output_length = gscheduler_->LoadGraph(global_ctxt_->Input(0));
   //LOG(INFO) << "Load graph done...";
   CHECK(output_length > 0);
@@ -58,9 +60,12 @@ void GraphStatement::Run() {
   //which can not happen
   //LOG(INFO) << "Initialzing 1st round"; 
   gscheduler_->Initialize();
-  checkCudaError(cudaDeviceSynchronize());
+  //checkCudaError(cudaDeviceSynchronize());
   //LOG(INFO) << "Initialzing 1st round done";
+  Timing::TimingEnd("GraphParsing");
   int round = 0;
+
+  Timing::TimingBegin("RNNForward");
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     VLOG(V_DEBUG) << "round: " << round++
@@ -76,6 +81,7 @@ void GraphStatement::Run() {
   if (pop_ret_stmt_)
     pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutput done";
+  Timing::TimingEnd("RNNForward");
 }
 
 void GraphGradStatement::Run() {
@@ -90,6 +96,8 @@ void GraphGradStatement::Run() {
   //global_ctxt_->SetDynDim(-1);
   gscheduler_->Initialize();
   int round = 0;
+
+  Timing::TimingBegin("RNNBackward");
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];
     VLOG(V_DEBUG) << "round: " << round++
@@ -109,6 +117,7 @@ void GraphGradStatement::Run() {
   if (pop_ret_stmt_)
     pop_ret_stmt_->Run();
   VLOG(V_DEBUG) << "GraphOutputGrad done";
+  Timing::TimingEnd("RNNBackward");
 }
 
 } //namespace midend

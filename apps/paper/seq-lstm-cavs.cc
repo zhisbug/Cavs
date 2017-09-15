@@ -2,6 +2,7 @@
 #include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
 #include "cavs/proto/opt.pb.h"
+#include "cavs/util/timing.h"
 
 #include <iostream>
 #include <fstream>
@@ -135,22 +136,34 @@ int main(int argc, char* argv[]) {
   Sym perplexity = loss.Reduce_mean();
 
   //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
-  Session sess(OPT_BATCHING+OPT_STREAMMING);
+  //Session sess(OPT_BATCHING+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_FUSION);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
-  //Session sess(OPT_BATCHING);
+  Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
   //Session sess(OPT_STREAMMING);
   //Session sess;
   int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
+      if (j % 10 == 0) {
+        Timing::TimingBegin("Overall");
+      }
       sess.Run({train}, {{graph,    graph_ph[j%graph_ph.size()].data()},
       //sess.Run({perplexity}, {{graph,    graph_ph[j%graph_ph.size()].data()},
                          {label,    label_ph[j%label_ph.size()].data()},
                          {word_idx, input_ph[j%input_ph.size()].data()}});
-      if (j % 10 == 0)
-        LOG(INFO) << "Traing Epoch:\t" << i << "\tIteration:\t" << j;
+      if (j % 10 == 9) {
+        Timing::TimingEnd("Overall");
+        LOG(INFO) << "Iteration [" << j-9 << "-" << j << "]: Overall(ms): " << Timing::TimeInMs("Overall");
+        LOG(INFO) << "Iteration [" << j-9 << "-" << j << "]: GraphParsing(ms): " << Timing::TimeInMs("GraphParsing");
+        LOG(INFO) << "Iteration [" << j-9 << "-" << j << "]: RNNForward(ms): " << Timing::TimeInMs("RNNForward");
+        LOG(INFO) << "Iteration [" << j-9 << "-" << j << "]: RNNBackward(ms): " << Timing::TimeInMs("RNNBackward");
+        Timing::Reset("Overall");
+        Timing::Reset("GraphParsing");
+        Timing::Reset("RNNForward");
+        Timing::Reset("RNNBackward");
+      }
     }
   }
 
