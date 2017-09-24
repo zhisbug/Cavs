@@ -35,6 +35,7 @@ void load(vector<vector<float>>* input_ph, vector<vector<float>>* label_ph, vect
     vector<float> input_line(MAX_LENGTH*FLAGS_batch, -1);
     vector<float> label_line(MAX_LENGTH*FLAGS_batch, -1);
     vector<int>   graph_line(MAX_LENGTH*FLAGS_batch, -1);
+    int outer_offset = 0;
     for (int sample_id = 0; sample_id < FLAGS_batch; sample_id++) {
       if (!getline(file, s)) {
         end = true;
@@ -44,13 +45,14 @@ void load(vector<vector<float>>* input_ph, vector<vector<float>>* label_ph, vect
       float idx = 0;
       int current_offset = 0;
       while (ss >> idx) {
-        input_line[current_offset+sample_id*MAX_LENGTH] = idx;
+        input_line[current_offset + outer_offset] = idx;
         current_offset++;
       }
-      memcpy(label_line.data()+sample_id*MAX_LENGTH, input_line.data()+sample_id*MAX_LENGTH+1, (MAX_LENGTH-1)*sizeof(float));
+      memcpy(label_line.data()+outer_offset, input_line.data()+outer_offset+1, (current_offset-1)*sizeof(float));
       for (int i = 1; i < current_offset; i++) {
         graph_line[i-1+sample_id*MAX_LENGTH] = i;
       }
+      outer_offset += current_offset;
     }
 
     if (end) {

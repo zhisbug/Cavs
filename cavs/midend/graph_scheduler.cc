@@ -44,11 +44,11 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
     for (int j = 0; j < curr_seq_length-1; j++) {
       __forward_parents_ids_[toGlobalId(i, j)].resize(1);
       __forward_parents_ids_[toGlobalId(i, j)][0] = toGlobalId(i, *(start+j));
-      __forward_children_ids_[toGlobalId(i, j)].clear();
+      //__forward_children_ids_[toGlobalId(i, j)].clear();
       VLOG(V_DEBUG) << "parents[" << i << "][" << j << "](" << toGlobalId(i, j)
                     << ") = " << __forward_parents_ids_[toGlobalId(i, j)][0];
     }
-    __forward_children_ids_[toGlobalId(i, curr_seq_length-1)].clear();
+    //__forward_children_ids_[toGlobalId(i, curr_seq_length-1)].clear();
     for (int j = 0; j < curr_seq_length; j++) {
       if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
         int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
