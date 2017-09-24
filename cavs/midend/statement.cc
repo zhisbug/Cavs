@@ -92,11 +92,13 @@ void GraphGradStatement::Run() {
   if (push_arg_stmt_)
     push_arg_stmt_->Run();
 
+  VLOG(V_DEBUG) << "here123";
   int input_length = gscheduler_->ReverseGraph();
   //global_ctxt_->SetDynDim(-1);
   gscheduler_->Initialize();
   int round = 0;
 
+  VLOG(V_DEBUG) << "here123";
   Timing::TimingBegin("RNNBackward");
   while (!gscheduler_->Terminate()) {
     //LOG(INFO) << "doing job_id: " << gscheduler_->GetJobId()[0];

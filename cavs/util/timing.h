@@ -13,7 +13,7 @@ class Timing {
     if (Get()->status_.find(name) == Get()->status_.end())
       Get()->status_[name] = true;
     else {
-      CHECK(!Get()->status_[name]);
+      CHECK(!Get()->status_[name]) << name;
       Get()->status_[name] = true;
     }
 

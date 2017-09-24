@@ -2,6 +2,7 @@
 #include "cavs/frontend/cxx/graphsupport.h"
 #include "cavs/frontend/cxx/session.h"
 #include "cavs/proto/opt.pb.h"
+#include "cavs/util/timing.h"
 
 #include <iostream>
 #include <fstream>
@@ -102,10 +103,22 @@ int main(int argc, char* argv[]) {
 
   binaryTree(&graph_data);
   for (int j = 0; j < FLAGS_iters; j++) {
+    if (j % 50 == 0) {
+      Timing::TimingBegin("Overall");
+    }
     //sess.Run({train}, {{graph, graph_data.data()}});
     sess.Run({loss}, {{graph, graph_data.data()}});
-    //if (j % 10 == 0)
-    LOG(INFO) << "\tIteration:\t" << j;
+    if (j % 50 == 49) {
+      Timing::TimingEnd("Overall");
+      LOG(INFO) << "Iteration [" << j-49 << "-" << j << "]: Overall(ms): " << Timing::TimeInMs("Overall")/50.f;
+      LOG(INFO) << "Iteration [" << j-49 << "-" << j << "]: GraphParsing(ms): " << Timing::TimeInMs("GraphParsing")/50.f;
+      LOG(INFO) << "Iteration [" << j-49 << "-" << j << "]: RNNForward(ms): " << Timing::TimeInMs("RNNForward")/50.f;
+      //LOG(INFO) << "Iteration [" << j-49 << "-" << j << "]: RNNBackward(ms): " << Timing::TimeInMs("RNNBackward")/50.f;
+      Timing::Reset("Overall");
+      Timing::Reset("GraphParsing");
+      Timing::Reset("RNNForward");
+      //Timing::Reset("RNNBackward");
+    }
   }
   
 

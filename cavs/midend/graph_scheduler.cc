@@ -24,15 +24,21 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
   }else {
     CHECK(batch_size_ == graph_struct.dims(0)); 
     CHECK(max_seq_length_ == graph_struct.dims(1)); 
+    for (int i = 0; i < batch_size_*max_seq_length_; i++) {
+      __forward_parents_ids_[i].clear();
+      __forward_children_ids_[i].clear();
+    }
   }
 
   total_length_ = 0;
   int prev_seq_length = 0;
   for (int i = 0; i < batch_size_; i++) {
     const int *start = graph_struct.data<int>() + i*max_seq_length_;
+    for (int ix = 0; ix < max_seq_length_; ix++)
+      VLOG(V_DEBUG) << *(start+ix);
     int curr_seq_length = std::find(start, start+max_seq_length_, -1) + 1 - start;
     sample_offset_in_gid_[i] = prev_seq_length + ((i > 0) ? sample_offset_in_gid_[i-1] : 0);
-    CHECK(curr_seq_length <= max_seq_length_);
+    CHECK(curr_seq_length <= max_seq_length_) << curr_seq_length << "\t" << max_seq_length_;
     VLOG(V_DEBUG) << "sequence_lengh = " << curr_seq_length;
     total_length_ += curr_seq_length;
     for (int j = 0; j < curr_seq_length-1; j++) {
@@ -47,8 +53,8 @@ int GraphSchedulerBase::LoadGraph(const Tensor& graph_struct) {
       if (!__forward_parents_ids_[toGlobalId(i, j)].empty()) {
         int parent = __forward_parents_ids_[toGlobalId(i, j)][0];
         __forward_children_ids_[parent].push_back(toGlobalId(i, j));
-        VLOG(V_DEBUG) << "children: " << i << "\t" << j << "\t" << parent
-                      << "\t" << __forward_children_ids_[parent].back();
+        VLOG(V_DEBUG) << "children[ " << i << "][" << j << "](" << parent
+                      << ") = " << __forward_children_ids_[parent].back();
       }
     }
     prev_seq_length = curr_seq_length;
@@ -106,6 +112,8 @@ void SerialGraphScheduler::InitializeSample(int sid) {
                       - sample_offset_in_gid_[sid];
   for (int i = 0; i < sample_length; i++) {
     int gid = toGlobalId(sid, i);
+    VLOG(V_DEBUG) << "Child?[" << gid << "]\t" << (*children_)[gid].empty();
+    VLOG(V_DEBUG) << "Parent?[" << gid << "]\t" << (*parents_)[gid].empty();
     if ((*children_)[gid].empty() && !(*parents_)[gid].empty()) {
       pending_list_.push_back(gid);
       VLOG(V_DEBUG) << "Activating job_id: " << gid;

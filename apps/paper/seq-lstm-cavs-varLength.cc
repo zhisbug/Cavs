@@ -12,32 +12,55 @@ using namespace std;
 
 DEFINE_int32 (batch,       20,       "batch");
 DEFINE_int32 (input_size,  10000,    "input size");
-DEFINE_int32 (timestep,    20,       "timestep");
+//DEFINE_int32 (timestep,    20,       "timestep");
 DEFINE_int32 (hidden,      100,      "hidden size");
 DEFINE_int32 (epoch,       1,        "epochs");
-DEFINE_int32 (iters,       99999,    "iterations");
+DEFINE_int32 (iters,       99,    "iterations");
 DEFINE_double(init_scale,  0.1f,     "init random scale of variables");
 DEFINE_double(lr,          1.f,      "learning rate");
 DEFINE_string(file_docs,
-    "/users/shizhenx/projects/Cavs/apps/lstm/data/compressed.txt",
+    "/users/shizhenx/projects/Cavs/apps/lstm/data/train_to_idx.txt",
     "ptb_file");
 
-void load(float** input_data, float** target, size_t* len) {
-  vector<float> inputs;
-  fstream file(FLAGS_file_docs);
-  int id;
-  int lines = 0; 
-  while (file >> id && ++lines) {
-    inputs.push_back(id);
+const int MAX_LENGTH = 83;
+
+void load(vector<vector<float>>* input_ph, vector<vector<float>>* label_ph, vector<vector<int>>* graph_ph) {
+  ifstream file(FLAGS_file_docs);
+  string s;
+  CHECK(input_ph->empty());
+  CHECK(label_ph->empty());
+  CHECK(graph_ph->empty());
+  bool end = false;
+  while (!end) {
+    vector<float> input_line(MAX_LENGTH*FLAGS_batch, -1);
+    vector<float> label_line(MAX_LENGTH*FLAGS_batch, -1);
+    vector<int>   graph_line(MAX_LENGTH*FLAGS_batch, -1);
+    for (int sample_id = 0; sample_id < FLAGS_batch; sample_id++) {
+      if (!getline(file, s)) {
+        end = true;
+        break; 
+      }
+      stringstream ss(s);
+      float idx = 0;
+      int current_offset = 0;
+      while (ss >> idx) {
+        input_line[current_offset+sample_id*MAX_LENGTH] = idx;
+        current_offset++;
+      }
+      memcpy(label_line.data()+sample_id*MAX_LENGTH, input_line.data()+sample_id*MAX_LENGTH+1, (MAX_LENGTH-1)*sizeof(float));
+      for (int i = 1; i < current_offset; i++) {
+        graph_line[i-1+sample_id*MAX_LENGTH] = i;
+      }
+    }
+
+    if (end) {
+      break;
+    }else {
+      input_ph->push_back(std::move(input_line));
+      label_ph->push_back(std::move(label_line));
+      graph_ph->push_back(std::move(graph_line));
+    }
   }
-  cout <<  lines << endl;
-  file.close();
-  *len = inputs.size();
-  cout << "Length:\t"<< *len << endl;
-  *input_data = (float*)malloc(*len*sizeof(float));
-  *target     = (float*)malloc(*len*sizeof(float));
-  memcpy(*input_data, inputs.data(), *len*sizeof(float));
-  memcpy(*target, inputs.data()+1, (*len-1)*sizeof(float));
 }
 
 class SeqModel : public GraphSupport {
@@ -97,32 +120,31 @@ class SeqModel : public GraphSupport {
 int main(int argc, char* argv[]) {
   gflags::ParseCommandLineFlags(&argc, &argv, true);
 
-  float *input_data, *label_data;
-  size_t data_len;
-  load(&input_data, &label_data, &data_len);
   vector<vector<float>> input_ph;
   vector<vector<float>> label_ph;
   vector<vector<int>> graph_ph;
-  const int sample_len = data_len/FLAGS_batch;
-  input_ph.resize(sample_len/FLAGS_timestep); 
-  label_ph.resize(sample_len/FLAGS_timestep); 
-  graph_ph.resize(sample_len/FLAGS_timestep); 
-  for (int i = 0; i < sample_len/FLAGS_timestep; i++) {
-    input_ph[i].resize(FLAGS_timestep*FLAGS_batch, 0);
-    label_ph[i].resize(FLAGS_timestep*FLAGS_batch, 0);
-    graph_ph[i].resize(FLAGS_timestep*FLAGS_batch, -1);
-    for (int j = 0; j < FLAGS_batch; j++) {
-      for (int k = 0; k < FLAGS_timestep; k++) {
-        input_ph[i][j*FLAGS_timestep+k] = input_data[j*sample_len+i*FLAGS_timestep+k];
-        label_ph[i][j*FLAGS_timestep+k] = label_data[j*sample_len+i*FLAGS_timestep+k]; 
-        graph_ph[i][j*FLAGS_timestep+k] = (k+1 == FLAGS_timestep)? -1 : k+1;
-      }
-    }
-  }
+  load(&input_ph, &label_ph, &graph_ph);
 
-  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep}, "CPU");
-  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep});
-  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, FLAGS_timestep});
+  for (int i = 0; i < 3; i++) {
+    for (int j  = 0; j < input_ph[i].size(); j++)
+      cout << input_ph[i][j] << "\t";
+    cout << "\n";
+  }
+  for (int i = 0; i < 3; i++) {
+    for (int j  = 0; j < label_ph[i].size(); j++)
+      cout << label_ph[i][j] << "\t";
+    cout << "\n";
+  }
+  for (int i = 0; i < 3; i++) {
+    for (int j  = 0; j < graph_ph[i].size(); j++)
+      cout << graph_ph[i][j] << "\t";
+    cout << "\n";
+  }
+  //LOG(FATAL) << "here";
+
+  Sym graph    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, MAX_LENGTH}, "CPU");
+  Sym word_idx = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, MAX_LENGTH});
+  Sym label    = Sym::Placeholder(DT_FLOAT, {FLAGS_batch, MAX_LENGTH});
   Sym weight   = Sym::Variable(DT_FLOAT, {FLAGS_input_size, FLAGS_hidden},
                                Sym::Uniform(-FLAGS_init_scale, FLAGS_init_scale));
   Sym bias     = Sym::Variable(DT_FLOAT, {1, FLAGS_input_size}, Sym::Zeros());
@@ -135,15 +157,15 @@ int main(int argc, char* argv[]) {
   Sym train      = loss.Optimizer({}, FLAGS_lr);
   Sym perplexity = loss.Reduce_mean();
 
-  Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
+  //Session sess(OPT_BATCHING+OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_STREAMMING);
   //Session sess(OPT_BATCHING+OPT_FUSION);
   //Session sess(OPT_FUSION+OPT_STREAMMING);
   //Session sess(OPT_BATCHING);
   //Session sess(OPT_FUSION);
   //Session sess(OPT_STREAMMING);
-  //Session sess;
-  int iterations = std::min(sample_len/FLAGS_timestep, FLAGS_iters);
+  Session sess;
+  int iterations = FLAGS_iters;
   for (int i = 0; i < FLAGS_epoch; i++) {
     for (int j = 0; j < iterations; j++) {
       if (j % 10 == 0) {
