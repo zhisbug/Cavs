@@ -1,4 +1,4 @@
-<img src=logo.png width=128/> Cavs: An Efficient Runtime System for Dynamic Neural Networks
+<img src=cavs_logo.png width=128/> Cavs: An Efficient Runtime System for Dynamic Neural Networks
 ========================
 This project is an implementation of the Cavs system presented in the paper: [Cavs: An Efficient Runtime System for Dynamic Neural Networks, ATC'18](https://arxiv.org/abs/2005.14165), sponsored by [Petuum Inc](https://petuum.com/).
 
